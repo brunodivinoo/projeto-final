@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { Header } from '@/components/layout/Header'
 
 type Deck = { id: string; nome: string; total_cards: number; progresso: number; materia: string }
 
@@ -61,153 +62,59 @@ export default function FlashcardsPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#101922] text-white">
-      {/* Header */}
-      <header className="flex items-center justify-between whitespace-nowrap border-b border-slate-800 bg-[#1c252e] px-6 py-3 z-20">
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-3 text-white">
-            <span className="material-symbols-outlined text-[#137fec] text-3xl">psychology</span>
-            <h2 className="text-lg font-bold leading-tight tracking-[-0.015em]">Flashcards por IA</h2>
-          </div>
-          <label className="hidden md:flex flex-col min-w-40 !h-10 w-64">
-            <div className="flex w-full flex-1 items-stretch rounded-lg h-full bg-[#101922] border border-transparent focus-within:border-[#137fec] transition-colors">
-              <div className="text-slate-400 flex items-center justify-center pl-3">
-                <span className="material-symbols-outlined text-[20px]">search</span>
-              </div>
-              <input
-                className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg bg-transparent border-none text-white focus:outline-0 focus:ring-0 placeholder:text-slate-400 px-3 text-sm font-normal leading-normal"
-                placeholder="Pesquisar baralhos ou cartões..."
-              />
-            </div>
-          </label>
-        </div>
-        <div className="flex flex-1 justify-end gap-6 items-center">
-          <button className="flex items-center justify-center text-slate-300 hover:text-[#137fec] transition-colors relative">
-            <span className="material-symbols-outlined text-[24px]">notifications</span>
-            <span className="absolute top-0.5 right-0.5 size-2 bg-red-500 rounded-full border-2 border-[#1c252e]"></span>
-          </button>
-          <div className="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-slate-700 cursor-pointer relative" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBuL_iL8rFlY4OKO968cr02-sadxjHdSLUccagC4GuNiL5Kwwmm3Rf_W_78IYqQ7vNn--SZDv4D9q6S2_CPg5oNlMIaogL90Mg5M1lhvG7PN-z-3FJf6bTyQehqLLv1JDv2vGEhdEwiCmAmFB4Oj-AEBpkfgIHOjC5A1IxDrkBF3Yy0MU91uyrhA4hKWCzVjo47xtylTGuTOxNN3ruNiF00144dowHfN0gHRVrnn-q0yRGKYHb2HiCJ1emV198JmWzAu1Rx6N9_a9Q")' }}>
-            <div className="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full border-2 border-[#1c252e]"></div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen">
+      <Header title="Flashcards por IA" />
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <aside className="hidden lg:flex flex-col w-64 bg-[#1c252e] border-r border-slate-800">
-          <div className="flex flex-col flex-1 p-4 gap-1.5 overflow-y-auto">
-            <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition-all group" href="#">
-              <span className="material-symbols-outlined text-[20px] group-hover:text-[#137fec] transition-colors">home</span>
-              <span className="text-sm font-medium flex-1">Página Inicial</span>
-            </a>
-            <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition-all group" href="#">
-              <span className="material-symbols-outlined text-[20px] text-purple-500 group-hover:text-purple-600 transition-colors">auto_awesome</span>
-              <span className="text-sm font-medium flex-1">Central IA</span>
-            </a>
-            <div className="px-3 pt-4 pb-2">
-              <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">Estudos</h3>
-            </div>
-            <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[#137fec]/10 text-[#137fec] group transition-all" href="#">
-              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: '"FILL" 1' }}>style</span>
-              <span className="text-sm font-medium flex-1">Flashcards</span>
-            </a>
-            <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition-all group" href="#">
-              <span className="material-symbols-outlined text-[20px] group-hover:text-[#137fec] transition-colors">quiz</span>
-              <span className="text-sm font-medium flex-1">Questões</span>
-            </a>
-            <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition-all group" href="#">
-              <span className="material-symbols-outlined text-[20px] group-hover:text-[#137fec] transition-colors">assignment_turned_in</span>
-              <span className="text-sm font-medium flex-1">Simulados</span>
-            </a>
-            <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition-all group" href="#">
-              <span className="material-symbols-outlined text-[20px] group-hover:text-[#137fec] transition-colors">donut_large</span>
-              <span className="text-sm font-medium flex-1">Ciclos de Estudo</span>
-            </a>
-            <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition-all group" href="#">
-              <span className="material-symbols-outlined text-[20px] group-hover:text-[#137fec] transition-colors">history</span>
-              <span className="text-sm font-medium flex-1">Revisões</span>
-            </a>
-            <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition-all group" href="#">
-              <span className="material-symbols-outlined text-[20px] group-hover:text-[#137fec] transition-colors">calendar_month</span>
-              <span className="text-sm font-medium flex-1">Planos de Estudo</span>
-            </a>
-            <div className="px-3 pt-4 pb-2">
-              <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider">Comunidade</h3>
-            </div>
-            <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition-all group" href="#">
-              <span className="material-symbols-outlined text-[20px] group-hover:text-[#137fec] transition-colors">groups</span>
-              <span className="text-sm font-medium flex-1">Social</span>
-            </a>
-            <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition-all group" href="#">
-              <span className="material-symbols-outlined text-[20px] group-hover:text-[#137fec] transition-colors">person</span>
-              <span className="text-sm font-medium flex-1">Perfil do Usuário</span>
-            </a>
-          </div>
-          <div className="p-4 border-t border-slate-800">
-            <button
-              onClick={createDeck}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-800 text-white px-4 py-3 text-sm font-medium hover:bg-slate-700 transition-colors"
-            >
-              <span className="material-symbols-outlined text-[20px]">add_circle</span>
-              Criar Novo Deck
-            </button>
-          </div>
-        </aside>
-
+      <div className="flex">
         {/* Main Content */}
-        <main className="flex-1 flex flex-col overflow-y-auto bg-[#101922] relative">
-          <div className="max-w-4xl w-full mx-auto flex flex-col flex-1 h-full p-6 lg:p-10 gap-6">
+        <main className="flex-1 p-6 lg:p-8">
+          <div className="max-w-4xl mx-auto">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
               <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-slate-500 text-sm">
+                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
                   <span>Flashcards</span>
                   <span className="material-symbols-outlined text-xs">chevron_right</span>
                   <span>Biologia</span>
                 </div>
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white">Fotossíntese</h1>
-                <p className="text-slate-400 text-sm font-medium">Revisando 20 cartões • Vence hoje</p>
+                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 dark:text-white">Fotossíntese</h1>
+                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Revisando 20 cartões • Vence hoje</p>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex h-10 items-center rounded-lg bg-slate-800 p-1">
-                  <label className="cursor-pointer h-full flex items-center px-4 rounded-md bg-[#1c252e] shadow-sm text-white text-sm font-medium transition-all">
-                    <span className="material-symbols-outlined text-[18px] mr-2">style</span>
-                    Estudar
-                    <input checked readOnly className="hidden" name="view-mode" type="radio" value="study"/>
-                  </label>
-                  <label className="cursor-pointer h-full flex items-center px-4 rounded-md text-slate-500 hover:text-white text-sm font-medium transition-all">
-                    <span className="material-symbols-outlined text-[18px] mr-2">grid_view</span>
-                    Grade
-                    <input className="hidden" name="view-mode" type="radio" value="grid"/>
-                  </label>
-                </div>
+                <button
+                  onClick={createDeck}
+                  className="flex items-center gap-2 rounded-lg bg-primary text-white px-4 py-2 text-sm font-medium hover:bg-primary-hover transition-colors"
+                >
+                  <span className="material-symbols-outlined text-xl">add_circle</span>
+                  Criar Deck
+                </button>
               </div>
             </div>
 
             {/* Progress Bar */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 mb-8">
               <div className="flex justify-between items-end text-sm">
-                <span className="text-white font-medium">Progresso da Sessão</span>
+                <span className="text-slate-900 dark:text-white font-medium">Progresso da Sessão</span>
                 <span className="text-slate-500">9 / 20</span>
               </div>
-              <div className="h-2 w-full bg-slate-700 rounded-full overflow-hidden">
-                <div className="h-full bg-[#137fec] rounded-full" style={{ width: '45%' }}></div>
+              <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-full bg-primary rounded-full" style={{ width: '45%' }}></div>
               </div>
             </div>
 
             {/* Card Area */}
-            <div className="flex-1 flex flex-col justify-center items-center min-h-[400px]">
+            <div className="flex flex-col justify-center items-center min-h-[350px] mb-8">
               <div className="group relative w-full max-w-2xl aspect-[3/2]">
                 <div
                   onClick={() => setShowCard(!showCard)}
                   className="relative w-full h-full duration-500 cursor-pointer"
                   style={{ transformStyle: 'preserve-3d' }}
                 >
-                  <div className="absolute inset-0 w-full h-full bg-[#1c252e] rounded-2xl shadow-xl border border-slate-700 flex flex-col items-center justify-center p-8 md:p-12 text-center z-10">
+                  <div className="absolute inset-0 w-full h-full bg-white dark:bg-[#1c252e] rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center p-8 md:p-12 text-center z-10">
                     <span className="absolute top-6 left-6 text-xs font-bold tracking-widest text-slate-400 uppercase">
                       {showCard ? 'Resposta' : 'Questão'}
                     </span>
-                    <p className="text-2xl md:text-3xl font-medium text-white leading-snug">
+                    <p className="text-2xl md:text-3xl font-medium text-slate-900 dark:text-white leading-snug">
                       {showCard ? cards[currentCard].verso : cards[currentCard].frente}
                     </p>
                     <div className="absolute bottom-6 text-slate-400 text-sm flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -243,82 +150,46 @@ export default function FlashcardsPage() {
                 </button>
               </div>
             </div>
-          </div>
-        </main>
 
-        {/* Right Sidebar - AI Generator */}
-        <aside className="hidden xl:flex flex-col w-80 bg-[#1c252e] border-l border-slate-800">
-          <div className="flex items-center justify-between p-4 border-b border-slate-800">
-            <div className="flex items-center gap-2 text-white">
-              <span className="material-symbols-outlined text-purple-500">auto_awesome</span>
-              <h3 className="font-bold text-base">Gerador IA</h3>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
-            {/* Generate by Topic */}
-            <div className="flex flex-col gap-3">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Gerar por Tópico</label>
+            {/* AI Generator Section */}
+            <div className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="material-symbols-outlined text-purple-500">auto_awesome</span>
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white">Gerador IA</h3>
+              </div>
               <textarea
                 value={aiTopic}
                 onChange={(e) => setAiTopic(e.target.value)}
-                className="w-full h-32 bg-[#101922] border-transparent focus:border-[#137fec] focus:ring-0 rounded-lg text-sm text-white p-3 resize-none placeholder:text-slate-400"
-                placeholder="ex: Explique os estágios da Mitose ou cole um parágrafo do seu livro..."
+                className="w-full h-24 bg-slate-50 dark:bg-[#101922] border border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-0 rounded-lg text-sm text-slate-900 dark:text-white p-3 resize-none placeholder:text-slate-400 mb-4"
+                placeholder="Digite um tópico para gerar flashcards automaticamente (ex: Revolução Francesa, Mitose, Física Quântica...)"
               />
-              <div className="flex gap-2">
-                <button
-                  onClick={generateCards}
-                  disabled={generatingCards}
-                  className="flex-1 bg-[#137fec] hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <span className="material-symbols-outlined text-[18px]">bolt</span>
-                  {generatingCards ? 'Gerando...' : 'Gerar Cartões'}
-                </button>
-              </div>
+              <button
+                onClick={generateCards}
+                disabled={generatingCards}
+                className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white py-2 px-6 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">bolt</span>
+                {generatingCards ? 'Gerando...' : 'Gerar Cartões com IA'}
+              </button>
             </div>
 
-            {/* Drafts */}
-            <div className="flex flex-col gap-3">
-              <div className="flex justify-between items-center">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Rascunhos</label>
-                <button className="text-xs text-[#137fec] hover:underline">Limpar tudo</button>
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className="bg-[#101922] p-3 rounded-lg border border-transparent hover:border-slate-600 transition-all cursor-pointer group">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="text-xs font-semibold text-white">Revolução Francesa</span>
-                    <span className="text-[10px] text-slate-500">2m atrás</span>
-                  </div>
-                  <p className="text-xs text-slate-400 line-clamp-2">gerados 5 cartões sobre a queda da Bastilha e figuras chave...</p>
-                  <div className="mt-2 flex gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                    <button className="text-[10px] bg-slate-700 px-2 py-1 rounded shadow-sm hover:text-[#137fec]">Revisar</button>
-                    <button className="text-[10px] bg-slate-700 px-2 py-1 rounded shadow-sm hover:text-green-500">Adicionar</button>
-                  </div>
-                </div>
-                <div className="bg-[#101922] p-3 rounded-lg border border-transparent hover:border-slate-600 transition-all cursor-pointer group">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="text-xs font-semibold text-white">Derivadas de Cálculo</span>
-                    <span className="text-[10px] text-slate-500">1h atrás</span>
-                  </div>
-                  <p className="text-xs text-slate-400 line-clamp-2">Regras básicas de diferenciação incluindo regra da potência.</p>
+            {/* Decks List */}
+            {decks.length > 0 && (
+              <div className="mt-8">
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-4">Seus Decks</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {decks.map(deck => (
+                    <div key={deck.id} className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:border-primary transition-colors cursor-pointer">
+                      <h4 className="font-semibold text-slate-900 dark:text-white">{deck.nome}</h4>
+                      <p className="text-sm text-slate-500">{deck.materia}</p>
+                      <div className="mt-2 text-xs text-slate-400">{deck.total_cards} cartões</div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
-
-            {/* Pro Tip */}
-            <div className="mt-auto bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-lg p-4">
-              <div className="flex gap-3">
-                <span className="material-symbols-outlined text-purple-400 text-xl">tips_and_updates</span>
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs font-bold text-white">Dica Pro</p>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Você pode enviar um PDF das suas anotações para gerar um baralho completo instantaneamente.
-                  </p>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
-        </aside>
+        </main>
       </div>
     </div>
   )
