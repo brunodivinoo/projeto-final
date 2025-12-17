@@ -56,6 +56,7 @@ const revisoesExemplo: Revisao[] = [
 
 export default function RevisoesPage() {
   const [searchTerm, setSearchTerm] = useState('')
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentPage, setCurrentPage] = useState(1)
 
   const getStatusConfig = (status: string) => {

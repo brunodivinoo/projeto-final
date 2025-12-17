@@ -1,6 +1,5 @@
 'use client'
 import { Header } from '@/components/layout/Header'
-import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function DashboardPage() {

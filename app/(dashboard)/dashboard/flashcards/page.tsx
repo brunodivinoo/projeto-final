@@ -11,7 +11,7 @@ export default function FlashcardsPage() {
   const [showCard, setShowCard] = useState(false)
   const [currentCard, setCurrentCard] = useState(0)
   const [decks, setDecks] = useState<Deck[]>([])
-  const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null)
+  const [, setSelectedDeck] = useState<Deck | null>(null)
   const [aiTopic, setAiTopic] = useState('')
   const [generatingCards, setGeneratingCards] = useState(false)
 
@@ -21,10 +21,6 @@ export default function FlashcardsPage() {
     { frente: 'O que é ATP?', verso: 'Adenosina trifosfato - molécula de energia' },
   ]
 
-  useEffect(() => {
-    if (user) loadDecks()
-  }, [user])
-
   const loadDecks = async () => {
     const { data } = await supabase.from('flashcard_decks').select('*').eq('user_id', user?.id)
     if (data && data.length > 0) {
@@ -32,6 +28,11 @@ export default function FlashcardsPage() {
       setSelectedDeck(data[0] as Deck)
     }
   }
+
+  useEffect(() => {
+    if (user) loadDecks()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   const createDeck = async () => {
     if (!user) return

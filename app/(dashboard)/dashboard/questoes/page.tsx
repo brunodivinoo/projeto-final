@@ -64,7 +64,7 @@ export default function QuestoesPage() {
   const [tabAtiva, setTabAtiva] = useState<'ineditas' | 'errei' | 'comentadas' | 'anotacoes'>('ineditas')
   const [disciplinasSelecionadas, setDisciplinasSelecionadas] = useState<string[]>(['Português'])
   const [bancasSelecionadas, setBancasSelecionadas] = useState<string[]>([])
-  const [paginaAtual, setPaginaAtual] = useState(1)
+  const [paginaAtual] = useState(1)
   const [respostasSelecionadas, setRespostasSelecionadas] = useState<{ [key: string]: string }>({})
 
   const toggleDisciplina = (disciplina: string) => {

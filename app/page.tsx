@@ -230,7 +230,7 @@ export default function Home() {
                   <p className="text-slate-900 text-lg font-bold leading-normal">Ana Silva</p>
                   <p className="text-primary text-sm font-medium">Medicina - USP</p>
                   <p className="text-slate-500 text-sm font-normal leading-relaxed mt-3">
-                    "O StudyConnect salvou meu semestre! A organização automática é incrível."
+                    &quot;O StudyConnect salvou meu semestre! A organização automática é incrível.&quot;
                   </p>
                 </div>
               </div>
@@ -241,7 +241,7 @@ export default function Home() {
                   <p className="text-slate-900 text-lg font-bold leading-normal">Carlos Souza</p>
                   <p className="text-primary text-sm font-medium">Direito - PUC</p>
                   <p className="text-slate-500 text-sm font-normal leading-relaxed mt-3">
-                    "Amei a função de grupos de estudo. Conheci muita gente focada."
+                    &quot;Amei a função de grupos de estudo. Conheci muita gente focada.&quot;
                   </p>
                 </div>
               </div>
@@ -252,7 +252,7 @@ export default function Home() {
                   <p className="text-slate-900 text-lg font-bold leading-normal">Beatriz Lima</p>
                   <p className="text-primary text-sm font-medium">Engenharia - Unicamp</p>
                   <p className="text-slate-500 text-sm font-normal leading-relaxed mt-3">
-                    "Muito fácil de organizar minhas revisões. As estatísticas ajudam muito."
+                    &quot;Muito fácil de organizar minhas revisões. As estatísticas ajudam muito.&quot;
                   </p>
                 </div>
               </div>

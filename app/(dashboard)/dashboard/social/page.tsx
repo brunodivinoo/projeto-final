@@ -5,10 +5,11 @@ import { useState } from 'react'
 export default function SocialPage() {
   const [postText, setPostText] = useState('')
   const [search, setSearch] = useState('')
-  const [hours, setHours] = useState(1)
-  const [minutes, setMinutes] = useState(25)
-  const [seconds, setSeconds] = useState(0)
+  const [hours] = useState(1)
+  const [minutes] = useState(25)
+  const [seconds] = useState(0)
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const posts = [
     {
       id: 1,
@@ -47,6 +48,7 @@ export default function SocialPage() {
     }
   ]
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const upcomingSessions = [
     { month: 'OUT', day: 24, title: 'Revisão de Cálculo', time: '14:00', type: 'Grupo', active: true },
     { month: 'OUT', day: 25, title: 'Projeto de História', time: '10:00', type: 'Individual', active: false }
@@ -310,7 +312,7 @@ export default function SocialPage() {
                   </button>
                 </div>
                 <p className="text-[#111418] dark:text-white text-sm mb-3 leading-relaxed">
-                  Does anyone have good notes on Quantum Mechanics from yesterday's lecture? I missed the last 15 minutes.
+                  Does anyone have good notes on Quantum Mechanics from yesterday&apos;s lecture? I missed the last 15 minutes.
                 </p>
                 <div className="flex items-center gap-6 pt-2 border-t border-[#e5e7eb] dark:border-[#283039]">
                   <button className="flex items-center gap-2 text-text-secondary hover:text-primary transition-colors">
