@@ -1,8 +1,10 @@
+import Link from 'next/link'
+
 export default function Home() {
   return (
-    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[#f6f7f8]">
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light font-display">
       {/* Header */}
-      <header className="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-b-slate-200 bg-white/90 backdrop-blur-md px-10 py-3">
+      <header className="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-b-slate-200 bg-white/90 backdrop-blur-md px-4 md:px-10 py-3">
         <div className="flex items-center gap-4 text-slate-900">
           <div className="size-8 text-primary">
             <svg className="w-full h-full" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
@@ -19,12 +21,12 @@ export default function Home() {
             <a className="text-slate-900 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#contato">Contato</a>
           </div>
           <div className="flex gap-2">
-            <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-slate-100 text-slate-900 hover:bg-slate-200 transition-colors text-sm font-bold leading-normal tracking-[0.015em]">
+            <Link href="/login" className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-slate-100 text-slate-900 hover:bg-slate-200 transition-colors text-sm font-bold leading-normal tracking-[0.015em]">
               <span className="truncate">Login</span>
-            </button>
-            <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white hover:bg-blue-600 transition-colors text-sm font-bold leading-normal tracking-[0.015em]">
+            </Link>
+            <Link href="/cadastro" className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white hover:bg-blue-600 transition-colors text-sm font-bold leading-normal tracking-[0.015em]">
               <span className="truncate">Cadastro</span>
-            </button>
+            </Link>
           </div>
         </div>
         <div className="flex md:hidden">
@@ -39,42 +41,40 @@ export default function Home() {
         {/* Hero Section */}
         <div className="w-full bg-white flex justify-center py-5">
           <div className="flex flex-col max-w-[1280px] flex-1 px-5 md:px-10 lg:px-40">
-            <div className="@container">
-              <div className="flex flex-col-reverse gap-6 py-10 @[864px]:flex-row @[864px]:items-center">
-                {/* Left Content */}
-                <div className="flex flex-col gap-6 @[480px]:min-w-[400px] @[480px]:gap-8 flex-1">
-                  <div className="flex flex-col gap-4 text-left">
-                    <h1 className="text-slate-900 text-4xl font-black leading-tight tracking-[-0.033em] @[480px]:text-5xl lg:text-6xl">
-                      Gerencie seus estudos.<br/>Conecte-se com o futuro.
-                    </h1>
-                    <h2 className="text-slate-500 text-base font-normal leading-relaxed @[480px]:text-lg max-w-[600px]">
-                      A plataforma completa para organizar suas matérias, acompanhar seu progresso e interagir com outros estudantes em tempo real.
-                    </h2>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    <button className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20">
-                      <span className="truncate">Começar Agora</span>
-                    </button>
-                    <button className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-slate-100 text-slate-900 text-base font-bold leading-normal tracking-[0.015em] hover:bg-slate-200 transition-colors">
-                      <span className="truncate">Saiba Mais</span>
-                    </button>
-                  </div>
+            <div className="flex flex-col-reverse gap-6 py-10 lg:flex-row lg:items-center">
+              {/* Left Content */}
+              <div className="flex flex-col gap-6 min-w-0 lg:min-w-[400px] lg:gap-8 flex-1">
+                <div className="flex flex-col gap-4 text-left">
+                  <h1 className="text-slate-900 text-4xl font-black leading-tight tracking-[-0.033em] md:text-5xl lg:text-6xl">
+                    Gerencie seus estudos.<br/>Conecte-se com o futuro.
+                  </h1>
+                  <h2 className="text-slate-500 text-base font-normal leading-relaxed md:text-lg max-w-[600px]">
+                    A plataforma completa para organizar suas matérias, acompanhar seu progresso e interagir com outros estudantes em tempo real.
+                  </h2>
                 </div>
-                {/* Right Image */}
-                <div className="w-full flex-1">
-                  <div className="w-full bg-center bg-no-repeat aspect-square md:aspect-video bg-cover rounded-2xl shadow-2xl" style={{backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAPn1pXvfYIywmPuhF-MCUCyoN1JXOTqvcEt2O5H-2oSxp5zH47UTGEFOqjZ7s5nw9H6bKz2xxFl60Xacmrf1BFnHz8ZA5iIaaV46qMvXJYAdJSWBl69rHlyTl-CwA5gyNPzphcvH7FbcGzwI8KL_ImhxOf_dUl3zb1Fa7z1yGqI0I8DxsL_Sny1KQo9_BQ47AFt2Qn1wkPp2vyDGD3P3V46fAWkF9zrPLmPxsNKHJj57zgbEDBJBcdeci_fMBlhTXhGP4ZxYVXVXw")'}}></div>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/cadastro" className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20">
+                    <span className="truncate">Começar Agora</span>
+                  </Link>
+                  <a href="#recursos" className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-slate-100 text-slate-900 text-base font-bold leading-normal tracking-[0.015em] hover:bg-slate-200 transition-colors">
+                    <span className="truncate">Saiba Mais</span>
+                  </a>
                 </div>
+              </div>
+              {/* Right Image */}
+              <div className="w-full flex-1">
+                <div className="w-full bg-center bg-no-repeat aspect-square md:aspect-video bg-cover rounded-2xl shadow-2xl" style={{backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAPn1pXvfYIywmPuhF-MCUCyoN1JXOTqvcEt2O5H-2oSxp5zH47UTGEFOqjZ7s5nw9H6bKz2xxFl60Xacmrf1BFnHz8ZA5iIaaV46qMvXJYAdJSWBl69rHlyTl-CwA5gyNPzphcvH7FbcGzwI8KL_ImhxOf_dUl3zb1Fa7z1yGqI0I8DxsL_Sny1KQo9_BQ47AFt2Qn1wkPp2vyDGD3P3V46fAWkF9zrPLmPxsNKHJj57zgbEDBJBcdeci_fMBlhTXhGP4ZxYVXVXw")'}}></div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Features Section */}
-        <div className="w-full flex justify-center py-20 bg-[#f6f7f8]" id="recursos">
+        <div className="w-full flex justify-center py-20 bg-background-light" id="recursos">
           <div className="flex flex-col max-w-[960px] flex-1 px-5 md:px-10">
-            <div className="flex flex-col gap-10 @container">
+            <div className="flex flex-col gap-10">
               <div className="flex flex-col gap-4 text-center items-center">
-                <h2 className="text-slate-900 text-[32px] font-bold leading-tight @[480px]:text-4xl max-w-[720px]">
+                <h2 className="text-slate-900 text-[32px] font-bold leading-tight md:text-4xl max-w-[720px]">
                   Tudo que você precisa para passar de ano
                 </h2>
                 <p className="text-slate-500 text-lg font-normal leading-normal max-w-[720px]">
@@ -141,9 +141,9 @@ export default function Home() {
                   </div>
                   <p className="text-slate-500 text-sm">Para quem está começando.</p>
                 </div>
-                <button className="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-4 bg-slate-100 text-slate-900 hover:bg-slate-200 transition-colors text-sm font-bold leading-normal tracking-[0.015em]">
+                <Link href="/cadastro" className="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-4 bg-slate-100 text-slate-900 hover:bg-slate-200 transition-colors text-sm font-bold leading-normal tracking-[0.015em]">
                   <span className="truncate">Criar Conta Grátis</span>
-                </button>
+                </Link>
                 <div className="flex flex-col gap-3">
                   <div className="text-sm font-normal leading-normal flex gap-3 text-slate-700 items-center">
                     <span className="material-symbols-outlined text-primary text-[20px]">check</span>
@@ -217,7 +217,7 @@ export default function Home() {
         </div>
 
         {/* Testimonials Section */}
-        <div className="w-full flex justify-center py-20 bg-[#f6f7f8]">
+        <div className="w-full flex justify-center py-20 bg-background-light">
           <div className="flex flex-col max-w-[960px] flex-1 px-5 md:px-10">
             <div className="text-center mb-10">
               <h2 className="text-slate-900 text-3xl font-bold">Quem usa, aprova</h2>
@@ -305,7 +305,7 @@ export default function Home() {
             </div>
           </div>
           <div className="max-w-[1280px] mx-auto mt-12 pt-8 border-t border-slate-200 text-center text-slate-500 text-sm">
-            © 2023 StudyConnect. Todos os direitos reservados.
+            © 2025 StudyConnect. Todos os direitos reservados.
           </div>
         </footer>
       </main>

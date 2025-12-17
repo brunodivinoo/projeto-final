@@ -12,6 +12,8 @@ const config: Config = {
       colors: {
         primary: "#137fec",
         "primary-hover": "#0f6ac6",
+        "background-light": "#f6f7f8",
+        "background-dark": "#101922",
         "bg-dark": "#101922",
         "card-dark": "#192633",
         "input-border": "#324d67",
