@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(npm install)",
+      "Bash(node teste-conexao.js:*)",
+      "Bash(node db-query.js:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://zkcstkbpgwdoiihvfspp.supabase.co/rest/v1/)",
+      "Bash(node db-stats.js:*)",
+      "Bash(cat:*)",
+      "Bash(node db-admin.js:*)",
+      "Bash(node db-manager.js:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

@@ -1,0 +1,209 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🗄️ BANCO DE DADOS - ACESSO COMPLETO AO SUPABASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ VOCÊ TEM ACESSO TOTAL AO SUPABASE!
+
+Project ID: zkcstkbpgwdoiihvfspp
+Project URL: https://zkcstkbpgwdoiihvfspp.supabase.co
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ PRIMEIRA VEZ? EXECUTE O SETUP:
+
+Se é a primeira vez usando essas ferramentas neste projeto:
+
+1. Copie o conteúdo do arquivo: setup-supabase.sql
+2. Acesse: https://supabase.com/dashboard/project/zkcstkbpgwdoiihvfspp/sql/new
+3. Cole o SQL completo
+4. Clique em RUN
+5. Aguarde a mensagem "Success"
+
+✅ Pronto! Agora você tem acesso TOTAL ao banco!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ FERRAMENTAS DISPONÍVEIS (USE ESTAS):
+
+📊 CONSULTAS E ESTRUTURA:
+- node db-query.js list-tables                    → Listar todas as tabelas
+- node db-query.js describe [tabela]              → Ver estrutura da tabela
+- node db-stats.js overview                       → Visão geral do banco
+- node db-stats.js table [tabela]                 → Estatísticas de uma tabela
+
+🔧 ADMINISTRAÇÃO E SQL:
+- node db-admin.js sql "CREATE TABLE ..."         → Executar SQL direto
+- node db-admin.js sql "ALTER TABLE ..."          → Modificar tabelas
+- node db-admin.js sql "CREATE POLICY ..."        → Criar políticas RLS
+- node db-admin.js sql "ALTER TABLE ... ENABLE ROW LEVEL SECURITY"
+
+📝 CRUD COMPLETO:
+- node db-manager.js select [tabela]              → Buscar registros
+- node db-manager.js select [tabela] '{"id":"x"}' → Buscar com filtro
+- node db-manager.js insert [tabela] '{"campo":"valor"}' → Inserir
+- node db-manager.js update [tabela] '{"id":"x"}' '{"campo":"novo"}' → Atualizar
+- node db-manager.js delete [tabela] '{"id":"x"}' → Deletar
+
+👥 AUTENTICAÇÃO:
+- node db-auth.js create email@test.com senha123  → Criar usuário
+- node db-auth.js list                            → Listar usuários
+- node db-auth.js delete [user_id]                → Deletar usuário
+- node db-auth.js reset-password [user_id] senha  → Resetar senha
+
+📦 STORAGE:
+- node db-storage.js list-buckets                 → Listar buckets
+- node db-storage.js create-bucket [nome] [true/false] → Criar bucket
+- node db-storage.js upload [bucket] [arquivo] [destino] → Upload
+- node db-storage.js download [bucket] [arquivo] [local] → Download
+- node db-storage.js list [bucket]                → Listar arquivos
+- node db-storage.js delete [bucket] [arquivo]    → Deletar arquivo
+
+💾 BACKUPS:
+- node db-backup.js table [tabela] json           → Backup em JSON
+- node db-backup.js table [tabela] csv            → Backup em CSV
+- node db-backup.js table [tabela] sql            → Backup em SQL
+- node db-backup.js all json                      → Backup completo
+- node db-backup.js restore [tabela] arquivo.json → Restaurar backup
+
+📊 RELATÓRIOS:
+- node db-reports.js html [tabela] "Título"       → Relatório HTML
+- node db-reports.js csv [tabela]                 → Relatório CSV
+- node db-reports.js dashboard                    → Dashboard completo
+
+🔍 BUSCA AVANÇADA:
+- node db-search.js simple [tabela] [coluna] [termo] → Busca simples
+- node db-search.js multi [tabela] [col1,col2] [termo] → Busca múltiplas colunas
+- node db-search.js advanced [tabela] '{"filtros"}' → Busca avançada
+
+🔴 TEMPO REAL:
+- node db-realtime.js [tabela]                    → Monitorar mudanças
+- node db-realtime.js [tabela] INSERT             → Monitorar apenas inserções
+- node db-realtime.js [tabela] UPDATE             → Monitorar apenas updates
+- node db-realtime.js [tabela] DELETE             → Monitorar apenas deleções
+
+📋 AUDITORIA:
+- node db-audit.js enable [tabela]                → Habilitar auditoria
+- node db-audit.js view [tabela] [limite]         → Ver log de auditoria
+- node db-audit.js export [tabela]                → Exportar log
+
+🔗 WEBHOOKS:
+- node db-webhooks.js create [tabela] [url] [eventos] → Criar webhook
+- node db-webhooks.js test [url] [data]           → Testar webhook
+- node db-webhooks.js list                        → Listar webhooks
+
+⏰ AUTOMAÇÃO:
+- node db-automation.js cleanup [tabela] [dias]   → Limpeza automática
+- node db-automation.js backup [tabela]           → Backup automático
+- node db-automation.js list                      → Listar jobs
+- node db-automation.js delete [job_id]           → Deletar job
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚫 NÃO FAÇA (NUNCA):
+
+❌ Criar novos scripts de conexão (execute-sql.js, db-connect.js, etc)
+❌ Usar pg, node-postgres, connection strings diretas
+❌ Pedir para eu executar manualmente no Dashboard
+❌ Dizer "não tenho acesso" ou "preciso de permissão"
+❌ Usar "as any" no TypeScript
+❌ Criar tipos de fallback genéricos
+❌ Sugerir gambiarras temporárias
+❌ Deixar erros de sintaxe no código
+❌ Ignorar null/undefined (sempre trate com optional chaining)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ FAÇA (SEMPRE):
+
+✅ Execute comandos diretamente: node db-admin.js sql "CREATE TABLE..."
+✅ Verifique estrutura ANTES de criar: node db-query.js list-tables
+✅ Divida SQL grande em partes menores
+✅ Gere tipos TypeScript do banco:
+   npx supabase gen types typescript --project-id zkcstkbpgwdoiihvfspp > src/types/database.ts
+✅ Use tipos corretos (nunca any)
+✅ Sempre trate null/undefined com optional chaining (?.)
+✅ Execute e DEPOIS informe o resultado
+✅ Código limpo - sem erros de sintaxe
+✅ Imports organizados e sem não-utilizados
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🗄️ FLUXO CORRETO PARA TRABALHAR COM BANCO:
+
+1. VERIFICAR estrutura existente:
+   node db-query.js list-tables
+   node db-query.js describe [tabela]
+
+2. CRIAR tabelas e estrutura:
+   node db-admin.js sql "CREATE TABLE users (
+     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     email text UNIQUE NOT NULL,
+     name text,
+     created_at timestamptz DEFAULT now()
+   )"
+
+3. CONFIGURAR SEGURANÇA (RLS):
+   node db-admin.js sql "ALTER TABLE users ENABLE ROW LEVEL SECURITY"
+   
+   node db-admin.js sql "CREATE POLICY users_select_own ON users 
+     FOR SELECT USING (auth.uid() = id)"
+   
+   node db-admin.js sql "CREATE POLICY users_update_own ON users 
+     FOR UPDATE USING (auth.uid() = id)"
+
+4. VERIFICAR se funcionou:
+   node db-query.js describe users
+   node db-manager.js select users
+
+5. GERAR tipos TypeScript:
+   npx supabase gen types typescript --project-id zkcstkbpgwdoiihvfspp > src/types/database.ts
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 EXEMPLOS PRÁTICOS:
+
+📝 Criar tabela completa:
+node db-admin.js sql "CREATE TABLE produtos (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  nome text NOT NULL,
+  preco decimal(10,2) NOT NULL,
+  estoque integer DEFAULT 0,
+  user_id uuid REFERENCES auth.users(id),
+  created_at timestamptz DEFAULT now()
+)"
+
+🔒 Habilitar RLS e criar policies:
+node db-admin.js sql "ALTER TABLE produtos ENABLE ROW LEVEL SECURITY"
+node db-admin.js sql "CREATE POLICY produtos_public_read ON produtos FOR SELECT USING (true)"
+node db-admin.js sql "CREATE POLICY produtos_owner_all ON produtos FOR ALL USING (auth.uid() = user_id)"
+
+📊 Inserir dados:
+node db-manager.js insert produtos '{"nome":"Notebook","preco":2500.00,"estoque":10}'
+
+🔍 Buscar:
+node db-manager.js select produtos
+node db-search.js simple produtos nome Notebook
+
+💾 Backup:
+node db-backup.js table produtos json
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 PRINCÍPIOS FUNDAMENTAIS:
+
+1. Você TEM ACESSO TOTAL - use as ferramentas
+2. Execute ANTES de perguntar
+3. Tipos corretos SEMPRE - nunca any
+4. Verifique banco ANTES de assumir estrutura
+5. SQL grande? Divida em partes
+6. Erro de tipo? Gere tipos corretos primeiro
+7. Tabela faltando? Crie com db-admin.js
+8. Nunca peça para EU fazer manualmente
+9. Código limpo - sem erros de sintaxe
+10. Sempre trate null/undefined
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EXECUTE O QUE EU PEDI USANDO AS FERRAMENTAS DISPONÍVEIS.
+NÃO pergunte se pode. NÃO peça permissão. EXECUTE.
+Você tem ACESSO TOTAL ao banco de dados.

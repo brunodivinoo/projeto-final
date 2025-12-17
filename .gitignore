@@ -1,0 +1,46 @@
+# Credenciais sensíveis
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependências
+node_modules/
+package-lock.json
+yarn.lock
+
+# Backups gerados
+backup_*.json
+backup_*.csv
+backup_*.sql
+
+# Relatórios gerados
+report_*.html
+report_*.csv
+dashboard_*.html
+
+# Logs de auditoria
+audit_log_*.json
+
+# Logs do sistema
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Arquivos temporários
+*.tmp
+*.temp
+.cache/
