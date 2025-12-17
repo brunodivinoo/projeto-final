@@ -1,9 +1,20 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #137fec;
+  --color-primary-hover: #0f6ac6;
+  --color-background-light: #f6f7f8;
+  --color-background-dark: #101922;
+  --color-bg-dark: #101922;
+  --color-card-dark: #192633;
+  --color-input-border: #324d67;
+  --color-text-secondary: #92adc9;
+  --font-family-display: "Lexend", sans-serif;
+}
+
 :root {
   --background: #f6f7f8;
   --foreground: #111418;
-  --primary: #137fec;
 }
 
 .dark {
