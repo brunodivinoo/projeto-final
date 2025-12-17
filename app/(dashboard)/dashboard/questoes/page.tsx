@@ -1,8 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Search, ChevronLeft, ChevronRight, Check, ChatBubbleLeftIcon, BookmarkIcon, FlagIcon, TrophyIcon } from '@heroicons/react/24/outline'
-import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid'
 
 interface Questao {
   id: string
@@ -118,7 +116,7 @@ export default function QuestoesPage() {
           <div className="w-full">
             <div className="relative flex items-center w-full h-12 rounded-lg bg-[#1C252E] border border-[#2A3441] shadow-sm focus-within:border-[#137fec] focus-within:ring-1 focus-within:ring-[#137fec] overflow-hidden">
               <div className="grid place-items-center h-full w-12 text-[#9dabb9]">
-                <Search className="w-5 h-5" />
+                <span className="material-symbols-outlined text-xl">search</span>
               </div>
               <input
                 className="peer h-full w-full outline-none bg-transparent text-sm text-white pr-4 placeholder:text-[#9dabb9]"
@@ -138,7 +136,7 @@ export default function QuestoesPage() {
                   : 'bg-[#1C252E] border border-[#2A3441] hover:bg-white/5 text-gray-300'
               }`}
             >
-              {tabAtiva === 'ineditas' && <Check className="w-[18px] h-[18px]" />}
+              {tabAtiva === 'ineditas' && <span className="material-symbols-outlined text-[18px]">check</span>}
               Inéditas
             </button>
             <button
@@ -149,7 +147,7 @@ export default function QuestoesPage() {
                   : 'bg-[#1C252E] border border-[#2A3441] hover:bg-white/5 text-gray-300'
               }`}
             >
-              {tabAtiva === 'errei' && <Check className="w-[18px] h-[18px]" />}
+              {tabAtiva === 'errei' && <span className="material-symbols-outlined text-[18px]">check</span>}
               Errei anteriormente
             </button>
             <button
@@ -160,7 +158,7 @@ export default function QuestoesPage() {
                   : 'bg-[#1C252E] border border-[#2A3441] hover:bg-white/5 text-gray-300'
               }`}
             >
-              {tabAtiva === 'comentadas' && <Check className="w-[18px] h-[18px]" />}
+              {tabAtiva === 'comentadas' && <span className="material-symbols-outlined text-[18px]">check</span>}
               Comentadas
             </button>
             <button
@@ -171,7 +169,7 @@ export default function QuestoesPage() {
                   : 'bg-[#1C252E] border border-[#2A3441] hover:bg-white/5 text-gray-300'
               }`}
             >
-              {tabAtiva === 'anotacoes' && <Check className="w-[18px] h-[18px]" />}
+              {tabAtiva === 'anotacoes' && <span className="material-symbols-outlined text-[18px]">check</span>}
               Minhas anotações
             </button>
           </div>
@@ -266,14 +264,14 @@ export default function QuestoesPage() {
                 </button>
                 <div className="flex items-center gap-2 sm:gap-4">
                   <button className="flex items-center gap-1.5 text-gray-400 hover:text-[#137fec] transition-colors px-2 py-1 rounded-md hover:bg-white/5">
-                    <ChatBubbleLeftIcon className="w-5 h-5" />
+                    <span className="material-symbols-outlined text-xl">chat_bubble</span>
                     <span className="text-xs font-medium">{questao.comentarios} Comentários</span>
                   </button>
                   <button className="flex items-center gap-1.5 text-gray-400 hover:text-[#137fec] transition-colors px-2 py-1 rounded-md hover:bg-white/5">
                     {questao.salva ? (
-                      <BookmarkSolidIcon className="w-5 h-5 text-[#137fec]" />
+                      <span className="material-symbols-outlined text-xl text-[#137fec]" style={{fontVariationSettings: '"FILL" 1'}}>bookmark</span>
                     ) : (
-                      <BookmarkIcon className="w-5 h-5" />
+                      <span className="material-symbols-outlined text-xl">bookmark</span>
                     )}
                     <span className="hidden sm:inline text-xs font-medium">Salvar</span>
                   </button>
@@ -281,7 +279,7 @@ export default function QuestoesPage() {
                     className="text-gray-400 hover:text-red-500 transition-colors p-1"
                     title="Reportar Erro"
                   >
-                    <FlagIcon className="w-5 h-5" />
+                    <span className="material-symbols-outlined text-xl">flag</span>
                   </button>
                 </div>
               </div>
@@ -294,7 +292,7 @@ export default function QuestoesPage() {
               disabled={paginaAtual === 1}
               className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#2A3441] bg-[#1C252E] text-gray-300 hover:bg-white/5 disabled:opacity-50"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <span className="material-symbols-outlined text-base">chevron_left</span>
             </button>
             <button className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#137fec] text-white font-medium shadow-md shadow-[#137fec]/20">
               1
@@ -310,7 +308,7 @@ export default function QuestoesPage() {
               12
             </button>
             <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#2A3441] bg-[#1C252E] text-gray-300 hover:bg-white/5">
-              <ChevronRight className="w-4 h-4" />
+              <span className="material-symbols-outlined text-base">chevron_right</span>
             </button>
           </div>
         </main>
@@ -484,7 +482,7 @@ export default function QuestoesPage() {
           <div className="bg-[#1C252E] rounded-xl border border-[#2A3441] p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <TrophyIcon className="w-5 h-5 text-yellow-500" />
+                <span className="material-symbols-outlined text-xl text-yellow-500">emoji_events</span>
                 Ranking Semanal
               </h3>
               <a className="text-xs font-medium text-[#137fec] hover:underline" href="#">
