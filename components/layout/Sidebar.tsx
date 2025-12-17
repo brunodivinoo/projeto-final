@@ -99,6 +99,16 @@ export function Sidebar() {
         ))}
       </nav>
 
+      {/* Create New Deck Button */}
+      {pathname.startsWith('/dashboard/flashcards') && (
+        <div className="p-4 border-t border-slate-800">
+          <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-800 text-white px-4 py-3 text-sm font-medium hover:bg-slate-700 transition-colors">
+            <span className="material-symbols-outlined text-xl">add_circle</span>
+            Criar Novo Deck
+          </button>
+        </div>
+      )}
+
       {/* User & Logout */}
       <div className="p-4 border-t border-slate-800">
         {profile && (

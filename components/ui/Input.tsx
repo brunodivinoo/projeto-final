@@ -13,7 +13,7 @@ export function Input({ label, icon, error, type, ...props }: InputProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-white text-sm font-medium">{label}</label>
+      {label && <label className="text-white text-sm font-medium">{label}</label>}
       <div className="relative flex items-center">
         {icon && (
           <span className="absolute left-3 text-[#92adc9] material-symbols-outlined text-xl">

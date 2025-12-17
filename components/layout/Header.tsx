@@ -2,13 +2,16 @@
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 
-export function Header({ title }: { title: string }) {
+export function Header({ title, searchPlaceholder }: { title: string; searchPlaceholder?: string }) {
   const [search, setSearch] = useState('')
   const { profile } = useAuth()
 
   return (
     <header className="h-14 bg-[#1c252e] border-b border-slate-800 flex items-center justify-between px-6 sticky top-0 z-10">
-      <h1 className="text-lg font-bold text-white">{title}</h1>
+      <div className="flex items-center gap-3">
+        <span className="material-symbols-outlined text-primary text-3xl">psychology</span>
+        <h1 className="text-lg font-bold text-white">{title}</h1>
+      </div>
 
       <div className="flex items-center gap-4">
         {/* Search */}
@@ -18,7 +21,7 @@ export function Header({ title }: { title: string }) {
           </span>
           <input
             type="text"
-            placeholder="Buscar..."
+            placeholder={searchPlaceholder || "Buscar..."}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-64 h-10 pl-10 pr-4 rounded-lg bg-[#101922] border border-transparent text-white text-sm placeholder:text-slate-400 focus:border-primary focus:outline-none transition-colors"
@@ -32,11 +35,12 @@ export function Header({ title }: { title: string }) {
         </button>
 
         {/* Avatar */}
-        <div className="flex items-center gap-3 pl-3 border-l border-slate-700">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center">
+        <div className="flex items-center gap-3 pl-3 border-l border-slate-700 relative">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center relative">
             <span className="text-white font-bold text-sm">
               {profile?.nome?.charAt(0).toUpperCase() || 'U'}
             </span>
+            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1c252e]"></span>
           </div>
           <div className="hidden lg:flex flex-col">
             <span className="text-sm font-bold text-white leading-none">{profile?.nome || 'Usuário'}</span>

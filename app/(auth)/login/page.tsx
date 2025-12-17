@@ -2,14 +2,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Input } from '@/components/ui/Input'
-import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
 
 export default function LoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState({ email: '', password: '' })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,101 +36,155 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/dashboard` }
+      options: { redirectTo: `${window.location.origin}/auth/callback` }
     })
   }
 
-  const handleGithubLogin = async () => {
+  const handleMicrosoftLogin = async () => {
     await supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: { redirectTo: `${window.location.origin}/dashboard` }
+      provider: 'azure',
+      options: { redirectTo: `${window.location.origin}/auth/callback` }
     })
   }
 
   return (
-    <div className="min-h-screen bg-[#101922] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#101922] flex flex-col">
       {/* Background decorativo */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-1/4 -right-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-1/4 -left-1/4 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute -top-[20%] -right-[10%] w-[800px] h-[800px] bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-[20%] -left-[10%] w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-3xl" />
       </div>
 
-      <div className="w-full max-w-md bg-[#192633] rounded-xl shadow-2xl border border-[#324d67] relative z-10">
-        {/* Header */}
-        <div className="p-8 pb-0">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <span className="material-symbols-outlined text-white text-2xl">school</span>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
+        {/* Login Card */}
+        <div className="w-full max-w-[480px] bg-[#192633] rounded-xl shadow-2xl border border-[#324d67] overflow-hidden">
+          {/* Header Section */}
+          <div className="p-8 pb-0 flex flex-col gap-2">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white">
+                <span className="material-symbols-outlined text-2xl">school</span>
+              </div>
+              <span className="text-xl font-bold tracking-tight text-white">StudyHub</span>
             </div>
-            <span className="text-xl font-bold text-white">StudyHub</span>
+            <h1 className="text-2xl md:text-3xl font-bold text-white leading-tight">Bem-vindo de volta!</h1>
+            <p className="text-[#92adc9] text-sm font-normal">Acesse sua área de estudos e continue aprendendo.</p>
           </div>
-          <h1 className="text-2xl font-bold text-white">Bem-vindo de volta!</h1>
-          <p className="text-[#92adc9] text-sm mt-1">Acesse sua área de estudos</p>
+
+          {/* Form Section */}
+          <form onSubmit={handleSubmit} className="p-8 pt-6 flex flex-col gap-5">
+            {/* Email Input */}
+            <div className="flex flex-col gap-2">
+              <label className="text-white text-sm font-medium" htmlFor="email">E-mail ou Usuário</label>
+              <div className="relative">
+                <input
+                  id="email"
+                  type="email"
+                  value={form.email}
+                  onChange={e => setForm({ ...form, email: e.target.value })}
+                  placeholder="exemplo@estudante.com"
+                  required
+                  className="w-full rounded-lg border border-[#324d67] bg-[#111a22] focus:border-primary focus:ring-1 focus:ring-primary h-12 px-4 pl-11 text-base placeholder:text-[#92adc9] text-white transition-colors outline-none"
+                />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#92adc9] flex items-center">
+                  <span className="material-symbols-outlined text-[20px]">mail</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Password Input */}
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <label className="text-white text-sm font-medium" htmlFor="password">Senha</label>
+                <Link href="#" className="text-primary hover:underline text-sm font-medium transition-colors">Esqueceu a senha?</Link>
+              </div>
+              <div className="relative flex w-full items-center">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={e => setForm({ ...form, password: e.target.value })}
+                  placeholder="Sua senha segura"
+                  required
+                  className="w-full rounded-lg border border-[#324d67] bg-[#111a22] focus:border-primary focus:ring-1 focus:ring-primary h-12 px-4 pl-11 pr-12 text-base placeholder:text-[#92adc9] text-white transition-colors outline-none"
+                />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#92adc9] flex items-center">
+                  <span className="material-symbols-outlined text-[20px]">lock</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-0 top-0 h-full px-3 text-[#92adc9] hover:text-white flex items-center justify-center transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center rounded-lg bg-primary hover:bg-[#0f6ac6] h-12 px-4 text-white text-sm font-bold tracking-wide transition-colors shadow-lg shadow-primary/20 mt-2 disabled:opacity-50"
+            >
+              {loading ? (
+                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <span>Entrar</span>
+                  <span className="material-symbols-outlined ml-2 text-lg">login</span>
+                </>
+              )}
+            </button>
+
+            {/* Divider */}
+            <div className="relative flex items-center py-2">
+              <div className="flex-grow border-t border-[#324d67]"></div>
+              <span className="flex-shrink-0 mx-4 text-[#92adc9] text-xs font-medium uppercase">Ou continue com</span>
+              <div className="flex-grow border-t border-[#324d67]"></div>
+            </div>
+
+            {/* Social Login */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="flex items-center justify-center h-10 rounded-lg border border-[#324d67] bg-[#111a22] hover:bg-[#1a2530] transition-colors gap-2"
+              >
+                <GoogleIcon />
+                <span className="text-sm font-medium text-white">Google</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleMicrosoftLogin}
+                className="flex items-center justify-center h-10 rounded-lg border border-[#324d67] bg-[#111a22] hover:bg-[#1a2530] transition-colors gap-2"
+              >
+                <MicrosoftIcon />
+                <span className="text-sm font-medium text-white">Microsoft</span>
+              </button>
+            </div>
+          </form>
+
+          {/* Footer / Sign Up CTA */}
+          <div className="bg-[#111a22] p-5 text-center border-t border-[#324d67]">
+            <p className="text-[#92adc9] text-sm">
+              Não tem uma conta?{' '}
+              <Link href="/cadastro" className="text-primary font-bold hover:underline ml-1">Cadastre-se agora</Link>
+            </p>
+          </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-8 pt-6 flex flex-col gap-5">
-          <Input
-            label="E-mail ou Usuário"
-            icon="mail"
-            type="email"
-            placeholder="exemplo@estudante.com"
-            value={form.email}
-            onChange={e => setForm({ ...form, email: e.target.value })}
-            required
-          />
-
-          <div>
-            <div className="flex justify-between mb-2">
-              <span className="text-white text-sm font-medium">Senha</span>
-              <Link href="#" className="text-primary text-sm hover:underline">
-                Esqueceu a senha?
-              </Link>
-            </div>
-            <Input
-              label=""
-              icon="lock"
-              type="password"
-              placeholder="Sua senha segura"
-              value={form.password}
-              onChange={e => setForm({ ...form, password: e.target.value })}
-              required
-            />
-          </div>
-
-          {error && (
-            <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
-              {error}
-            </div>
-          )}
-
-          <Button type="submit" loading={loading} className="w-full mt-2">
-            Entrar <span className="material-symbols-outlined text-lg">login</span>
-          </Button>
-
-          {/* Divider */}
-          <div className="flex items-center gap-4 my-2">
-            <div className="flex-1 h-px bg-[#324d67]" />
-            <span className="text-[#92adc9] text-xs uppercase">Ou continue com</span>
-            <div className="flex-1 h-px bg-[#324d67]" />
-          </div>
-
-          {/* Social */}
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" type="button" onClick={handleGoogleLogin}>
-              <GoogleIcon /> Google
-            </Button>
-            <Button variant="outline" type="button" onClick={handleGithubLogin}>
-              <GithubIcon /> GitHub
-            </Button>
-          </div>
-        </form>
-
-        {/* Footer */}
-        <div className="bg-[#111a22] p-5 text-center border-t border-[#324d67]">
-          <p className="text-[#92adc9] text-sm">
-            Não tem conta? <Link href="/cadastro" className="text-primary font-bold hover:underline">Cadastre-se</Link>
-          </p>
+        {/* Help / Links */}
+        <div className="mt-8 flex gap-6 text-sm text-[#92adc9]">
+          <Link href="#" className="hover:text-primary transition-colors">Privacidade</Link>
+          <Link href="#" className="hover:text-primary transition-colors">Termos</Link>
+          <Link href="#" className="hover:text-primary transition-colors">Ajuda</Link>
         </div>
       </div>
     </div>
@@ -147,8 +200,11 @@ const GoogleIcon = () => (
   </svg>
 )
 
-const GithubIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+const MicrosoftIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 21 21">
+    <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+    <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+    <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+    <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
   </svg>
 )
