@@ -7,8 +7,15 @@
 
 # Dependências
 node_modules/
-package-lock.json
-yarn.lock
+
+# Next.js
+.next/
+out/
+
+# Build
+build/
+*.tsbuildinfo
+next-env.d.ts
 
 # Backups gerados
 backup_*.json
@@ -19,6 +26,18 @@ backup_*.sql
 report_*.html
 report_*.csv
 dashboard_*.html
+
+# CLI tools (não versionar)
+db-*.js
+setup-*.sql
+teste-*.js
+cli-backup/
+
+# Design files (muito grandes)
+design/
+
+# Claude settings
+.claude/
 
 # Logs de auditoria
 audit_log_*.json
@@ -44,3 +63,6 @@ Thumbs.db
 *.tmp
 *.temp
 .cache/
+
+# Vercel
+.vercel
