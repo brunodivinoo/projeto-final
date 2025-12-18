@@ -32,335 +32,19 @@ export interface ConquistasData {
   verificarConquista: (codigo: string) => Promise<boolean>
 }
 
-// Definicao de todas as conquistas
-export const CONQUISTAS_CONFIG: Omit<Conquista, 'conquistada' | 'dataConquista' | 'progresso'>[] = [
-  // Categoria: Estudo
-  {
-    id: '1',
-    codigo: 'primeira_questao',
-    nome: 'Primeiro Passo',
-    descricao: 'Responda sua primeira questao',
-    icone: 'play_arrow',
-    cor: '#22c55e',
-    categoria: 'estudo',
-    xpRecompensa: 50,
-    requisito: 'Responder 1 questao',
-    meta: 1
-  },
-  {
-    id: '2',
-    codigo: 'questoes_10',
-    nome: 'Aquecendo os Motores',
-    descricao: 'Responda 10 questoes',
-    icone: 'local_fire_department',
-    cor: '#f59e0b',
-    categoria: 'estudo',
-    xpRecompensa: 100,
-    requisito: 'Responder 10 questoes',
-    meta: 10
-  },
-  {
-    id: '3',
-    codigo: 'questoes_50',
-    nome: 'Estudante Dedicado',
-    descricao: 'Responda 50 questoes',
-    icone: 'school',
-    cor: '#3b82f6',
-    categoria: 'estudo',
-    xpRecompensa: 250,
-    requisito: 'Responder 50 questoes',
-    meta: 50
-  },
-  {
-    id: '4',
-    codigo: 'questoes_100',
-    nome: 'Centuriao',
-    descricao: 'Responda 100 questoes',
-    icone: 'military_tech',
-    cor: '#8b5cf6',
-    categoria: 'estudo',
-    xpRecompensa: 500,
-    requisito: 'Responder 100 questoes',
-    meta: 100
-  },
-  {
-    id: '5',
-    codigo: 'questoes_500',
-    nome: 'Mestre das Questoes',
-    descricao: 'Responda 500 questoes',
-    icone: 'emoji_events',
-    cor: '#fbbf24',
-    categoria: 'estudo',
-    xpRecompensa: 1000,
-    requisito: 'Responder 500 questoes',
-    meta: 500
-  },
-  {
-    id: '6',
-    codigo: 'primeiro_simulado',
-    nome: 'Simulador',
-    descricao: 'Complete seu primeiro simulado',
-    icone: 'assignment',
-    cor: '#ec4899',
-    categoria: 'estudo',
-    xpRecompensa: 100,
-    requisito: 'Completar 1 simulado',
-    meta: 1
-  },
-  {
-    id: '7',
-    codigo: 'simulados_10',
-    nome: 'Veterano de Provas',
-    descricao: 'Complete 10 simulados',
-    icone: 'workspace_premium',
-    cor: '#14b8a6',
-    categoria: 'estudo',
-    xpRecompensa: 500,
-    requisito: 'Completar 10 simulados',
-    meta: 10
-  },
-  {
-    id: '8',
-    codigo: 'primeiro_resumo',
-    nome: 'Resumidor',
-    descricao: 'Crie seu primeiro resumo com IA',
-    icone: 'summarize',
-    cor: '#a855f7',
-    categoria: 'estudo',
-    xpRecompensa: 75,
-    requisito: 'Criar 1 resumo',
-    meta: 1
-  },
-  {
-    id: '9',
-    codigo: 'flashcards_100',
-    nome: 'Memoria de Elefante',
-    descricao: 'Revise 100 flashcards',
-    icone: 'style',
-    cor: '#06b6d4',
-    categoria: 'estudo',
-    xpRecompensa: 300,
-    requisito: 'Revisar 100 flashcards',
-    meta: 100
-  },
-  {
-    id: '10',
-    codigo: 'acertos_90',
-    nome: 'Precisao Cirurgica',
-    descricao: 'Alcance 90% de acertos em um simulado',
-    icone: 'target',
-    cor: '#ef4444',
-    categoria: 'estudo',
-    xpRecompensa: 200,
-    requisito: '90% de acertos',
-    meta: 90
-  },
-
-  // Categoria: Consistencia
-  {
-    id: '11',
-    codigo: 'sequencia_3',
-    nome: 'Comecando Bem',
-    descricao: 'Estude 3 dias seguidos',
-    icone: 'calendar_today',
-    cor: '#22c55e',
-    categoria: 'consistencia',
-    xpRecompensa: 75,
-    requisito: '3 dias de sequencia',
-    meta: 3
-  },
-  {
-    id: '12',
-    codigo: 'sequencia_7',
-    nome: 'Semana Perfeita',
-    descricao: 'Estude 7 dias seguidos',
-    icone: 'date_range',
-    cor: '#3b82f6',
-    categoria: 'consistencia',
-    xpRecompensa: 150,
-    requisito: '7 dias de sequencia',
-    meta: 7
-  },
-  {
-    id: '13',
-    codigo: 'sequencia_30',
-    nome: 'Mes de Fogo',
-    descricao: 'Estude 30 dias seguidos',
-    icone: 'whatshot',
-    cor: '#f97316',
-    categoria: 'consistencia',
-    xpRecompensa: 500,
-    requisito: '30 dias de sequencia',
-    meta: 30
-  },
-  {
-    id: '14',
-    codigo: 'sequencia_100',
-    nome: 'Lenda Viva',
-    descricao: 'Estude 100 dias seguidos',
-    icone: 'diamond',
-    cor: '#fbbf24',
-    categoria: 'consistencia',
-    xpRecompensa: 1500,
-    requisito: '100 dias de sequencia',
-    meta: 100
-  },
-  {
-    id: '15',
-    codigo: 'madrugador',
-    nome: 'Madrugador',
-    descricao: 'Estude antes das 6h da manha',
-    icone: 'wb_twilight',
-    cor: '#f59e0b',
-    categoria: 'consistencia',
-    xpRecompensa: 50,
-    requisito: 'Estudar antes das 6h',
-    meta: 1
-  },
-  {
-    id: '16',
-    codigo: 'coruja',
-    nome: 'Coruja Noturna',
-    descricao: 'Estude apos meia-noite',
-    icone: 'nightlight',
-    cor: '#6366f1',
-    categoria: 'consistencia',
-    xpRecompensa: 50,
-    requisito: 'Estudar apos 0h',
-    meta: 1
-  },
-
-  // Categoria: Social
-  {
-    id: '17',
-    codigo: 'primeiro_ranking',
-    nome: 'Competidor',
-    descricao: 'Entre no Top 100 do ranking semanal',
-    icone: 'leaderboard',
-    cor: '#22c55e',
-    categoria: 'social',
-    xpRecompensa: 100,
-    requisito: 'Top 100 no ranking',
-    meta: 100
-  },
-  {
-    id: '18',
-    codigo: 'top_10',
-    nome: 'Elite',
-    descricao: 'Entre no Top 10 do ranking semanal',
-    icone: 'star',
-    cor: '#fbbf24',
-    categoria: 'social',
-    xpRecompensa: 300,
-    requisito: 'Top 10 no ranking',
-    meta: 10
-  },
-  {
-    id: '19',
-    codigo: 'campeao',
-    nome: 'Campeao',
-    descricao: 'Fique em 1 lugar no ranking semanal',
-    icone: 'emoji_events',
-    cor: '#fbbf24',
-    categoria: 'social',
-    xpRecompensa: 1000,
-    requisito: '1 lugar no ranking',
-    meta: 1
-  },
-
-  // Categoria: Especial
-  {
-    id: '20',
-    codigo: 'pro_member',
-    nome: 'Membro PRO',
-    descricao: 'Assine o plano Estuda PRO',
-    icone: 'workspace_premium',
-    cor: '#137fec',
-    categoria: 'especial',
-    xpRecompensa: 200,
-    requisito: 'Ser assinante PRO',
-    meta: 1
-  },
-  {
-    id: '21',
-    codigo: 'nivel_5',
-    nome: 'Avancando',
-    descricao: 'Alcance o nivel 5',
-    icone: 'trending_up',
-    cor: '#22c55e',
-    categoria: 'especial',
-    xpRecompensa: 250,
-    requisito: 'Chegar ao nivel 5',
-    meta: 5
-  },
-  {
-    id: '22',
-    codigo: 'nivel_10',
-    nome: 'Transcendente',
-    descricao: 'Alcance o nivel 10 (maximo)',
-    icone: 'auto_awesome',
-    cor: '#fbbf24',
-    categoria: 'especial',
-    xpRecompensa: 1000,
-    requisito: 'Chegar ao nivel 10',
-    meta: 10
-  },
-  {
-    id: '23',
-    codigo: 'xp_1000',
-    nome: 'Milhar',
-    descricao: 'Acumule 1.000 XP',
-    icone: 'stars',
-    cor: '#8b5cf6',
-    categoria: 'especial',
-    xpRecompensa: 100,
-    requisito: '1.000 XP total',
-    meta: 1000
-  },
-  {
-    id: '24',
-    codigo: 'xp_10000',
-    nome: 'Legendario',
-    descricao: 'Acumule 10.000 XP',
-    icone: 'diamond',
-    cor: '#ec4899',
-    categoria: 'especial',
-    xpRecompensa: 500,
-    requisito: '10.000 XP total',
-    meta: 10000
-  },
+// Conquistas mock para fallback
+const CONQUISTAS_MOCK: Conquista[] = [
+  { id: '1', codigo: 'primeira_questao', nome: 'Primeiro Passo', descricao: 'Responda sua primeira questao', icone: 'play_arrow', cor: '#22c55e', categoria: 'estudo', xpRecompensa: 50, requisito: 'Responder 1 questao', meta: 1, conquistada: true, progresso: 1 },
+  { id: '2', codigo: 'questoes_10', nome: 'Aquecendo os Motores', descricao: 'Responda 10 questoes', icone: 'local_fire_department', cor: '#f59e0b', categoria: 'estudo', xpRecompensa: 100, requisito: 'Responder 10 questoes', meta: 10, conquistada: false, progresso: 7 },
+  { id: '3', codigo: 'sequencia_3', nome: 'Comecando Bem', descricao: 'Estude 3 dias seguidos', icone: 'calendar_today', cor: '#22c55e', categoria: 'consistencia', xpRecompensa: 75, requisito: '3 dias de sequencia', meta: 3, conquistada: true, progresso: 5 },
+  { id: '4', codigo: 'sequencia_7', nome: 'Semana Perfeita', descricao: 'Estude 7 dias seguidos', icone: 'date_range', cor: '#3b82f6', categoria: 'consistencia', xpRecompensa: 150, requisito: '7 dias de sequencia', meta: 7, conquistada: false, progresso: 5 },
 ]
-
-// Progresso mock para desenvolvimento
-const PROGRESSO_MOCK: Record<string, number> = {
-  'primeira_questao': 1,
-  'questoes_10': 7,
-  'questoes_50': 7,
-  'questoes_100': 7,
-  'questoes_500': 7,
-  'primeiro_simulado': 1,
-  'simulados_10': 2,
-  'primeiro_resumo': 1,
-  'flashcards_100': 45,
-  'acertos_90': 85,
-  'sequencia_3': 5,
-  'sequencia_7': 5,
-  'sequencia_30': 5,
-  'sequencia_100': 5,
-  'nivel_5': 4,
-  'nivel_10': 4,
-  'xp_1000': 850,
-  'xp_10000': 850,
-}
-
-// Conquistas mock ja obtidas
-const CONQUISTAS_OBTIDAS_MOCK = ['primeira_questao', 'primeiro_simulado', 'primeiro_resumo', 'sequencia_3']
 
 export function useConquistas(): ConquistasData {
   const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [conquistas, setConquistas] = useState<Conquista[]>([])
+  const [conquistas, setConquistas] = useState<Conquista[]>(CONQUISTAS_MOCK)
 
   const fetchConquistas = useCallback(async () => {
     // Aguardar autenticacao carregar primeiro
@@ -370,12 +54,7 @@ export function useConquistas(): ConquistasData {
 
     // Se nao tem usuario, usar dados mock e parar loading
     if (!user) {
-      const conquistasMock = CONQUISTAS_CONFIG.map(c => ({
-        ...c,
-        conquistada: CONQUISTAS_OBTIDAS_MOCK.includes(c.codigo),
-        progresso: PROGRESSO_MOCK[c.codigo] || 0
-      }))
-      setConquistas(conquistasMock)
+      setConquistas(CONQUISTAS_MOCK)
       setLoading(false)
       return
     }
@@ -384,41 +63,83 @@ export function useConquistas(): ConquistasData {
       setLoading(true)
       setError(null)
 
+      // Buscar todas as conquistas do banco
+      const { data: conquistasDb, error: conquistasError } = await supabase
+        .from('conquistas')
+        .select('*')
+        .eq('ativo', true)
+        .order('created_at', { ascending: true })
+
+      if (conquistasError) {
+        console.error('Erro ao buscar conquistas:', conquistasError)
+        setConquistas(CONQUISTAS_MOCK)
+        setLoading(false)
+        return
+      }
+
       // Buscar conquistas do usuario
-      const { data: userConquistas, error: userError } = await supabase
+      const { data: userConquistas } = await supabase
         .from('user_conquistas')
-        .select('conquista_id, data_conquista')
+        .select('conquista_id, desbloqueada_em')
         .eq('user_id', user.id)
 
-      if (userError && userError.code !== 'PGRST116') {
-        console.error('Erro ao buscar conquistas:', userError)
-      }
+      // Buscar estatisticas do usuario para calcular progresso
+      const { data: stats } = await supabase
+        .from('estatisticas_usuario')
+        .select('questoes_total, sequencia_dias')
+        .eq('user_id', user.id)
+        .single()
+
+      const { data: xpData } = await supabase
+        .from('user_xp')
+        .select('xp_total, nivel')
+        .eq('user_id', user.id)
+        .single()
 
       // Mapear conquistas conquistadas
       const conquistadasMap = new Map(
-        userConquistas?.map(uc => [uc.conquista_id, uc.data_conquista]) || []
+        userConquistas?.map(uc => [uc.conquista_id, uc.desbloqueada_em]) || []
       )
 
-      // Montar lista com status
-      const conquistasComStatus: Conquista[] = CONQUISTAS_CONFIG.map(c => ({
-        ...c,
-        conquistada: conquistadasMap.has(c.id) || CONQUISTAS_OBTIDAS_MOCK.includes(c.codigo),
+      // Calcular progresso baseado no tipo de requisito
+      const calcularProgresso = (requisito_tipo: string, requisito_valor: number): number => {
+        switch (requisito_tipo) {
+          case 'questoes_respondidas':
+            return stats?.questoes_total || 0
+          case 'sequencia_dias':
+            return stats?.sequencia_dias || 0
+          case 'nivel':
+            return xpData?.nivel || 1
+          case 'xp_total':
+            return xpData?.xp_total || 0
+          default:
+            return 0
+        }
+      }
+
+      // Montar lista de conquistas formatadas
+      const conquistasFormatadas: Conquista[] = (conquistasDb || []).map((c: any) => ({
+        id: c.id,
+        codigo: c.codigo,
+        nome: c.nome,
+        descricao: c.descricao,
+        icone: c.icone,
+        cor: c.cor || '#3b82f6',
+        categoria: (c.categoria || 'estudo') as Conquista['categoria'],
+        xpRecompensa: c.xp_recompensa,
+        requisito: `${c.requisito_tipo}: ${c.requisito_valor}`,
+        conquistada: conquistadasMap.has(c.id),
         dataConquista: conquistadasMap.get(c.id),
-        progresso: PROGRESSO_MOCK[c.codigo] || 0
+        progresso: calcularProgresso(c.requisito_tipo, c.requisito_valor),
+        meta: c.requisito_valor || c.meta || 1
       }))
 
-      setConquistas(conquistasComStatus)
+      setConquistas(conquistasFormatadas.length > 0 ? conquistasFormatadas : CONQUISTAS_MOCK)
       setLoading(false)
     } catch (err) {
       console.error('Erro ao buscar conquistas:', err)
       setError('Erro ao carregar conquistas')
-      // Usar dados mock em caso de erro
-      const conquistasMock = CONQUISTAS_CONFIG.map(c => ({
-        ...c,
-        conquistada: CONQUISTAS_OBTIDAS_MOCK.includes(c.codigo),
-        progresso: PROGRESSO_MOCK[c.codigo] || 0
-      }))
-      setConquistas(conquistasMock)
+      setConquistas(CONQUISTAS_MOCK)
       setLoading(false)
     }
   }, [user, authLoading])
@@ -430,10 +151,33 @@ export function useConquistas(): ConquistasData {
     const conquista = conquistas.find(c => c.codigo === codigo)
     if (!conquista || conquista.conquistada) return false
 
-    // TODO: Implementar logica de verificacao real
-    // Por enquanto, retorna false
+    // Verificar se o progresso atingiu a meta
+    if (conquista.progresso && conquista.meta && conquista.progresso >= conquista.meta) {
+      // Desbloquear conquista
+      const { error } = await supabase
+        .from('user_conquistas')
+        .insert({
+          user_id: user.id,
+          conquista_id: conquista.id
+        })
+
+      if (!error) {
+        // Adicionar XP da conquista
+        await supabase
+          .from('user_xp')
+          .update({
+            xp_total: supabase.rpc('increment_xp', { amount: conquista.xpRecompensa })
+          })
+          .eq('user_id', user.id)
+
+        // Atualizar lista
+        await fetchConquistas()
+        return true
+      }
+    }
+
     return false
-  }, [user, conquistas])
+  }, [user, conquistas, fetchConquistas])
 
   useEffect(() => {
     fetchConquistas()
