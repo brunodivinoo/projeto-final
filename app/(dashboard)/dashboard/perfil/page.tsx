@@ -199,41 +199,77 @@ export default function PerfilPage() {
             {/* User Plan */}
             <div className="rounded-xl bg-white dark:bg-card-dark p-6 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col gap-5">
               <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-                <h3 className="text-lg font-bold dark:text-white text-slate-900">Plano do Usuário</h3>
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">PREMIUM</span>
+                <h3 className="text-lg font-bold dark:text-white text-slate-900">Assinatura</h3>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  userPlan === 'PRO' || userPlan === 'ESTUDA_PRO'
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                }`}>
+                  {userPlan === 'PRO' || userPlan === 'ESTUDA_PRO' ? 'PRO' : 'FREE'}
+                </span>
               </div>
               <div className="flex flex-col gap-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1">Plano Atual</p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-white leading-none">Student Pro Anual</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white leading-none">
+                      {userPlan === 'PRO' || userPlan === 'ESTUDA_PRO' ? 'Estuda PRO' : 'Plano Free'}
+                    </p>
                   </div>
-                  <div className="size-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-md shrink-0">
-                    <span className="material-symbols-outlined text-white text-[20px] fill-1">workspace_premium</span>
+                  <div className={`size-10 rounded-full flex items-center justify-center shadow-md shrink-0 ${
+                    userPlan === 'PRO' || userPlan === 'ESTUDA_PRO'
+                      ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                      : 'bg-slate-200 dark:bg-slate-700'
+                  }`}>
+                    <span className={`material-symbols-outlined text-[20px] fill-1 ${
+                      userPlan === 'PRO' || userPlan === 'ESTUDA_PRO' ? 'text-white' : 'text-slate-500'
+                    }`}>
+                      {userPlan === 'PRO' || userPlan === 'ESTUDA_PRO' ? 'workspace_premium' : 'person'}
+                    </span>
                   </div>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <div className="flex justify-between text-sm items-end">
-                    <span className="text-slate-500 dark:text-slate-400">Expira em</span>
-                    <span className="font-bold text-slate-700 dark:text-slate-200">15 Dez, 2024</span>
+
+                {userPlan === 'PRO' || userPlan === 'ESTUDA_PRO' ? (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between text-sm items-end">
+                      <span className="text-slate-500 dark:text-slate-400">Próxima cobrança</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-200">15 Jan, 2025</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 mt-1 relative overflow-hidden">
+                      <div className="bg-primary h-2 rounded-full absolute top-0 left-0" style={{ width: '75%' }}></div>
+                    </div>
+                    <span className="text-xs text-slate-400 mt-1">Renovação automática ativada</span>
                   </div>
-                  <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 mt-1 relative overflow-hidden">
-                    <div className="bg-primary h-2 rounded-full absolute top-0 left-0" style={{ width: '75%' }}></div>
+                ) : (
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      Faça upgrade para o <span className="font-bold text-primary">Estuda PRO</span> e desbloqueie recursos ilimitados!
+                    </p>
                   </div>
-                  <span className="text-xs text-slate-400 mt-1">Renovação automática ativada</span>
-                </div>
+                )}
+
                 <div className="flex flex-col gap-2.5 mt-2">
-                  <button className="flex items-center justify-center gap-2 w-full py-2.5 bg-primary hover:bg-blue-600 text-white rounded-lg text-sm font-bold transition-colors shadow-lg shadow-primary/20">
-                    <span className="material-symbols-outlined text-[18px]">upgrade</span>
-                    Atualizar Plano
-                  </button>
-                  <button className="flex items-center justify-center gap-2 w-full py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-bold transition-colors">
-                    <span className="material-symbols-outlined text-[18px]">credit_card</span>
-                    Gerenciar Pagamento
-                  </button>
-                  <button className="flex items-center justify-center gap-2 w-full py-1 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg text-xs font-medium transition-colors">
-                    Cancelar Assinatura
-                  </button>
+                  <Link
+                    href="/dashboard/assinatura"
+                    className="flex items-center justify-center gap-2 w-full py-2.5 bg-primary hover:bg-blue-600 text-white rounded-lg text-sm font-bold transition-colors shadow-lg shadow-primary/20"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      {userPlan === 'PRO' || userPlan === 'ESTUDA_PRO' ? 'manage_accounts' : 'rocket_launch'}
+                    </span>
+                    {userPlan === 'PRO' || userPlan === 'ESTUDA_PRO' ? 'Gerenciar Plano' : 'Fazer Upgrade'}
+                  </Link>
+                  <Link
+                    href="/dashboard/creditos"
+                    className="flex items-center justify-center gap-2 w-full py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-bold transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">token</span>
+                    Ver Créditos IA
+                  </Link>
+                  {(userPlan === 'PRO' || userPlan === 'ESTUDA_PRO') && (
+                    <button className="flex items-center justify-center gap-2 w-full py-1 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg text-xs font-medium transition-colors">
+                      Cancelar Assinatura
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

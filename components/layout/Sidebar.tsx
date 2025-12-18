@@ -22,6 +22,11 @@ const menuComunidade = [
   { icon: 'person', label: 'Perfil do Usuário', href: '/dashboard/perfil' },
 ]
 
+const menuConta = [
+  { icon: 'workspace_premium', label: 'Assinatura', href: '/dashboard/assinatura', special: true },
+  { icon: 'token', label: 'Créditos IA', href: '/dashboard/creditos' },
+]
+
 export function Sidebar() {
   const pathname = usePathname()
   const { isOpen, closeSidebar } = useSidebar()
@@ -126,6 +131,27 @@ export function Sidebar() {
             >
               <span className={`material-symbols-outlined text-xl ${
                 isActive(item.href) ? '' : 'group-hover:text-primary'
+              }`}>{item.icon}</span>
+              <span className="text-sm font-medium">{item.label}</span>
+            </Link>
+          ))}
+
+          <div className="px-3 pt-4 pb-2">
+            <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider">Conta</h3>
+          </div>
+          {menuConta.map(item => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={handleLinkClick}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-all group ${
+                isActive(item.href)
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <span className={`material-symbols-outlined text-xl ${
+                item.special ? 'text-amber-500' : isActive(item.href) ? '' : 'group-hover:text-primary'
               }`}>{item.icon}</span>
               <span className="text-sm font-medium">{item.label}</span>
             </Link>
