@@ -1,9 +1,30 @@
 'use client'
 import { useState } from 'react'
 import { Header } from '@/components/layout/Header'
+import { useCheckLimit, useConsumeLimit, TipoRecurso } from '@/hooks/useCheckLimit'
+import { useLimits } from '@/hooks/useLimits'
+import { LimitBlockedModal } from '@/components/limits'
+import Link from 'next/link'
 
 export default function CentralIAPage() {
   const [selectedOptions, setSelectedOptions] = useState<string[]>(['resumo'])
+  const { checkLimit, loading: checkingLimit } = useCheckLimit()
+  const { isPro } = useLimits()
+
+  // Estado do modal de bloqueio
+  const [blockedModal, setBlockedModal] = useState<{
+    isOpen: boolean
+    recurso: TipoRecurso
+    usado: number
+    limite: number
+    tipo: 'diario' | 'mensal'
+  }>({
+    isOpen: false,
+    recurso: 'questoes_ia',
+    usado: 0,
+    limite: 0,
+    tipo: 'diario'
+  })
 
   const toggleOption = (option: string) => {
     setSelectedOptions(prev =>
@@ -11,6 +32,54 @@ export default function CentralIAPage() {
         ? prev.filter(o => o !== option)
         : [...prev, option]
     )
+  }
+
+  // Função para verificar limite antes de ação
+  const handleActionWithLimit = async (recurso: TipoRecurso, quantidade: number = 1, onSuccess: () => void) => {
+    const result = await checkLimit(recurso, quantidade)
+
+    if (!result.canUse && !result.isIlimitado) {
+      setBlockedModal({
+        isOpen: true,
+        recurso,
+        usado: result.usado,
+        limite: result.limite,
+        tipo: result.tipo
+      })
+      return
+    }
+
+    onSuccess()
+  }
+
+  // Handlers para cada ação
+  const handleGerarQuestoes = () => {
+    handleActionWithLimit('questoes_ia', 1, () => {
+      // TODO: Navegar para página de geração de questões ou abrir modal
+      console.log('Abrir gerador de questões')
+    })
+  }
+
+  const handleGerarResumo = () => {
+    handleActionWithLimit('resumos', 1, () => {
+      // TODO: Navegar para página de resumos ou abrir modal
+      console.log('Abrir gerador de resumos')
+    })
+  }
+
+  const handleIniciarChat = () => {
+    handleActionWithLimit('chat_mensagens', 1, () => {
+      // TODO: Navegar para página de chat
+      console.log('Abrir chat IA')
+    })
+  }
+
+  const handleAnalisarPDF = () => {
+    // Para PDF, verificar limite de páginas (assumindo 1 página por enquanto)
+    handleActionWithLimit('pdf_paginas', 1, () => {
+      // TODO: Abrir seletor de arquivo
+      console.log('Abrir seletor de PDF')
+    })
   }
 
   return (
@@ -22,7 +91,11 @@ export default function CentralIAPage() {
           {/* AI Action Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
             {/* Gerador de Questões */}
-            <div className="group relative flex flex-col gap-4 p-5 rounded-xl bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] hover:border-[#137fec]/50 transition-all hover:shadow-lg hover:shadow-[#137fec]/10 cursor-pointer overflow-hidden">
+            <button
+              onClick={handleGerarQuestoes}
+              disabled={checkingLimit}
+              className="group relative flex flex-col gap-4 p-5 rounded-xl bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] hover:border-[#137fec]/50 transition-all hover:shadow-lg hover:shadow-[#137fec]/10 cursor-pointer overflow-hidden text-left disabled:opacity-70"
+            >
               <div className="absolute top-0 right-0 w-24 h-24 bg-[#137fec]/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
               <div className="size-12 rounded-lg bg-[#137fec]/20 flex items-center justify-center text-[#137fec] z-10">
                 <span className="material-symbols-outlined text-3xl">quiz</span>
@@ -34,10 +107,14 @@ export default function CentralIAPage() {
               <div className="mt-auto pt-2 flex items-center text-[#137fec] text-sm font-bold group-hover:underline">
                 Começar agora <span className="material-symbols-outlined text-sm ml-1">arrow_forward</span>
               </div>
-            </div>
+            </button>
 
             {/* Gerar Resumos */}
-            <div className="group relative flex flex-col gap-4 p-5 rounded-xl bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] hover:border-[#137fec]/50 transition-all hover:shadow-lg hover:shadow-[#137fec]/10 cursor-pointer overflow-hidden">
+            <button
+              onClick={handleGerarResumo}
+              disabled={checkingLimit}
+              className="group relative flex flex-col gap-4 p-5 rounded-xl bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] hover:border-[#137fec]/50 transition-all hover:shadow-lg hover:shadow-[#137fec]/10 cursor-pointer overflow-hidden text-left disabled:opacity-70"
+            >
               <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
               <div className="size-12 rounded-lg bg-purple-500/20 flex items-center justify-center text-[#a855f7] z-10">
                 <span className="material-symbols-outlined text-3xl">summarize</span>
@@ -49,10 +126,14 @@ export default function CentralIAPage() {
               <div className="mt-auto pt-2 flex items-center text-[#a855f7] text-sm font-bold group-hover:underline">
                 Gerar resumo <span className="material-symbols-outlined text-sm ml-1">arrow_forward</span>
               </div>
-            </div>
+            </button>
 
             {/* Chat Tira-Dúvidas */}
-            <div className="group relative flex flex-col gap-4 p-5 rounded-xl bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] hover:border-[#137fec]/50 transition-all hover:shadow-lg hover:shadow-[#137fec]/10 cursor-pointer overflow-hidden">
+            <button
+              onClick={handleIniciarChat}
+              disabled={checkingLimit}
+              className="group relative flex flex-col gap-4 p-5 rounded-xl bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] hover:border-[#137fec]/50 transition-all hover:shadow-lg hover:shadow-[#137fec]/10 cursor-pointer overflow-hidden text-left disabled:opacity-70"
+            >
               <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
               <div className="size-12 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 z-10">
                 <span className="material-symbols-outlined text-3xl">chat_bubble</span>
@@ -64,7 +145,7 @@ export default function CentralIAPage() {
               <div className="mt-auto pt-2 flex items-center text-emerald-400 text-sm font-bold group-hover:underline">
                 Iniciar chat <span className="material-symbols-outlined text-sm ml-1">arrow_forward</span>
               </div>
-            </div>
+            </button>
           </div>
 
           {/* PDF Analysis Section */}
@@ -76,7 +157,11 @@ export default function CentralIAPage() {
 
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Upload Area */}
-              <div className="flex-1 border-2 border-dashed border-gray-300 dark:border-[#283039] rounded-xl bg-gray-50 dark:bg-[#1C252E]/50 p-8 flex flex-col items-center justify-center gap-4 text-center hover:border-[#137fec]/50 hover:bg-[#137fec]/5 transition-all cursor-pointer group min-h-[250px]">
+              <button
+                onClick={handleAnalisarPDF}
+                disabled={checkingLimit}
+                className="flex-1 border-2 border-dashed border-gray-300 dark:border-[#283039] rounded-xl bg-gray-50 dark:bg-[#1C252E]/50 p-8 flex flex-col items-center justify-center gap-4 text-center hover:border-[#137fec]/50 hover:bg-[#137fec]/5 transition-all cursor-pointer group min-h-[250px] disabled:opacity-70"
+              >
                 <div className="size-16 rounded-full bg-gray-200 dark:bg-[#283039] flex items-center justify-center text-[#9dabb9] group-hover:text-[#137fec] transition-colors">
                   <span className="material-symbols-outlined text-4xl">cloud_upload</span>
                 </div>
@@ -84,10 +169,10 @@ export default function CentralIAPage() {
                   <p className="text-lg font-bold text-gray-900 dark:text-white">Arraste e solte seu PDF aqui</p>
                   <p className="text-[#9dabb9] text-sm">Suporta arquivos PDF até 50MB</p>
                 </div>
-                <button className="mt-2 px-6 py-2.5 bg-[#137fec] hover:bg-[#137fec]/90 text-white font-bold rounded-lg shadow-lg shadow-[#137fec]/20 transition-all">
+                <span className="mt-2 px-6 py-2.5 bg-[#137fec] hover:bg-[#137fec]/90 text-white font-bold rounded-lg shadow-lg shadow-[#137fec]/20 transition-all">
                   Selecionar arquivo
-                </button>
-              </div>
+                </span>
+              </button>
 
               {/* Sidebar Options */}
               <div className="w-full lg:w-80 flex flex-col gap-4 bg-white dark:bg-[#1C252E] p-6 rounded-xl border border-gray-200 dark:border-[#283039]">
@@ -148,9 +233,10 @@ export default function CentralIAPage() {
                 <div className="mt-auto pt-2">
                   <p className="text-xs text-[#9dabb9] text-center mb-2">IA consumirá 1 crédito por página</p>
                   <button
-                    disabled={selectedOptions.length === 0}
+                    onClick={handleAnalisarPDF}
+                    disabled={selectedOptions.length === 0 || checkingLimit}
                     className={`w-full py-2.5 text-white font-bold rounded-lg transition-all ${
-                      selectedOptions.length === 0
+                      selectedOptions.length === 0 || checkingLimit
                         ? 'bg-[#283039] opacity-50 cursor-not-allowed'
                         : 'bg-[#283039] hover:bg-[#333d4a]'
                     }`}
@@ -160,6 +246,29 @@ export default function CentralIAPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Créditos Info Card */}
+          <div className="bg-gradient-to-r from-primary/5 to-purple-500/5 rounded-xl border border-primary/20 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <span className="material-symbols-outlined text-primary">token</span>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">
+                  {isPro ? 'Você tem limites expandidos com o Estuda PRO!' : 'Quer mais recursos de IA?'}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {isPro ? 'Aproveite seus créditos extras mensais' : 'Faça upgrade para o Estuda PRO'}
+                </p>
+              </div>
+            </div>
+            <Link
+              href={isPro ? '/dashboard/creditos' : '/dashboard/assinatura'}
+              className="px-4 py-2 bg-primary hover:bg-blue-600 text-white text-sm font-bold rounded-lg transition-colors whitespace-nowrap"
+            >
+              {isPro ? 'Ver Créditos' : 'Ver Planos'}
+            </Link>
           </div>
 
           {/* Recent Activity Section */}
@@ -227,6 +336,17 @@ export default function CentralIAPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Limite Bloqueado */}
+      <LimitBlockedModal
+        isOpen={blockedModal.isOpen}
+        onClose={() => setBlockedModal(prev => ({ ...prev, isOpen: false }))}
+        recurso={blockedModal.recurso}
+        usado={blockedModal.usado}
+        limite={blockedModal.limite}
+        tipo={blockedModal.tipo}
+        isPro={isPro}
+      />
     </div>
   )
 }
