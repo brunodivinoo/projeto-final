@@ -1,304 +1,301 @@
 'use client'
-import { Header } from '@/components/layout/Header'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTheme } from '@/contexts/ThemeContext'
 
 export default function DashboardPage() {
-  const { profile, stats } = useAuth()
+  const { profile } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const nome = profile?.nome?.split(' ')[0] || 'Estudante'
 
-  // Fallback values matching the design
-  const questoesHoje = stats?.questoes_hoje ?? 42
-  const taxaAcerto = stats?.taxa_acerto ?? 85
-  const horasEstudadas = stats?.horas_estudadas ?? 2.5
-  const sequenciaDias = stats?.sequencia_dias ?? 12
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Bom dia'
+    if (hour < 18) return 'Boa tarde'
+    return 'Boa noite'
+  }
 
   // Weekly performance data
-  const weeklyData = [40, 65, 50, 85, 60, 75, 55]
-  const weekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+  const weeklyData = [
+    { day: 'Seg', value: 40, height: '40%' },
+    { day: 'Ter', value: 65, height: '65%' },
+    { day: 'Qua', value: 50, height: '50%' },
+    { day: 'Qui', value: 85, height: '85%', active: true },
+    { day: 'Sex', value: 60, height: '60%' },
+    { day: 'Sáb', value: 70, height: '70%' },
+    { day: 'Dom', value: 55, height: '55%' },
+  ]
 
   return (
-    <div className="min-h-screen">
-      <Header title="Página Inicial" />
-
-      <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
-        {/* Header Section - Greeting + Streak */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#101922]">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-30 bg-white dark:bg-[#1c252e] border-b border-slate-200 dark:border-slate-700 px-6 py-4">
+        <div className="flex items-center justify-between max-w-[1200px] mx-auto">
           <div>
-            <h2 className="text-[#111418] dark:text-white text-3xl font-black leading-tight tracking-[-0.033em]">
-              Olá, {nome}!
-            </h2>
-            <p className="text-[#637588] dark:text-[#9dabb9] text-base font-normal leading-normal mt-1">
-              Vamos manter o foco nos estudos hoje.
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              {getGreeting()}, {nome}! <span className="text-2xl">👋</span>
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+              Aqui está o resumo do seu progresso hoje.
             </p>
           </div>
-          <div className="flex items-center gap-3 bg-white dark:bg-[#1c242d] px-4 py-2 rounded-full border border-[#e6e8eb] dark:border-[#283039] shadow-sm">
-            <span className="material-symbols-outlined text-orange-500">local_fire_department</span>
-            <div className="flex flex-col">
-              <span className="text-xs text-[#637588] dark:text-[#9dabb9] font-medium uppercase">Ofensiva</span>
-              <span className="text-[#111418] dark:text-white font-bold leading-none">{sequenciaDias} Dias</span>
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="relative hidden md:block">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 material-symbols-outlined text-xl">
+                search
+              </span>
+              <input
+                type="text"
+                placeholder="Buscar..."
+                className="w-48 h-10 pl-10 pr-4 rounded-lg bg-slate-100 dark:bg-[#101922] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm placeholder:text-slate-400 focus:border-primary focus:outline-none"
+              />
+            </div>
+            {/* Notifications */}
+            <button className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors relative">
+              <span className="material-symbols-outlined text-xl">notifications</span>
+            </button>
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            >
+              <span className="material-symbols-outlined text-xl">
+                {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 max-w-[1200px] mx-auto">
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          {/* Desempenho Semanal */}
+          <div className="lg:col-span-2 bg-white dark:bg-[#1c252e] rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">bar_chart</span>
+                Desempenho Semanal
+              </h2>
+              <span className="text-sm text-slate-500 dark:text-slate-400">Últimos 7 dias</span>
+            </div>
+
+            {/* Chart */}
+            <div className="h-48 flex items-end justify-between gap-3 px-2">
+              {weeklyData.map((item, index) => (
+                <div key={index} className="flex-1 flex flex-col items-center gap-2">
+                  <div className="w-full h-40 flex items-end">
+                    <div
+                      className={`w-full rounded-t-lg transition-all ${
+                        item.active
+                          ? 'bg-primary'
+                          : 'bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50'
+                      }`}
+                      style={{ height: item.height }}
+                    />
+                  </div>
+                  <span className={`text-sm font-medium ${
+                    item.active ? 'text-primary' : 'text-slate-500 dark:text-slate-400'
+                  }`}>
+                    {item.day}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Meta Diária */}
+          <div className="bg-white dark:bg-[#1c252e] rounded-2xl border border-slate-200 dark:border-slate-700 p-6 flex flex-col items-center justify-center">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-6">
+              <span className="material-symbols-outlined text-green-500">flag</span>
+              Meta Diária
+            </h2>
+
+            {/* Circular Progress */}
+            <div className="relative w-32 h-32 mb-4">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="56"
+                  stroke="currentColor"
+                  strokeWidth="12"
+                  fill="none"
+                  className="text-slate-200 dark:text-slate-700"
+                />
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="56"
+                  stroke="currentColor"
+                  strokeWidth="12"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeDasharray={`${72 * 3.51} ${100 * 3.51}`}
+                  className="text-primary"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-3xl font-bold text-primary">72%</span>
+              </div>
+            </div>
+
+            <p className="text-slate-600 dark:text-slate-400 text-sm text-center mb-4">
+              Você completou <span className="font-bold text-slate-900 dark:text-white">18 de 25</span> questões hoje.
+            </p>
+
+            <button className="w-full bg-primary hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2">
+              Continuar Estudos
+              <span className="material-symbols-outlined text-lg">arrow_forward</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Resumo por Área */}
+        <div className="mb-6">
+          <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
+            Resumo por Área
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Flashcards */}
+            <div className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary text-2xl">style</span>
+                </div>
+                <span className="text-xs font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+                  +12 novos
+                </span>
+              </div>
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1">Flashcards</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">120 cards para revisar</p>
+              <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-full bg-primary rounded-full" style={{ width: '65%' }} />
+              </div>
+            </div>
+
+            {/* Questões */}
+            <div className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-orange-500 text-2xl">help</span>
+                </div>
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
+                  Média 8.5
+                </span>
+              </div>
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1">Questões</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">342 respondidas este mês</p>
+              <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-full bg-orange-500 rounded-full" style={{ width: '45%' }} />
+              </div>
+            </div>
+
+            {/* Simulados */}
+            <div className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-green-500 text-2xl">task_alt</span>
+                </div>
+                <span className="text-xs font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-full">
+                  Pendente
+                </span>
+              </div>
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1">Simulados</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Próximo: Direito Civil</p>
+              <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-full bg-green-500 rounded-full" style={{ width: '25%' }} />
+              </div>
+            </div>
+
+            {/* Ciclo Atual */}
+            <div className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-12 h-12 rounded-xl bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-cyan-500 text-2xl">refresh</span>
+                </div>
+                <span className="text-xs font-bold text-cyan-600 bg-cyan-100 dark:bg-cyan-900/30 px-2 py-1 rounded-full">
+                  Ativo
+                </span>
+              </div>
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1">Ciclo Atual</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Português - 45min rest.</p>
+              <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-full bg-cyan-500 rounded-full" style={{ width: '80%' }} />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Stats Cards Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {/* Card 1 - Questões Hoje */}
-          <div className="flex flex-col gap-2 rounded-xl p-6 bg-white dark:bg-[#1c242d] border border-[#e6e8eb] dark:border-[#283039] shadow-sm hover:border-blue-200 dark:hover:border-blue-900 transition-colors">
-            <div className="flex justify-between items-start">
-              <div className="bg-blue-50 dark:bg-[#137fec]/20 p-2 rounded-lg">
-                <span className="material-symbols-outlined text-primary">assignment_turned_in</span>
-              </div>
-              <span className="text-[#0bda5b] bg-[#0bda5b]/10 px-2 py-1 rounded text-xs font-bold">+20%</span>
+        {/* Bottom Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Atividades Recentes */}
+          <div className="lg:col-span-2 bg-white dark:bg-[#1c252e] rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Atividades Recentes</h2>
+              <button className="text-primary text-sm font-semibold hover:underline">Ver tudo</button>
             </div>
-            <div className="mt-2">
-              <p className="text-[#637588] dark:text-[#9dabb9] text-sm font-medium">Questões Hoje</p>
-              <p className="text-[#111418] dark:text-white text-3xl font-bold leading-tight mt-1">{questoesHoje}</p>
+
+            <div className="space-y-4">
+              {/* Activity 1 */}
+              <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-green-500">check_circle</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 dark:text-white">Simulado de Direito Constitucional</h4>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Você acertou 85% das questões.</p>
+                </div>
+                <span className="text-xs text-slate-400">Há 2 horas</span>
+              </div>
+
+              {/* Activity 2 */}
+              <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary">style</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 dark:text-white">Revisão de Flashcards</h4>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">32 cards revisados em Português.</p>
+                </div>
+                <span className="text-xs text-slate-400">Há 4 horas</span>
+              </div>
+
+              {/* Activity 3 */}
+              <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-purple-500">emoji_events</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 dark:text-white">Nova conquista desbloqueada!</h4>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Você completou 7 dias seguidos de estudo.</p>
+                </div>
+                <span className="text-xs text-slate-400">Ontem</span>
+              </div>
             </div>
           </div>
 
-          {/* Card 2 - Taxa de Acerto */}
-          <div className="flex flex-col gap-2 rounded-xl p-6 bg-white dark:bg-[#1c242d] border border-[#e6e8eb] dark:border-[#283039] shadow-sm hover:border-blue-200 dark:hover:border-blue-900 transition-colors">
-            <div className="flex justify-between items-start">
-              <div className="bg-blue-50 dark:bg-[#137fec]/20 p-2 rounded-lg">
-                <span className="material-symbols-outlined text-primary">analytics</span>
-              </div>
-              <span className="text-[#0bda5b] bg-[#0bda5b]/10 px-2 py-1 rounded text-xs font-bold">+5%</span>
-            </div>
-            <div className="mt-2">
-              <p className="text-[#637588] dark:text-[#9dabb9] text-sm font-medium">Taxa de Acerto</p>
-              <p className="text-[#111418] dark:text-white text-3xl font-bold leading-tight mt-1">{taxaAcerto}%</p>
-            </div>
-          </div>
+          {/* Central IA Sugere */}
+          <div className="bg-gradient-to-br from-primary to-blue-600 rounded-2xl p-6 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
 
-          {/* Card 3 - Horas Estudadas */}
-          <div className="flex flex-col gap-2 rounded-xl p-6 bg-white dark:bg-[#1c242d] border border-[#e6e8eb] dark:border-[#283039] shadow-sm hover:border-blue-200 dark:hover:border-blue-900 transition-colors">
-            <div className="flex justify-between items-start">
-              <div className="bg-blue-50 dark:bg-[#137fec]/20 p-2 rounded-lg">
-                <span className="material-symbols-outlined text-primary">timer</span>
-              </div>
-              <span className="text-[#0bda5b] bg-[#0bda5b]/10 px-2 py-1 rounded text-xs font-bold">+0.5h</span>
-            </div>
-            <div className="mt-2">
-              <p className="text-[#637588] dark:text-[#9dabb9] text-sm font-medium">Horas Estudadas</p>
-              <p className="text-[#111418] dark:text-white text-3xl font-bold leading-tight mt-1">{horasEstudadas}h</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Column - Reviews & Chart */}
-          <div className="lg:col-span-2 flex flex-col gap-8">
-            {/* Review Panel Section */}
-            <section className="flex flex-col gap-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-[#111418] dark:text-white text-xl font-bold">Painel de Revisões</h2>
-                <button className="text-primary text-sm font-bold hover:underline">Ver todas</button>
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="material-symbols-outlined text-white/80">auto_awesome</span>
+                <span className="text-xs font-bold text-white/80 uppercase tracking-wider">Central IA Sugere</span>
               </div>
 
-              {/* Alert - Overdue Reviews */}
-              <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-xl p-5 flex items-start gap-4">
-                <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-full shrink-0 text-red-600 dark:text-red-400">
-                  <span className="material-symbols-outlined">warning</span>
-                </div>
-                <div className="flex flex-col grow">
-                  <h3 className="text-red-800 dark:text-red-200 font-bold text-lg">5 Revisões Atrasadas</h3>
-                  <p className="text-red-600 dark:text-red-300/80 text-sm mt-1">
-                    Você tem tópicos de Matemática e História que precisam de atenção imediata para não perder o ritmo.
-                  </p>
-                </div>
-                <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm shrink-0 whitespace-nowrap">
-                  Revisar Agora
-                </button>
-              </div>
+              <h3 className="text-xl font-bold mb-2">Hora de Revisar!</h3>
+              <p className="text-white/80 text-sm mb-6">
+                Com base no seu desempenho recente, a IA identificou que você precisa reforçar seus conhecimentos em <span className="font-semibold text-white">Direito Administrativo</span>.
+              </p>
 
-              {/* Upcoming Reviews List */}
-              <div className="bg-white dark:bg-[#1c242d] border border-[#e6e8eb] dark:border-[#283039] rounded-xl overflow-hidden shadow-sm">
-                <div className="p-5 border-b border-[#e6e8eb] dark:border-[#283039]">
-                  <h3 className="text-[#111418] dark:text-white font-bold text-base">Próximas na fila</h3>
-                </div>
-                <div className="divide-y divide-[#e6e8eb] dark:divide-[#283039]">
-                  {/* Review Item 1 */}
-                  <div className="p-4 flex items-center justify-between hover:bg-background-light dark:hover:bg-[#232d38] transition-colors group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                        <span className="material-symbols-outlined">biotech</span>
-                      </div>
-                      <div>
-                        <p className="text-[#111418] dark:text-white font-medium">Biologia Celular</p>
-                        <p className="text-[#637588] dark:text-[#9dabb9] text-sm">Agendado para Amanhã</p>
-                      </div>
-                    </div>
-                    <span className="material-symbols-outlined text-[#637588] dark:text-[#505a66] group-hover:text-primary transition-colors cursor-pointer">
-                      arrow_forward_ios
-                    </span>
-                  </div>
-
-                  {/* Review Item 2 */}
-                  <div className="p-4 flex items-center justify-between hover:bg-background-light dark:hover:bg-[#232d38] transition-colors group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center text-green-600 dark:text-green-400">
-                        <span className="material-symbols-outlined">public</span>
-                      </div>
-                      <div>
-                        <p className="text-[#111418] dark:text-white font-medium">Geopolítica Atual</p>
-                        <p className="text-[#637588] dark:text-[#9dabb9] text-sm">Agendado para Amanhã</p>
-                      </div>
-                    </div>
-                    <span className="material-symbols-outlined text-[#637588] dark:text-[#505a66] group-hover:text-primary transition-colors cursor-pointer">
-                      arrow_forward_ios
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Weekly Performance Chart */}
-            <section className="bg-white dark:bg-[#1c242d] border border-[#e6e8eb] dark:border-[#283039] rounded-xl p-6 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-[#111418] dark:text-white font-bold text-lg">Desempenho Semanal</h3>
-                <select className="bg-background-light dark:bg-[#111418] text-[#111418] dark:text-white text-sm rounded-lg border-none focus:ring-2 focus:ring-primary py-1 px-3">
-                  <option>Últimos 7 dias</option>
-                  <option>Este Mês</option>
-                </select>
-              </div>
-
-              {/* Chart Bars */}
-              <div className="h-48 flex items-end justify-between gap-2 sm:gap-4 px-2">
-                {weeklyData.map((height, index) => (
-                  <div
-                    key={index}
-                    className={`w-full rounded-t-sm relative group cursor-pointer ${
-                      index === 3 ? 'bg-primary' : 'bg-blue-100 dark:bg-blue-900/20'
-                    }`}
-                    style={{ height: `${height}%` }}
-                  >
-                    <div className={`absolute -top-8 left-1/2 -translate-x-1/2 ${
-                      index === 3 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                    } ${
-                      index === 3 ? 'bg-primary' : 'bg-black'
-                    } text-white text-xs py-1 px-2 rounded transition-opacity ${
-                      index === 3 ? 'font-bold' : ''
-                    }`}>
-                      {height}%
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Day Labels */}
-              <div className="flex justify-between text-xs text-[#637588] dark:text-[#9dabb9] mt-2 px-2">
-                {weekDays.map((day) => (
-                  <span key={day}>{day}</span>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          {/* Right Sidebar - News & Activity */}
-          <div className="flex flex-col gap-6">
-            {/* News & Tips Card */}
-            <div className="bg-white dark:bg-[#1c242d] border border-[#e6e8eb] dark:border-[#283039] rounded-xl overflow-hidden shadow-sm">
-              <div className="p-4 border-b border-[#e6e8eb] dark:border-[#283039] flex justify-between items-center">
-                <h3 className="text-[#111418] dark:text-white font-bold text-base">Notícias & Dicas</h3>
-              </div>
-              <div className="p-4 flex flex-col gap-5">
-                {/* Featured Article */}
-                <article className="flex flex-col gap-2 group cursor-pointer">
-                  <div
-                    className="h-32 w-full rounded-lg bg-cover bg-center"
-                    style={{
-                      backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuD-I4NtklxwRrvzqLqRLTAkdq-WC8MA8tq6gTlO5WT8z75MbqaTo0Xu-1VSBsTg39iCGWge4y55DQog8zLB-XGhYUMqj-6Gn_O7MKzhfl7XrlTQTsnJo2-eMsYevg8aGUznaioG8Bud8skmtximI2xLF3sONwfJN_FtxnF5nm027KVjHC4xxRBanajJj03hhBMOy2R9RFDVO0peD_gea5r-MW-h1VYQErMP8gMH4J6MZYzSW7vFkPKNYhRYjOa_l9D4YzwWSPT5yuA")'
-                    }}
-                  />
-                  <div>
-                    <span className="text-xs font-bold text-primary uppercase tracking-wide">Dica de Estudo</span>
-                    <h4 className="text-[#111418] dark:text-white font-medium leading-tight mt-1 group-hover:text-primary transition-colors">
-                      Técnica Pomodoro: Como aumentar sua produtividade
-                    </h4>
-                    <p className="text-[#637588] dark:text-[#9dabb9] text-xs mt-1">Leitura de 5 min</p>
-                  </div>
-                </article>
-
-                {/* Secondary Article */}
-                <article className="flex gap-3 group cursor-pointer">
-                  <div
-                    className="h-20 w-20 shrink-0 rounded-lg bg-cover bg-center"
-                    style={{
-                      backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCPt3CJswEHOQgVOt_OUtMOZfcgmCRUN9M43sLyKgpcpeapuIuTeTKwL4MsyIHkL_NDBOD0oIe-Q6_KoWsnZWH9CHylAeZLPiZUSXdQkGid0txXo30qBK8-TnlKDKilFv7ubq2_nTO8Hj2_0Fw-9D0xliLsJgAayDW3Ksy8dVD3MO2XfCFnXubjBQK3LR424BQyFXp-B0wxtWH560oKWh8iaTI3gKH2zU--qfO6qH3nvJ_XLIpDRXfGYx9qcw1GLp3zSzd_3rbn4eo")'
-                    }}
-                  />
-                  <div className="flex flex-col justify-center">
-                    <span className="text-xs font-bold text-orange-500 uppercase tracking-wide">Vestibular</span>
-                    <h4 className="text-[#111418] dark:text-white text-sm font-medium leading-tight mt-1 group-hover:text-primary transition-colors">
-                      Novo edital publicado para o ENEM 2024
-                    </h4>
-                  </div>
-                </article>
-              </div>
-
-              {/* See All Button */}
-              <div className="p-3 border-t border-[#e6e8eb] dark:border-[#283039] text-center">
-                <button className="text-primary text-sm font-bold w-full py-1 hover:bg-blue-50 dark:hover:bg-[#137fec]/10 rounded transition-colors">
-                  Ver todas notícias
-                </button>
-              </div>
-            </div>
-
-            {/* Class Activity Card */}
-            <div className="bg-white dark:bg-[#1c242d] border border-[#e6e8eb] dark:border-[#283039] rounded-xl overflow-hidden shadow-sm flex-1">
-              <div className="p-4 border-b border-[#e6e8eb] dark:border-[#283039]">
-                <h3 className="text-[#111418] dark:text-white font-bold text-base">Atividade da Turma</h3>
-              </div>
-              <div className="p-4 flex flex-col gap-4">
-                {/* Activity 1 */}
-                <div className="flex gap-3">
-                  <div
-                    className="h-10 w-10 rounded-full bg-cover bg-center shrink-0"
-                    style={{
-                      backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCFRrJcuXToCR2KKt0DA0hkkdm76Z1m4wQwxPSNJgEv1t4ye5KQw3SOhHt1FDcSUr4-PbMgWrdNb5CPvGB4Lup_0PJo9ojuXC1HwviAv748H0HXVwaaul7_KauLxj_Sj_MsSl9UVZxJrXv70GUW_3Uv5l4PbscMnk6_dGc9mdNyV7dr2VIGvgtSScQ0IVWIxdfiADPwBlqxXFO-CdddIaK2ABEvfnCajDhFBhrkvSUCcEHtlDXvnZI2bz-maaEhScN6ogKyCKTnRM0")'
-                    }}
-                  />
-                  <div>
-                    <p className="text-sm text-[#111418] dark:text-white">
-                      <span className="font-bold">Ana Silva</span> completou o simulado de <span className="font-medium text-primary">Matemática Básica</span>.
-                    </p>
-                    <p className="text-xs text-[#637588] dark:text-[#9dabb9] mt-0.5">20 min atrás</p>
-                  </div>
-                </div>
-
-                {/* Activity 2 */}
-                <div className="flex gap-3">
-                  <div
-                    className="h-10 w-10 rounded-full bg-cover bg-center shrink-0"
-                    style={{
-                      backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCJ25cV3Js39GXNzLNiCvuV619pAyBFrvRjM8-LQz3jC4mOj3WKWRgmkU-Z_hAPPvaxqx7m4uCQLMqhvtr_Cwxk9-Jd7ZS8kbX9qNy7w9DYHQTy4sXLmmyVK_uTj29CS0na7EQVVWqPwOFwyJvUOI2TBOiuvJie_BnrRFKJKTdfBlFf492huszsiFEIO5tDtLSdGWInAlr53gSLb9bRuYrEaYGYZ-iKVw09kaDTPWaJMMsDQ7E29oRnB6ocMghbKXwLSvpnTYYFTH4")'
-                    }}
-                  />
-                  <div>
-                    <p className="text-sm text-[#111418] dark:text-white">
-                      <span className="font-bold">Pedro Santos</span> iniciou uma nova sequência de estudos 🔥
-                    </p>
-                    <p className="text-xs text-[#637588] dark:text-[#9dabb9] mt-0.5">1 hora atrás</p>
-                  </div>
-                </div>
-
-                {/* Activity 3 */}
-                <div className="flex gap-3">
-                  <div
-                    className="h-10 w-10 rounded-full bg-cover bg-center shrink-0"
-                    style={{
-                      backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCDA1k3AN4PK60NvkvR73tG1ge18hk4i3cxiqYgdtMPuPh_KNKuVOjjSSK_4mQTrFwFdn0RkpjNMc7GA-yctYsVMrfoCwLbbtPB7TNkWLhAoE9FhXNNSbCeYGqiLb4J8Qa1-RqdzlW2nJoDxmVMnUvU9A51lMR2E7LqhT_WTeeCVQDlOz5kcCO5DzSZqbizd5oS_fFhSs6PRDj-rcMRa0o1jTM-gPmOtpFMuvuaEtJ3HWrHWmojme-KBtmYIX1qIhXgPCcKyiR7kXU")'
-                    }}
-                  />
-                  <div>
-                    <p className="text-sm text-[#111418] dark:text-white">
-                      <span className="font-bold">Julia Costa</span> postou uma dúvida em <span className="font-medium text-primary">Física</span>.
-                    </p>
-                    <p className="text-xs text-[#637588] dark:text-[#9dabb9] mt-0.5">2 horas atrás</p>
-                  </div>
-                </div>
-              </div>
+              <button className="w-full bg-white text-primary font-semibold py-3 px-4 rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-lg">play_arrow</span>
+                Iniciar Revisão
+              </button>
             </div>
           </div>
         </div>
