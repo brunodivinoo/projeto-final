@@ -36,18 +36,18 @@ export default function CentralIAPage() {
               </div>
             </div>
 
-            {/* Resumidor Inteligente */}
+            {/* Gerar Resumos */}
             <div className="group relative flex flex-col gap-4 p-5 rounded-xl bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] hover:border-[#137fec]/50 transition-all hover:shadow-lg hover:shadow-[#137fec]/10 cursor-pointer overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
               <div className="size-12 rounded-lg bg-purple-500/20 flex items-center justify-center text-[#a855f7] z-10">
                 <span className="material-symbols-outlined text-3xl">summarize</span>
               </div>
               <div className="flex flex-col gap-1 z-10">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Resumidor Inteligente</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Gerar Resumos</h3>
                 <p className="text-[#9dabb9] text-sm">Transforme textos longos em tópicos digeríveis instantaneamente.</p>
               </div>
               <div className="mt-auto pt-2 flex items-center text-[#a855f7] text-sm font-bold group-hover:underline">
-                Resumir texto <span className="material-symbols-outlined text-sm ml-1">arrow_forward</span>
+                Gerar resumo <span className="material-symbols-outlined text-sm ml-1">arrow_forward</span>
               </div>
             </div>
 

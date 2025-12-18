@@ -58,7 +58,7 @@ export function Sidebar() {
         <div className="p-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <span className="material-symbols-outlined text-primary text-3xl">school</span>
-            <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">StudyHub</span>
+            <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Estuda</span>
           </div>
           {/* Close button for mobile */}
           <button
