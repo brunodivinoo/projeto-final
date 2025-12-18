@@ -70,12 +70,22 @@ export function useLimits(): LimitsData {
       const planoNome = userPlano === 'ESTUDA_PRO' ? 'ESTUDA_PRO' : 'FREE'
       setPlano(planoNome)
 
-      // Buscar limites do plano
-      const { data: planoData, error: planoError } = await supabase
-        .from('planos')
-        .select('*')
-        .eq('nome', planoNome)
-        .single()
+      // Preparar datas
+      const hoje = new Date().toISOString().split('T')[0]
+      const primeiroDiaMes = new Date()
+      primeiroDiaMes.setDate(1)
+      const mesRef = primeiroDiaMes.toISOString().split('T')[0]
+
+      // Buscar limites do plano, uso diario e uso mensal em PARALELO
+      const [planoResult, usoDiarioResult, usoMensalResult] = await Promise.all([
+        supabase.from('planos').select('*').eq('nome', planoNome).single(),
+        supabase.from('uso_diario').select('tipo, quantidade').eq('user_id', user.id).eq('data', hoje),
+        supabase.from('uso_mensal').select('tipo, quantidade').eq('user_id', user.id).eq('mes_referencia', mesRef)
+      ])
+
+      const { data: planoData, error: planoError } = planoResult
+      const { data: usoDiario } = usoDiarioResult
+      const { data: usoMensal } = usoMensalResult
 
       if (planoError || !planoData) {
         // Usar dados mock se nao encontrar plano
@@ -83,25 +93,6 @@ export function useLimits(): LimitsData {
         setLoading(false)
         return
       }
-
-      // Buscar uso diario
-      const hoje = new Date().toISOString().split('T')[0]
-      const { data: usoDiario } = await supabase
-        .from('uso_diario')
-        .select('tipo, quantidade')
-        .eq('user_id', user.id)
-        .eq('data', hoje)
-
-      // Buscar uso mensal
-      const primeiroDiaMes = new Date()
-      primeiroDiaMes.setDate(1)
-      const mesRef = primeiroDiaMes.toISOString().split('T')[0]
-
-      const { data: usoMensal } = await supabase
-        .from('uso_mensal')
-        .select('tipo, quantidade')
-        .eq('user_id', user.id)
-        .eq('mes_referencia', mesRef)
 
       // Mapear uso para acesso facil
       const usoDiarioMap: Record<string, number> = {}

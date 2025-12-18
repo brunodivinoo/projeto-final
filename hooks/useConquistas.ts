@@ -63,12 +63,18 @@ export function useConquistas(): ConquistasData {
       setLoading(true)
       setError(null)
 
-      // Buscar todas as conquistas do banco
-      const { data: conquistasDb, error: conquistasError } = await supabase
-        .from('conquistas')
-        .select('*')
-        .eq('ativo', true)
-        .order('created_at', { ascending: true })
+      // Buscar tudo em PARALELO para melhor performance
+      const [conquistasResult, userConquistasResult, statsResult, xpResult] = await Promise.all([
+        supabase.from('conquistas').select('*').eq('ativo', true).order('created_at', { ascending: true }),
+        supabase.from('user_conquistas').select('conquista_id, desbloqueada_em').eq('user_id', user.id),
+        supabase.from('estatisticas_usuario').select('questoes_total, sequencia_dias').eq('user_id', user.id).single(),
+        supabase.from('user_xp').select('xp_total, nivel').eq('user_id', user.id).single()
+      ])
+
+      const { data: conquistasDb, error: conquistasError } = conquistasResult
+      const { data: userConquistas } = userConquistasResult
+      const { data: stats } = statsResult
+      const { data: xpData } = xpResult
 
       if (conquistasError) {
         console.error('Erro ao buscar conquistas:', conquistasError)
@@ -76,25 +82,6 @@ export function useConquistas(): ConquistasData {
         setLoading(false)
         return
       }
-
-      // Buscar conquistas do usuario
-      const { data: userConquistas } = await supabase
-        .from('user_conquistas')
-        .select('conquista_id, desbloqueada_em')
-        .eq('user_id', user.id)
-
-      // Buscar estatisticas do usuario para calcular progresso
-      const { data: stats } = await supabase
-        .from('estatisticas_usuario')
-        .select('questoes_total, sequencia_dias')
-        .eq('user_id', user.id)
-        .single()
-
-      const { data: xpData } = await supabase
-        .from('user_xp')
-        .select('xp_total, nivel')
-        .eq('user_id', user.id)
-        .single()
 
       // Mapear conquistas conquistadas
       const conquistadasMap = new Map(

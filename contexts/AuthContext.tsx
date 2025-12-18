@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase, Profile, Estatisticas } from '@/lib/supabase'
 
@@ -30,22 +30,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [isNewUser, setIsNewUser] = useState(false)
 
-  const fetchProfile = async (userId: string, userEmail?: string, userName?: string) => {
-    try {
-      // Tentar buscar perfil existente
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
+  // Ref para evitar chamadas duplicadas
+  const fetchingRef = useRef(false)
+  const lastFetchedUserIdRef = useRef<string | null>(null)
 
-      if (profileError && profileError.code === 'PGRST116') {
-        // Perfil não existe - criar um novo
+  const fetchProfile = async (userId: string, userEmail?: string, userName?: string) => {
+    // Evitar chamadas duplicadas para o mesmo usuario
+    if (fetchingRef.current && lastFetchedUserIdRef.current === userId) {
+      return
+    }
+
+    fetchingRef.current = true
+    lastFetchedUserIdRef.current = userId
+
+    try {
+      // Buscar profile e stats em paralelo para melhor performance
+      const [profileResult, statsResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single(),
+        supabase
+          .from('estatisticas_usuario')
+          .select('*')
+          .eq('user_id', userId)
+          .single()
+      ])
+
+      // Processar profile
+      if (profileResult.error && profileResult.error.code === 'PGRST116') {
+        // Perfil nao existe - criar um novo
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert({
             id: userId,
-            nome: userName || userEmail?.split('@')[0] || 'Usuário',
+            nome: userName || userEmail?.split('@')[0] || 'Usuario',
             email: userEmail,
           })
           .select()
@@ -55,20 +75,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(newProfile as Profile)
           setIsNewUser(true)
         }
-      } else if (profileData) {
-        setProfile(profileData as Profile)
+      } else if (profileResult.data) {
+        setProfile(profileResult.data as Profile)
         setIsNewUser(false)
       }
 
-      // Tentar buscar estatísticas
-      const { data: statsData, error: statsError } = await supabase
-        .from('estatisticas_usuario')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
-
-      if (statsError && statsError.code === 'PGRST116') {
-        // Estatísticas não existem - criar novas
+      // Processar stats
+      if (statsResult.error && statsResult.error.code === 'PGRST116') {
+        // Estatisticas nao existem - criar novas
         const { data: newStats } = await supabase
           .from('estatisticas_usuario')
           .insert({
@@ -85,37 +99,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (newStats) {
           setStats(newStats as Estatisticas)
         }
-      } else if (statsData) {
-        setStats(statsData as Estatisticas)
+      } else if (statsResult.data) {
+        setStats(statsResult.data as Estatisticas)
       }
     } catch (error) {
       console.error('Erro ao buscar perfil:', error)
+    } finally {
+      fetchingRef.current = false
     }
   }
 
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id, user.email, user.user_metadata?.nome)
+    if (user) {
+      lastFetchedUserIdRef.current = null // Forcar refresh
+      await fetchProfile(user.id, user.email, user.user_metadata?.nome)
+    }
   }
 
   useEffect(() => {
+    let mounted = true
+
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
 
-      if (session?.user) {
-        setUser(session.user)
-        await fetchProfile(
-          session.user.id,
-          session.user.email,
-          session.user.user_metadata?.nome
-        )
-      }
-      setLoading(false)
-    }
+        if (!mounted) return
 
-    getSession()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
         if (session?.user) {
           setUser(session.user)
           await fetchProfile(
@@ -123,17 +132,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             session.user.email,
             session.user.user_metadata?.nome
           )
+        }
+      } catch (error) {
+        console.error('Erro ao buscar sessao:', error)
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    getSession()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return
+
+        if (session?.user) {
+          // So buscar se o usuario mudou
+          if (session.user.id !== lastFetchedUserIdRef.current) {
+            setUser(session.user)
+            await fetchProfile(
+              session.user.id,
+              session.user.email,
+              session.user.user_metadata?.nome
+            )
+          }
         } else {
           setUser(null)
           setProfile(null)
           setStats(null)
           setIsNewUser(false)
+          lastFetchedUserIdRef.current = null
         }
         setLoading(false)
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signOut = async () => {
@@ -142,6 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null)
     setStats(null)
     setIsNewUser(false)
+    lastFetchedUserIdRef.current = null
   }
 
   return (

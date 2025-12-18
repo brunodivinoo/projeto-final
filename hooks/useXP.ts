@@ -125,12 +125,17 @@ export function useXP(): XPData {
       setLoading(true)
       setError(null)
 
-      // Buscar dados de XP do usuario
-      const { data: xpData, error: xpError } = await supabase
-        .from('user_xp')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
+      const hoje = new Date().toISOString().split('T')[0]
+
+      // Buscar XP do usuario e historico de hoje em PARALELO
+      const [xpResult, historicoResult] = await Promise.all([
+        supabase.from('user_xp').select('*').eq('user_id', user.id).single(),
+        supabase.from('xp_historico').select('xp_ganho').eq('user_id', user.id)
+          .gte('created_at', `${hoje}T00:00:00`).lte('created_at', `${hoje}T23:59:59`)
+      ])
+
+      const { data: xpData, error: xpError } = xpResult
+      const { data: historicoHoje } = historicoResult
 
       if (xpError && xpError.code !== 'PGRST116') {
         // PGRST116 = nao encontrado, vamos criar
@@ -161,15 +166,7 @@ export function useXP(): XPData {
         setMaiorSequencia(0)
       }
 
-      // Buscar XP de hoje
-      const hoje = new Date().toISOString().split('T')[0]
-      const { data: historicoHoje } = await supabase
-        .from('xp_historico')
-        .select('xp_ganho')
-        .eq('user_id', user.id)
-        .gte('created_at', `${hoje}T00:00:00`)
-        .lte('created_at', `${hoje}T23:59:59`)
-
+      // Processar XP de hoje
       const xpHojeTotal = historicoHoje?.reduce((acc, h) => acc + (h.xp_ganho || 0), 0) || 0
       setXpHoje(xpHojeTotal)
 
