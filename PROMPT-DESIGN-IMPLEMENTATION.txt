@@ -1,0 +1,305 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎨 IMPLEMENTAÇÃO DE DESIGN - STITCH → NEXT.JS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# 📋 INSTRUÇÕES COMPLETAS
+
+Você receberá arquivos de design do Google Stitch na pasta `/design`.
+Sua missão é transformar esse design em uma aplicação Next.js 14 completa, funcional e responsiva.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 🎯 OBJETIVOS:
+
+1. ✅ Criar aplicação Next.js 14 (App Router)
+2. ✅ Implementar design 100% fiel aos prints
+3. ✅ Tornar totalmente responsivo (Mobile + Desktop)
+4. ✅ Integrar com Supabase (banco já configurado)
+5. ✅ Adicionar todas as funcionalidades necessárias
+6. ✅ Preparar para deploy no Vercel
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 📁 ESTRUTURA DOS ARQUIVOS:
+
+```
+/design
+  /screens      → Prints das telas (PNG/JPG)
+  /code         → Código exportado do Stitch
+  README.md     → Este arquivo
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 🚀 PASSO A PASSO:
+
+### **FASE 1: ANÁLISE** 📊
+
+1. Liste todos os arquivos em `/design/screens`
+2. Liste todos os arquivos em `/design/code`
+3. Identifique quantas telas existem
+4. Identifique a estrutura de navegação
+5. Identifique funcionalidades necessárias
+6. Me mostre um resumo da análise
+
+### **FASE 2: SETUP DO NEXT.JS** ⚙️
+
+Execute em sequência:
+
+```bash
+cd "C:\Users\PC\OneDrive\Área de Trabalho\Projeto Final"
+
+# Instalar Next.js (sobrescrever se necessário)
+npx create-next-app@latest . --typescript --tailwind --app --no-src-dir --import-alias "@/*"
+
+# Instalar dependências essenciais
+npm install @supabase/supabase-js
+npm install lucide-react      # Ícones
+npm install clsx tailwind-merge  # Utilitários
+npm install react-hook-form   # Formulários
+npm install zod              # Validação
+npm install @hookform/resolvers  # Integração validação
+
+# Se for usar Gemini AI
+npm install @google/generative-ai
+```
+
+### **FASE 3: CONFIGURAÇÃO** 🔧
+
+Crie a estrutura:
+
+```
+/app
+  /page.tsx              → Página inicial
+  /layout.tsx            → Layout global
+  /(auth)
+    /login/page.tsx      → Login
+    /register/page.tsx   → Cadastro
+  /dashboard/
+    /page.tsx            → Dashboard principal
+  /[outras-rotas]        → Conforme design
+
+/components
+  /ui                    → Componentes básicos reutilizáveis
+  /layout                → Header, Footer, Sidebar
+  /features              → Componentes específicos
+
+/lib
+  /supabase.ts          → Cliente Supabase configurado
+  /utils.ts             → Funções auxiliares
+
+/types
+  /database.ts          → Tipos do Supabase (gerar depois)
+
+/hooks
+  /useAuth.ts           → Hook de autenticação
+  /useDatabase.ts       → Hook para queries
+```
+
+### **FASE 4: IMPLEMENTAÇÃO DO DESIGN** 🎨
+
+Para cada tela em `/design/screens`:
+
+1. **Crie a rota correspondente** no Next.js
+2. **Analise o código** em `/design/code` (se houver)
+3. **Converta para componentes React** com TypeScript
+4. **Use Tailwind CSS** para estilização
+5. **Implemente responsividade:**
+   - Mobile First (320px+)
+   - Breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px)
+6. **Adicione interatividade:**
+   - Estados (useState, useEffect)
+   - Validações de formulário
+   - Feedback ao usuário (loading, error, success)
+
+### **FASE 5: INTEGRAÇÃO SUPABASE** 🗄️
+
+Para cada funcionalidade:
+
+1. **Identifique as tabelas necessárias**
+2. **Crie as tabelas no banco:**
+   ```bash
+   node db-admin.js sql "CREATE TABLE ..."
+   ```
+
+3. **Configure RLS (Row Level Security):**
+   ```bash
+   node db-admin.js sql "ALTER TABLE ... ENABLE ROW LEVEL SECURITY"
+   node db-admin.js sql "CREATE POLICY ..."
+   ```
+
+4. **Implemente CRUD nos componentes:**
+   - Listar dados
+   - Criar registros
+   - Atualizar registros
+   - Deletar registros
+
+5. **Adicione autenticação:**
+   - Login com Supabase Auth
+   - Registro de usuários
+   - Proteção de rotas
+   - Gerenciamento de sessão
+
+### **FASE 6: FUNCIONALIDADES** ⚡
+
+Implemente todas as funcionalidades identificadas no design:
+
+- ✅ Autenticação (login, registro, logout)
+- ✅ CRUD completo das entidades
+- ✅ Busca e filtros
+- ✅ Paginação (se necessário)
+- ✅ Upload de arquivos (se necessário)
+- ✅ Notificações/Toast
+- ✅ Loading states
+- ✅ Error handling
+
+### **FASE 7: OTIMIZAÇÃO** 🚀
+
+1. **Performance:**
+   - Lazy loading de imagens
+   - Code splitting
+   - Memoização (React.memo, useMemo)
+
+2. **SEO:**
+   - Metadata em cada página
+   - Open Graph tags
+
+3. **Acessibilidade:**
+   - Labels em inputs
+   - ARIA attributes
+   - Navegação por teclado
+
+### **FASE 8: TESTES LOCAIS** 🧪
+
+```bash
+# Rodar em modo desenvolvimento
+npm run dev
+```
+
+Teste:
+- ✅ Todas as rotas funcionando
+- ✅ Responsividade (mobile, tablet, desktop)
+- ✅ Integração com Supabase
+- ✅ Autenticação
+- ✅ CRUD completo
+
+### **FASE 9: DEPLOY** 🌐
+
+```bash
+# Fazer commit
+git add .
+git commit -m "feat: implementa design completo com Supabase"
+git push origin main
+```
+
+O Vercel vai fazer deploy automático!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 📱 REQUISITOS DE RESPONSIVIDADE:
+
+### **Mobile (320px - 767px):**
+- Menu hamburguer
+- Navegação em drawer/sidebar
+- Cards em coluna única
+- Formulários full-width
+- Touch-friendly (botões min 44px)
+
+### **Tablet (768px - 1023px):**
+- Menu híbrido (pode ser top bar ou sidebar)
+- Grid de 2 colunas
+- Formulários otimizados
+
+### **Desktop (1024px+):**
+- Sidebar fixa (se houver)
+- Layout de 2-3 colunas
+- Hover states
+- Tooltips
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 🎨 PADRÕES DE DESIGN:
+
+### **Cores:**
+Use as cores do design original ou defina um theme no Tailwind:
+
+```typescript
+// tailwind.config.ts
+theme: {
+  extend: {
+    colors: {
+      primary: {...},
+      secondary: {...},
+      accent: {...},
+    }
+  }
+}
+```
+
+### **Tipografia:**
+```typescript
+fontFamily: {
+  sans: ['Inter', 'system-ui', 'sans-serif'],
+  heading: ['Poppins', 'sans-serif'],
+}
+```
+
+### **Componentes Reutilizáveis:**
+Crie componentes para elementos repetidos:
+- Button
+- Input
+- Card
+- Modal
+- Table
+- Form
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 🔐 SEGURANÇA:
+
+1. ✅ **Nunca exponha credenciais no frontend**
+2. ✅ **Use RLS no Supabase** (Row Level Security)
+3. ✅ **Valide dados no frontend E backend**
+4. ✅ **Sanitize inputs de usuário**
+5. ✅ **Use HTTPS** (automático no Vercel)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 🤖 INTEGRAÇÃO GEMINI (OPCIONAL):
+
+Se for usar IA no app:
+
+1. Configure a API Key (veja GEMINI-CONFIG.md)
+2. Crie API Route em `/app/api/ai/route.ts`
+3. Use server-side apenas
+4. Implemente rate limiting
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 📊 RELATÓRIO FINAL:
+
+Ao terminar, me forneça:
+
+1. ✅ Lista de todas as páginas criadas
+2. ✅ Lista de todas as funcionalidades implementadas
+3. ✅ Estrutura do banco de dados criada
+4. ✅ Políticas RLS configuradas
+5. ✅ URL do app deployado no Vercel
+6. ✅ Instruções para usar o app
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 🚨 LEMBRETES IMPORTANTES:
+
+- ❌ NUNCA use "as any" no TypeScript
+- ❌ NUNCA deixe erros de sintaxe
+- ❌ NUNCA exponha credenciais
+- ✅ SEMPRE trate null/undefined
+- ✅ SEMPRE adicione loading states
+- ✅ SEMPRE adicione error handling
+- ✅ SEMPRE teste em mobile
+- ✅ SEMPRE faça commits organizados
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+AGUARDO OS ARQUIVOS NA PASTA /design PARA COMEÇAR! 🚀
