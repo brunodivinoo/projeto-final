@@ -49,8 +49,27 @@ function formatarPeriodoSemana(): string {
   return `${formatDate(inicio)} - ${formatDate(fim)}`
 }
 
+// Dados mock para desenvolvimento (definidos fora do hook para evitar recriação)
+const MOCK_RANKING: RankingUser[] = [
+  { posicao: 1, userId: '1', nome: 'Maria Silva', xpSemana: 2450, nivel: 8, plano: 'ESTUDA_PRO', isPro: true, isCurrentUser: false },
+  { posicao: 2, userId: '2', nome: 'João Santos', xpSemana: 2180, nivel: 7, plano: 'ESTUDA_PRO', isPro: true, isCurrentUser: false },
+  { posicao: 3, userId: '3', nome: 'Ana Oliveira', xpSemana: 1950, nivel: 6, plano: 'FREE', isPro: false, isCurrentUser: false },
+  { posicao: 4, userId: '4', nome: 'Pedro Costa', xpSemana: 1720, nivel: 6, plano: 'ESTUDA_PRO', isPro: true, isCurrentUser: false },
+  { posicao: 5, userId: '5', nome: 'Carla Mendes', xpSemana: 1580, nivel: 5, plano: 'FREE', isPro: false, isCurrentUser: false },
+  { posicao: 6, userId: 'current', nome: 'Você', xpSemana: 1340, nivel: 4, plano: 'FREE', isPro: false, isCurrentUser: true },
+  { posicao: 7, userId: '7', nome: 'Lucas Ferreira', xpSemana: 1200, nivel: 4, plano: 'FREE', isPro: false, isCurrentUser: false },
+  { posicao: 8, userId: '8', nome: 'Juliana Lima', xpSemana: 1050, nivel: 4, plano: 'ESTUDA_PRO', isPro: true, isCurrentUser: false },
+  { posicao: 9, userId: '9', nome: 'Rafael Souza', xpSemana: 920, nivel: 3, plano: 'FREE', isPro: false, isCurrentUser: false },
+  { posicao: 10, userId: '10', nome: 'Fernanda Rocha', xpSemana: 850, nivel: 3, plano: 'FREE', isPro: false, isCurrentUser: false },
+  { posicao: 11, userId: '11', nome: 'Bruno Almeida', xpSemana: 780, nivel: 3, plano: 'FREE', isPro: false, isCurrentUser: false },
+  { posicao: 12, userId: '12', nome: 'Camila Dias', xpSemana: 650, nivel: 2, plano: 'FREE', isPro: false, isCurrentUser: false },
+  { posicao: 13, userId: '13', nome: 'Thiago Martins', xpSemana: 520, nivel: 2, plano: 'FREE', isPro: false, isCurrentUser: false },
+  { posicao: 14, userId: '14', nome: 'Patricia Gomes', xpSemana: 410, nivel: 2, plano: 'FREE', isPro: false, isCurrentUser: false },
+  { posicao: 15, userId: '15', nome: 'Diego Ribeiro', xpSemana: 320, nivel: 1, plano: 'FREE', isPro: false, isCurrentUser: false },
+]
+
 export function useRanking(): RankingData {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [ranking, setRanking] = useState<RankingUser[]>([])
@@ -59,6 +78,11 @@ export function useRanking(): RankingData {
   const [totalParticipantes, setTotalParticipantes] = useState(0)
 
   const fetchRanking = useCallback(async () => {
+    // Aguardar autenticação carregar primeiro
+    if (authLoading) {
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
@@ -85,16 +109,23 @@ export function useRanking(): RankingData {
         .order('xp_semana', { ascending: false })
         .limit(100)
 
-      if (rankingError) {
+      if (rankingError || !rankingData || rankingData.length === 0) {
         // Se a tabela não existe ou está vazia, usar dados mock
-        console.log('Usando dados mock para ranking:', rankingError)
-        usarDadosMock()
-        return
-      }
+        if (rankingError) {
+          console.log('Usando dados mock para ranking:', rankingError)
+        }
 
-      if (!rankingData || rankingData.length === 0) {
-        // Usar dados mock se não há dados
-        usarDadosMock()
+        // Usar dados mock
+        setRanking(MOCK_RANKING)
+        setTotalParticipantes(MOCK_RANKING.length)
+
+        const currentUserIdx = MOCK_RANKING.findIndex(r => r.isCurrentUser)
+        if (currentUserIdx !== -1) {
+          setUserPosition(currentUserIdx + 1)
+          setUserRanking(MOCK_RANKING[currentUserIdx])
+        }
+
+        setLoading(false)
         return
       }
 
@@ -126,41 +157,20 @@ export function useRanking(): RankingData {
       setLoading(false)
     } catch (err) {
       console.error('Erro ao buscar ranking:', err)
-      usarDadosMock()
+
+      // Em caso de erro, usar dados mock
+      setRanking(MOCK_RANKING)
+      setTotalParticipantes(MOCK_RANKING.length)
+
+      const currentUserIdx = MOCK_RANKING.findIndex(r => r.isCurrentUser)
+      if (currentUserIdx !== -1) {
+        setUserPosition(currentUserIdx + 1)
+        setUserRanking(MOCK_RANKING[currentUserIdx])
+      }
+
+      setLoading(false)
     }
-  }, [user])
-
-  // Dados mock para desenvolvimento
-  const usarDadosMock = () => {
-    const mockRanking: RankingUser[] = [
-      { posicao: 1, userId: '1', nome: 'Maria Silva', xpSemana: 2450, nivel: 8, plano: 'ESTUDA_PRO', isPro: true, isCurrentUser: false },
-      { posicao: 2, userId: '2', nome: 'João Santos', xpSemana: 2180, nivel: 7, plano: 'ESTUDA_PRO', isPro: true, isCurrentUser: false },
-      { posicao: 3, userId: '3', nome: 'Ana Oliveira', xpSemana: 1950, nivel: 6, plano: 'FREE', isPro: false, isCurrentUser: false },
-      { posicao: 4, userId: '4', nome: 'Pedro Costa', xpSemana: 1720, nivel: 6, plano: 'ESTUDA_PRO', isPro: true, isCurrentUser: false },
-      { posicao: 5, userId: '5', nome: 'Carla Mendes', xpSemana: 1580, nivel: 5, plano: 'FREE', isPro: false, isCurrentUser: false },
-      { posicao: 6, userId: 'current', nome: 'Você', xpSemana: 1340, nivel: 4, plano: 'FREE', isPro: false, isCurrentUser: true },
-      { posicao: 7, userId: '7', nome: 'Lucas Ferreira', xpSemana: 1200, nivel: 4, plano: 'FREE', isPro: false, isCurrentUser: false },
-      { posicao: 8, userId: '8', nome: 'Juliana Lima', xpSemana: 1050, nivel: 4, plano: 'ESTUDA_PRO', isPro: true, isCurrentUser: false },
-      { posicao: 9, userId: '9', nome: 'Rafael Souza', xpSemana: 920, nivel: 3, plano: 'FREE', isPro: false, isCurrentUser: false },
-      { posicao: 10, userId: '10', nome: 'Fernanda Rocha', xpSemana: 850, nivel: 3, plano: 'FREE', isPro: false, isCurrentUser: false },
-      { posicao: 11, userId: '11', nome: 'Bruno Almeida', xpSemana: 780, nivel: 3, plano: 'FREE', isPro: false, isCurrentUser: false },
-      { posicao: 12, userId: '12', nome: 'Camila Dias', xpSemana: 650, nivel: 2, plano: 'FREE', isPro: false, isCurrentUser: false },
-      { posicao: 13, userId: '13', nome: 'Thiago Martins', xpSemana: 520, nivel: 2, plano: 'FREE', isPro: false, isCurrentUser: false },
-      { posicao: 14, userId: '14', nome: 'Patricia Gomes', xpSemana: 410, nivel: 2, plano: 'FREE', isPro: false, isCurrentUser: false },
-      { posicao: 15, userId: '15', nome: 'Diego Ribeiro', xpSemana: 320, nivel: 1, plano: 'FREE', isPro: false, isCurrentUser: false },
-    ]
-
-    setRanking(mockRanking)
-    setTotalParticipantes(mockRanking.length)
-
-    const currentUserIdx = mockRanking.findIndex(r => r.isCurrentUser)
-    if (currentUserIdx !== -1) {
-      setUserPosition(currentUserIdx + 1)
-      setUserRanking(mockRanking[currentUserIdx])
-    }
-
-    setLoading(false)
-  }
+  }, [user, authLoading])
 
   useEffect(() => {
     fetchRanking()
@@ -172,7 +182,7 @@ export function useRanking(): RankingData {
     userRanking,
     totalParticipantes,
     semanaAtual: formatarPeriodoSemana(),
-    loading,
+    loading: loading || authLoading, // Considera loading se auth ainda está carregando
     error,
     refresh: fetchRanking
   }

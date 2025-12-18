@@ -24,15 +24,33 @@ export interface LimitsData {
 
 const LIMITE_ILIMITADO = -1
 
+// Dados mock para quando não há dados do banco
+const MOCK_LIMITS: LimitItem[] = [
+  { id: 'questoes_ia', nome: 'Questoes IA', icone: 'quiz', usado: 0, limite: 5, tipo: 'diario', cor: '#137fec' },
+  { id: 'resumos', nome: 'Resumos', icone: 'summarize', usado: 0, limite: 3, tipo: 'mensal', cor: '#a855f7' },
+  { id: 'chat_mensagens', nome: 'Chat IA', icone: 'chat_bubble', usado: 0, limite: 20, tipo: 'diario', cor: '#10b981' },
+  { id: 'pdf_paginas', nome: 'Paginas PDF', icone: 'picture_as_pdf', usado: 0, limite: 30, tipo: 'mensal', cor: '#f59e0b' },
+  { id: 'questoes', nome: 'Questoes/Dia', icone: 'help_outline', usado: 0, limite: 30, tipo: 'diario', cor: '#6366f1' },
+  { id: 'simulados', nome: 'Simulados', icone: 'assignment', usado: 0, limite: 5, tipo: 'mensal', cor: '#ec4899' }
+]
+
 export function useLimits(): LimitsData {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [plano, setPlano] = useState('FREE')
   const [limites, setLimites] = useState<LimitItem[]>([])
 
   const fetchLimits = useCallback(async () => {
+    // Aguardar autenticacao carregar primeiro
+    if (authLoading) {
+      return
+    }
+
+    // Se nao tem usuario, usar dados mock e parar loading
     if (!user) {
+      setPlano('FREE')
+      setLimites(MOCK_LIMITS)
       setLoading(false)
       return
     }
@@ -41,7 +59,7 @@ export function useLimits(): LimitsData {
       setLoading(true)
       setError(null)
 
-      // Buscar o plano do usuário
+      // Buscar o plano do usuario
       const { data: profile } = await supabase
         .from('profiles')
         .select('plano')
@@ -53,19 +71,20 @@ export function useLimits(): LimitsData {
       setPlano(planoNome)
 
       // Buscar limites do plano
-      const { data: planoData } = await supabase
+      const { data: planoData, error: planoError } = await supabase
         .from('planos')
         .select('*')
         .eq('nome', planoNome)
         .single()
 
-      if (!planoData) {
-        setError('Plano não encontrado')
+      if (planoError || !planoData) {
+        // Usar dados mock se nao encontrar plano
+        setLimites(MOCK_LIMITS)
         setLoading(false)
         return
       }
 
-      // Buscar uso diário
+      // Buscar uso diario
       const hoje = new Date().toISOString().split('T')[0]
       const { data: usoDiario } = await supabase
         .from('uso_diario')
@@ -84,7 +103,7 @@ export function useLimits(): LimitsData {
         .eq('user_id', user.id)
         .eq('mes_referencia', mesRef)
 
-      // Mapear uso para acesso fácil
+      // Mapear uso para acesso facil
       const usoDiarioMap: Record<string, number> = {}
       usoDiario?.forEach(u => { usoDiarioMap[u.tipo] = u.quantidade })
 
@@ -95,7 +114,7 @@ export function useLimits(): LimitsData {
       const limitesData: LimitItem[] = [
         {
           id: 'questoes_ia',
-          nome: 'Questões IA',
+          nome: 'Questoes IA',
           icone: 'quiz',
           usado: usoDiarioMap['questoes_ia'] || 0,
           limite: planoData.limite_questoes_ia_dia,
@@ -122,7 +141,7 @@ export function useLimits(): LimitsData {
         },
         {
           id: 'pdf_paginas',
-          nome: 'Páginas PDF',
+          nome: 'Paginas PDF',
           icone: 'picture_as_pdf',
           usado: usoMensalMap['pdf_paginas'] || 0,
           limite: planoData.limite_pdf_paginas_mes,
@@ -131,7 +150,7 @@ export function useLimits(): LimitsData {
         },
         {
           id: 'questoes',
-          nome: 'Questões/Dia',
+          nome: 'Questoes/Dia',
           icone: 'help_outline',
           usado: usoDiarioMap['questoes'] || 0,
           limite: planoData.limite_questoes_dia,
@@ -149,7 +168,7 @@ export function useLimits(): LimitsData {
         }
       ]
 
-      // Filtrar limites ilimitados para não mostrar na lista
+      // Filtrar limites ilimitados para nao mostrar na lista
       const limitesFiltrados = limitesData.filter(l => l.limite !== LIMITE_ILIMITADO)
 
       setLimites(limitesFiltrados)
@@ -157,9 +176,11 @@ export function useLimits(): LimitsData {
     } catch (err) {
       console.error('Erro ao buscar limites:', err)
       setError('Erro ao carregar limites')
+      // Usar dados mock em caso de erro
+      setLimites(MOCK_LIMITS)
       setLoading(false)
     }
-  }, [user])
+  }, [user, authLoading])
 
   useEffect(() => {
     fetchLimits()
@@ -169,45 +190,45 @@ export function useLimits(): LimitsData {
     plano,
     isPro: plano === 'ESTUDA_PRO',
     limites,
-    loading,
+    loading: loading || authLoading,
     error,
     refresh: fetchLimits
   }
 }
 
-// Função auxiliar para calcular porcentagem
+// Funcao auxiliar para calcular porcentagem
 export function calcularPorcentagem(usado: number, limite: number): number {
   if (limite === LIMITE_ILIMITADO) return 0
   if (limite === 0) return 100
   return Math.min(Math.round((usado / limite) * 100), 100)
 }
 
-// Função para obter mensagem motivacional
+// Funcao para obter mensagem motivacional
 export function getMensagemMotivacional(porcentagemMedia: number, isPro: boolean): string {
   if (isPro) {
     if (porcentagemMedia < 30) {
-      return "Você tem muitos recursos disponíveis! Continue estudando! 🚀"
+      return "Voce tem muitos recursos disponiveis! Continue estudando!"
     } else if (porcentagemMedia < 60) {
-      return "Ótimo progresso! Continue aproveitando seu plano PRO! 💪"
+      return "Otimo progresso! Continue aproveitando seu plano PRO!"
     } else if (porcentagemMedia < 90) {
-      return "Você está usando bem seus recursos! Excelente dedicação! 🌟"
+      return "Voce esta usando bem seus recursos! Excelente dedicacao!"
     } else {
-      return "Uso intensivo! Você está dando o máximo! 🔥"
+      return "Uso intensivo! Voce esta dando o maximo!"
     }
   } else {
     if (porcentagemMedia < 30) {
-      return "Bom começo! Explore os recursos disponíveis! 📚"
+      return "Bom comeco! Explore os recursos disponiveis!"
     } else if (porcentagemMedia < 60) {
-      return "Você está progredindo bem! Continue assim! 💪"
+      return "Voce esta progredindo bem! Continue assim!"
     } else if (porcentagemMedia < 90) {
-      return "Quase no limite! Considere o Estuda PRO para mais recursos! ⭐"
+      return "Quase no limite! Considere o Estuda PRO para mais recursos!"
     } else {
-      return "Limite quase atingido! Faça upgrade para continuar estudando! 🚀"
+      return "Limite quase atingido! Faca upgrade para continuar estudando!"
     }
   }
 }
 
-// Função para obter cor baseada na porcentagem
+// Funcao para obter cor baseada na porcentagem
 export function getCorPorcentagem(porcentagem: number): string {
   if (porcentagem < 50) return 'bg-green-500'
   if (porcentagem < 75) return 'bg-yellow-500'

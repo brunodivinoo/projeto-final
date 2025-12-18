@@ -32,67 +32,67 @@ export interface ConquistasData {
   verificarConquista: (codigo: string) => Promise<boolean>
 }
 
-// Definição de todas as conquistas
+// Definicao de todas as conquistas
 export const CONQUISTAS_CONFIG: Omit<Conquista, 'conquistada' | 'dataConquista' | 'progresso'>[] = [
   // Categoria: Estudo
   {
     id: '1',
     codigo: 'primeira_questao',
     nome: 'Primeiro Passo',
-    descricao: 'Responda sua primeira questão',
+    descricao: 'Responda sua primeira questao',
     icone: 'play_arrow',
     cor: '#22c55e',
     categoria: 'estudo',
     xpRecompensa: 50,
-    requisito: 'Responder 1 questão',
+    requisito: 'Responder 1 questao',
     meta: 1
   },
   {
     id: '2',
     codigo: 'questoes_10',
     nome: 'Aquecendo os Motores',
-    descricao: 'Responda 10 questões',
+    descricao: 'Responda 10 questoes',
     icone: 'local_fire_department',
     cor: '#f59e0b',
     categoria: 'estudo',
     xpRecompensa: 100,
-    requisito: 'Responder 10 questões',
+    requisito: 'Responder 10 questoes',
     meta: 10
   },
   {
     id: '3',
     codigo: 'questoes_50',
     nome: 'Estudante Dedicado',
-    descricao: 'Responda 50 questões',
+    descricao: 'Responda 50 questoes',
     icone: 'school',
     cor: '#3b82f6',
     categoria: 'estudo',
     xpRecompensa: 250,
-    requisito: 'Responder 50 questões',
+    requisito: 'Responder 50 questoes',
     meta: 50
   },
   {
     id: '4',
     codigo: 'questoes_100',
-    nome: 'Centurião',
-    descricao: 'Responda 100 questões',
+    nome: 'Centuriao',
+    descricao: 'Responda 100 questoes',
     icone: 'military_tech',
     cor: '#8b5cf6',
     categoria: 'estudo',
     xpRecompensa: 500,
-    requisito: 'Responder 100 questões',
+    requisito: 'Responder 100 questoes',
     meta: 100
   },
   {
     id: '5',
     codigo: 'questoes_500',
-    nome: 'Mestre das Questões',
-    descricao: 'Responda 500 questões',
+    nome: 'Mestre das Questoes',
+    descricao: 'Responda 500 questoes',
     icone: 'emoji_events',
     cor: '#fbbf24',
     categoria: 'estudo',
     xpRecompensa: 1000,
-    requisito: 'Responder 500 questões',
+    requisito: 'Responder 500 questoes',
     meta: 500
   },
   {
@@ -134,7 +134,7 @@ export const CONQUISTAS_CONFIG: Omit<Conquista, 'conquistada' | 'dataConquista' 
   {
     id: '9',
     codigo: 'flashcards_100',
-    nome: 'Memória de Elefante',
+    nome: 'Memoria de Elefante',
     descricao: 'Revise 100 flashcards',
     icone: 'style',
     cor: '#06b6d4',
@@ -146,7 +146,7 @@ export const CONQUISTAS_CONFIG: Omit<Conquista, 'conquistada' | 'dataConquista' 
   {
     id: '10',
     codigo: 'acertos_90',
-    nome: 'Precisão Cirúrgica',
+    nome: 'Precisao Cirurgica',
     descricao: 'Alcance 90% de acertos em um simulado',
     icone: 'target',
     cor: '#ef4444',
@@ -156,17 +156,17 @@ export const CONQUISTAS_CONFIG: Omit<Conquista, 'conquistada' | 'dataConquista' 
     meta: 90
   },
 
-  // Categoria: Consistência
+  // Categoria: Consistencia
   {
     id: '11',
     codigo: 'sequencia_3',
-    nome: 'Começando Bem',
+    nome: 'Comecando Bem',
     descricao: 'Estude 3 dias seguidos',
     icone: 'calendar_today',
     cor: '#22c55e',
     categoria: 'consistencia',
     xpRecompensa: 75,
-    requisito: '3 dias de sequência',
+    requisito: '3 dias de sequencia',
     meta: 3
   },
   {
@@ -178,19 +178,19 @@ export const CONQUISTAS_CONFIG: Omit<Conquista, 'conquistada' | 'dataConquista' 
     cor: '#3b82f6',
     categoria: 'consistencia',
     xpRecompensa: 150,
-    requisito: '7 dias de sequência',
+    requisito: '7 dias de sequencia',
     meta: 7
   },
   {
     id: '13',
     codigo: 'sequencia_30',
-    nome: 'Mês de Fogo',
+    nome: 'Mes de Fogo',
     descricao: 'Estude 30 dias seguidos',
     icone: 'whatshot',
     cor: '#f97316',
     categoria: 'consistencia',
     xpRecompensa: 500,
-    requisito: '30 dias de sequência',
+    requisito: '30 dias de sequencia',
     meta: 30
   },
   {
@@ -202,14 +202,14 @@ export const CONQUISTAS_CONFIG: Omit<Conquista, 'conquistada' | 'dataConquista' 
     cor: '#fbbf24',
     categoria: 'consistencia',
     xpRecompensa: 1500,
-    requisito: '100 dias de sequência',
+    requisito: '100 dias de sequencia',
     meta: 100
   },
   {
     id: '15',
     codigo: 'madrugador',
     nome: 'Madrugador',
-    descricao: 'Estude antes das 6h da manhã',
+    descricao: 'Estude antes das 6h da manha',
     icone: 'wb_twilight',
     cor: '#f59e0b',
     categoria: 'consistencia',
@@ -221,12 +221,12 @@ export const CONQUISTAS_CONFIG: Omit<Conquista, 'conquistada' | 'dataConquista' 
     id: '16',
     codigo: 'coruja',
     nome: 'Coruja Noturna',
-    descricao: 'Estude após meia-noite',
+    descricao: 'Estude apos meia-noite',
     icone: 'nightlight',
     cor: '#6366f1',
     categoria: 'consistencia',
     xpRecompensa: 50,
-    requisito: 'Estudar após 0h',
+    requisito: 'Estudar apos 0h',
     meta: 1
   },
 
@@ -258,13 +258,13 @@ export const CONQUISTAS_CONFIG: Omit<Conquista, 'conquistada' | 'dataConquista' 
   {
     id: '19',
     codigo: 'campeao',
-    nome: 'Campeão',
-    descricao: 'Fique em 1º lugar no ranking semanal',
+    nome: 'Campeao',
+    descricao: 'Fique em 1 lugar no ranking semanal',
     icone: 'emoji_events',
     cor: '#fbbf24',
     categoria: 'social',
     xpRecompensa: 1000,
-    requisito: '1º lugar no ranking',
+    requisito: '1 lugar no ranking',
     meta: 1
   },
 
@@ -284,25 +284,25 @@ export const CONQUISTAS_CONFIG: Omit<Conquista, 'conquistada' | 'dataConquista' 
   {
     id: '21',
     codigo: 'nivel_5',
-    nome: 'Avançando',
-    descricao: 'Alcance o nível 5',
+    nome: 'Avancando',
+    descricao: 'Alcance o nivel 5',
     icone: 'trending_up',
     cor: '#22c55e',
     categoria: 'especial',
     xpRecompensa: 250,
-    requisito: 'Chegar ao nível 5',
+    requisito: 'Chegar ao nivel 5',
     meta: 5
   },
   {
     id: '22',
     codigo: 'nivel_10',
     nome: 'Transcendente',
-    descricao: 'Alcance o nível 10 (máximo)',
+    descricao: 'Alcance o nivel 10 (maximo)',
     icone: 'auto_awesome',
     cor: '#fbbf24',
     categoria: 'especial',
     xpRecompensa: 1000,
-    requisito: 'Chegar ao nível 10',
+    requisito: 'Chegar ao nivel 10',
     meta: 10
   },
   {
@@ -320,7 +320,7 @@ export const CONQUISTAS_CONFIG: Omit<Conquista, 'conquistada' | 'dataConquista' 
   {
     id: '24',
     codigo: 'xp_10000',
-    nome: 'Lendário',
+    nome: 'Legendario',
     descricao: 'Acumule 10.000 XP',
     icone: 'diamond',
     cor: '#ec4899',
@@ -331,30 +331,60 @@ export const CONQUISTAS_CONFIG: Omit<Conquista, 'conquistada' | 'dataConquista' 
   },
 ]
 
+// Progresso mock para desenvolvimento
+const PROGRESSO_MOCK: Record<string, number> = {
+  'primeira_questao': 1,
+  'questoes_10': 7,
+  'questoes_50': 7,
+  'questoes_100': 7,
+  'questoes_500': 7,
+  'primeiro_simulado': 1,
+  'simulados_10': 2,
+  'primeiro_resumo': 1,
+  'flashcards_100': 45,
+  'acertos_90': 85,
+  'sequencia_3': 5,
+  'sequencia_7': 5,
+  'sequencia_30': 5,
+  'sequencia_100': 5,
+  'nivel_5': 4,
+  'nivel_10': 4,
+  'xp_1000': 850,
+  'xp_10000': 850,
+}
+
+// Conquistas mock ja obtidas
+const CONQUISTAS_OBTIDAS_MOCK = ['primeira_questao', 'primeiro_simulado', 'primeiro_resumo', 'sequencia_3']
+
 export function useConquistas(): ConquistasData {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [conquistas, setConquistas] = useState<Conquista[]>([])
 
   const fetchConquistas = useCallback(async () => {
+    // Aguardar autenticacao carregar primeiro
+    if (authLoading) {
+      return
+    }
+
+    // Se nao tem usuario, usar dados mock e parar loading
+    if (!user) {
+      const conquistasMock = CONQUISTAS_CONFIG.map(c => ({
+        ...c,
+        conquistada: CONQUISTAS_OBTIDAS_MOCK.includes(c.codigo),
+        progresso: PROGRESSO_MOCK[c.codigo] || 0
+      }))
+      setConquistas(conquistasMock)
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
 
-      if (!user) {
-        // Retornar conquistas sem status de conquistada
-        const conquistasSemStatus = CONQUISTAS_CONFIG.map(c => ({
-          ...c,
-          conquistada: false,
-          progresso: 0
-        }))
-        setConquistas(conquistasSemStatus)
-        setLoading(false)
-        return
-      }
-
-      // Buscar conquistas do usuário
+      // Buscar conquistas do usuario
       const { data: userConquistas, error: userError } = await supabase
         .from('user_conquistas')
         .select('conquista_id, data_conquista')
@@ -369,35 +399,12 @@ export function useConquistas(): ConquistasData {
         userConquistas?.map(uc => [uc.conquista_id, uc.data_conquista]) || []
       )
 
-      // Buscar progresso do usuário para calcular progresso das conquistas
-      // Por enquanto usar dados mock
-      const progressoMock: Record<string, number> = {
-        'primeira_questao': 1,
-        'questoes_10': 7,
-        'questoes_50': 7,
-        'questoes_100': 7,
-        'questoes_500': 7,
-        'primeiro_simulado': 1,
-        'simulados_10': 2,
-        'primeiro_resumo': 1,
-        'flashcards_100': 45,
-        'acertos_90': 85,
-        'sequencia_3': 5,
-        'sequencia_7': 5,
-        'sequencia_30': 5,
-        'sequencia_100': 5,
-        'nivel_5': 4,
-        'nivel_10': 4,
-        'xp_1000': 850,
-        'xp_10000': 850,
-      }
-
       // Montar lista com status
       const conquistasComStatus: Conquista[] = CONQUISTAS_CONFIG.map(c => ({
         ...c,
-        conquistada: conquistadasMap.has(c.id) || ['primeira_questao', 'primeiro_simulado', 'primeiro_resumo', 'sequencia_3'].includes(c.codigo),
+        conquistada: conquistadasMap.has(c.id) || CONQUISTAS_OBTIDAS_MOCK.includes(c.codigo),
         dataConquista: conquistadasMap.get(c.id),
-        progresso: progressoMock[c.codigo] || 0
+        progresso: PROGRESSO_MOCK[c.codigo] || 0
       }))
 
       setConquistas(conquistasComStatus)
@@ -405,18 +412,25 @@ export function useConquistas(): ConquistasData {
     } catch (err) {
       console.error('Erro ao buscar conquistas:', err)
       setError('Erro ao carregar conquistas')
+      // Usar dados mock em caso de erro
+      const conquistasMock = CONQUISTAS_CONFIG.map(c => ({
+        ...c,
+        conquistada: CONQUISTAS_OBTIDAS_MOCK.includes(c.codigo),
+        progresso: PROGRESSO_MOCK[c.codigo] || 0
+      }))
+      setConquistas(conquistasMock)
       setLoading(false)
     }
-  }, [user])
+  }, [user, authLoading])
 
-  // Verificar se uma conquista foi alcançada
+  // Verificar se uma conquista foi alcancada
   const verificarConquista = useCallback(async (codigo: string): Promise<boolean> => {
     if (!user) return false
 
     const conquista = conquistas.find(c => c.codigo === codigo)
     if (!conquista || conquista.conquistada) return false
 
-    // TODO: Implementar lógica de verificação real
+    // TODO: Implementar logica de verificacao real
     // Por enquanto, retorna false
     return false
   }, [user, conquistas])
@@ -437,25 +451,25 @@ export function useConquistas(): ConquistasData {
     porcentagemCompleta: conquistas.length > 0
       ? Math.round((conquistadas.length / conquistas.length) * 100)
       : 0,
-    loading,
+    loading: loading || authLoading,
     error,
     refresh: fetchConquistas,
     verificarConquista
   }
 }
 
-// Função para obter nome da categoria
+// Funcao para obter nome da categoria
 export function getNomeCategoria(categoria: string): string {
   const nomes: Record<string, string> = {
     estudo: 'Estudo',
     social: 'Social',
-    consistencia: 'Consistência',
+    consistencia: 'Consistencia',
     especial: 'Especial'
   }
   return nomes[categoria] || categoria
 }
 
-// Função para obter cor da categoria
+// Funcao para obter cor da categoria
 export function getCorCategoria(categoria: string): string {
   const cores: Record<string, string> = {
     estudo: '#3b82f6',
