@@ -65,21 +65,21 @@ export default function PlanosPage() {
       <div className="p-4 lg:p-8 max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col gap-2 mb-6">
-          <h1 className="text-3xl lg:text-4xl font-black tracking-tight text-white">
+          <h1 className="text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
             Configure seu cronograma
           </h1>
-          <p className="text-slate-400 text-base">
+          <p className="text-slate-500 dark:text-slate-400 text-base">
             Defina suas metas, adicione as matérias que precisa focar e marque seus horários livres.
           </p>
         </div>
 
         {/* Progresso */}
-        <div className="bg-[#1c2127] p-5 rounded-xl border border-slate-700 mb-6">
+        <div className="bg-white dark:bg-[#1c2127] p-5 rounded-xl border border-slate-200 dark:border-slate-700 mb-6">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-medium text-primary">Passo 2 de 3: Matérias e Preferências</span>
-            <span className="text-sm font-bold text-white">66%</span>
+            <span className="text-sm font-bold text-slate-900 dark:text-white">66%</span>
           </div>
-          <div className="w-full bg-slate-700 rounded-full h-2.5">
+          <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
             <div className="bg-primary h-2.5 rounded-full" style={{ width: '66%' }}></div>
           </div>
         </div>
@@ -89,25 +89,25 @@ export default function PlanosPage() {
           {/* Coluna Principal */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             {/* Objetivos Principais */}
-            <div className="bg-[#1c2127] p-6 rounded-xl border border-slate-700">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-white">
+            <div className="bg-white dark:bg-[#1c2127] p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
                 <span className="material-symbols-outlined text-primary">flag</span>
                 Objetivos Principais
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-slate-400">Nome do Plano</span>
+                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Nome do Plano</span>
                   <input
-                    className="w-full rounded-lg border-slate-700 bg-[#101922] text-white px-4 py-3 text-sm focus:border-primary focus:ring-primary"
+                    className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-white px-4 py-3 text-sm focus:border-primary focus:ring-primary"
                     type="text"
                     value={nomePlano}
                     onChange={(e) => setNomePlano(e.target.value)}
                   />
                 </label>
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-slate-400">Foco Principal</span>
+                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Foco Principal</span>
                   <select
-                    className="w-full rounded-lg border-slate-700 bg-[#101922] text-white px-4 py-3 text-sm focus:border-primary focus:ring-primary"
+                    className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-white px-4 py-3 text-sm focus:border-primary focus:ring-primary"
                     value={focoPrincipal}
                     onChange={(e) => setFocoPrincipal(e.target.value)}
                   >
@@ -121,9 +121,9 @@ export default function PlanosPage() {
             </div>
 
             {/* Matérias e Dificuldade */}
-            <div className="bg-[#1c2127] p-6 rounded-xl border border-slate-700">
+            <div className="bg-white dark:bg-[#1c2127] p-6 rounded-xl border border-slate-200 dark:border-slate-700">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold flex items-center gap-2 text-white">
+                <h3 className="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white">
                   <span className="material-symbols-outlined text-primary">library_books</span>
                   Matérias e Dificuldade
                 </h3>
@@ -135,21 +135,21 @@ export default function PlanosPage() {
                 {materias.map((materia) => (
                   <div
                     key={materia.id}
-                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-3 rounded-lg border border-slate-700 bg-[#101922]"
+                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101922]"
                   >
                     <div className="flex items-center gap-3 min-w-[150px]">
                       <div className={`size-8 rounded-full bg-${materia.color}-500/20 text-${materia.color}-500 flex items-center justify-center`}>
                         <span className="material-symbols-outlined text-sm">{materia.icon}</span>
                       </div>
-                      <span className="font-medium text-sm text-white">{materia.nome}</span>
+                      <span className="font-medium text-sm text-slate-900 dark:text-white">{materia.nome}</span>
                     </div>
                     <div className="flex-1 flex flex-col gap-1">
-                      <div className="flex justify-between text-xs text-slate-400">
+                      <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                         <span>Dificuldade</span>
                         <span className={`text-${materia.accentColor} font-bold`}>{materia.dificuldadeTexto}</span>
                       </div>
                       <input
-                        className={`w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-${materia.color}-500`}
+                        className={`w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-${materia.color}-500`}
                         type="range"
                         min="1"
                         max="5"
@@ -169,23 +169,23 @@ export default function PlanosPage() {
             </div>
 
             {/* Disponibilidade Semanal */}
-            <div className="bg-[#1c2127] p-6 rounded-xl border border-slate-700">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-white">
+            <div className="bg-white dark:bg-[#1c2127] p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
                 <span className="material-symbols-outlined text-primary">schedule</span>
                 Disponibilidade Semanal
               </h3>
-              <p className="text-sm text-slate-400 mb-4">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                 Clique nos blocos para marcar seus horários livres para estudo.
               </p>
               <div className="overflow-x-auto pb-2">
                 <div className="min-w-[500px] grid grid-cols-8 gap-1 text-center text-sm">
                   <div className="h-8"></div>
                   {dias.map((dia) => (
-                    <div key={dia} className="font-bold text-slate-400">{dia}</div>
+                    <div key={dia} className="font-bold text-slate-500 dark:text-slate-400">{dia}</div>
                   ))}
                   {periodos.map((periodo, pIdx) => (
                     <>
-                      <div key={`label-${periodo}`} className="flex items-center justify-end pr-2 text-xs font-medium text-slate-400">
+                      <div key={`label-${periodo}`} className="flex items-center justify-end pr-2 text-xs font-medium text-slate-500 dark:text-slate-400">
                         {periodo}
                       </div>
                       {dias.map((_, dIdx) => (
@@ -195,7 +195,7 @@ export default function PlanosPage() {
                           className={`h-10 rounded transition-colors ${
                             disponibilidade[pIdx][dIdx]
                               ? 'bg-primary/20 border border-primary/40 hover:bg-primary/30'
-                              : 'bg-[#101922] border border-transparent hover:border-slate-700'
+                              : 'bg-slate-100 dark:bg-[#101922] border border-transparent hover:border-slate-300 dark:hover:border-slate-700'
                           }`}
                         />
                       ))}
@@ -206,11 +206,11 @@ export default function PlanosPage() {
               <div className="flex gap-4 mt-4 text-xs">
                 <div className="flex items-center gap-2">
                   <div className="size-3 bg-primary/20 border border-primary/40 rounded"></div>
-                  <span className="text-slate-400">Livre para Estudar</span>
+                  <span className="text-slate-500 dark:text-slate-400">Livre para Estudar</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="size-3 bg-[#101922] border border-slate-700 rounded"></div>
-                  <span className="text-slate-400">Ocupado</span>
+                  <div className="size-3 bg-slate-100 dark:bg-[#101922] border border-slate-200 dark:border-slate-700 rounded"></div>
+                  <span className="text-slate-500 dark:text-slate-400">Ocupado</span>
                 </div>
               </div>
             </div>
@@ -219,31 +219,31 @@ export default function PlanosPage() {
           {/* Sidebar Direita */}
           <div className="lg:col-span-1 flex flex-col gap-6">
             {/* Resumo do Plano */}
-            <div className="bg-[#1c2127] p-6 rounded-xl border border-slate-700 sticky top-6">
-              <h3 className="text-lg font-bold mb-4 text-white">Resumo do Plano</h3>
+            <div className="bg-white dark:bg-[#1c2127] p-6 rounded-xl border border-slate-200 dark:border-slate-700 sticky top-6">
+              <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-white">Resumo do Plano</h3>
               <div className="flex flex-col gap-4 mb-6">
-                <div className="flex justify-between items-center py-2 border-b border-slate-700">
-                  <span className="text-sm text-slate-400">Total de Matérias</span>
-                  <span className="font-bold text-white">{materias.length}</span>
+                <div className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Total de Matérias</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{materias.length}</span>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-700">
-                  <span className="text-sm text-slate-400">Horas Semanais</span>
+                <div className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Horas Semanais</span>
                   <span className="font-bold text-primary">{totalHoras}h</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-slate-400">Data da Prova</span>
-                  <span className="font-bold text-white">03/11/2024</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Data da Prova</span>
+                  <span className="font-bold text-slate-900 dark:text-white">03/11/2024</span>
                 </div>
               </div>
 
               {/* Toggle IA */}
-              <div className="bg-[#101922] p-4 rounded-lg flex items-center justify-between mb-6 border border-slate-700">
+              <div className="bg-slate-50 dark:bg-[#101922] p-4 rounded-lg flex items-center justify-between mb-6 border border-slate-200 dark:border-slate-700">
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold flex items-center gap-1 text-white">
+                  <span className="text-sm font-bold flex items-center gap-1 text-slate-900 dark:text-white">
                     <span className="material-symbols-outlined text-primary text-base">auto_awesome</span>
                     Sugestões via IA
                   </span>
-                  <span className="text-xs text-slate-400">Otimizar horários auto</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Otimizar horários auto</span>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -252,7 +252,7 @@ export default function PlanosPage() {
                     checked={aiSugestoes}
                     onChange={(e) => setAiSugestoes(e.target.checked)}
                   />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  <div className="w-11 h-6 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
               </div>
 
@@ -262,13 +262,13 @@ export default function PlanosPage() {
                   <span>Gerar Plano</span>
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
                 </button>
-                <button className="w-full bg-transparent hover:bg-slate-800 text-slate-400 font-medium py-3 px-4 rounded-lg transition-colors text-sm">
+                <button className="w-full bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium py-3 px-4 rounded-lg transition-colors text-sm">
                   Salvar rascunho
                 </button>
               </div>
 
               <div className="mt-4 text-center">
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Você poderá compartilhar este plano com seu grupo de estudos na próxima etapa.
                 </p>
               </div>

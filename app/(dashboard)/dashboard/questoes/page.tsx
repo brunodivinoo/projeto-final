@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Header } from '@/components/layout/Header'
 
 interface Questao {
   id: string
@@ -91,20 +92,21 @@ export default function QuestoesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#101922] font-['Lexend',sans-serif]">
-      {/* Main Content */}
+    <div className="min-h-screen">
+      <Header title="Banco de Questões" />
+
       <div className="flex-1 w-full max-w-[1440px] mx-auto p-4 md:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
         {/* Main Column */}
         <main className="col-span-1 lg:col-span-7 flex flex-col gap-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-2">
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white mb-2">
                 Banco de Questões
               </h1>
-              <p className="text-[#9dabb9]">Explore mais de 24.500 questões filtradas.</p>
+              <p className="text-slate-500 dark:text-slate-400">Explore mais de 24.500 questões filtradas.</p>
             </div>
-            <button className="lg:hidden flex items-center gap-2 px-4 py-2 bg-[#1C252E] border border-[#2A3441] rounded-lg text-sm font-medium text-white">
+            <button className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1C252E] border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-900 dark:text-white">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
               </svg>
@@ -114,12 +116,12 @@ export default function QuestoesPage() {
 
           {/* Search Bar */}
           <div className="w-full">
-            <div className="relative flex items-center w-full h-12 rounded-lg bg-[#1C252E] border border-[#2A3441] shadow-sm focus-within:border-[#137fec] focus-within:ring-1 focus-within:ring-[#137fec] overflow-hidden">
-              <div className="grid place-items-center h-full w-12 text-[#9dabb9]">
+            <div className="relative flex items-center w-full h-12 rounded-lg bg-white dark:bg-[#1C252E] border border-slate-200 dark:border-slate-700 shadow-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary overflow-hidden">
+              <div className="grid place-items-center h-full w-12 text-slate-400 dark:text-slate-500">
                 <span className="material-symbols-outlined text-xl">search</span>
               </div>
               <input
-                className="peer h-full w-full outline-none bg-transparent text-sm text-white pr-4 placeholder:text-[#9dabb9]"
+                className="peer h-full w-full outline-none bg-transparent text-sm text-slate-900 dark:text-white pr-4 placeholder:text-slate-400"
                 placeholder="Pesquisar por palavras-chave no enunciado..."
                 type="text"
               />
@@ -132,8 +134,8 @@ export default function QuestoesPage() {
               onClick={() => setTabAtiva('ineditas')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-transform hover:-translate-y-0.5 ${
                 tabAtiva === 'ineditas'
-                  ? 'bg-[#137fec] text-white shadow-md shadow-[#137fec]/20'
-                  : 'bg-[#1C252E] border border-[#2A3441] hover:bg-white/5 text-gray-300'
+                  ? 'bg-primary text-white shadow-md shadow-primary/20'
+                  : 'bg-white dark:bg-[#1C252E] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'
               }`}
             >
               {tabAtiva === 'ineditas' && <span className="material-symbols-outlined text-[18px]">check</span>}
@@ -143,8 +145,8 @@ export default function QuestoesPage() {
               onClick={() => setTabAtiva('errei')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-transform hover:-translate-y-0.5 ${
                 tabAtiva === 'errei'
-                  ? 'bg-[#137fec] text-white shadow-md shadow-[#137fec]/20'
-                  : 'bg-[#1C252E] border border-[#2A3441] hover:bg-white/5 text-gray-300'
+                  ? 'bg-primary text-white shadow-md shadow-primary/20'
+                  : 'bg-white dark:bg-[#1C252E] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'
               }`}
             >
               {tabAtiva === 'errei' && <span className="material-symbols-outlined text-[18px]">check</span>}
@@ -154,8 +156,8 @@ export default function QuestoesPage() {
               onClick={() => setTabAtiva('comentadas')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-transform hover:-translate-y-0.5 ${
                 tabAtiva === 'comentadas'
-                  ? 'bg-[#137fec] text-white shadow-md shadow-[#137fec]/20'
-                  : 'bg-[#1C252E] border border-[#2A3441] hover:bg-white/5 text-gray-300'
+                  ? 'bg-primary text-white shadow-md shadow-primary/20'
+                  : 'bg-white dark:bg-[#1C252E] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'
               }`}
             >
               {tabAtiva === 'comentadas' && <span className="material-symbols-outlined text-[18px]">check</span>}
@@ -165,8 +167,8 @@ export default function QuestoesPage() {
               onClick={() => setTabAtiva('anotacoes')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-transform hover:-translate-y-0.5 ${
                 tabAtiva === 'anotacoes'
-                  ? 'bg-[#137fec] text-white shadow-md shadow-[#137fec]/20'
-                  : 'bg-[#1C252E] border border-[#2A3441] hover:bg-white/5 text-gray-300'
+                  ? 'bg-primary text-white shadow-md shadow-primary/20'
+                  : 'bg-white dark:bg-[#1C252E] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'
               }`}
             >
               {tabAtiva === 'anotacoes' && <span className="material-symbols-outlined text-[18px]">check</span>}
@@ -176,31 +178,31 @@ export default function QuestoesPage() {
 
           {/* Questões */}
           {questoesExemplo.map((questao) => (
-            <article key={questao.id} className="bg-[#1C252E] rounded-xl border border-[#2A3441] p-5 md:p-6 shadow-sm">
+            <article key={questao.id} className="bg-white dark:bg-[#1C252E] rounded-xl border border-slate-200 dark:border-slate-700 p-5 md:p-6 shadow-sm">
               {/* Breadcrumb */}
-              <div className="flex flex-wrap items-center gap-y-2 gap-x-3 mb-4 text-xs font-medium text-[#9dabb9]">
-                <span className="text-[#137fec] bg-[#137fec]/10 px-2 py-0.5 rounded">{questao.id}</span>
+              <div className="flex flex-wrap items-center gap-y-2 gap-x-3 mb-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+                <span className="text-primary bg-primary/10 px-2 py-0.5 rounded">{questao.id}</span>
                 <span className="flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-gray-400"></span>
+                  <span className="w-1 h-1 rounded-full bg-slate-400"></span>
                   {questao.disciplina}
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-gray-400"></span>
+                  <span className="w-1 h-1 rounded-full bg-slate-400"></span>
                   {questao.topico}
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-gray-400"></span>
+                  <span className="w-1 h-1 rounded-full bg-slate-400"></span>
                   {questao.banca}
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-gray-400"></span>
+                  <span className="w-1 h-1 rounded-full bg-slate-400"></span>
                   {questao.ano}
                 </span>
               </div>
 
               {/* Enunciado */}
               <div className="mb-6">
-                <p className="text-base leading-relaxed text-gray-200 whitespace-pre-line">
+                <p className="text-base leading-relaxed text-slate-700 dark:text-slate-200 whitespace-pre-line">
                   {questao.enunciado}
                 </p>
               </div>
@@ -216,8 +218,8 @@ export default function QuestoesPage() {
                       key={opcao.letra}
                       className={`flex items-start gap-4 p-3 rounded-lg border cursor-pointer transition-colors group ${
                         isSelected || isPreSelected
-                          ? 'border-[#137fec] bg-[#137fec]/5'
-                          : 'border-[#2A3441] hover:bg-white/5'
+                          ? 'border-primary bg-primary/5'
+                          : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-white/5'
                       }`}
                     >
                       <div className="relative flex items-center justify-center shrink-0 mt-0.5">
@@ -231,8 +233,8 @@ export default function QuestoesPage() {
                         <div
                           className={`w-5 h-5 rounded-full border-2 transition-all ${
                             isSelected || isPreSelected
-                              ? 'border-[#137fec] bg-[#137fec]'
-                              : 'border-gray-400 group-hover:border-[#137fec]'
+                              ? 'border-primary bg-primary'
+                              : 'border-slate-400 group-hover:border-primary'
                           }`}
                         ></div>
                         <span
@@ -246,8 +248,8 @@ export default function QuestoesPage() {
                       <span
                         className={`text-sm transition-colors ${
                           isSelected || isPreSelected
-                            ? 'text-white font-medium'
-                            : 'text-gray-300 group-hover:text-white'
+                            ? 'text-slate-900 dark:text-white font-medium'
+                            : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white'
                         }`}
                       >
                         {opcao.texto}
@@ -258,25 +260,25 @@ export default function QuestoesPage() {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-[#2A3441]">
-                <button className="bg-[#137fec] hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium shadow-md shadow-[#137fec]/20 transition-all active:scale-95">
+              <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
+                <button className="bg-primary hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium shadow-md shadow-primary/20 transition-all active:scale-95">
                   Responder
                 </button>
                 <div className="flex items-center gap-2 sm:gap-4">
-                  <button className="flex items-center gap-1.5 text-gray-400 hover:text-[#137fec] transition-colors px-2 py-1 rounded-md hover:bg-white/5">
+                  <button className="flex items-center gap-1.5 text-slate-400 hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-slate-50 dark:hover:bg-white/5">
                     <span className="material-symbols-outlined text-xl">chat_bubble</span>
                     <span className="text-xs font-medium">{questao.comentarios} Comentários</span>
                   </button>
-                  <button className="flex items-center gap-1.5 text-gray-400 hover:text-[#137fec] transition-colors px-2 py-1 rounded-md hover:bg-white/5">
+                  <button className="flex items-center gap-1.5 text-slate-400 hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-slate-50 dark:hover:bg-white/5">
                     {questao.salva ? (
-                      <span className="material-symbols-outlined text-xl text-[#137fec]" style={{fontVariationSettings: '"FILL" 1'}}>bookmark</span>
+                      <span className="material-symbols-outlined text-xl text-primary" style={{fontVariationSettings: '"FILL" 1'}}>bookmark</span>
                     ) : (
                       <span className="material-symbols-outlined text-xl">bookmark</span>
                     )}
                     <span className="hidden sm:inline text-xs font-medium">Salvar</span>
                   </button>
                   <button
-                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                    className="text-slate-400 hover:text-red-500 transition-colors p-1"
                     title="Reportar Erro"
                   >
                     <span className="material-symbols-outlined text-xl">flag</span>
@@ -290,24 +292,24 @@ export default function QuestoesPage() {
           <div className="flex items-center justify-center gap-2 pt-4">
             <button
               disabled={paginaAtual === 1}
-              className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#2A3441] bg-[#1C252E] text-gray-300 hover:bg-white/5 disabled:opacity-50"
+              className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1C252E] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-base">chevron_left</span>
             </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#137fec] text-white font-medium shadow-md shadow-[#137fec]/20">
+            <button className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary text-white font-medium shadow-md shadow-primary/20">
               1
             </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#2A3441] bg-[#1C252E] text-gray-300 hover:bg-white/5 hover:text-[#137fec] transition-colors">
+            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1C252E] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-primary transition-colors">
               2
             </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#2A3441] bg-[#1C252E] text-gray-300 hover:bg-white/5 hover:text-[#137fec] transition-colors">
+            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1C252E] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-primary transition-colors">
               3
             </button>
-            <span className="text-[#9dabb9] px-1">...</span>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#2A3441] bg-[#1C252E] text-gray-300 hover:bg-white/5 hover:text-[#137fec] transition-colors">
+            <span className="text-slate-400 px-1">...</span>
+            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1C252E] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-primary transition-colors">
               12
             </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#2A3441] bg-[#1C252E] text-gray-300 hover:bg-white/5">
+            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1C252E] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5">
               <span className="material-symbols-outlined text-base">chevron_right</span>
             </button>
           </div>
@@ -316,21 +318,21 @@ export default function QuestoesPage() {
         {/* Sidebar Direita */}
         <aside className="hidden lg:block lg:col-span-5 space-y-6">
           {/* Filtros */}
-          <div className="bg-[#1C252E] rounded-xl border border-[#2A3441] p-5 space-y-4 shadow-sm sticky top-24">
+          <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-4 shadow-sm sticky top-24">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white">Filtros</h3>
-              <button className="text-xs font-medium text-[#137fec] hover:text-[#137fec]/80">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Filtros</h3>
+              <button className="text-xs font-medium text-primary hover:text-primary/80">
                 Limpar tudo
               </button>
             </div>
 
             <div className="flex flex-col gap-3">
               {/* Disciplina */}
-              <details className="flex flex-col rounded-lg border border-[#2A3441] bg-white/5 overflow-hidden group" open>
-                <summary className="flex cursor-pointer items-center justify-between p-3 select-none hover:bg-white/10 transition-colors">
-                  <span className="text-sm font-medium text-white">Disciplina</span>
+              <details className="flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-white/5 overflow-hidden group" open>
+                <summary className="flex cursor-pointer items-center justify-between p-3 select-none hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">Disciplina</span>
                   <svg
-                    className="w-5 h-5 text-[#9dabb9] group-open:rotate-180 transition-transform"
+                    className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -344,9 +346,9 @@ export default function QuestoesPage() {
                       type="checkbox"
                       checked={disciplinasSelecionadas.includes('Português')}
                       onChange={() => toggleDisciplina('Português')}
-                      className="rounded border-gray-600 text-[#137fec] focus:ring-[#137fec] bg-transparent"
+                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
                     />
-                    <span className="text-sm text-gray-300 group-hover/item:text-[#137fec] transition-colors">
+                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
                       Português
                     </span>
                   </label>
@@ -355,9 +357,9 @@ export default function QuestoesPage() {
                       type="checkbox"
                       checked={disciplinasSelecionadas.includes('Matemática')}
                       onChange={() => toggleDisciplina('Matemática')}
-                      className="rounded border-gray-600 text-[#137fec] focus:ring-[#137fec] bg-transparent"
+                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
                     />
-                    <span className="text-sm text-gray-300 group-hover/item:text-[#137fec] transition-colors">
+                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
                       Matemática
                     </span>
                   </label>
@@ -366,9 +368,9 @@ export default function QuestoesPage() {
                       type="checkbox"
                       checked={disciplinasSelecionadas.includes('Direito Const.')}
                       onChange={() => toggleDisciplina('Direito Const.')}
-                      className="rounded border-gray-600 text-[#137fec] focus:ring-[#137fec] bg-transparent"
+                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
                     />
-                    <span className="text-sm text-gray-300 group-hover/item:text-[#137fec] transition-colors">
+                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
                       Direito Const.
                     </span>
                   </label>
@@ -377,9 +379,9 @@ export default function QuestoesPage() {
                       type="checkbox"
                       checked={disciplinasSelecionadas.includes('Informática')}
                       onChange={() => toggleDisciplina('Informática')}
-                      className="rounded border-gray-600 text-[#137fec] focus:ring-[#137fec] bg-transparent"
+                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
                     />
-                    <span className="text-sm text-gray-300 group-hover/item:text-[#137fec] transition-colors">
+                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
                       Informática
                     </span>
                   </label>
@@ -387,11 +389,11 @@ export default function QuestoesPage() {
               </details>
 
               {/* Banca */}
-              <details className="flex flex-col rounded-lg border border-[#2A3441] bg-white/5 overflow-hidden group">
-                <summary className="flex cursor-pointer items-center justify-between p-3 select-none hover:bg-white/10 transition-colors">
-                  <span className="text-sm font-medium text-white">Banca</span>
+              <details className="flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-white/5 overflow-hidden group">
+                <summary className="flex cursor-pointer items-center justify-between p-3 select-none hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">Banca</span>
                   <svg
-                    className="w-5 h-5 text-[#9dabb9] group-open:rotate-180 transition-transform"
+                    className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -405,9 +407,9 @@ export default function QuestoesPage() {
                       type="checkbox"
                       checked={bancasSelecionadas.includes('FGV')}
                       onChange={() => toggleBanca('FGV')}
-                      className="rounded border-gray-600 text-[#137fec] focus:ring-[#137fec] bg-transparent"
+                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
                     />
-                    <span className="text-sm text-gray-300 group-hover/item:text-[#137fec] transition-colors">
+                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
                       FGV
                     </span>
                   </label>
@@ -416,9 +418,9 @@ export default function QuestoesPage() {
                       type="checkbox"
                       checked={bancasSelecionadas.includes('Cebraspe')}
                       onChange={() => toggleBanca('Cebraspe')}
-                      className="rounded border-gray-600 text-[#137fec] focus:ring-[#137fec] bg-transparent"
+                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
                     />
-                    <span className="text-sm text-gray-300 group-hover/item:text-[#137fec] transition-colors">
+                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
                       Cebraspe
                     </span>
                   </label>
@@ -427,9 +429,9 @@ export default function QuestoesPage() {
                       type="checkbox"
                       checked={bancasSelecionadas.includes('Vunesp')}
                       onChange={() => toggleBanca('Vunesp')}
-                      className="rounded border-gray-600 text-[#137fec] focus:ring-[#137fec] bg-transparent"
+                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
                     />
-                    <span className="text-sm text-gray-300 group-hover/item:text-[#137fec] transition-colors">
+                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
                       Vunesp
                     </span>
                   </label>
@@ -437,11 +439,11 @@ export default function QuestoesPage() {
               </details>
 
               {/* Ano */}
-              <details className="flex flex-col rounded-lg border border-[#2A3441] bg-white/5 overflow-hidden group">
-                <summary className="flex cursor-pointer items-center justify-between p-3 select-none hover:bg-white/10 transition-colors">
-                  <span className="text-sm font-medium text-white">Ano</span>
+              <details className="flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-white/5 overflow-hidden group">
+                <summary className="flex cursor-pointer items-center justify-between p-3 select-none hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">Ano</span>
                   <svg
-                    className="w-5 h-5 text-[#9dabb9] group-open:rotate-180 transition-transform"
+                    className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -450,16 +452,16 @@ export default function QuestoesPage() {
                   </svg>
                 </summary>
                 <div className="px-3 pb-3 pt-1 space-y-2">
-                  <p className="text-xs text-[#9dabb9]">Selecione os anos</p>
+                  <p className="text-xs text-slate-500">Selecione os anos</p>
                 </div>
               </details>
 
               {/* Dificuldade */}
-              <details className="flex flex-col rounded-lg border border-[#2A3441] bg-white/5 overflow-hidden group">
-                <summary className="flex cursor-pointer items-center justify-between p-3 select-none hover:bg-white/10 transition-colors">
-                  <span className="text-sm font-medium text-white">Dificuldade</span>
+              <details className="flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-white/5 overflow-hidden group">
+                <summary className="flex cursor-pointer items-center justify-between p-3 select-none hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">Dificuldade</span>
                   <svg
-                    className="w-5 h-5 text-[#9dabb9] group-open:rotate-180 transition-transform"
+                    className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -468,38 +470,38 @@ export default function QuestoesPage() {
                   </svg>
                 </summary>
                 <div className="px-3 pb-3 pt-1 space-y-2">
-                  <p className="text-xs text-[#9dabb9]">Selecione a dificuldade</p>
+                  <p className="text-xs text-slate-500">Selecione a dificuldade</p>
                 </div>
               </details>
             </div>
 
-            <button className="w-full bg-[#137fec] hover:bg-blue-600 text-white font-medium py-3 rounded-lg shadow-lg shadow-[#137fec]/20 transition-all active:scale-[0.98]">
+            <button className="w-full bg-primary hover:bg-blue-600 text-white font-medium py-3 rounded-lg shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
               Aplicar Filtros
             </button>
           </div>
 
           {/* Ranking Semanal */}
-          <div className="bg-[#1C252E] rounded-xl border border-[#2A3441] p-5">
+          <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-slate-200 dark:border-slate-700 p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-xl text-yellow-500">emoji_events</span>
                 Ranking Semanal
               </h3>
-              <a className="text-xs font-medium text-[#137fec] hover:underline" href="#">
+              <a className="text-xs font-medium text-primary hover:underline" href="#">
                 Ver todos
               </a>
             </div>
             <div className="space-y-4">
               {rankingUsuarios.map((usuario) => (
                 <div key={usuario.posicao} className="flex items-center gap-3">
-                  <div className="text-sm font-bold text-gray-400 w-4">{usuario.posicao}</div>
+                  <div className="text-sm font-bold text-slate-400 w-4">{usuario.posicao}</div>
                   <div
                     className="w-8 h-8 rounded-full bg-cover bg-center"
                     style={{ backgroundImage: `url("${usuario.avatar}")` }}
                   ></div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{usuario.nome}</p>
-                    <p className="text-xs text-[#9dabb9]">{usuario.xp}</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{usuario.nome}</p>
+                    <p className="text-xs text-slate-500">{usuario.xp}</p>
                   </div>
                 </div>
               ))}
@@ -507,13 +509,13 @@ export default function QuestoesPage() {
           </div>
 
           {/* Em Alta */}
-          <div className="bg-[#1C252E] rounded-xl border border-[#2A3441] p-5">
-            <h3 className="text-sm font-bold text-[#9dabb9] uppercase tracking-wider mb-4">Em Alta</h3>
+          <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Em Alta</h3>
             <div className="flex flex-wrap gap-2">
               {tagsEmAlta.map((tag) => (
                 <a
                   key={tag}
-                  className="px-3 py-1 bg-white/5 hover:bg-[#137fec]/10 hover:text-[#137fec] rounded-md text-xs font-medium text-gray-300 transition-colors"
+                  className="px-3 py-1 bg-slate-100 dark:bg-white/5 hover:bg-primary/10 hover:text-primary rounded-md text-xs font-medium text-slate-600 dark:text-slate-300 transition-colors"
                   href="#"
                 >
                   {tag}
