@@ -1,21 +1,50 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useSidebar } from '@/contexts/SidebarContext'
 
 export function Header({ title, searchPlaceholder }: { title: string; searchPlaceholder?: string }) {
   const [search, setSearch] = useState('')
-  const { profile } = useAuth()
+  const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const { profile, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const { toggleSidebar } = useSidebar()
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleSignOut = () => {
+    setShowDropdown(false)
+    signOut()
+  }
 
   return (
-    <header className="h-14 bg-white dark:bg-[#1c252e] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 sticky top-0 z-10">
+    <header className="h-14 bg-white dark:bg-[#1c252e] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-10">
       <div className="flex items-center gap-3">
-        <span className="material-symbols-outlined text-primary text-3xl">psychology</span>
+        {/* Hamburger menu for mobile */}
+        <button
+          onClick={toggleSidebar}
+          className="lg:hidden w-10 h-10 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        >
+          <span className="material-symbols-outlined text-2xl">menu</span>
+        </button>
+
+        <span className="material-symbols-outlined text-primary text-3xl hidden sm:block">psychology</span>
         <h1 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h1>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         {/* Search */}
         <div className="relative hidden md:block">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 material-symbols-outlined text-xl">
@@ -47,18 +76,72 @@ export function Header({ title, searchPlaceholder }: { title: string; searchPlac
           <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-[#1c252e]" />
         </button>
 
-        {/* Avatar */}
-        <div className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-700 relative">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center relative">
-            <span className="text-white font-bold text-sm">
-              {profile?.nome?.charAt(0).toUpperCase() || 'U'}
+        {/* Avatar with Dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-700 hover:opacity-80 transition-opacity"
+          >
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center relative">
+              <span className="text-white font-bold text-sm">
+                {profile?.nome?.charAt(0).toUpperCase() || 'U'}
+              </span>
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#1c252e]"></span>
+            </div>
+            <div className="hidden lg:flex flex-col items-start">
+              <span className="text-sm font-bold text-slate-900 dark:text-white leading-none">{profile?.nome || 'Usuário'}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 leading-none mt-1 capitalize">{profile?.plano || 'Free'}</span>
+            </div>
+            <span className="material-symbols-outlined text-slate-400 text-lg hidden lg:block">
+              {showDropdown ? 'expand_less' : 'expand_more'}
             </span>
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#1c252e]"></span>
-          </div>
-          <div className="hidden lg:flex flex-col">
-            <span className="text-sm font-bold text-slate-900 dark:text-white leading-none">{profile?.nome || 'Usuário'}</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400 leading-none mt-1 capitalize">{profile?.plano || 'Free'}</span>
-          </div>
+          </button>
+
+          {/* Dropdown Menu */}
+          {showDropdown && (
+            <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg py-2 z-50">
+              {/* User info in dropdown (mobile) */}
+              <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 lg:hidden">
+                <p className="text-sm font-bold text-slate-900 dark:text-white">{profile?.nome || 'Usuário'}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{profile?.email}</p>
+              </div>
+
+              <Link
+                href="/dashboard"
+                onClick={() => setShowDropdown(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <span className="material-symbols-outlined text-xl">dashboard</span>
+                Meu Painel
+              </Link>
+              <Link
+                href="/dashboard/perfil"
+                onClick={() => setShowDropdown(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <span className="material-symbols-outlined text-xl">credit_card</span>
+                Minhas Assinaturas
+              </Link>
+              <Link
+                href="/dashboard/perfil"
+                onClick={() => setShowDropdown(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <span className="material-symbols-outlined text-xl">settings</span>
+                Configurações
+              </Link>
+
+              <div className="border-t border-slate-200 dark:border-slate-700 mt-2 pt-2">
+                <button
+                  onClick={handleSignOut}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-xl">logout</span>
+                  Sair
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>
