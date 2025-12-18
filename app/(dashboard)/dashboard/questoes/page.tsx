@@ -5,26 +5,27 @@ import { Header } from '@/components/layout/Header'
 
 interface Questao {
   id: string
-  numero: number
   disciplina: string
   topico: string
   banca: string
   ano: string
+  dificuldade: 'Fácil' | 'Médio' | 'Difícil'
+  tipo: 'multipla' | 'certo_errado'
   enunciado: string
   opcoes: { letra: string; texto: string }[]
-  respostaSelecionada?: string
+  gabarito: string
   comentarios: number
-  salva?: boolean
 }
 
 const questoesExemplo: Questao[] = [
   {
     id: 'Q8492',
-    numero: 8492,
     disciplina: 'Português',
     topico: 'Crase',
     banca: 'FGV',
     ano: '2023',
+    dificuldade: 'Fácil',
+    tipo: 'multipla',
     enunciado: 'Assinale a alternativa em que o sinal indicativo de crase foi empregado em conformidade com a norma-padrão da língua portuguesa.',
     opcoes: [
       { letra: 'A', texto: 'Ele referiu-se à ela com muito respeito durante a reunião.' },
@@ -32,57 +33,47 @@ const questoesExemplo: Questao[] = [
       { letra: 'C', texto: 'O documento foi entregue à Vossa Senhoria ontem à tarde.' },
       { letra: 'D', texto: 'Não direi nada à ninguém sobre o ocorrido.' },
     ],
-    respostaSelecionada: 'B',
+    gabarito: 'B',
     comentarios: 12,
-    salva: true,
   },
   {
     id: 'Q8493',
-    numero: 8493,
     disciplina: 'Direito Constitucional',
     topico: 'Direitos Fundamentais',
     banca: 'Cebraspe',
     ano: '2024',
-    enunciado: 'Acerca dos direitos e garantias fundamentais, julgue o item a seguir.\n\nA casa é asilo inviolável do indivíduo, ninguém nela podendo penetrar sem consentimento do morador, salvo em caso de flagrante delito ou desastre, ou para prestar socorro, ou, durante o dia, por determinação judicial.',
+    dificuldade: 'Médio',
+    tipo: 'certo_errado',
+    enunciado: 'JULGUE O ITEM A SEGUIR',
     opcoes: [
       { letra: 'C', texto: 'Certo' },
       { letra: 'E', texto: 'Errado' },
     ],
+    gabarito: 'C',
     comentarios: 45,
-    salva: false,
   },
 ]
 
 const rankingUsuarios = [
-  { posicao: 1, nome: 'Ana Silva', xp: '1.240 XP', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuArB7zgpmeIHCHL8hsEuVIDW4-LExUVMa4bNmSrO6G6dnlx-rlRhwVwrjO00mVIDgWi0oSUa8QXomQrVUX5BOcg0VHDvOcjNJl8SkQOV-zJFWiX0IzQbAayR0SGWNByoWJ2GRrS71sS_8TqTE9RAHJdUTfblAF0vsMvmsnzwXp2ZFw6xCrjroWURjmKXkpJLucL2cnFk8FPTSsSyO7rvzcVa7kYh79qTO9JXlVcakNF-fmCDwF-B9lw4AogFWRiy8RiOrUiOu15ilc' },
-  { posicao: 2, nome: 'Pedro Costa', xp: '980 XP', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDGV1oXhoDLVSxGGJOX1kaibgGx7qBUs8BATp15LxY3yJiQWYRECNS0opggcy4wPpAdMRiIJbXlOMztxQ9tSLmAAE1haNfwCz-RgG8WjkPhWoNOYmuOCXWgNHwSOic7RslQKjSITuEhqzXmnpa_N-FwqRcSisccFlzinxohBbV9OQiPUKryVchEAInrn8uBw57XzLcTGFeFvTIhyQw7_vq4vdEtGWjevSN2hMw2iPHOSVTpscQVNrIMJCALZSvq7Qctz1-2NbAxEXU' },
-  { posicao: 3, nome: 'Mariana Luz', xp: '850 XP', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDe5vS5mY_HUKHxmOkrk8MrbZOQv7N9uDywdhYmqTcXiAi5q0LTELBxfmsuMZgqaOJXex0VnTjlnhEvrEQsyj8s5lmCnpiZah6ObAAxuj4gnFa3wdRObiechryy8NYFZ_Ah01Jl4uq_Neatylg6ErFBAFTISdJ5dis7RzmbqTnz1sIIwSjc4qxe2CnNG3pmitWfRjWft0va_CpCjYZ7eIPPyxWWz1bINKZv9trpTywkMWhiKJHRVY5KrpKHGjUp_5pBL1QxILNjNHI' },
+  { posicao: 1, nome: 'Lucas Mendes', xp: '1.240 XP' },
+  { posicao: 2, nome: 'Ana Carolina', xp: '1.180 XP' },
+  { posicao: 3, nome: 'Pedro Santos', xp: '1.050 XP' },
 ]
 
-const tagsEmAlta = ['#Constitucional', '#Crase', '#RLM', '#Informatica']
-
 export default function QuestoesPage() {
-  const [tabAtiva, setTabAtiva] = useState<'ineditas' | 'errei' | 'comentadas' | 'anotacoes'>('ineditas')
-  const [disciplinasSelecionadas, setDisciplinasSelecionadas] = useState<string[]>(['Português'])
-  const [bancasSelecionadas, setBancasSelecionadas] = useState<string[]>([])
-  const [paginaAtual] = useState(1)
-  const [respostasSelecionadas, setRespostasSelecionadas] = useState<{ [key: string]: string }>({})
-
-  const toggleDisciplina = (disciplina: string) => {
-    if (disciplinasSelecionadas.includes(disciplina)) {
-      setDisciplinasSelecionadas(disciplinasSelecionadas.filter(d => d !== disciplina))
-    } else {
-      setDisciplinasSelecionadas([...disciplinasSelecionadas, disciplina])
-    }
-  }
-
-  const toggleBanca = (banca: string) => {
-    if (bancasSelecionadas.includes(banca)) {
-      setBancasSelecionadas(bancasSelecionadas.filter(b => b !== banca))
-    } else {
-      setBancasSelecionadas([...bancasSelecionadas, banca])
-    }
-  }
+  const [tabAtiva, setTabAtiva] = useState<'todas' | 'ineditas' | 'errei' | 'anotacoes' | 'ia'>('todas')
+  const [respostasSelecionadas, setRespostasSelecionadas] = useState<{ [key: string]: string }>({
+    'Q8492': 'B'
+  })
+  const [filtros, setFiltros] = useState({
+    disciplina: 'Português',
+    assunto: 'Todos os assuntos',
+    banca: 'Selecione a banca',
+    ano: '2024',
+    dificuldade: 'Todas',
+    escolaridade: 'Todas',
+    modalidades: ['multipla', 'certo_errado']
+  })
 
   const selecionarResposta = (questaoId: string, letra: string) => {
     setRespostasSelecionadas({
@@ -91,439 +82,456 @@ export default function QuestoesPage() {
     })
   }
 
+  const toggleModalidade = (modalidade: string) => {
+    if (filtros.modalidades.includes(modalidade)) {
+      setFiltros({
+        ...filtros,
+        modalidades: filtros.modalidades.filter(m => m !== modalidade)
+      })
+    } else {
+      setFiltros({
+        ...filtros,
+        modalidades: [...filtros.modalidades, modalidade]
+      })
+    }
+  }
+
+  const getDificuldadeColor = (dificuldade: string) => {
+    switch (dificuldade) {
+      case 'Fácil':
+        return 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+      case 'Médio':
+        return 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400'
+      case 'Difícil':
+        return 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+      default:
+        return 'bg-gray-100 text-gray-600'
+    }
+  }
+
   return (
-    <div className="min-h-screen">
-      <Header title="Banco de Questões" />
+    <div className="min-h-screen bg-slate-50 dark:bg-[#101922]">
+      <Header title="Questões" />
 
-      <div className="flex-1 w-full max-w-[1440px] mx-auto p-4 md:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-        {/* Main Column */}
-        <main className="col-span-1 lg:col-span-7 flex flex-col gap-6">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white mb-2">
-                Banco de Questões
-              </h1>
-              <p className="text-slate-500 dark:text-slate-400">Explore mais de 24.500 questões filtradas.</p>
-            </div>
-            <button className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1C252E] border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-900 dark:text-white">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-              </svg>
-              Filtros
-            </button>
-          </div>
-
+      <div className="p-4 lg:p-6">
+        <div className="max-w-[1400px] mx-auto">
           {/* Search Bar */}
-          <div className="w-full">
-            <div className="relative flex items-center w-full h-12 rounded-lg bg-white dark:bg-[#1C252E] border border-slate-200 dark:border-slate-700 shadow-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary overflow-hidden">
-              <div className="grid place-items-center h-full w-12 text-slate-400 dark:text-slate-500">
-                <span className="material-symbols-outlined text-xl">search</span>
-              </div>
+          <div className="mb-6">
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 material-symbols-outlined text-xl">
+                search
+              </span>
               <input
-                className="peer h-full w-full outline-none bg-transparent text-sm text-slate-900 dark:text-white pr-4 placeholder:text-slate-400"
-                placeholder="Pesquisar por palavras-chave no enunciado..."
                 type="text"
+                placeholder="Pesquisar por palavras-chave no enunciado, código da questão..."
+                className="w-full h-12 pl-12 pr-4 rounded-xl bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] text-gray-900 dark:text-white text-sm placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm"
               />
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2 mb-6">
             <button
-              onClick={() => setTabAtiva('ineditas')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-transform hover:-translate-y-0.5 ${
-                tabAtiva === 'ineditas'
-                  ? 'bg-primary text-white shadow-md shadow-primary/20'
-                  : 'bg-white dark:bg-[#1C252E] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'
+              onClick={() => setTabAtiva('todas')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                tabAtiva === 'todas'
+                  ? 'bg-primary text-white shadow-md'
+                  : 'bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] text-gray-600 dark:text-gray-300 hover:border-primary/50'
               }`}
             >
-              {tabAtiva === 'ineditas' && <span className="material-symbols-outlined text-[18px]">check</span>}
+              Todas
+            </button>
+            <button
+              onClick={() => setTabAtiva('ineditas')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                tabAtiva === 'ineditas'
+                  ? 'bg-primary text-white shadow-md'
+                  : 'bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] text-gray-600 dark:text-gray-300 hover:border-primary/50'
+              }`}
+            >
               Inéditas
             </button>
             <button
               onClick={() => setTabAtiva('errei')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-transform hover:-translate-y-0.5 ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 tabAtiva === 'errei'
-                  ? 'bg-primary text-white shadow-md shadow-primary/20'
-                  : 'bg-white dark:bg-[#1C252E] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'
+                  ? 'bg-primary text-white shadow-md'
+                  : 'bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] text-gray-600 dark:text-gray-300 hover:border-primary/50'
               }`}
             >
-              {tabAtiva === 'errei' && <span className="material-symbols-outlined text-[18px]">check</span>}
               Errei anteriormente
             </button>
             <button
-              onClick={() => setTabAtiva('comentadas')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-transform hover:-translate-y-0.5 ${
-                tabAtiva === 'comentadas'
-                  ? 'bg-primary text-white shadow-md shadow-primary/20'
-                  : 'bg-white dark:bg-[#1C252E] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'
-              }`}
-            >
-              {tabAtiva === 'comentadas' && <span className="material-symbols-outlined text-[18px]">check</span>}
-              Comentadas
-            </button>
-            <button
               onClick={() => setTabAtiva('anotacoes')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-transform hover:-translate-y-0.5 ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 tabAtiva === 'anotacoes'
-                  ? 'bg-primary text-white shadow-md shadow-primary/20'
-                  : 'bg-white dark:bg-[#1C252E] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'
+                  ? 'bg-primary text-white shadow-md'
+                  : 'bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] text-gray-600 dark:text-gray-300 hover:border-primary/50'
               }`}
             >
-              {tabAtiva === 'anotacoes' && <span className="material-symbols-outlined text-[18px]">check</span>}
               Minhas anotações
             </button>
-          </div>
-
-          {/* Questões */}
-          {questoesExemplo.map((questao) => (
-            <article key={questao.id} className="bg-white dark:bg-[#1C252E] rounded-xl border border-slate-200 dark:border-slate-700 p-5 md:p-6 shadow-sm">
-              {/* Breadcrumb */}
-              <div className="flex flex-wrap items-center gap-y-2 gap-x-3 mb-4 text-xs font-medium text-slate-500 dark:text-slate-400">
-                <span className="text-primary bg-primary/10 px-2 py-0.5 rounded">{questao.id}</span>
-                <span className="flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-slate-400"></span>
-                  {questao.disciplina}
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-slate-400"></span>
-                  {questao.topico}
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-slate-400"></span>
-                  {questao.banca}
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-slate-400"></span>
-                  {questao.ano}
-                </span>
-              </div>
-
-              {/* Enunciado */}
-              <div className="mb-6">
-                <p className="text-base leading-relaxed text-slate-700 dark:text-slate-200 whitespace-pre-line">
-                  {questao.enunciado}
-                </p>
-              </div>
-
-              {/* Opções */}
-              <div className="space-y-3 mb-6">
-                {questao.opcoes.map((opcao) => {
-                  const isSelected = respostasSelecionadas[questao.id] === opcao.letra
-                  const isPreSelected = questao.respostaSelecionada === opcao.letra
-
-                  return (
-                    <label
-                      key={opcao.letra}
-                      className={`flex items-start gap-4 p-3 rounded-lg border cursor-pointer transition-colors group ${
-                        isSelected || isPreSelected
-                          ? 'border-primary bg-primary/5'
-                          : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-white/5'
-                      }`}
-                    >
-                      <div className="relative flex items-center justify-center shrink-0 mt-0.5">
-                        <input
-                          className="peer sr-only"
-                          name={`questao-${questao.id}`}
-                          type="radio"
-                          checked={isSelected || isPreSelected}
-                          onChange={() => selecionarResposta(questao.id, opcao.letra)}
-                        />
-                        <div
-                          className={`w-5 h-5 rounded-full border-2 transition-all ${
-                            isSelected || isPreSelected
-                              ? 'border-primary bg-primary'
-                              : 'border-slate-400 group-hover:border-primary'
-                          }`}
-                        ></div>
-                        <span
-                          className={`absolute text-[10px] font-bold text-white ${
-                            isSelected || isPreSelected ? 'opacity-100' : 'opacity-0'
-                          }`}
-                        >
-                          {opcao.letra}
-                        </span>
-                      </div>
-                      <span
-                        className={`text-sm transition-colors ${
-                          isSelected || isPreSelected
-                            ? 'text-slate-900 dark:text-white font-medium'
-                            : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white'
-                        }`}
-                      >
-                        {opcao.texto}
-                      </span>
-                    </label>
-                  )
-                })}
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
-                <button className="bg-primary hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium shadow-md shadow-primary/20 transition-all active:scale-95">
-                  Responder
-                </button>
-                <div className="flex items-center gap-2 sm:gap-4">
-                  <button className="flex items-center gap-1.5 text-slate-400 hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-slate-50 dark:hover:bg-white/5">
-                    <span className="material-symbols-outlined text-xl">chat_bubble</span>
-                    <span className="text-xs font-medium">{questao.comentarios} Comentários</span>
-                  </button>
-                  <button className="flex items-center gap-1.5 text-slate-400 hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-slate-50 dark:hover:bg-white/5">
-                    {questao.salva ? (
-                      <span className="material-symbols-outlined text-xl text-primary" style={{fontVariationSettings: '"FILL" 1'}}>bookmark</span>
-                    ) : (
-                      <span className="material-symbols-outlined text-xl">bookmark</span>
-                    )}
-                    <span className="hidden sm:inline text-xs font-medium">Salvar</span>
-                  </button>
-                  <button
-                    className="text-slate-400 hover:text-red-500 transition-colors p-1"
-                    title="Reportar Erro"
-                  >
-                    <span className="material-symbols-outlined text-xl">flag</span>
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
-
-          {/* Paginação */}
-          <div className="flex items-center justify-center gap-2 pt-4">
             <button
-              disabled={paginaAtual === 1}
-              className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1C252E] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-50"
+              onClick={() => setTabAtiva('ia')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+                tabAtiva === 'ia'
+                  ? 'bg-gradient-to-r from-purple-500 to-primary text-white shadow-md'
+                  : 'bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] text-purple-500 hover:border-purple-500/50'
+              }`}
             >
-              <span className="material-symbols-outlined text-base">chevron_left</span>
-            </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary text-white font-medium shadow-md shadow-primary/20">
-              1
-            </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1C252E] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-primary transition-colors">
-              2
-            </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1C252E] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-primary transition-colors">
-              3
-            </button>
-            <span className="text-slate-400 px-1">...</span>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1C252E] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-primary transition-colors">
-              12
-            </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1C252E] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5">
-              <span className="material-symbols-outlined text-base">chevron_right</span>
-            </button>
-          </div>
-        </main>
-
-        {/* Sidebar Direita */}
-        <aside className="hidden lg:block lg:col-span-5 space-y-6">
-          {/* Filtros */}
-          <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-4 shadow-sm sticky top-24">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Filtros</h3>
-              <button className="text-xs font-medium text-primary hover:text-primary/80">
-                Limpar tudo
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {/* Disciplina */}
-              <details className="flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-white/5 overflow-hidden group" open>
-                <summary className="flex cursor-pointer items-center justify-between p-3 select-none hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                  <span className="text-sm font-medium text-slate-900 dark:text-white">Disciplina</span>
-                  <svg
-                    className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </summary>
-                <div className="px-3 pb-3 pt-1 space-y-2">
-                  <label className="flex items-center gap-3 cursor-pointer group/item">
-                    <input
-                      type="checkbox"
-                      checked={disciplinasSelecionadas.includes('Português')}
-                      onChange={() => toggleDisciplina('Português')}
-                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
-                    />
-                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
-                      Português
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer group/item">
-                    <input
-                      type="checkbox"
-                      checked={disciplinasSelecionadas.includes('Matemática')}
-                      onChange={() => toggleDisciplina('Matemática')}
-                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
-                    />
-                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
-                      Matemática
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer group/item">
-                    <input
-                      type="checkbox"
-                      checked={disciplinasSelecionadas.includes('Direito Const.')}
-                      onChange={() => toggleDisciplina('Direito Const.')}
-                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
-                    />
-                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
-                      Direito Const.
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer group/item">
-                    <input
-                      type="checkbox"
-                      checked={disciplinasSelecionadas.includes('Informática')}
-                      onChange={() => toggleDisciplina('Informática')}
-                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
-                    />
-                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
-                      Informática
-                    </span>
-                  </label>
-                </div>
-              </details>
-
-              {/* Banca */}
-              <details className="flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-white/5 overflow-hidden group">
-                <summary className="flex cursor-pointer items-center justify-between p-3 select-none hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                  <span className="text-sm font-medium text-slate-900 dark:text-white">Banca</span>
-                  <svg
-                    className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </summary>
-                <div className="px-3 pb-3 pt-1 space-y-2">
-                  <label className="flex items-center gap-3 cursor-pointer group/item">
-                    <input
-                      type="checkbox"
-                      checked={bancasSelecionadas.includes('FGV')}
-                      onChange={() => toggleBanca('FGV')}
-                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
-                    />
-                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
-                      FGV
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer group/item">
-                    <input
-                      type="checkbox"
-                      checked={bancasSelecionadas.includes('Cebraspe')}
-                      onChange={() => toggleBanca('Cebraspe')}
-                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
-                    />
-                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
-                      Cebraspe
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer group/item">
-                    <input
-                      type="checkbox"
-                      checked={bancasSelecionadas.includes('Vunesp')}
-                      onChange={() => toggleBanca('Vunesp')}
-                      className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent"
-                    />
-                    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover/item:text-primary transition-colors">
-                      Vunesp
-                    </span>
-                  </label>
-                </div>
-              </details>
-
-              {/* Ano */}
-              <details className="flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-white/5 overflow-hidden group">
-                <summary className="flex cursor-pointer items-center justify-between p-3 select-none hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                  <span className="text-sm font-medium text-slate-900 dark:text-white">Ano</span>
-                  <svg
-                    className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </summary>
-                <div className="px-3 pb-3 pt-1 space-y-2">
-                  <p className="text-xs text-slate-500">Selecione os anos</p>
-                </div>
-              </details>
-
-              {/* Dificuldade */}
-              <details className="flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-white/5 overflow-hidden group">
-                <summary className="flex cursor-pointer items-center justify-between p-3 select-none hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                  <span className="text-sm font-medium text-slate-900 dark:text-white">Dificuldade</span>
-                  <svg
-                    className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </summary>
-                <div className="px-3 pb-3 pt-1 space-y-2">
-                  <p className="text-xs text-slate-500">Selecione a dificuldade</p>
-                </div>
-              </details>
-            </div>
-
-            <button className="w-full bg-primary hover:bg-blue-600 text-white font-medium py-3 rounded-lg shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
-              Aplicar Filtros
+              <span className="material-symbols-outlined text-base">auto_awesome</span>
+              Geradas por IA
             </button>
           </div>
 
-          {/* Ranking Semanal */}
-          <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <span className="material-symbols-outlined text-xl text-yellow-500">emoji_events</span>
-                Ranking Semanal
-              </h3>
-              <a className="text-xs font-medium text-primary hover:underline" href="#">
-                Ver todos
-              </a>
-            </div>
-            <div className="space-y-4">
-              {rankingUsuarios.map((usuario) => (
-                <div key={usuario.posicao} className="flex items-center gap-3">
-                  <div className="text-sm font-bold text-slate-400 w-4">{usuario.posicao}</div>
-                  <div
-                    className="w-8 h-8 rounded-full bg-cover bg-center"
-                    style={{ backgroundImage: `url("${usuario.avatar}")` }}
-                  ></div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{usuario.nome}</p>
-                    <p className="text-xs text-slate-500">{usuario.xp}</p>
+          {/* Main Content */}
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Questions List */}
+            <div className="flex-1 space-y-4">
+              {questoesExemplo.map((questao) => (
+                <div
+                  key={questao.id}
+                  className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] overflow-hidden shadow-sm"
+                >
+                  {/* Question Header */}
+                  <div className="flex flex-wrap items-center gap-2 p-4 border-b border-gray-100 dark:border-[#283039]">
+                    <span className="text-primary font-bold text-sm">{questao.id}</span>
+                    <span className="text-gray-300 dark:text-gray-600">|</span>
+                    <span className="text-gray-700 dark:text-gray-300 text-sm font-medium">{questao.disciplina}</span>
+                    <span className="text-gray-400">&gt;</span>
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">{questao.topico}</span>
+                    <div className="flex-1"></div>
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">{questao.banca}</span>
+                    <span className="text-gray-300 dark:text-gray-600">|</span>
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">{questao.ano}</span>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${getDificuldadeColor(questao.dificuldade)}`}>
+                      {questao.dificuldade}
+                    </span>
+                  </div>
+
+                  {/* Question Content */}
+                  <div className="p-4 lg:p-6">
+                    {/* Enunciado */}
+                    <p className="text-gray-800 dark:text-gray-200 text-base leading-relaxed mb-6">
+                      {questao.enunciado}
+                    </p>
+
+                    {/* Options */}
+                    <div className="space-y-3">
+                      {questao.opcoes.map((opcao) => {
+                        const isSelected = respostasSelecionadas[questao.id] === opcao.letra
+
+                        return (
+                          <label
+                            key={opcao.letra}
+                            onClick={() => selecionarResposta(questao.id, opcao.letra)}
+                            className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                              isSelected
+                                ? 'border-primary bg-primary/5'
+                                : 'border-gray-200 dark:border-[#283039] hover:border-gray-300 dark:hover:border-gray-600'
+                            }`}
+                          >
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-all ${
+                                isSelected
+                                  ? 'bg-primary text-white'
+                                  : 'border-2 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'
+                              }`}
+                            >
+                              {opcao.letra}
+                            </div>
+                            <span className={`text-sm pt-1 ${
+                              isSelected
+                                ? 'text-gray-900 dark:text-white font-medium'
+                                : 'text-gray-600 dark:text-gray-300'
+                            }`}>
+                              {opcao.texto}
+                            </span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Question Footer */}
+                  <div className="flex flex-wrap items-center justify-between gap-4 px-4 lg:px-6 py-4 border-t border-gray-100 dark:border-[#283039] bg-gray-50 dark:bg-[#161f28]">
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                      <button className="flex items-center gap-1.5 hover:text-primary transition-colors">
+                        <span className="material-symbols-outlined text-lg">check_circle</span>
+                        Gabarito Comentado
+                      </button>
+                      <button className="flex items-center gap-1.5 hover:text-primary transition-colors">
+                        <span className="material-symbols-outlined text-lg">chat_bubble_outline</span>
+                        Comentários ({questao.comentarios})
+                      </button>
+                      <button className="flex items-center gap-1.5 hover:text-primary transition-colors">
+                        <span className="material-symbols-outlined text-lg">bar_chart</span>
+                        Estatística
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button className="bg-primary hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-md shadow-primary/20 transition-all">
+                        Responder
+                      </button>
+                      <button className="text-gray-400 hover:text-red-500 transition-colors p-1" title="Reportar">
+                        <span className="material-symbols-outlined text-xl">flag</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
 
-          {/* Em Alta */}
-          <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Em Alta</h3>
-            <div className="flex flex-wrap gap-2">
-              {tagsEmAlta.map((tag) => (
-                <a
-                  key={tag}
-                  className="px-3 py-1 bg-slate-100 dark:bg-white/5 hover:bg-primary/10 hover:text-primary rounded-md text-xs font-medium text-slate-600 dark:text-slate-300 transition-colors"
-                  href="#"
-                >
-                  {tag}
-                </a>
-              ))}
+              {/* Second Question - Certo/Errado style */}
+              <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] overflow-hidden shadow-sm">
+                {/* Question Header */}
+                <div className="flex flex-wrap items-center gap-2 p-4 border-b border-gray-100 dark:border-[#283039]">
+                  <span className="text-primary font-bold text-sm">Q8493</span>
+                  <span className="text-gray-300 dark:text-gray-600">|</span>
+                  <span className="text-gray-700 dark:text-gray-300 text-sm font-medium">Direito Constitucional</span>
+                  <span className="text-gray-400">&gt;</span>
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">Direitos Fundamentais</span>
+                  <div className="flex-1"></div>
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">Cebraspe</span>
+                  <span className="text-gray-300 dark:text-gray-600">|</span>
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">2024</span>
+                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400">
+                    Médio
+                  </span>
+                </div>
+
+                {/* Question Content */}
+                <div className="p-4 lg:p-6">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-wider mb-4">
+                    JULGUE O ITEM A SEGUIR
+                  </p>
+                  <p className="text-gray-800 dark:text-gray-200 text-base leading-relaxed">
+                    A casa é asilo inviolável do indivíduo, ninguém nela podendo penetrar sem consentimento do morador, salvo em caso de flagrante delito ou desastre, ou para prestar socorro, ou, durante o dia, por determinação judicial.
+                  </p>
+                </div>
+              </div>
             </div>
+
+            {/* Sidebar - Filters */}
+            <aside className="w-full lg:w-80 space-y-6">
+              {/* Filters Card */}
+              <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Filtros</h3>
+                  <button className="text-sm text-primary hover:underline font-medium">Limpar tudo</button>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Disciplina */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Disciplina</label>
+                    <div className="relative">
+                      <select
+                        value={filtros.disciplina}
+                        onChange={(e) => setFiltros({ ...filtros, disciplina: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg bg-white dark:bg-[#101922] border border-gray-200 dark:border-[#283039] text-gray-900 dark:text-white text-sm appearance-none cursor-pointer focus:border-primary focus:outline-none"
+                      >
+                        <option>Português</option>
+                        <option>Matemática</option>
+                        <option>Direito Constitucional</option>
+                        <option>Direito Administrativo</option>
+                        <option>Informática</option>
+                      </select>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 material-symbols-outlined text-lg pointer-events-none">
+                        expand_more
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Assunto */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assunto</label>
+                    <div className="relative">
+                      <select
+                        value={filtros.assunto}
+                        onChange={(e) => setFiltros({ ...filtros, assunto: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg bg-white dark:bg-[#101922] border border-gray-200 dark:border-[#283039] text-gray-900 dark:text-white text-sm appearance-none cursor-pointer focus:border-primary focus:outline-none"
+                      >
+                        <option>Todos os assuntos</option>
+                        <option>Crase</option>
+                        <option>Concordância</option>
+                        <option>Regência</option>
+                      </select>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 material-symbols-outlined text-lg pointer-events-none">
+                        expand_more
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Banca */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Banca</label>
+                    <div className="relative">
+                      <select
+                        value={filtros.banca}
+                        onChange={(e) => setFiltros({ ...filtros, banca: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg bg-white dark:bg-[#101922] border border-gray-200 dark:border-[#283039] text-gray-900 dark:text-white text-sm appearance-none cursor-pointer focus:border-primary focus:outline-none"
+                      >
+                        <option>Selecione a banca</option>
+                        <option>FGV</option>
+                        <option>Cebraspe</option>
+                        <option>Vunesp</option>
+                        <option>FCC</option>
+                      </select>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 material-symbols-outlined text-lg pointer-events-none">
+                        expand_more
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Ano e Dificuldade - side by side */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ano</label>
+                      <div className="relative">
+                        <select
+                          value={filtros.ano}
+                          onChange={(e) => setFiltros({ ...filtros, ano: e.target.value })}
+                          className="w-full h-10 px-3 rounded-lg bg-white dark:bg-[#101922] border border-gray-200 dark:border-[#283039] text-gray-900 dark:text-white text-sm appearance-none cursor-pointer focus:border-primary focus:outline-none"
+                        >
+                          <option>2024</option>
+                          <option>2023</option>
+                          <option>2022</option>
+                          <option>2021</option>
+                        </select>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 material-symbols-outlined text-lg pointer-events-none">
+                          expand_more
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dificuldade</label>
+                      <div className="relative">
+                        <select
+                          value={filtros.dificuldade}
+                          onChange={(e) => setFiltros({ ...filtros, dificuldade: e.target.value })}
+                          className="w-full h-10 px-3 rounded-lg bg-white dark:bg-[#101922] border border-gray-200 dark:border-[#283039] text-gray-900 dark:text-white text-sm appearance-none cursor-pointer focus:border-primary focus:outline-none"
+                        >
+                          <option>Todas</option>
+                          <option>Fácil</option>
+                          <option>Médio</option>
+                          <option>Difícil</option>
+                        </select>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 material-symbols-outlined text-lg pointer-events-none">
+                          expand_more
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Escolaridade */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Escolaridade</label>
+                    <div className="relative">
+                      <select
+                        value={filtros.escolaridade}
+                        onChange={(e) => setFiltros({ ...filtros, escolaridade: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg bg-white dark:bg-[#101922] border border-gray-200 dark:border-[#283039] text-gray-900 dark:text-white text-sm appearance-none cursor-pointer focus:border-primary focus:outline-none"
+                      >
+                        <option>Todas</option>
+                        <option>Ensino Médio</option>
+                        <option>Ensino Superior</option>
+                      </select>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 material-symbols-outlined text-lg pointer-events-none">
+                        expand_more
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Modalidade */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Modalidade</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <div className="relative flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={filtros.modalidades.includes('multipla')}
+                            onChange={() => toggleModalidade('multipla')}
+                            className="peer sr-only"
+                          />
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                            filtros.modalidades.includes('multipla')
+                              ? 'bg-primary border-primary'
+                              : 'border-gray-300 dark:border-gray-600'
+                          }`}>
+                            {filtros.modalidades.includes('multipla') && (
+                              <span className="material-symbols-outlined text-white text-sm">check</span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Múltipla Escolha</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <div className="relative flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={filtros.modalidades.includes('certo_errado')}
+                            onChange={() => toggleModalidade('certo_errado')}
+                            className="peer sr-only"
+                          />
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                            filtros.modalidades.includes('certo_errado')
+                              ? 'bg-primary border-primary'
+                              : 'border-gray-300 dark:border-gray-600'
+                          }`}>
+                            {filtros.modalidades.includes('certo_errado') && (
+                              <span className="material-symbols-outlined text-white text-sm">check</span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Certo / Errado</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Apply Filters Button */}
+                  <button className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-primary/20 transition-all mt-2">
+                    Aplicar Filtros
+                  </button>
+                </div>
+              </div>
+
+              {/* Ranking Card */}
+              <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-yellow-500 text-xl">emoji_events</span>
+                    <h3 className="font-bold text-gray-900 dark:text-white">Ranking Semanal</h3>
+                  </div>
+                  <a href="#" className="text-sm text-primary hover:underline font-medium">Ver todos</a>
+                </div>
+
+                <div className="space-y-3">
+                  {rankingUsuarios.map((usuario) => (
+                    <div key={usuario.posicao} className="flex items-center gap-3">
+                      <span className={`text-sm font-bold w-5 ${
+                        usuario.posicao === 1 ? 'text-yellow-500' :
+                        usuario.posicao === 2 ? 'text-gray-400' :
+                        usuario.posicao === 3 ? 'text-amber-600' : 'text-gray-400'
+                      }`}>
+                        {usuario.posicao}
+                      </span>
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">
+                          {usuario.nome.charAt(0)}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{usuario.nome}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{usuario.xp}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
           </div>
-        </aside>
+        </div>
       </div>
     </div>
   )
