@@ -19,6 +19,7 @@ const menuEstudos = [
 ]
 
 const menuComunidade = [
+  { icon: 'leaderboard', label: 'Ranking', href: '/dashboard/ranking', special: true },
   { icon: 'groups', label: 'Social', href: '/dashboard/social' },
   { icon: 'person', label: 'Perfil do Usuário', href: '/dashboard/perfil' },
 ]
@@ -131,7 +132,7 @@ export function Sidebar() {
               }`}
             >
               <span className={`material-symbols-outlined text-xl ${
-                isActive(item.href) ? '' : 'group-hover:text-primary'
+                item.special ? 'text-yellow-500' : isActive(item.href) ? '' : 'group-hover:text-primary'
               }`}>{item.icon}</span>
               <span className="text-sm font-medium">{item.label}</span>
             </Link>
