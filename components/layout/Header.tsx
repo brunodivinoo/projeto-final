@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSidebar } from '@/contexts/SidebarContext'
 import { LimitsIndicator } from '@/components/limits'
+import { XPIndicator } from '@/components/xp'
 
 export function Header({ title, searchPlaceholder }: { title: string; searchPlaceholder?: string }) {
   const [search, setSearch] = useState('')
@@ -59,6 +60,9 @@ export function Header({ title, searchPlaceholder }: { title: string; searchPlac
             className="w-48 lg:w-64 h-10 pl-10 pr-4 rounded-lg bg-slate-100 dark:bg-[#101922] border border-slate-200 dark:border-transparent text-slate-900 dark:text-white text-sm placeholder:text-slate-400 focus:border-primary focus:outline-none transition-colors"
           />
         </div>
+
+        {/* XP Indicator */}
+        <XPIndicator />
 
         {/* Limits Indicator */}
         <LimitsIndicator />

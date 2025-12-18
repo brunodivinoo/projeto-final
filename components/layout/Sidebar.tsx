@@ -6,6 +6,7 @@ import { useSidebar } from '@/contexts/SidebarContext'
 const menuPrincipal = [
   { icon: 'home', label: 'Página Inicial', href: '/dashboard' },
   { icon: 'auto_awesome', label: 'Central IA', href: '/dashboard/ia', special: true },
+  { icon: 'trending_up', label: 'Meu Progresso', href: '/dashboard/progresso' },
 ]
 
 const menuEstudos = [
