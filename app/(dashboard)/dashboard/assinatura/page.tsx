@@ -5,24 +5,25 @@ import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
 
 export default function AssinaturaPage() {
-  const { profile } = useAuth()
+  const { user, profile } = useAuth()
   const [billingCycle, setBillingCycle] = useState<'mensal' | 'anual'>('mensal')
-  const isPro = profile?.plano?.toLowerCase() === 'estuda_pro' || profile?.plano?.toLowerCase() === 'pro'
+  const [loading, setLoading] = useState(false)
+  const isPro = profile?.plano?.toUpperCase() === 'ESTUDA_PRO'
 
   const planos = {
     free: {
       nome: 'Free',
       preco: 0,
-      descricao: 'Para quem está começando',
+      descricao: 'Para quem esta comecando',
       recursos: [
-        { nome: 'Questões IA por dia', valor: '5', icon: 'quiz' },
-        { nome: 'Questões por dia', valor: '50', icon: 'help_outline' },
-        { nome: 'Resumos por mês', valor: '3', icon: 'summarize' },
+        { nome: 'Questoes IA por dia', valor: '5', icon: 'quiz' },
+        { nome: 'Questoes por dia', valor: '50', icon: 'help_outline' },
+        { nome: 'Resumos por mes', valor: '3', icon: 'summarize' },
         { nome: 'Chat IA (mensagens/dia)', valor: '10', icon: 'chat_bubble' },
-        { nome: 'Páginas PDF por mês', valor: '5', icon: 'picture_as_pdf' },
+        { nome: 'Paginas PDF por mes', valor: '5', icon: 'picture_as_pdf' },
         { nome: 'Flashcards', valor: '50', icon: 'style' },
         { nome: 'Baralhos', valor: '2', icon: 'folder' },
-        { nome: 'Simulados por mês', valor: '2', icon: 'assignment' },
+        { nome: 'Simulados por mes', valor: '2', icon: 'assignment' },
         { nome: 'Ciclos de estudo', valor: '1', icon: 'refresh' },
         { nome: 'Planos de estudo', valor: '1', icon: 'calendar_month' },
         { nome: 'Multiplicador XP', valor: '1x', icon: 'stars' },
@@ -35,15 +36,15 @@ export default function AssinaturaPage() {
       precoAnual: 239.90,
       descricao: 'Recursos ilimitados para seu sucesso',
       recursos: [
-        { nome: 'Questões IA por dia', valor: '50', icon: 'quiz', destaque: true },
-        { nome: 'Questões por dia', valor: '200', icon: 'help_outline', destaque: true },
-        { nome: 'Resumos por mês', valor: '50', icon: 'summarize', destaque: true },
+        { nome: 'Questoes IA por dia', valor: '50', icon: 'quiz', destaque: true },
+        { nome: 'Questoes por dia', valor: '200', icon: 'help_outline', destaque: true },
+        { nome: 'Resumos por mes', valor: '50', icon: 'summarize', destaque: true },
         { nome: 'Chat IA', valor: 'Ilimitado', icon: 'chat_bubble', destaque: true },
-        { nome: 'Páginas PDF por mês', valor: '100', icon: 'picture_as_pdf', destaque: true },
-        { nome: 'Créditos IA extras/mês', valor: '500', icon: 'token', destaque: true },
+        { nome: 'Paginas PDF por mes', valor: '100', icon: 'picture_as_pdf', destaque: true },
+        { nome: 'Creditos IA extras/mes', valor: '500', icon: 'token', destaque: true },
         { nome: 'Flashcards', valor: '2.000', icon: 'style' },
         { nome: 'Baralhos', valor: 'Ilimitados', icon: 'folder', destaque: true },
-        { nome: 'Simulados por mês', valor: '10', icon: 'assignment' },
+        { nome: 'Simulados por mes', valor: '10', icon: 'assignment' },
         { nome: 'Ciclos de estudo', valor: 'Ilimitados', icon: 'refresh', destaque: true },
         { nome: 'Planos de estudo', valor: 'Ilimitados', icon: 'calendar_month', destaque: true },
         { nome: 'Multiplicador XP', valor: '1.5x', icon: 'stars', destaque: true },
@@ -54,6 +55,46 @@ export default function AssinaturaPage() {
 
   const precoAtual = billingCycle === 'mensal' ? planos.pro.precoMensal : planos.pro.precoAnual
   const economia = billingCycle === 'anual' ? Math.round((planos.pro.precoMensal * 12 - planos.pro.precoAnual)) : 0
+
+  // Funcao para iniciar checkout
+  const handleCheckout = async () => {
+    if (!user) {
+      // Redirecionar para login se nao estiver logado
+      window.location.href = '/login?redirect=/dashboard/assinatura'
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      // Chamar API para gerar URL de checkout
+      const response = await fetch('/api/cakto/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          name: profile?.nome,
+          billingCycle,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.checkoutUrl) {
+        // Redirecionar para checkout do Cakto
+        window.location.href = data.checkoutUrl
+      } else {
+        // Se nao tiver URL configurada, mostrar mensagem
+        alert('Sistema de pagamentos em configuracao. Tente novamente em breve!')
+      }
+    } catch (error) {
+      console.error('Erro ao iniciar checkout:', error)
+      alert('Erro ao processar. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#101922]">
@@ -123,7 +164,7 @@ export default function AssinaturaPage() {
             <div className="mb-6">
               <div className="flex items-baseline gap-1">
                 <span className="text-4xl font-black text-slate-900 dark:text-white">R$0</span>
-                <span className="text-slate-500 dark:text-slate-400">/mês</span>
+                <span className="text-slate-500 dark:text-slate-400">/mes</span>
               </div>
             </div>
 
@@ -189,12 +230,12 @@ export default function AssinaturaPage() {
                   R${precoAtual.toFixed(2).replace('.', ',')}
                 </span>
                 <span className="text-slate-500 dark:text-slate-400">
-                  /{billingCycle === 'mensal' ? 'mês' : 'ano'}
+                  /{billingCycle === 'mensal' ? 'mes' : 'ano'}
                 </span>
               </div>
               {billingCycle === 'anual' && (
                 <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                  Equivale a R${(planos.pro.precoAnual / 12).toFixed(2).replace('.', ',')}/mês
+                  Equivale a R${(planos.pro.precoAnual / 12).toFixed(2).replace('.', ',')}/mes
                 </p>
               )}
             </div>
@@ -231,11 +272,43 @@ export default function AssinaturaPage() {
                 Plano Atual
               </button>
             ) : (
-              <button className="w-full py-3.5 px-4 rounded-xl bg-primary hover:bg-blue-600 text-white font-bold transition-colors shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-lg">rocket_launch</span>
-                Assinar Agora
+              <button
+                onClick={handleCheckout}
+                disabled={loading}
+                className="w-full py-3.5 px-4 rounded-xl bg-primary hover:bg-blue-600 text-white font-bold transition-colors shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <span className="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-lg">rocket_launch</span>
+                    Assinar Agora
+                  </>
+                )}
               </button>
             )}
+          </div>
+        </div>
+
+        {/* Metodos de Pagamento */}
+        <div className="mt-8 text-center">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Formas de pagamento aceitas:</p>
+          <div className="flex justify-center items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2 bg-white dark:bg-[#1c252e] px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
+              <span className="material-symbols-outlined text-slate-600 dark:text-slate-400">credit_card</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">Cartao</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white dark:bg-[#1c252e] px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
+              <span className="material-symbols-outlined text-slate-600 dark:text-slate-400">pix</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">PIX</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white dark:bg-[#1c252e] px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
+              <span className="material-symbols-outlined text-slate-600 dark:text-slate-400">receipt_long</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">Boleto</span>
+            </div>
           </div>
         </div>
 
@@ -252,37 +325,37 @@ export default function AssinaturaPage() {
                 Posso cancelar a qualquer momento?
               </h4>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Sim! Você pode cancelar sua assinatura a qualquer momento. Você continuará tendo acesso até o final do período pago.
+                Sim! Voce pode cancelar sua assinatura a qualquer momento. Voce continuara tendo acesso ate o final do periodo pago.
               </p>
             </div>
 
             <div className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-5">
               <h4 className="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">help</span>
-                Os créditos IA acumulam?
+                Os creditos IA acumulam?
               </h4>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Os créditos são renovados mensalmente e não acumulam para o mês seguinte. Use-os para aproveitar ao máximo sua assinatura!
+                Os creditos sao renovados mensalmente e nao acumulam para o mes seguinte. Use-os para aproveitar ao maximo sua assinatura!
               </p>
             </div>
 
             <div className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-5">
               <h4 className="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">help</span>
-                Quais formas de pagamento são aceitas?
+                Quais formas de pagamento sao aceitas?
               </h4>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Aceitamos cartão de crédito, PIX e boleto bancário. Para planos anuais, oferecemos parcelamento em até 12x.
+                Aceitamos cartao de credito, PIX e boleto bancario. Para planos anuais, oferecemos parcelamento em ate 12x.
               </p>
             </div>
 
             <div className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-5">
               <h4 className="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">help</span>
-                Tem garantia de satisfação?
+                Tem garantia de satisfacao?
               </h4>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Sim! Oferecemos 7 dias de garantia. Se não estiver satisfeito, devolvemos 100% do seu dinheiro, sem perguntas.
+                Sim! Oferecemos 7 dias de garantia. Se nao estiver satisfeito, devolvemos 100% do seu dinheiro, sem perguntas.
               </p>
             </div>
           </div>
@@ -299,24 +372,37 @@ export default function AssinaturaPage() {
                 Pronto para acelerar seus estudos?
               </h3>
               <p className="text-white/80 mb-6 max-w-lg mx-auto">
-                Junte-se a milhares de estudantes que já estão aproveitando o máximo do Estuda PRO.
+                Junte-se a milhares de estudantes que ja estao aproveitando o maximo do Estuda PRO.
               </p>
-              <button className="bg-white text-primary font-bold py-3.5 px-8 rounded-xl hover:bg-blue-50 transition-colors shadow-lg inline-flex items-center gap-2">
-                <span className="material-symbols-outlined">rocket_launch</span>
-                Começar Agora
+              <button
+                onClick={handleCheckout}
+                disabled={loading}
+                className="bg-white text-primary font-bold py-3.5 px-8 rounded-xl hover:bg-blue-50 transition-colors shadow-lg inline-flex items-center gap-2 disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined">rocket_launch</span>
+                    Comecar Agora
+                  </>
+                )}
               </button>
             </div>
           </div>
         )}
 
-        {/* Link para Créditos */}
+        {/* Link para Creditos */}
         <div className="mt-8 text-center">
           <Link
             href="/dashboard/creditos"
             className="text-primary hover:underline text-sm font-medium inline-flex items-center gap-1"
           >
             <span className="material-symbols-outlined text-lg">token</span>
-            Gerenciar créditos IA →
+            Gerenciar creditos IA
           </Link>
         </div>
       </div>
