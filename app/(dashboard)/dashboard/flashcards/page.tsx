@@ -929,7 +929,7 @@ export default function FlashcardsPage() {
                   >
                     <span className="text-xs uppercase tracking-wider opacity-70">Errei</span>
                     <span className="text-sm font-bold">
-                      {calcularIntervaloDisplay(1, cardAtual.repeticoes)}
+                      {calcularIntervaloDisplay(1, cardAtual.repeticoes, cardAtual.fator_facilidade, cardAtual.intervalo_dias)}
                     </span>
                   </button>
 
@@ -939,7 +939,7 @@ export default function FlashcardsPage() {
                   >
                     <span className="text-xs uppercase tracking-wider opacity-70">Dificil</span>
                     <span className="text-sm font-bold">
-                      {calcularIntervaloDisplay(2, cardAtual.repeticoes)}
+                      {calcularIntervaloDisplay(2, cardAtual.repeticoes, cardAtual.fator_facilidade, cardAtual.intervalo_dias)}
                     </span>
                   </button>
 
@@ -949,7 +949,7 @@ export default function FlashcardsPage() {
                   >
                     <span className="text-xs uppercase tracking-wider opacity-70">Bom</span>
                     <span className="text-sm font-bold">
-                      {calcularIntervaloDisplay(3, cardAtual.repeticoes)}
+                      {calcularIntervaloDisplay(3, cardAtual.repeticoes, cardAtual.fator_facilidade, cardAtual.intervalo_dias)}
                     </span>
                   </button>
 
@@ -959,7 +959,7 @@ export default function FlashcardsPage() {
                   >
                     <span className="text-xs uppercase tracking-wider opacity-70">Facil</span>
                     <span className="text-sm font-bold">
-                      {calcularIntervaloDisplay(4, cardAtual.repeticoes)}
+                      {calcularIntervaloDisplay(4, cardAtual.repeticoes, cardAtual.fator_facilidade, cardAtual.intervalo_dias)}
                     </span>
                   </button>
                 </div>

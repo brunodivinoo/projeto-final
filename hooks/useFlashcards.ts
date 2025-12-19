@@ -106,21 +106,35 @@ function calcularProximaRevisao(
   }
 }
 
-// Funcao para calcular intervalo baseado na qualidade (1-4)
-export function calcularIntervaloDisplay(qualidade: number, repeticoes: number): string {
-  if (qualidade === 1) return '1m' // Dificil - 1 minuto
-  if (qualidade === 2) return '10m' // Medio - 10 minutos
-  if (qualidade === 3) {
-    if (repeticoes === 0) return '1d'
-    if (repeticoes === 1) return '4d'
-    return `${Math.min(30, repeticoes * 4)}d`
+// Funcao para calcular intervalo baseado na qualidade (1-4) - reflete o SM-2 real
+export function calcularIntervaloDisplay(qualidade: number, repeticoes: number, fatorFacilidade: number = 2.5, intervaloAtual: number = 0): string {
+  // Converter qualidade 1-4 para escala SM-2 (0-5)
+  const qualidadeSM2 = qualidade === 1 ? 1 : qualidade === 2 ? 3 : qualidade === 3 ? 4 : 5
+
+  // Qualidade < 3 (errou) = resetar para 1 dia
+  if (qualidadeSM2 < 3) {
+    return '1d'
   }
-  if (qualidade === 4) {
-    if (repeticoes === 0) return '4d'
-    if (repeticoes === 1) return '7d'
-    return `${Math.min(60, repeticoes * 7)}d`
+
+  // Calcular intervalo usando SM-2
+  let novoIntervalo: number
+  if (repeticoes === 0) {
+    novoIntervalo = 1
+  } else if (repeticoes === 1) {
+    novoIntervalo = 6
+  } else {
+    const novoFator = Math.max(
+      1.3,
+      fatorFacilidade + (0.1 - (5 - qualidadeSM2) * (0.08 + (5 - qualidadeSM2) * 0.02))
+    )
+    novoIntervalo = Math.round(intervaloAtual * novoFator)
   }
-  return '1d'
+
+  // Formatar para exibicao
+  if (novoIntervalo === 1) return '1d'
+  if (novoIntervalo < 7) return `${novoIntervalo}d`
+  if (novoIntervalo < 30) return `${Math.round(novoIntervalo / 7)}sem`
+  return `${Math.round(novoIntervalo / 30)}m`
 }
 
 export function useFlashcards(): FlashcardsData {
@@ -430,8 +444,20 @@ export function useFlashcards(): FlashcardsData {
     if (!user) return false
 
     try {
-      const card = flashcards.find(f => f.id === flashcardId)
-      if (!card) return false
+      // Buscar o card do estado local ou do banco
+      let card = flashcards.find(f => f.id === flashcardId)
+
+      // Se nao encontrou no estado, buscar do banco
+      if (!card) {
+        const { data } = await supabase
+          .from('flashcards')
+          .select('*')
+          .eq('id', flashcardId)
+          .single()
+
+        if (!data) return false
+        card = data as Flashcard
+      }
 
       // Converter qualidade 1-4 para escala SM-2 (0-5)
       const qualidadeSM2 = qualidade === 1 ? 1 : qualidade === 2 ? 3 : qualidade === 3 ? 4 : 5
