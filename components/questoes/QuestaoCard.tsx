@@ -174,9 +174,32 @@ export function QuestaoCard({ questao, onResponder }: QuestaoCardProps) {
         </div>
       </div>
 
-      {/* Abas */}
+      {/* Botão Responder / Resultado - ACIMA das abas */}
+      <div className="flex items-center justify-end px-4 lg:px-6 py-4 border-t border-gray-100 dark:border-[#283039] bg-gray-50 dark:bg-[#161f28]">
+        {!respondida ? (
+          <button
+            onClick={responderQuestao}
+            disabled={!respostaSelecionada}
+            className={`px-6 py-2 rounded-lg text-sm font-bold shadow-md transition-all ${
+              respostaSelecionada ? 'bg-primary hover:bg-blue-600 text-white shadow-primary/20' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Responder
+          </button>
+        ) : (
+          <span className={`px-4 py-2 rounded-lg text-sm font-bold ${
+            respostaSelecionada === gabaritoConvertido
+              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+              : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+          }`}>
+            {respostaSelecionada === gabaritoConvertido ? 'Acertou!' : 'Errou!'}
+          </span>
+        )}
+      </div>
+
+      {/* Abas - ABAIXO do botão */}
       <div className="border-t border-gray-200 dark:border-[#283039]">
-        <div className="flex border-b border-gray-200 dark:border-[#283039] overflow-x-auto">
+        <div className="flex overflow-x-auto">
           {[
             { id: 'gabarito', label: 'Gabarito Comentado', shortLabel: 'Gabarito', icon: 'lightbulb' },
             { id: 'comentarios', label: 'Comentários', shortLabel: 'Chat', icon: 'forum' },
@@ -233,29 +256,6 @@ export function QuestaoCard({ questao, onResponder }: QuestaoCardProps) {
             <h4 className="font-bold text-gray-700 dark:text-gray-300 mb-2">Em desenvolvimento</h4>
             <p className="text-sm text-gray-500 dark:text-gray-400">Em breve você poderá reportar erros</p>
           </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-end px-4 lg:px-6 py-4 border-t border-gray-100 dark:border-[#283039] bg-gray-50 dark:bg-[#161f28]">
-        {!respondida ? (
-          <button
-            onClick={responderQuestao}
-            disabled={!respostaSelecionada}
-            className={`px-6 py-2 rounded-lg text-sm font-bold shadow-md transition-all ${
-              respostaSelecionada ? 'bg-primary hover:bg-blue-600 text-white shadow-primary/20' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            Responder
-          </button>
-        ) : (
-          <span className={`px-4 py-2 rounded-lg text-sm font-bold ${
-            respostaSelecionada === gabaritoConvertido
-              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-              : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-          }`}>
-            {respostaSelecionada === gabaritoConvertido ? 'Acertou!' : 'Errou!'}
-          </span>
         )}
       </div>
     </div>
