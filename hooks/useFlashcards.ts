@@ -137,8 +137,11 @@ export function useFlashcards(): FlashcardsData {
   const [geracoesHoje, setGeracoesHoje] = useState(0)
 
   const fetchFlashcards = useCallback(async () => {
-    // Aguardar auth carregar primeiro
-    if (authLoading) return
+    // Aguardar auth carregar primeiro - não fazer nada enquanto carrega
+    if (authLoading) {
+      // Manter loading true enquanto auth carrega
+      return
+    }
 
     // Sem usuario = usar mock e parar
     if (!user) {

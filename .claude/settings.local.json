@@ -29,7 +29,8 @@
       "Bash(powershell -Command \"\\(Get-Content questoes_me_2025-12-18.json | ConvertFrom-Json\\).questoes.Count\")",
       "Bash(node -e:*)",
       "Bash(node scripts/importar-questoes.js:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(node:*)"
     ]
   }
 }
