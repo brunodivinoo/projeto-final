@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface Comentario {
@@ -23,6 +23,189 @@ interface ComentariosTabProps {
   questaoId: string
 }
 
+// Componente de Editor de Texto Rico
+function RichTextEditor({
+  value,
+  onChange,
+  placeholder,
+  rows = 3
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  rows?: number
+}) {
+  const editorRef = useRef<HTMLDivElement>(null)
+  const [history, setHistory] = useState<string[]>([''])
+  const [historyIndex, setHistoryIndex] = useState(0)
+
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value
+    }
+  }, [value])
+
+  const saveToHistory = () => {
+    const content = editorRef.current?.innerHTML || ''
+    const newHistory = history.slice(0, historyIndex + 1)
+    newHistory.push(content)
+    setHistory(newHistory)
+    setHistoryIndex(newHistory.length - 1)
+  }
+
+  const handleInput = () => {
+    const content = editorRef.current?.innerHTML || ''
+    onChange(content)
+  }
+
+  const execCommand = (command: string, value?: string) => {
+    saveToHistory()
+    document.execCommand(command, false, value)
+    editorRef.current?.focus()
+    handleInput()
+  }
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1
+      setHistoryIndex(newIndex)
+      if (editorRef.current) {
+        editorRef.current.innerHTML = history[newIndex]
+        onChange(history[newIndex])
+      }
+    }
+  }
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1
+      setHistoryIndex(newIndex)
+      if (editorRef.current) {
+        editorRef.current.innerHTML = history[newIndex]
+        onChange(history[newIndex])
+      }
+    }
+  }
+
+  const handleHighlight = () => {
+    saveToHistory()
+    const selection = window.getSelection()
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0)
+      const selectedText = range.toString()
+      if (selectedText) {
+        const span = document.createElement('mark')
+        span.style.backgroundColor = '#fef08a'
+        span.style.padding = '0 2px'
+        span.style.borderRadius = '2px'
+        range.surroundContents(span)
+        handleInput()
+      }
+    }
+    editorRef.current?.focus()
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key.toLowerCase()) {
+        case 'z':
+          e.preventDefault()
+          if (e.shiftKey) handleRedo()
+          else handleUndo()
+          break
+        case 'y':
+          e.preventDefault()
+          handleRedo()
+          break
+        case 'b':
+          e.preventDefault()
+          execCommand('bold')
+          break
+        case 'i':
+          e.preventDefault()
+          execCommand('italic')
+          break
+        case 'u':
+          e.preventDefault()
+          execCommand('underline')
+          break
+      }
+    }
+  }
+
+  return (
+    <div className="border border-gray-200 dark:border-[#283039] rounded-xl overflow-hidden">
+      {/* Toolbar */}
+      <div className="flex items-center gap-1 px-2 py-1.5 bg-gray-50 dark:bg-[#161f28] border-b border-gray-200 dark:border-[#283039]">
+        <button
+          type="button"
+          onClick={() => execCommand('bold')}
+          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-[#283039] transition-colors"
+          title="Negrito (Ctrl+B)"
+        >
+          <span className="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400">format_bold</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => execCommand('italic')}
+          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-[#283039] transition-colors"
+          title="Itálico (Ctrl+I)"
+        >
+          <span className="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400">format_italic</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => execCommand('underline')}
+          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-[#283039] transition-colors"
+          title="Sublinhado (Ctrl+U)"
+        >
+          <span className="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400">format_underlined</span>
+        </button>
+        <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+        <button
+          type="button"
+          onClick={handleHighlight}
+          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-[#283039] transition-colors"
+          title="Marca-texto"
+        >
+          <span className="material-symbols-outlined text-lg text-yellow-500">ink_highlighter</span>
+        </button>
+        <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+        <button
+          type="button"
+          onClick={handleUndo}
+          disabled={historyIndex <= 0}
+          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-[#283039] transition-colors disabled:opacity-30"
+          title="Desfazer (Ctrl+Z)"
+        >
+          <span className="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400">undo</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleRedo}
+          disabled={historyIndex >= history.length - 1}
+          className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-[#283039] transition-colors disabled:opacity-30"
+          title="Refazer (Ctrl+Y)"
+        >
+          <span className="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400">redo</span>
+        </button>
+      </div>
+      {/* Editor */}
+      <div
+        ref={editorRef}
+        contentEditable
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        onBlur={saveToHistory}
+        className="px-4 py-3 text-sm bg-white dark:bg-[#1C252E] text-gray-900 dark:text-white focus:outline-none min-h-[80px] empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400"
+        style={{ minHeight: `${rows * 24}px` }}
+        data-placeholder={placeholder}
+        suppressContentEditableWarning
+      />
+    </div>
+  )
+}
+
 export function ComentariosTab({ questaoId }: ComentariosTabProps) {
   const { user } = useAuth()
   const [comentarios, setComentarios] = useState<Comentario[]>([])
@@ -30,6 +213,8 @@ export function ComentariosTab({ questaoId }: ComentariosTabProps) {
   const [novoComentario, setNovoComentario] = useState('')
   const [respondendoA, setRespondendoA] = useState<string | null>(null)
   const [respostaComentario, setRespostaComentario] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
 
   const formatarData = (data: string) => {
     return new Date(data).toLocaleDateString('pt-BR', {
@@ -67,11 +252,20 @@ export function ComentariosTab({ questaoId }: ComentariosTabProps) {
 
   const enviarComentario = async (parentId: string | null = null) => {
     const conteudo = parentId ? respostaComentario : novoComentario
-    if (!conteudo.trim() || !user) return
+    // Limpar tags vazias e verificar se tem conteúdo
+    const conteudoLimpo = conteudo.replace(/<[^>]*>/g, '').trim()
+    if (!conteudoLimpo || !user) return
+
+    setEnviando(true)
+    setErro(null)
 
     try {
       const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession()
-      if (!session?.access_token) return
+      if (!session?.access_token) {
+        setErro('Sessão expirada. Faça login novamente.')
+        setEnviando(false)
+        return
+      }
 
       const res = await fetch(`/api/questoes/${questaoId}/comentarios`, {
         method: 'POST',
@@ -97,9 +291,15 @@ export function ComentariosTab({ questaoId }: ComentariosTabProps) {
           setComentarios(prev => [data.comentario, ...prev])
           setNovoComentario('')
         }
+      } else {
+        const errorData = await res.json()
+        setErro(errorData.error || 'Erro ao enviar comentário')
       }
     } catch (error) {
       console.error('Erro ao enviar comentário:', error)
+      setErro('Erro de conexão. Tente novamente.')
+    } finally {
+      setEnviando(false)
     }
   }
 
@@ -162,6 +362,7 @@ export function ComentariosTab({ questaoId }: ComentariosTabProps) {
       <div className="flex gap-3">
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           {comentario.profiles?.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={comentario.profiles.avatar_url} alt="" className="w-8 h-8 rounded-full" />
           ) : (
             <span className="text-primary text-sm font-bold">
@@ -176,7 +377,11 @@ export function ComentariosTab({ questaoId }: ComentariosTabProps) {
             </span>
             <span className="text-xs text-gray-400">{formatarData(comentario.created_at)}</span>
           </div>
-          <p className="text-sm text-gray-700 dark:text-gray-300 mb-2 break-words">{comentario.conteudo}</p>
+          {/* Renderizar HTML formatado */}
+          <div
+            className="text-sm text-gray-700 dark:text-gray-300 mb-2 break-words prose prose-sm dark:prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: comentario.conteudo }}
+          />
 
           <div className="flex items-center gap-4 flex-wrap">
             <button
@@ -213,21 +418,28 @@ export function ComentariosTab({ questaoId }: ComentariosTabProps) {
           </div>
 
           {respondendoA === comentario.id && user && (
-            <div className="mt-3 flex gap-2">
-              <input
-                type="text"
+            <div className="mt-3">
+              <RichTextEditor
                 value={respostaComentario}
-                onChange={(e) => setRespostaComentario(e.target.value)}
+                onChange={setRespostaComentario}
                 placeholder="Escreva uma resposta..."
-                className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-[#283039] rounded-lg bg-white dark:bg-[#161f28] text-gray-900 dark:text-white focus:outline-none focus:border-primary"
-                onKeyDown={(e) => e.key === 'Enter' && enviarComentario(comentario.id)}
+                rows={2}
               />
-              <button
-                onClick={() => enviarComentario(comentario.id)}
-                className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-blue-600"
-              >
-                Enviar
-              </button>
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  onClick={() => setRespondendoA(null)}
+                  className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => enviarComentario(comentario.id)}
+                  disabled={enviando}
+                  className="px-4 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                >
+                  {enviando ? 'Enviando...' : 'Enviar'}
+                </button>
+              </div>
             </div>
           )}
 
@@ -253,20 +465,22 @@ export function ComentariosTab({ questaoId }: ComentariosTabProps) {
             <span className="text-primary text-sm font-bold">{user.email?.charAt(0)?.toUpperCase() || 'U'}</span>
           </div>
           <div className="flex-1">
-            <textarea
+            <RichTextEditor
               value={novoComentario}
-              onChange={(e) => setNovoComentario(e.target.value)}
+              onChange={setNovoComentario}
               placeholder="Escreva um comentário..."
-              className="w-full px-4 py-3 text-sm border border-gray-200 dark:border-[#283039] rounded-xl bg-white dark:bg-[#161f28] text-gray-900 dark:text-white focus:outline-none focus:border-primary resize-none"
               rows={3}
             />
+            {erro && (
+              <p className="text-red-500 text-sm mt-2">{erro}</p>
+            )}
             <div className="flex justify-end mt-2">
               <button
                 onClick={() => enviarComentario()}
-                disabled={!novoComentario.trim()}
+                disabled={!novoComentario.replace(/<[^>]*>/g, '').trim() || enviando}
                 className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-blue-600 disabled:opacity-50"
               >
-                Comentar
+                {enviando ? 'Enviando...' : 'Comentar'}
               </button>
             </div>
           </div>
