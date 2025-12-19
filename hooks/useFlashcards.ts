@@ -171,9 +171,10 @@ export function useFlashcards(): FlashcardsData {
       setError(null)
 
       const hoje = new Date().toISOString()
+      const hojeData = hoje.split('T')[0]
 
-      // Buscar tudo em paralelo
-      const [decksResult, limitsResult, usoResult] = await Promise.all([
+      // Buscar tudo em paralelo (incluindo planos FREE e PRO para evitar query sequencial)
+      const [decksResult, limitsResult, usoResult, planosResult] = await Promise.all([
         // Buscar decks do usuario
         supabase
           .from('flashcard_decks')
@@ -181,7 +182,7 @@ export function useFlashcards(): FlashcardsData {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false }),
 
-        // Buscar limites do plano
+        // Buscar plano do usuario
         supabase
           .from('profiles')
           .select('plano')
@@ -193,15 +194,33 @@ export function useFlashcards(): FlashcardsData {
           .from('uso_diario')
           .select('tipo, quantidade')
           .eq('user_id', user.id)
-          .eq('data', hoje.split('T')[0])
+          .eq('data', hojeData)
           .eq('tipo', 'geracoes_flashcards')
-          .maybeSingle()
+          .maybeSingle(),
+
+        // Buscar todos os planos (são só 2, evita query sequencial)
+        supabase
+          .from('planos')
+          .select('nome, limite_baralhos, limite_flashcards, limite_geracoes_flashcards_dia')
       ])
 
       const userDecks = (decksResult.data || []) as Deck[]
       setDecks(userDecks)
 
-      // Buscar flashcards de todos os decks
+      // Processar limites do plano imediatamente (sem query adicional)
+      const planoNome = limitsResult.data?.plano?.toUpperCase() || 'FREE'
+      const planoData = planosResult.data?.find(p => p.nome === planoNome)
+
+      if (planoData) {
+        setLimiteBaralhos(planoData.limite_baralhos ?? 2)
+        setLimiteFlashcards(planoData.limite_flashcards ?? 50)
+        setLimiteGeracoesDia(planoData.limite_geracoes_flashcards_dia ?? 3)
+      }
+
+      // Uso de hoje
+      setGeracoesHoje(usoResult.data?.quantidade || 0)
+
+      // Buscar flashcards de todos os decks (só se tiver decks)
       if (userDecks.length > 0) {
         const deckIds = userDecks.map(d => d.id)
 
@@ -221,24 +240,10 @@ export function useFlashcards(): FlashcardsData {
 
         setFlashcards((flashcardsResult.data || []) as Flashcard[])
         setCardsParaRevisar((revisarResult.data || []) as Flashcard[])
+      } else {
+        setFlashcards([])
+        setCardsParaRevisar([])
       }
-
-      // Buscar limites do plano
-      const planoNome = limitsResult.data?.plano?.toUpperCase() || 'FREE'
-      const { data: planoData } = await supabase
-        .from('planos')
-        .select('limite_baralhos, limite_flashcards, limite_geracoes_flashcards_dia')
-        .eq('nome', planoNome)
-        .single()
-
-      if (planoData) {
-        setLimiteBaralhos(planoData.limite_baralhos)
-        setLimiteFlashcards(planoData.limite_flashcards)
-        setLimiteGeracoesDia(planoData.limite_geracoes_flashcards_dia || 3)
-      }
-
-      // Uso de hoje
-      setGeracoesHoje(usoResult.data?.quantidade || 0)
 
     } catch (err) {
       console.error('Erro ao buscar flashcards:', err)
