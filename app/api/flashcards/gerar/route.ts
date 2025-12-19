@@ -84,13 +84,26 @@ export async function POST(req: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user_id)
 
-    if (limiteFlashcards !== -1 && (totalFlashcards || 0) + qtd > limiteFlashcards) {
-      return NextResponse.json({
-        error: 'Limite de flashcards atingido',
-        limite: limiteFlashcards,
-        atual: totalFlashcards,
-        disponivel: limiteFlashcards - (totalFlashcards || 0)
-      }, { status: 429 })
+    const flashcardsAtuais = totalFlashcards || 0
+    let qtdAjustada = qtd
+
+    // Se tem limite e vai ultrapassar, ajustar quantidade ou bloquear
+    if (limiteFlashcards !== -1) {
+      const espacoDisponivel = limiteFlashcards - flashcardsAtuais
+
+      if (espacoDisponivel <= 0) {
+        return NextResponse.json({
+          error: 'Limite de flashcards atingido',
+          limite: limiteFlashcards,
+          atual: flashcardsAtuais,
+          disponivel: 0
+        }, { status: 429 })
+      }
+
+      // Ajustar quantidade para gerar apenas o que cabe
+      if (qtd > espacoDisponivel) {
+        qtdAjustada = espacoDisponivel
+      }
     }
 
     // Construir contexto hierarquico
@@ -141,7 +154,7 @@ export async function POST(req: NextRequest) {
 ${contextoTopico}
 
 ## CONFIGURACAO
-- Quantidade: ${qtd} flashcards
+- Quantidade: ${qtdAjustada} flashcards
 - Nivel: ${config.nivel}
 - Foco: ${config.descricao}
 
@@ -236,7 +249,7 @@ IMPORTANTE:
     // Validar e limpar flashcards
     const flashcardsValidos = flashcards
       .filter(f => f.frente && f.verso)
-      .slice(0, qtd)
+      .slice(0, qtdAjustada)
       .map(f => ({
         deck_id,
         user_id,

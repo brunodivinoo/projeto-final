@@ -1249,7 +1249,7 @@ export default function FlashcardsPage() {
                             </p>
                             <div className="flex flex-col gap-2">
                               <a
-                                href="/dashboard/planos"
+                                href="/dashboard/assinatura"
                                 className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25"
                               >
                                 <span className="material-symbols-outlined text-lg">rocket_launch</span>

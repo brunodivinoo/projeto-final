@@ -116,7 +116,7 @@ export function LimitsModal({ isOpen, onClose }: LimitsModalProps) {
                               {limite.nome}
                             </span>
                             <span className="text-xs text-slate-400 dark:text-slate-500">
-                              ({limite.tipo === 'diario' ? 'hoje' : 'mês'})
+                              ({limite.tipo === 'diario' ? 'hoje' : limite.tipo === 'mensal' ? 'mês' : 'total'})
                             </span>
                           </div>
                           <span className="text-sm font-bold text-slate-900 dark:text-white">

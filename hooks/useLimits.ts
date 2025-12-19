@@ -9,7 +9,7 @@ export interface LimitItem {
   icone: string
   usado: number
   limite: number
-  tipo: 'diario' | 'mensal'
+  tipo: 'diario' | 'mensal' | 'total'
   cor: string
 }
 
@@ -33,7 +33,7 @@ const MOCK_LIMITS: LimitItem[] = [
   { id: 'questoes', nome: 'Questoes/Dia', icone: 'help_outline', usado: 0, limite: 30, tipo: 'diario', cor: '#6366f1' },
   { id: 'simulados', nome: 'Simulados', icone: 'assignment', usado: 0, limite: 5, tipo: 'mensal', cor: '#ec4899' },
   { id: 'geracoes_flashcards', nome: 'Geracoes Flashcards', icone: 'auto_awesome', usado: 0, limite: 3, tipo: 'diario', cor: '#8b5cf6' },
-  { id: 'flashcards_total', nome: 'Flashcards Total', icone: 'style', usado: 0, limite: 50, tipo: 'mensal', cor: '#06b6d4' }
+  { id: 'flashcards_total', nome: 'Flashcards Total', icone: 'style', usado: 0, limite: 50, tipo: 'total', cor: '#06b6d4' }
 ]
 
 export function useLimits(): LimitsData {
@@ -176,7 +176,7 @@ export function useLimits(): LimitsData {
           icone: 'style',
           usado: totalFlashcards,
           limite: planoData.limite_flashcards,
-          tipo: 'mensal',
+          tipo: 'total',
           cor: '#06b6d4'
         }
       ]
