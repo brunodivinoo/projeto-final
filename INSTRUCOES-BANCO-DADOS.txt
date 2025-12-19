@@ -207,3 +207,65 @@ node db-backup.js table produtos json
 EXECUTE O QUE EU PEDI USANDO AS FERRAMENTAS DISPONÍVEIS.
 NÃO pergunte se pode. NÃO peça permissão. EXECUTE.
 Você tem ACESSO TOTAL ao banco de dados.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 Padrão obrigatório para hooks que buscam dados
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Sempre que criar um novo hook que depende do usuário autenticado, siga este padrão:
+
+'use client'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
+
+// 1. DADOS MOCK FORA DO HOOK (evita recriação)
+const MOCK_DATA = [...]
+
+export function useAlgumaCoisa() {
+  // 2. PEGAR authLoading DO CONTEXT
+  const { user, loading: authLoading } = useAuth()
+  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState(MOCK_DATA)
+
+  const fetchData = useCallback(async () => {
+    // 3. AGUARDAR AUTH CARREGAR PRIMEIRO
+    if (authLoading) return
+
+    // 4. SEM USUÁRIO = USAR MOCK E PARAR
+    if (!user) {
+      setData(MOCK_DATA)
+      setLoading(false)
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      // 5. USAR PROMISE.ALL PARA QUERIES PARALELAS
+      const [result1, result2, result3] = await Promise.all([
+        supabase.from('tabela1').select('*').eq('user_id', user.id),
+        supabase.from('tabela2').select('*').eq('user_id', user.id),
+        supabase.from('tabela3').select('*').eq('user_id', user.id)
+      ])
+
+      // Processar resultados...
+      setData(processedData)
+    } catch (err) {
+      // 6. FALLBACK PARA MOCK EM ERRO
+      setData(MOCK_DATA)
+    } finally {
+      setLoading(false)
+    }
+  }, [user, authLoading])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  // 7. COMBINAR LOADING STATES
+  return {
+    data,
+    loading: loading || authLoading,
+    refresh: fetchData
+  }
+}
