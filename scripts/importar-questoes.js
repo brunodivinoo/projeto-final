@@ -262,8 +262,8 @@ async function importarArquivo(caminhoArquivo, limite = null) {
   let duplicadas = 0;
   let erros = 0;
 
-  // Processar em lotes de 10
-  const BATCH_SIZE = 10;
+  // Processar em lotes de 50 para melhor performance
+  const BATCH_SIZE = 50;
   for (let i = 0; i < questoes.length; i += BATCH_SIZE) {
     const lote = questoes.slice(i, i + BATCH_SIZE);
 

@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSidebar } from '@/contexts/SidebarContext'
 import { LimitsIndicator } from '@/components/limits'
+import { useEstatisticas } from '@/hooks/useEstatisticas'
 
 export default function DashboardPage() {
   const { profile, signOut } = useAuth()
@@ -13,6 +14,23 @@ export default function DashboardPage() {
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const nome = profile?.nome?.split(' ')[0] || 'Estudante'
+
+  // Dados reais de estatísticas
+  const {
+    questoesTotal,
+    questoesHoje,
+    questoesMes,
+    taxaAcertoGeral,
+    evolucao30Dias,
+    atividades,
+    desempenhoDisciplinas,
+    loading: loadingEstat
+  } = useEstatisticas()
+
+  // Encontrar disciplina com menor desempenho para sugestão da IA
+  const disciplinaMenorDesempenho = desempenhoDisciplinas.length > 0
+    ? desempenhoDisciplinas.reduce((min, curr) => curr.taxa < min.taxa ? curr : min, desempenhoDisciplinas[0])
+    : null
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -33,16 +51,41 @@ export default function DashboardPage() {
     return 'Boa noite'
   }
 
-  // Weekly performance data
-  const weeklyData = [
-    { day: 'Seg', value: 40, height: '40%' },
-    { day: 'Ter', value: 65, height: '65%' },
-    { day: 'Qua', value: 50, height: '50%' },
-    { day: 'Qui', value: 85, height: '85%', active: true },
-    { day: 'Sex', value: 60, height: '60%' },
-    { day: 'Sáb', value: 70, height: '70%' },
-    { day: 'Dom', value: 55, height: '55%' },
-  ]
+  // Calcular dados do grafico semanal (ultimos 7 dias)
+  const ultimosDias = evolucao30Dias.slice(-7)
+  const maxQuestoesSemana = Math.max(...ultimosDias.map(d => d.questoes), 1)
+
+  const weeklyData = ultimosDias.map((dia, index) => {
+    const data = new Date(dia.data)
+    const dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+    const altura = (dia.questoes / maxQuestoesSemana) * 100
+
+    return {
+      day: dias[data.getDay()],
+      value: dia.questoes,
+      taxa: dia.taxa,
+      height: `${Math.max(altura, 10)}%`,
+      active: index === ultimosDias.length - 1
+    }
+  })
+
+  // Calcular meta diaria
+  const metaDiaria = 25
+  const porcentagemMeta = Math.min(Math.round((questoesHoje / metaDiaria) * 100), 100)
+
+  // Formatar data para atividades
+  const formatarData = (dataStr: string) => {
+    const data = new Date(dataStr)
+    const agora = new Date()
+    const diffMs = agora.getTime() - data.getTime()
+    const diffHoras = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+    if (diffHoras < 1) return 'Agora'
+    if (diffHoras < 24) return `Há ${diffHoras} horas`
+    if (diffDias === 1) return 'Ontem'
+    return `Há ${diffDias} dias`
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#101922]">
@@ -183,25 +226,36 @@ export default function DashboardPage() {
 
             {/* Chart */}
             <div className="h-48 flex items-end justify-between gap-3 px-2">
-              {weeklyData.map((item, index) => (
-                <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-full h-40 flex items-end">
-                    <div
-                      className={`w-full rounded-t-lg transition-all ${
-                        item.active
-                          ? 'bg-primary'
-                          : 'bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50'
-                      }`}
-                      style={{ height: item.height }}
-                    />
-                  </div>
-                  <span className={`text-sm font-medium ${
-                    item.active ? 'text-primary' : 'text-slate-500 dark:text-slate-400'
-                  }`}>
-                    {item.day}
-                  </span>
+              {loadingEstat ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
                 </div>
-              ))}
+              ) : (
+                weeklyData.map((item, index) => (
+                  <div key={index} className="flex-1 flex flex-col items-center gap-2 group relative">
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full mb-2 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                      <p>{item.value} questões</p>
+                      <p>{item.taxa}% acerto</p>
+                    </div>
+                    <div className="w-full h-40 flex items-end">
+                      <div
+                        className={`w-full rounded-t-lg transition-all ${
+                          item.active
+                            ? 'bg-primary'
+                            : 'bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50'
+                        }`}
+                        style={{ height: item.height }}
+                      />
+                    </div>
+                    <span className={`text-sm font-medium ${
+                      item.active ? 'text-primary' : 'text-slate-500 dark:text-slate-400'
+                    }`}>
+                      {item.day}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -232,23 +286,23 @@ export default function DashboardPage() {
                   strokeWidth="12"
                   fill="none"
                   strokeLinecap="round"
-                  strokeDasharray={`${72 * 3.51} ${100 * 3.51}`}
+                  strokeDasharray={`${porcentagemMeta * 3.51} ${100 * 3.51}`}
                   className="text-primary"
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-3xl font-bold text-primary">72%</span>
+                <span className="text-3xl font-bold text-primary">{porcentagemMeta}%</span>
               </div>
             </div>
 
             <p className="text-slate-600 dark:text-slate-400 text-sm text-center mb-4">
-              Você completou <span className="font-bold text-slate-900 dark:text-white">18 de 25</span> questões hoje.
+              Você completou <span className="font-bold text-slate-900 dark:text-white">{questoesHoje} de {metaDiaria}</span> questões hoje.
             </p>
 
-            <button className="w-full bg-primary hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2">
+            <Link href="/dashboard/questoes" className="w-full bg-primary hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2">
               Continuar Estudos
               <span className="material-symbols-outlined text-lg">arrow_forward</span>
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -259,72 +313,72 @@ export default function DashboardPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Flashcards */}
-            <div className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <Link href="/dashboard/flashcards" className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:border-primary/50 transition-colors">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                   <span className="material-symbols-outlined text-primary text-2xl">style</span>
                 </div>
-                <span className="text-xs font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
-                  +12 novos
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
+                  Em breve
                 </span>
               </div>
               <h3 className="font-bold text-slate-900 dark:text-white mb-1">Flashcards</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">120 cards para revisar</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Sistema de revisão</p>
               <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div className="h-full bg-primary rounded-full" style={{ width: '65%' }} />
+                <div className="h-full bg-primary rounded-full" style={{ width: '0%' }} />
               </div>
-            </div>
+            </Link>
 
             {/* Questões */}
-            <div className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <Link href="/dashboard/questoes" className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:border-primary/50 transition-colors">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
                   <span className="material-symbols-outlined text-orange-500 text-2xl">help</span>
                 </div>
                 <span className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
-                  Média 8.5
+                  {taxaAcertoGeral > 0 ? `Média ${taxaAcertoGeral}%` : 'Comece agora'}
                 </span>
               </div>
               <h3 className="font-bold text-slate-900 dark:text-white mb-1">Questões</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">342 respondidas este mês</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">{questoesMes} respondidas este mês</p>
               <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div className="h-full bg-orange-500 rounded-full" style={{ width: '45%' }} />
+                <div className="h-full bg-orange-500 rounded-full" style={{ width: `${Math.min(taxaAcertoGeral, 100)}%` }} />
               </div>
-            </div>
+            </Link>
 
             {/* Simulados */}
-            <div className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <Link href="/dashboard/simulados" className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:border-primary/50 transition-colors">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
                   <span className="material-symbols-outlined text-green-500 text-2xl">task_alt</span>
                 </div>
-                <span className="text-xs font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-full">
-                  Pendente
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
+                  Em breve
                 </span>
               </div>
               <h3 className="font-bold text-slate-900 dark:text-white mb-1">Simulados</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Próximo: Direito Civil</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Teste seus conhecimentos</p>
               <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 rounded-full" style={{ width: '25%' }} />
+                <div className="h-full bg-green-500 rounded-full" style={{ width: '0%' }} />
               </div>
-            </div>
+            </Link>
 
             {/* Ciclo Atual */}
-            <div className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <Link href="/dashboard/ciclos" className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:border-primary/50 transition-colors">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-12 h-12 rounded-xl bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
                   <span className="material-symbols-outlined text-cyan-500 text-2xl">refresh</span>
                 </div>
-                <span className="text-xs font-bold text-cyan-600 bg-cyan-100 dark:bg-cyan-900/30 px-2 py-1 rounded-full">
-                  Ativo
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
+                  Em breve
                 </span>
               </div>
-              <h3 className="font-bold text-slate-900 dark:text-white mb-1">Ciclo Atual</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Português - 45min rest.</p>
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1">Ciclo de Estudos</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Organize seu tempo</p>
               <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div className="h-full bg-cyan-500 rounded-full" style={{ width: '80%' }} />
+                <div className="h-full bg-cyan-500 rounded-full" style={{ width: '0%' }} />
               </div>
-            </div>
+            </Link>
           </div>
         </div>
 
@@ -334,45 +388,76 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 bg-white dark:bg-[#1c252e] rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Atividades Recentes</h2>
-              <button className="text-primary text-sm font-semibold hover:underline">Ver tudo</button>
+              <Link href="/dashboard/progresso" className="text-primary text-sm font-semibold hover:underline">Ver tudo</Link>
             </div>
 
             <div className="space-y-4">
-              {/* Activity 1 */}
-              <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-green-500">check_circle</span>
+              {loadingEstat ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-slate-900 dark:text-white">Simulado de Direito Constitucional</h4>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Você acertou 85% das questões.</p>
-                </div>
-                <span className="text-xs text-slate-400">Há 2 horas</span>
-              </div>
+              ) : atividades.length > 0 ? (
+                atividades.slice(0, 3).map((atividade) => {
+                  const corBg = atividade.cor === '#3b82f6' ? 'bg-blue-100 dark:bg-blue-900/30'
+                    : atividade.cor === '#22c55e' ? 'bg-green-100 dark:bg-green-900/30'
+                    : atividade.cor === '#a855f7' ? 'bg-purple-100 dark:bg-purple-900/30'
+                    : atividade.cor === '#f59e0b' ? 'bg-orange-100 dark:bg-orange-900/30'
+                    : 'bg-slate-100 dark:bg-slate-800'
 
-              {/* Activity 2 */}
-              <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary">style</span>
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-slate-900 dark:text-white">Revisão de Flashcards</h4>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">32 cards revisados em Português.</p>
-                </div>
-                <span className="text-xs text-slate-400">Há 4 horas</span>
-              </div>
+                  const corText = atividade.cor === '#3b82f6' ? 'text-blue-500'
+                    : atividade.cor === '#22c55e' ? 'text-green-500'
+                    : atividade.cor === '#a855f7' ? 'text-purple-500'
+                    : atividade.cor === '#f59e0b' ? 'text-orange-500'
+                    : 'text-slate-500'
 
-              {/* Activity 3 */}
-              <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-purple-500">emoji_events</span>
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-slate-900 dark:text-white">Nova conquista desbloqueada!</h4>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Você completou 7 dias seguidos de estudo.</p>
-                </div>
-                <span className="text-xs text-slate-400">Ontem</span>
-              </div>
+                  return (
+                    <div key={atividade.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <div className={`w-10 h-10 rounded-full ${corBg} flex items-center justify-center`}>
+                        <span className={`material-symbols-outlined ${corText}`}>{atividade.icone}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-slate-900 dark:text-white truncate">{atividade.titulo}</h4>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{atividade.descricao}</p>
+                      </div>
+                      <span className="text-xs text-slate-400 whitespace-nowrap">{formatarData(atividade.created_at)}</span>
+                    </div>
+                  )
+                })
+              ) : (
+                <>
+                  {/* Mock activities quando não há dados */}
+                  <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-primary">quiz</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-slate-900 dark:text-white">Comece a estudar!</h4>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Suas atividades aparecerão aqui.</p>
+                    </div>
+                    <span className="text-xs text-slate-400">Agora</span>
+                  </div>
+                  <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors opacity-50">
+                    <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-green-500">check_circle</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-slate-900 dark:text-white">Responda questões</h4>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Pratique para ver seu progresso.</p>
+                    </div>
+                    <span className="text-xs text-slate-400">—</span>
+                  </div>
+                  <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors opacity-50">
+                    <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-purple-500">emoji_events</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-slate-900 dark:text-white">Conquistas em breve</h4>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Desbloqueie conquistas estudando.</p>
+                    </div>
+                    <span className="text-xs text-slate-400">—</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -387,15 +472,51 @@ export default function DashboardPage() {
                 <span className="text-xs font-bold text-white/80 uppercase tracking-wider">Central IA Sugere</span>
               </div>
 
-              <h3 className="text-xl font-bold mb-2">Hora de Revisar!</h3>
-              <p className="text-white/80 text-sm mb-6">
-                Com base no seu desempenho recente, a IA identificou que você precisa reforçar seus conhecimentos em <span className="font-semibold text-white">Direito Administrativo</span>.
-              </p>
-
-              <button className="w-full bg-white text-primary font-semibold py-3 px-4 rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-lg">play_arrow</span>
-                Iniciar Revisão
-              </button>
+              {questoesTotal === 0 ? (
+                <>
+                  <h3 className="text-xl font-bold mb-2">Comece Sua Jornada!</h3>
+                  <p className="text-white/80 text-sm mb-6">
+                    Você ainda não respondeu nenhuma questão. Que tal começar agora e deixar a IA personalizar seus estudos?
+                  </p>
+                  <Link href="/dashboard/questoes" className="w-full bg-white text-primary font-semibold py-3 px-4 rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined text-lg">play_arrow</span>
+                    Começar Agora
+                  </Link>
+                </>
+              ) : disciplinaMenorDesempenho && disciplinaMenorDesempenho.taxa < 70 ? (
+                <>
+                  <h3 className="text-xl font-bold mb-2">Hora de Revisar!</h3>
+                  <p className="text-white/80 text-sm mb-6">
+                    Com base no seu desempenho recente, a IA identificou que você pode melhorar em <span className="font-semibold text-white">{disciplinaMenorDesempenho.disciplina}</span> ({disciplinaMenorDesempenho.taxa}% de acerto).
+                  </p>
+                  <Link href={`/dashboard/questoes?disciplina=${encodeURIComponent(disciplinaMenorDesempenho.disciplina)}`} className="w-full bg-white text-primary font-semibold py-3 px-4 rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined text-lg">play_arrow</span>
+                    Praticar {disciplinaMenorDesempenho.disciplina}
+                  </Link>
+                </>
+              ) : questoesHoje < 10 ? (
+                <>
+                  <h3 className="text-xl font-bold mb-2">Continue Estudando!</h3>
+                  <p className="text-white/80 text-sm mb-6">
+                    Você já respondeu <span className="font-semibold text-white">{questoesHoje} questões</span> hoje. Que tal atingir sua meta de {metaDiaria}?
+                  </p>
+                  <Link href="/dashboard/questoes" className="w-full bg-white text-primary font-semibold py-3 px-4 rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined text-lg">play_arrow</span>
+                    Continuar Estudos
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-xl font-bold mb-2">Parabéns!</h3>
+                  <p className="text-white/80 text-sm mb-6">
+                    Excelente trabalho! Você já completou <span className="font-semibold text-white">{questoesHoje} questões</span> hoje com <span className="font-semibold text-white">{taxaAcertoGeral}%</span> de acerto geral.
+                  </p>
+                  <Link href="/dashboard/progresso" className="w-full bg-white text-primary font-semibold py-3 px-4 rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined text-lg">insights</span>
+                    Ver Estatísticas
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -111,41 +111,69 @@ export async function GET(request: NextRequest) {
       }
 
       case 'bancas': {
-        const { data, error } = await supabase
-          .from('questoes')
-          .select('banca')
-
-        if (error) throw error
-
-        // Contar bancas únicas
+        // Buscar bancas com paginação para suportar grandes volumes
         const bancasCount: Record<string, number> = {}
-        data?.forEach((q) => {
-          if (q.banca) {
-            bancasCount[q.banca] = (bancasCount[q.banca] || 0) + 1
+        let offset = 0
+        const limit = 1000
+        let hasMore = true
+
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from('questoes')
+            .select('banca')
+            .not('banca', 'is', null)
+            .range(offset, offset + limit - 1)
+
+          if (error || !data || data.length === 0) {
+            hasMore = false
+            break
           }
-        })
+
+          data.forEach((q) => {
+            if (q.banca) {
+              bancasCount[q.banca] = (bancasCount[q.banca] || 0) + 1
+            }
+          })
+
+          offset += limit
+          hasMore = data.length === limit
+        }
 
         const bancas = Object.entries(bancasCount)
           .map(([nome, qtd]) => ({ nome, qtd_questoes: qtd }))
-          .sort((a, b) => a.nome.localeCompare(b.nome))
+          .sort((a, b) => b.qtd_questoes - a.qtd_questoes)
 
         return NextResponse.json({ bancas })
       }
 
       case 'anos': {
-        const { data, error } = await supabase
-          .from('questoes')
-          .select('ano')
-
-        if (error) throw error
-
-        // Contar anos únicos
+        // Buscar anos com paginação para suportar grandes volumes
         const anosCount: Record<number, number> = {}
-        data?.forEach((q) => {
-          if (q.ano) {
-            anosCount[q.ano] = (anosCount[q.ano] || 0) + 1
+        let offset = 0
+        const limit = 1000
+        let hasMore = true
+
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from('questoes')
+            .select('ano')
+            .not('ano', 'is', null)
+            .range(offset, offset + limit - 1)
+
+          if (error || !data || data.length === 0) {
+            hasMore = false
+            break
           }
-        })
+
+          data.forEach((q) => {
+            if (q.ano) {
+              anosCount[q.ano] = (anosCount[q.ano] || 0) + 1
+            }
+          })
+
+          offset += limit
+          hasMore = data.length === limit
+        }
 
         const anos = Object.entries(anosCount)
           .map(([ano, qtd]) => ({ ano: parseInt(ano), qtd_questoes: qtd }))
@@ -155,43 +183,73 @@ export async function GET(request: NextRequest) {
       }
 
       case 'dificuldades': {
-        const { data, error } = await supabase
-          .from('questoes')
-          .select('dificuldade')
-
-        if (error) throw error
-
-        // Contar dificuldades únicas
+        // Buscar dificuldades com paginação
         const difCount: Record<string, number> = {}
-        data?.forEach((q) => {
-          if (q.dificuldade) {
-            difCount[q.dificuldade] = (difCount[q.dificuldade] || 0) + 1
+        let offset = 0
+        const limit = 1000
+        let hasMore = true
+
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from('questoes')
+            .select('dificuldade')
+            .not('dificuldade', 'is', null)
+            .range(offset, offset + limit - 1)
+
+          if (error || !data || data.length === 0) {
+            hasMore = false
+            break
           }
-        })
+
+          data.forEach((q) => {
+            if (q.dificuldade) {
+              difCount[q.dificuldade] = (difCount[q.dificuldade] || 0) + 1
+            }
+          })
+
+          offset += limit
+          hasMore = data.length === limit
+        }
 
         const dificuldades = Object.entries(difCount)
           .map(([nome, qtd]) => ({ nome, qtd_questoes: qtd }))
+          .sort((a, b) => b.qtd_questoes - a.qtd_questoes)
 
         return NextResponse.json({ dificuldades })
       }
 
       case 'modalidades': {
-        const { data, error } = await supabase
-          .from('questoes')
-          .select('modalidade')
-
-        if (error) throw error
-
-        // Contar modalidades únicas
+        // Buscar modalidades com paginação
         const modCount: Record<string, number> = {}
-        data?.forEach((q) => {
-          if (q.modalidade) {
-            modCount[q.modalidade] = (modCount[q.modalidade] || 0) + 1
+        let offset = 0
+        const limit = 1000
+        let hasMore = true
+
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from('questoes')
+            .select('modalidade')
+            .not('modalidade', 'is', null)
+            .range(offset, offset + limit - 1)
+
+          if (error || !data || data.length === 0) {
+            hasMore = false
+            break
           }
-        })
+
+          data.forEach((q) => {
+            if (q.modalidade) {
+              modCount[q.modalidade] = (modCount[q.modalidade] || 0) + 1
+            }
+          })
+
+          offset += limit
+          hasMore = data.length === limit
+        }
 
         const modalidades = Object.entries(modCount)
           .map(([nome, qtd]) => ({ nome, qtd_questoes: qtd }))
+          .sort((a, b) => b.qtd_questoes - a.qtd_questoes)
 
         return NextResponse.json({ modalidades })
       }

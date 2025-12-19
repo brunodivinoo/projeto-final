@@ -14,26 +14,35 @@ export async function GET(
   try {
     const { id: questaoId } = await params
 
-    // Buscar comentários com dados do usuário
+    // Buscar comentários (sem JOIN - buscar profiles separadamente)
     const { data: comentarios, error } = await supabase
       .from('questoes_comentarios')
-      .select(`
-        id,
-        conteudo,
-        parent_id,
-        likes_count,
-        dislikes_count,
-        created_at,
-        user_id,
-        profiles:user_id (
-          nome,
-          avatar_url
-        )
-      `)
+      .select('id, conteudo, parent_id, likes_count, dislikes_count, created_at, user_id')
       .eq('questao_id', questaoId)
       .order('created_at', { ascending: false })
 
     if (error) throw error
+
+    // Buscar profiles dos usuários que comentaram
+    const userIds = [...new Set(comentarios?.map(c => c.user_id) || [])]
+    const profilesMap: Record<string, { nome: string; avatar_url: string | null }> = {}
+
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, nome, avatar_url')
+        .in('id', userIds)
+
+      profiles?.forEach(p => {
+        profilesMap[p.id] = { nome: p.nome || 'Usuário', avatar_url: p.avatar_url }
+      })
+    }
+
+    // Adicionar dados do profile a cada comentário
+    const comentariosComProfile = comentarios?.map(c => ({
+      ...c,
+      profiles: profilesMap[c.user_id] || { nome: 'Usuário', avatar_url: null }
+    })) || []
 
     // Buscar likes do usuário atual (se logado)
     const authHeader = request.headers.get('authorization')
@@ -55,9 +64,9 @@ export async function GET(
 
     // Organizar comentários em árvore (pais e filhos)
     const comentariosMap = new Map()
-    const rootComentarios: typeof comentarios = []
+    const rootComentarios: typeof comentariosComProfile = []
 
-    comentarios?.forEach(c => {
+    comentariosComProfile.forEach(c => {
       const userLike = userLikes.find(l => l.comentario_id === c.id)
       comentariosMap.set(c.id, {
         ...c,
@@ -66,7 +75,7 @@ export async function GET(
       })
     })
 
-    comentarios?.forEach(c => {
+    comentariosComProfile.forEach(c => {
       const comentario = comentariosMap.get(c.id)
       if (c.parent_id && comentariosMap.has(c.parent_id)) {
         comentariosMap.get(c.parent_id).respostas.push(comentario)
@@ -77,7 +86,7 @@ export async function GET(
 
     return NextResponse.json({
       comentarios: rootComentarios,
-      total: comentarios?.length || 0
+      total: comentariosComProfile.length
     })
   } catch (error) {
     console.error('Erro ao buscar comentários:', error)

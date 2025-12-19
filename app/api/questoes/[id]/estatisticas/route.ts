@@ -16,8 +16,8 @@ export async function GET(
 
     // Buscar todas as respostas da questão
     const { data: respostas, error } = await supabase
-      .from('questoes_respostas')
-      .select('resposta, correta')
+      .from('respostas_usuario')
+      .select('resposta_selecionada, acertou')
       .eq('questao_id', questaoId)
 
     if (error) throw error
@@ -30,14 +30,16 @@ export async function GET(
       .single()
 
     const totalRespostas = respostas?.length || 0
-    const acertos = respostas?.filter(r => r.correta).length || 0
+    const acertos = respostas?.filter(r => r.acertou).length || 0
     const erros = totalRespostas - acertos
     const taxaAcerto = totalRespostas > 0 ? Math.round((acertos / totalRespostas) * 100) : 0
 
     // Calcular distribuição por alternativa
     const distribuicao: Record<string, number> = {}
     respostas?.forEach(r => {
-      distribuicao[r.resposta] = (distribuicao[r.resposta] || 0) + 1
+      if (r.resposta_selecionada) {
+        distribuicao[r.resposta_selecionada] = (distribuicao[r.resposta_selecionada] || 0) + 1
+      }
     })
 
     // Converter para porcentagens
@@ -101,32 +103,132 @@ export async function POST(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Verificar se já respondeu
+    // Buscar dados da questão para registrar com contexto
+    const { data: questao } = await supabase
+      .from('questoes')
+      .select('disciplina, assunto, subassunto, dificuldade')
+      .eq('id', questaoId)
+      .single()
+
+    // Verificar se já respondeu esta questão
     const { data: existingResposta } = await supabase
-      .from('questoes_respostas')
+      .from('respostas_usuario')
       .select('id')
       .eq('questao_id', questaoId)
       .eq('user_id', user.id)
       .single()
 
     if (existingResposta) {
-      return NextResponse.json({ error: 'Questão já respondida' }, { status: 400 })
+      return NextResponse.json({ error: 'Questão já respondida', jaRespondida: true }, { status: 400 })
     }
 
-    // Registrar resposta
-    const { error } = await supabase
-      .from('questoes_respostas')
+    // 1. Registrar resposta na tabela respostas_usuario
+    const { error: respostaError } = await supabase
+      .from('respostas_usuario')
       .insert({
-        questao_id: questaoId,
         user_id: user.id,
-        resposta,
-        correta,
-        tempo_resposta
+        questao_id: questaoId,
+        resposta_selecionada: resposta,
+        acertou: correta,
+        tempo_segundos: tempo_resposta || null
       })
 
-    if (error) throw error
+    if (respostaError) {
+      console.error('Erro ao inserir resposta:', respostaError)
+      throw respostaError
+    }
 
-    return NextResponse.json({ success: true })
+    // 2. Registrar atividade no histórico
+    const atividadeTitulo = correta
+      ? `Questão respondida corretamente`
+      : `Questão respondida`
+    const atividadeDescricao = questao
+      ? `${questao.disciplina}${questao.assunto ? ` - ${questao.assunto}` : ''}`
+      : 'Questão respondida'
+
+    await supabase
+      .from('historico_atividades')
+      .insert({
+        user_id: user.id,
+        tipo: 'questao',
+        titulo: atividadeTitulo,
+        descricao: atividadeDescricao,
+        icone: correta ? 'check_circle' : 'quiz',
+        cor: correta ? '#22c55e' : '#3b82f6',
+        metadata: {
+          questao_id: questaoId,
+          disciplina: questao?.disciplina,
+          assunto: questao?.assunto,
+          acertou: correta
+        }
+      })
+
+    // 3. Atualizar estatísticas do usuário
+    const hoje = new Date().toISOString().split('T')[0]
+
+    // Buscar ou criar estatísticas
+    const { data: statsExistentes } = await supabase
+      .from('estatisticas_usuario')
+      .select('*')
+      .eq('user_id', user.id)
+      .single()
+
+    if (statsExistentes) {
+      // Atualizar estatísticas existentes
+      await supabase
+        .from('estatisticas_usuario')
+        .update({
+          questoes_respondidas: (statsExistentes.questoes_respondidas || 0) + 1,
+          questoes_corretas: correta
+            ? (statsExistentes.questoes_corretas || 0) + 1
+            : statsExistentes.questoes_corretas || 0,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+    } else {
+      // Criar nova entrada de estatísticas
+      await supabase
+        .from('estatisticas_usuario')
+        .insert({
+          user_id: user.id,
+          questoes_respondidas: 1,
+          questoes_corretas: correta ? 1 : 0,
+          sequencia_dias: 1,
+          maior_sequencia: 1,
+          ultimo_acesso: hoje
+        })
+    }
+
+    // 4. Atualizar uso diário (para controle de limites)
+    const { data: usoDiario } = await supabase
+      .from('uso_diario')
+      .select('id, quantidade')
+      .eq('user_id', user.id)
+      .eq('tipo', 'questoes')
+      .eq('data', hoje)
+      .single()
+
+    if (usoDiario) {
+      await supabase
+        .from('uso_diario')
+        .update({ quantidade: usoDiario.quantidade + 1 })
+        .eq('id', usoDiario.id)
+    } else {
+      await supabase
+        .from('uso_diario')
+        .insert({
+          user_id: user.id,
+          tipo: 'questoes',
+          quantidade: 1,
+          data: hoje
+        })
+    }
+
+    return NextResponse.json({
+      success: true,
+      acertou: correta,
+      disciplina: questao?.disciplina
+    })
   } catch (error) {
     console.error('Erro ao registrar resposta:', error)
     return NextResponse.json({ error: 'Erro ao registrar resposta' }, { status: 500 })
