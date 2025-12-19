@@ -1235,9 +1235,33 @@ export default function FlashcardsPage() {
                     </button>
 
                     {limiteGeracoesDia !== -1 && geracoesHoje >= limiteGeracoesDia && (
-                      <p className="text-xs text-center text-slate-500 mt-2">
-                        Voce atingiu o limite de geracoes diarias. Faca upgrade para mais!
-                      </p>
+                      <div className="mt-4 p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-xl">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                            <span className="material-symbols-outlined text-amber-500">lock</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-1">
+                              Limite diario atingido!
+                            </h4>
+                            <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
+                              Voce ja gerou {geracoesHoje} flashcards hoje. Estudantes PRO geram <strong>flashcards ilimitados</strong> e aceleram seus estudos em ate 3x mais rapido!
+                            </p>
+                            <div className="flex flex-col gap-2">
+                              <a
+                                href="/dashboard/planos"
+                                className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25"
+                              >
+                                <span className="material-symbols-outlined text-lg">rocket_launch</span>
+                                Desbloquear Agora
+                              </a>
+                              <p className="text-[10px] text-center text-slate-400">
+                                Milhares de estudantes ja estao acelerando com o PRO
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>

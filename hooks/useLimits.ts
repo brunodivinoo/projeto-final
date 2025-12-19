@@ -31,7 +31,9 @@ const MOCK_LIMITS: LimitItem[] = [
   { id: 'chat_mensagens', nome: 'Chat IA', icone: 'chat_bubble', usado: 0, limite: 20, tipo: 'diario', cor: '#10b981' },
   { id: 'pdf_paginas', nome: 'Paginas PDF', icone: 'picture_as_pdf', usado: 0, limite: 30, tipo: 'mensal', cor: '#f59e0b' },
   { id: 'questoes', nome: 'Questoes/Dia', icone: 'help_outline', usado: 0, limite: 30, tipo: 'diario', cor: '#6366f1' },
-  { id: 'simulados', nome: 'Simulados', icone: 'assignment', usado: 0, limite: 5, tipo: 'mensal', cor: '#ec4899' }
+  { id: 'simulados', nome: 'Simulados', icone: 'assignment', usado: 0, limite: 5, tipo: 'mensal', cor: '#ec4899' },
+  { id: 'geracoes_flashcards', nome: 'Geracoes Flashcards', icone: 'auto_awesome', usado: 0, limite: 3, tipo: 'diario', cor: '#8b5cf6' },
+  { id: 'flashcards_total', nome: 'Flashcards Total', icone: 'style', usado: 0, limite: 50, tipo: 'mensal', cor: '#06b6d4' }
 ]
 
 export function useLimits(): LimitsData {
@@ -76,16 +78,18 @@ export function useLimits(): LimitsData {
       primeiroDiaMes.setDate(1)
       const mesRef = primeiroDiaMes.toISOString().split('T')[0]
 
-      // Buscar limites do plano, uso diario e uso mensal em PARALELO
-      const [planoResult, usoDiarioResult, usoMensalResult] = await Promise.all([
+      // Buscar limites do plano, uso diario, uso mensal e contagem de flashcards em PARALELO
+      const [planoResult, usoDiarioResult, usoMensalResult, flashcardsCountResult] = await Promise.all([
         supabase.from('planos').select('*').eq('nome', planoNome).single(),
         supabase.from('uso_diario').select('tipo, quantidade').eq('user_id', user.id).eq('data', hoje),
-        supabase.from('uso_mensal').select('tipo, quantidade').eq('user_id', user.id).eq('mes_referencia', mesRef)
+        supabase.from('uso_mensal').select('tipo, quantidade').eq('user_id', user.id).eq('mes_referencia', mesRef),
+        supabase.from('flashcards').select('id', { count: 'exact', head: true }).eq('user_id', user.id)
       ])
 
       const { data: planoData, error: planoError } = planoResult
       const { data: usoDiario } = usoDiarioResult
       const { data: usoMensal } = usoMensalResult
+      const totalFlashcards = flashcardsCountResult.count || 0
 
       if (planoError || !planoData) {
         // Usar dados mock se nao encontrar plano
@@ -156,6 +160,24 @@ export function useLimits(): LimitsData {
           limite: planoData.limite_simulados_mes,
           tipo: 'mensal',
           cor: '#ec4899'
+        },
+        {
+          id: 'geracoes_flashcards',
+          nome: 'Geracoes Flashcards',
+          icone: 'auto_awesome',
+          usado: usoDiarioMap['geracoes_flashcards'] || 0,
+          limite: planoData.limite_geracoes_flashcards_dia,
+          tipo: 'diario',
+          cor: '#8b5cf6'
+        },
+        {
+          id: 'flashcards_total',
+          nome: 'Flashcards Total',
+          icone: 'style',
+          usado: totalFlashcards,
+          limite: planoData.limite_flashcards,
+          tipo: 'mensal',
+          cor: '#06b6d4'
         }
       ]
 
