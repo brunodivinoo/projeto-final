@@ -181,7 +181,7 @@ export function useLimits(): LimitsData {
     plano,
     isPro: plano === 'ESTUDA_PRO',
     limites,
-    loading, // Nao bloquear UI enquanto auth carrega
+    loading: loading || authLoading, // Combinar loading states corretamente
     error,
     refresh: fetchLimits
   }
