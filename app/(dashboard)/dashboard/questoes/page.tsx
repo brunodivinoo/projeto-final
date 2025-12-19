@@ -105,6 +105,14 @@ export default function QuestoesPage() {
   const [questaoAtualMobile, setQuestaoAtualMobile] = useState(0)
   const [showFilters, setShowFilters] = useState(false)
 
+  // Estados dos dropdowns
+  const [dropdownAberto, setDropdownAberto] = useState<string | null>(null)
+
+  // Toggle dropdown
+  const toggleDropdown = (nome: string) => {
+    setDropdownAberto(dropdownAberto === nome ? null : nome)
+  }
+
   // Detectar mobile
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768)
@@ -542,185 +550,257 @@ export default function QuestoesPage() {
     )
   }
 
+  // Componente Dropdown
+  const DropdownFiltro = ({
+    nome,
+    titulo,
+    children,
+    disabled = false,
+    badge = 0
+  }: {
+    nome: string
+    titulo: string
+    children: React.ReactNode
+    disabled?: boolean
+    badge?: number
+  }) => (
+    <div className="border-b border-gray-200 dark:border-[#283039]">
+      <button
+        onClick={() => !disabled && toggleDropdown(nome)}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between p-4 transition-all ${
+          disabled
+            ? 'bg-gray-100 dark:bg-[#1a2129] cursor-not-allowed opacity-50'
+            : 'hover:bg-gray-50 dark:hover:bg-[#1a2129]'
+        } ${dropdownAberto === nome ? 'bg-primary text-white' : ''}`}
+      >
+        <span className={`font-medium ${dropdownAberto === nome ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+          {titulo}
+        </span>
+        <div className="flex items-center gap-2">
+          {badge > 0 && (
+            <span className={`text-xs px-2 py-0.5 rounded-full ${
+              dropdownAberto === nome
+                ? 'bg-white/20 text-white'
+                : 'bg-primary/10 text-primary'
+            }`}>
+              {badge}
+            </span>
+          )}
+          <span className={`material-symbols-outlined transition-transform ${
+            dropdownAberto === nome ? 'rotate-180 text-white' : 'text-gray-400'
+          }`}>
+            expand_more
+          </span>
+        </div>
+      </button>
+      {dropdownAberto === nome && (
+        <div className="p-4 bg-white dark:bg-[#1C252E] max-h-64 overflow-y-auto">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+
   // Renderizar filtros
   const renderFiltros = () => (
-    <div className="space-y-4">
+    <div className="border border-gray-200 dark:border-[#283039] rounded-xl overflow-hidden">
       {/* Disciplina */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Disciplina
-        </label>
-        <div className="max-h-48 overflow-y-auto space-y-2 p-2 bg-gray-50 dark:bg-[#101922] rounded-lg border border-gray-200 dark:border-[#283039]">
+      <DropdownFiltro
+        nome="disciplina"
+        titulo="Disciplina"
+        badge={disciplinasSelecionadas.length}
+      >
+        <div className="space-y-1">
           {disciplinasDisponiveis.map((disc) => (
-            <label key={disc.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#1C252E] p-1 rounded">
+            <label
+              key={disc.id}
+              className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
+            >
               <input
                 type="checkbox"
                 checked={disciplinasSelecionadas.includes(disc.nome)}
                 onChange={() => toggleDisciplina(disc)}
-                className="rounded border-gray-300 text-primary focus:ring-primary"
+                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
               />
               <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{disc.nome}</span>
-              <span className="text-xs text-gray-400">({disc.qtd_questoes})</span>
+              <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
+                {disc.qtd_questoes}
+              </span>
             </label>
           ))}
         </div>
-      </div>
+      </DropdownFiltro>
 
-      {/* Assunto - só aparece se tiver disciplina selecionada */}
-      {disciplinasSelecionadas.length > 0 && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Assunto
-          </label>
-          <div className="max-h-48 overflow-y-auto space-y-3 p-2 bg-gray-50 dark:bg-[#101922] rounded-lg border border-gray-200 dark:border-[#283039]">
-            {assuntosDisponiveis.map((grupo) => (
-              <div key={grupo.disciplina_id}>
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">
-                  {grupo.disciplina}
-                </p>
+      {/* Assunto */}
+      <DropdownFiltro
+        nome="assunto"
+        titulo="Assunto"
+        disabled={disciplinasSelecionadas.length === 0}
+        badge={assuntosSelecionados.length}
+      >
+        <div className="space-y-4">
+          {assuntosDisponiveis.map((grupo) => (
+            <div key={grupo.disciplina_id}>
+              <p className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
+                <span className="material-symbols-outlined text-sm">visibility</span>
+                {grupo.disciplina}
+              </p>
+              <div className="space-y-1 ml-2">
                 {grupo.assuntos.map((assunto) => (
-                  <label key={assunto.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#1C252E] p-1 rounded ml-2">
+                  <label
+                    key={assunto.id}
+                    className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
+                  >
                     <input
                       type="checkbox"
                       checked={assuntosSelecionados.includes(assunto.nome)}
                       onChange={() => toggleAssunto(assunto)}
-                      className="rounded border-gray-300 text-primary focus:ring-primary"
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{assunto.nome}</span>
-                    <span className="text-xs text-gray-400">({assunto.qtd_questoes})</span>
+                    <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
+                      {assunto.qtd_questoes}
+                    </span>
                   </label>
                 ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
-      )}
+      </DropdownFiltro>
 
       {/* Subassunto - só aparece se tiver assunto selecionado */}
       {assuntosSelecionados.length > 0 && subassuntosDisponiveis.length > 0 && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Subassunto
-          </label>
-          <div className="max-h-48 overflow-y-auto space-y-3 p-2 bg-gray-50 dark:bg-[#101922] rounded-lg border border-gray-200 dark:border-[#283039]">
+        <DropdownFiltro
+          nome="subassunto"
+          titulo="Subassunto"
+          badge={subassuntosSelecionados.length}
+        >
+          <div className="space-y-4">
             {subassuntosDisponiveis.map((grupo) => (
               <div key={grupo.assunto_id}>
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">
+                <p className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-sm">visibility</span>
                   {grupo.assunto}
                 </p>
-                {grupo.subassuntos.map((sub) => (
-                  <label key={sub.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#1C252E] p-1 rounded ml-2">
-                    <input
-                      type="checkbox"
-                      checked={subassuntosSelecionados.includes(sub.nome)}
-                      onChange={() => toggleSubassunto(sub.nome)}
-                      className="rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{sub.nome}</span>
-                    <span className="text-xs text-gray-400">({sub.qtd_questoes})</span>
-                  </label>
-                ))}
+                <div className="space-y-1 ml-2">
+                  {grupo.subassuntos.map((sub) => (
+                    <label
+                      key={sub.id}
+                      className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={subassuntosSelecionados.includes(sub.nome)}
+                        onChange={() => toggleSubassunto(sub.nome)}
+                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{sub.nome}</span>
+                      <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
+                        {sub.qtd_questoes}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
-        </div>
+        </DropdownFiltro>
       )}
 
       {/* Banca */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Banca
-        </label>
-        <div className="flex flex-wrap gap-2">
+      <DropdownFiltro nome="banca" titulo="Banca" badge={bancasSelecionadas.length}>
+        <div className="space-y-1">
           {bancasDisponiveis.map((banca) => (
-            <button
+            <label
               key={banca.nome}
-              onClick={() => toggleBanca(banca.nome)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                bancasSelecionadas.includes(banca.nome)
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 dark:bg-[#283039] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#3a4552]'
-              }`}
+              className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
             >
-              {banca.nome.toUpperCase()} ({banca.qtd_questoes})
-            </button>
+              <input
+                type="checkbox"
+                checked={bancasSelecionadas.includes(banca.nome)}
+                onChange={() => toggleBanca(banca.nome)}
+                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{banca.nome.toUpperCase()}</span>
+              <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
+                {banca.qtd_questoes}
+              </span>
+            </label>
           ))}
         </div>
-      </div>
+      </DropdownFiltro>
 
       {/* Ano */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Ano
-        </label>
-        <div className="flex flex-wrap gap-2">
+      <DropdownFiltro nome="ano" titulo="Ano" badge={anosSelecionados.length}>
+        <div className="space-y-1">
           {anosDisponiveis.map((ano) => (
-            <button
+            <label
               key={ano.ano}
-              onClick={() => toggleAno(ano.ano)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                anosSelecionados.includes(ano.ano)
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 dark:bg-[#283039] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#3a4552]'
-              }`}
+              className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
             >
-              {ano.ano} ({ano.qtd_questoes})
-            </button>
+              <input
+                type="checkbox"
+                checked={anosSelecionados.includes(ano.ano)}
+                onChange={() => toggleAno(ano.ano)}
+                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{ano.ano}</span>
+              <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
+                {ano.qtd_questoes}
+              </span>
+            </label>
           ))}
         </div>
-      </div>
+      </DropdownFiltro>
 
       {/* Dificuldade */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Dificuldade
-        </label>
-        <div className="flex flex-wrap gap-2">
+      <DropdownFiltro nome="dificuldade" titulo="Dificuldade" badge={dificuldadesSelecionadas.length}>
+        <div className="space-y-1">
           {['facil', 'media', 'dificil'].map((dif) => (
-            <button
+            <label
               key={dif}
-              onClick={() => toggleDificuldade(dif)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                dificuldadesSelecionadas.includes(dif)
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 dark:bg-[#283039] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#3a4552]'
-              }`}
+              className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
             >
-              {getDificuldadeNome(dif)}
-            </button>
+              <input
+                type="checkbox"
+                checked={dificuldadesSelecionadas.includes(dif)}
+                onChange={() => toggleDificuldade(dif)}
+                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{getDificuldadeNome(dif)}</span>
+            </label>
           ))}
         </div>
-      </div>
+      </DropdownFiltro>
 
       {/* Modalidade */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Modalidade
-        </label>
-        <div className="space-y-2">
-          <label className="flex items-center gap-3 cursor-pointer">
+      <DropdownFiltro nome="modalidade" titulo="Modalidade" badge={modalidadesSelecionadas.length}>
+        <div className="space-y-1">
+          <label className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors">
             <input
               type="checkbox"
               checked={modalidadesSelecionadas.includes('multipla_escolha_5')}
               onChange={() => toggleModalidade('multipla_escolha_5')}
-              className="rounded border-gray-300 text-primary focus:ring-primary"
+              className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">Múltipla Escolha</span>
           </label>
-          <label className="flex items-center gap-3 cursor-pointer">
+          <label className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors">
             <input
               type="checkbox"
               checked={modalidadesSelecionadas.includes('certo_errado')}
               onChange={() => toggleModalidade('certo_errado')}
-              className="rounded border-gray-300 text-primary focus:ring-primary"
+              className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">Certo / Errado</span>
           </label>
         </div>
-      </div>
+      </DropdownFiltro>
 
       {/* Botões */}
-      <div className="space-y-2 pt-2">
+      <div className="p-4 space-y-2 bg-gray-50 dark:bg-[#161f28]">
         <button
           onClick={() => buscarQuestoes(1)}
           className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-primary/20 transition-all"
