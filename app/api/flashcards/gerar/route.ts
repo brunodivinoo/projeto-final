@@ -243,6 +243,9 @@ IMPORTANTE:
         frente: f.frente.trim(),
         verso: f.verso.trim(),
         dificuldade: dificuldade || 'medio',
+        disciplina: disciplina?.trim() || null,
+        assunto: assunto?.trim() || null,
+        subassunto: subassunto?.trim() || null,
         proxima_revisao: new Date().toISOString(),
         status: 'novo'
       }))

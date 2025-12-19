@@ -10,6 +10,9 @@ export interface Flashcard {
   frente: string
   verso: string
   dificuldade: string
+  disciplina?: string | null
+  assunto?: string | null
+  subassunto?: string | null
   proxima_revisao: string
   repeticoes: number
   intervalo_dias: number

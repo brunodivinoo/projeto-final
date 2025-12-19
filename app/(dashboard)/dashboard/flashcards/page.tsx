@@ -70,6 +70,9 @@ export default function FlashcardsPage() {
   // Estados de filtro para deck-detail
   const [filtroStatus, setFiltroStatus] = useState<string>('todos')
   const [filtroTexto, setFiltroTexto] = useState('')
+  const [filtroDisciplina, setFiltroDisciplina] = useState<string>('todas')
+  const [filtroAssunto, setFiltroAssunto] = useState<string>('todos')
+  const [filtroSubassunto, setFiltroSubassunto] = useState<string>('todos')
 
   // Carregar preferencias salvas do gerador
   useEffect(() => {
@@ -122,6 +125,9 @@ export default function FlashcardsPage() {
     setAllDeckCards(cards)
     setFiltroStatus('todos')
     setFiltroTexto('')
+    setFiltroDisciplina('todas')
+    setFiltroAssunto('todos')
+    setFiltroSubassunto('todos')
     setViewMode('deck-detail')
   }
 
@@ -245,10 +251,34 @@ export default function FlashcardsPage() {
     }
   }
 
+  // Extrair opcoes unicas de filtro dos cards
+  const disciplinasUnicas = [...new Set(allDeckCards.map(c => c.disciplina).filter(Boolean))] as string[]
+  const assuntosUnicos = [...new Set(
+    allDeckCards
+      .filter(c => filtroDisciplina === 'todas' || c.disciplina === filtroDisciplina)
+      .map(c => c.assunto)
+      .filter(Boolean)
+  )] as string[]
+  const subassuntosUnicos = [...new Set(
+    allDeckCards
+      .filter(c =>
+        (filtroDisciplina === 'todas' || c.disciplina === filtroDisciplina) &&
+        (filtroAssunto === 'todos' || c.assunto === filtroAssunto)
+      )
+      .map(c => c.subassunto)
+      .filter(Boolean)
+  )] as string[]
+
   // Filtrar cards no deck-detail
   const cardsFiltrados = allDeckCards.filter(card => {
     // Filtro por status
     if (filtroStatus !== 'todos' && card.status !== filtroStatus) return false
+    // Filtro por disciplina
+    if (filtroDisciplina !== 'todas' && card.disciplina !== filtroDisciplina) return false
+    // Filtro por assunto
+    if (filtroAssunto !== 'todos' && card.assunto !== filtroAssunto) return false
+    // Filtro por subassunto
+    if (filtroSubassunto !== 'todos' && card.subassunto !== filtroSubassunto) return false
     // Filtro por texto
     if (filtroTexto) {
       const texto = filtroTexto.toLowerCase()
@@ -576,37 +606,116 @@ export default function FlashcardsPage() {
               </div>
 
               {/* Filtros */}
-              <div className="flex flex-col sm:flex-row gap-3 mb-6">
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 material-symbols-outlined text-lg">
-                    search
-                  </span>
-                  <input
-                    type="text"
-                    value={filtroTexto}
-                    onChange={e => setFiltroTexto(e.target.value)}
-                    placeholder="Buscar flashcards..."
-                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-[#1c252e] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white text-sm focus:border-primary focus:ring-0"
-                  />
+              <div className="space-y-4 mb-6">
+                {/* Linha 1: Busca e Status */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 material-symbols-outlined text-lg">
+                      search
+                    </span>
+                    <input
+                      type="text"
+                      value={filtroTexto}
+                      onChange={e => setFiltroTexto(e.target.value)}
+                      placeholder="Buscar flashcards..."
+                      className="w-full pl-10 pr-4 py-2 bg-white dark:bg-[#1c252e] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white text-sm focus:border-primary focus:ring-0"
+                    />
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {['todos', 'novo', 'aprendendo', 'revisao', 'dominado'].map(status => (
+                      <button
+                        key={status}
+                        onClick={() => setFiltroStatus(status)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          filtroStatus === status
+                            ? 'bg-primary text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {status === 'todos' ? 'Todos' : status.charAt(0).toUpperCase() + status.slice(1)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  {['todos', 'novo', 'aprendendo', 'revisao', 'dominado'].map(status => (
-                    <button
-                      key={status}
-                      onClick={() => setFiltroStatus(status)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        filtroStatus === status
-                          ? 'bg-primary text-white'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      {status === 'todos' ? 'Todos' : status.charAt(0).toUpperCase() + status.slice(1)}
-                    </button>
-                  ))}
-                </div>
+
+                {/* Linha 2: Filtros por Disciplina/Assunto/Subassunto */}
+                {(disciplinasUnicas.length > 0 || assuntosUnicos.length > 0 || subassuntosUnicos.length > 0) && (
+                  <div className="flex flex-wrap gap-3">
+                    {/* Filtro Disciplina */}
+                    {disciplinasUnicas.length > 0 && (
+                      <select
+                        value={filtroDisciplina}
+                        onChange={e => {
+                          setFiltroDisciplina(e.target.value)
+                          setFiltroAssunto('todos')
+                          setFiltroSubassunto('todos')
+                        }}
+                        className="px-3 py-2 bg-white dark:bg-[#1c252e] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white text-sm focus:border-primary focus:ring-0"
+                      >
+                        <option value="todas">Todas disciplinas</option>
+                        {disciplinasUnicas.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    )}
+
+                    {/* Filtro Assunto */}
+                    {assuntosUnicos.length > 0 && (
+                      <select
+                        value={filtroAssunto}
+                        onChange={e => {
+                          setFiltroAssunto(e.target.value)
+                          setFiltroSubassunto('todos')
+                        }}
+                        className="px-3 py-2 bg-white dark:bg-[#1c252e] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white text-sm focus:border-primary focus:ring-0"
+                      >
+                        <option value="todos">Todos assuntos</option>
+                        {assuntosUnicos.map(a => (
+                          <option key={a} value={a}>{a}</option>
+                        ))}
+                      </select>
+                    )}
+
+                    {/* Filtro Subassunto */}
+                    {subassuntosUnicos.length > 0 && (
+                      <select
+                        value={filtroSubassunto}
+                        onChange={e => setFiltroSubassunto(e.target.value)}
+                        className="px-3 py-2 bg-white dark:bg-[#1c252e] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white text-sm focus:border-primary focus:ring-0"
+                      >
+                        <option value="todos">Todos subassuntos</option>
+                        {subassuntosUnicos.map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    )}
+
+                    {/* Botao limpar filtros */}
+                    {(filtroDisciplina !== 'todas' || filtroAssunto !== 'todos' || filtroSubassunto !== 'todos') && (
+                      <button
+                        onClick={() => {
+                          setFiltroDisciplina('todas')
+                          setFiltroAssunto('todos')
+                          setFiltroSubassunto('todos')
+                        }}
+                        className="px-3 py-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-sm flex items-center gap-1"
+                      >
+                        <span className="material-symbols-outlined text-lg">close</span>
+                        Limpar filtros
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Lista de flashcards */}
+              {/* Contador de resultados */}
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-slate-500">
+                  {cardsFiltrados.length} de {allDeckCards.length} flashcards
+                </p>
+              </div>
+
+              {/* Grid de flashcards */}
               {cardsFiltrados.length === 0 ? (
                 <div className="bg-white dark:bg-[#1c252e] rounded-xl p-12 text-center border border-slate-200 dark:border-slate-700">
                   <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mb-2">
@@ -619,57 +728,88 @@ export default function FlashcardsPage() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {cardsFiltrados.map((card, index) => (
                     <div
                       key={card.id}
-                      className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden group hover:border-primary/50 transition-colors"
+                      className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden group hover:border-primary/50 hover:shadow-lg transition-all"
                     >
+                      {/* Header do card */}
+                      <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs text-slate-400 font-mono">#{index + 1}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            card.status === 'dominado' ? 'bg-green-500/10 text-green-500' :
+                            card.status === 'revisao' ? 'bg-blue-500/10 text-blue-500' :
+                            card.status === 'aprendendo' ? 'bg-orange-500/10 text-orange-500' :
+                            'bg-slate-500/10 text-slate-500'
+                          }`}>
+                            {card.status}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            card.dificuldade === 'facil' ? 'bg-green-500/10 text-green-500' :
+                            card.dificuldade === 'dificil' ? 'bg-red-500/10 text-red-500' :
+                            'bg-yellow-500/10 text-yellow-500'
+                          }`}>
+                            {card.dificuldade}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleDeletarFlashcard(card.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 transition-all"
+                        >
+                          <span className="material-symbols-outlined text-lg">delete</span>
+                        </button>
+                      </div>
+
+                      {/* Conteudo do card */}
                       <div className="p-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-xs text-slate-400 font-mono">#{index + 1}</span>
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                card.status === 'dominado' ? 'bg-green-500/10 text-green-500' :
-                                card.status === 'revisao' ? 'bg-blue-500/10 text-blue-500' :
-                                card.status === 'aprendendo' ? 'bg-orange-500/10 text-orange-500' :
-                                'bg-slate-500/10 text-slate-500'
-                              }`}>
-                                {card.status}
+                        {/* Tags de disciplina/assunto */}
+                        {(card.disciplina || card.assunto) && (
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {card.disciplina && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-purple-500/10 text-purple-500">
+                                {card.disciplina}
                               </span>
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                card.dificuldade === 'facil' ? 'bg-green-500/10 text-green-500' :
-                                card.dificuldade === 'dificil' ? 'bg-red-500/10 text-red-500' :
-                                'bg-yellow-500/10 text-yellow-500'
-                              }`}>
-                                {card.dificuldade}
+                            )}
+                            {card.assunto && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-500">
+                                {card.assunto}
                               </span>
-                            </div>
-
-                            <div className="mb-3">
-                              <p className="text-xs uppercase tracking-wider text-slate-400 mb-1">Frente</p>
-                              <MarkdownText
-                                text={card.frente}
-                                className="text-slate-900 dark:text-white text-sm"
-                              />
-                            </div>
-
-                            <div>
-                              <p className="text-xs uppercase tracking-wider text-slate-400 mb-1">Verso</p>
-                              <MarkdownText
-                                text={card.verso}
-                                className="text-slate-600 dark:text-slate-400 text-sm"
-                              />
-                            </div>
+                            )}
+                            {card.subassunto && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-teal-500/10 text-teal-500">
+                                {card.subassunto}
+                              </span>
+                            )}
                           </div>
+                        )}
 
-                          <button
-                            onClick={() => handleDeletarFlashcard(card.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-500 transition-all"
-                          >
-                            <span className="material-symbols-outlined text-lg">delete</span>
-                          </button>
+                        {/* Frente */}
+                        <div className="mb-4">
+                          <p className="text-xs uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">help</span>
+                            Pergunta
+                          </p>
+                          <MarkdownText
+                            text={card.frente}
+                            className="text-slate-900 dark:text-white text-sm"
+                          />
+                        </div>
+
+                        {/* Divisor */}
+                        <div className="border-t border-dashed border-slate-200 dark:border-slate-700 my-3" />
+
+                        {/* Verso */}
+                        <div>
+                          <p className="text-xs uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">lightbulb</span>
+                            Resposta
+                          </p>
+                          <MarkdownText
+                            text={card.verso}
+                            className="text-slate-600 dark:text-slate-400 text-sm"
+                          />
                         </div>
                       </div>
                     </div>
