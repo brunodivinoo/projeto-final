@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useXP } from '@/hooks/useXP'
 import { ComentariosTab } from './ComentariosTab'
 import { EstatisticasTab } from './EstatisticasTab'
 
@@ -34,9 +35,11 @@ type TabType = 'gabarito' | 'comentarios' | 'estatisticas' | 'reportar'
 
 export function QuestaoCard({ questao, onResponder }: QuestaoCardProps) {
   const { user } = useAuth()
+  const { addXP } = useXP()
   const [respostaSelecionada, setRespostaSelecionada] = useState<string | null>(null)
   const [respondida, setRespondida] = useState(false)
   const [abaAtiva, setAbaAtiva] = useState<TabType | null>(null)
+  const [xpGanho, setXpGanho] = useState<number | null>(null)
 
   const isCertoErrado = questao.modalidade === 'certo_errado'
 
@@ -77,11 +80,19 @@ export function QuestaoCard({ questao, onResponder }: QuestaoCardProps) {
       try {
         const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession()
         if (session?.access_token) {
+          // Registrar estatísticas da questão
           await fetch(`/api/questoes/${questao.id}/estatisticas`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
             body: JSON.stringify({ resposta: respostaSelecionada, correta })
           })
+        }
+
+        // Adicionar XP baseado na resposta
+        const tipoXP = correta ? 'questao_correta' : 'questao_errada'
+        const resultado = await addXP(tipoXP, `Questão ${questao.id_original || questao.id}`)
+        if (resultado.xpGanho > 0) {
+          setXpGanho(resultado.xpGanho)
         }
       } catch (e) { console.error(e) }
     }
@@ -175,7 +186,7 @@ export function QuestaoCard({ questao, onResponder }: QuestaoCardProps) {
       </div>
 
       {/* Botão Responder / Resultado - ACIMA das abas */}
-      <div className="flex items-center justify-end px-4 lg:px-6 py-4 border-t border-gray-100 dark:border-[#283039] bg-gray-50 dark:bg-[#161f28]">
+      <div className="flex items-center justify-start gap-3 px-4 lg:px-6 py-4">
         {!respondida ? (
           <button
             onClick={responderQuestao}
@@ -187,13 +198,21 @@ export function QuestaoCard({ questao, onResponder }: QuestaoCardProps) {
             Responder
           </button>
         ) : (
-          <span className={`px-4 py-2 rounded-lg text-sm font-bold ${
-            respostaSelecionada === gabaritoConvertido
-              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-              : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-          }`}>
-            {respostaSelecionada === gabaritoConvertido ? 'Acertou!' : 'Errou!'}
-          </span>
+          <>
+            <span className={`px-4 py-2 rounded-lg text-sm font-bold ${
+              respostaSelecionada === gabaritoConvertido
+                ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+            }`}>
+              {respostaSelecionada === gabaritoConvertido ? 'Acertou!' : 'Errou!'}
+            </span>
+            {xpGanho && xpGanho > 0 && (
+              <span className="text-sm text-primary font-medium flex items-center gap-1">
+                <span className="material-symbols-outlined text-base">bolt</span>
+                +{xpGanho} XP
+              </span>
+            )}
+          </>
         )}
       </div>
 
