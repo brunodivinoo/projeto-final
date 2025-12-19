@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Header } from '@/components/layout/Header'
+import { QuestaoCard } from '@/components/questoes/QuestaoCard'
 
 // Tipos
 interface Questao {
@@ -94,11 +95,6 @@ export default function QuestoesPage() {
   const [anosSelecionados, setAnosSelecionados] = useState<number[]>([])
   const [dificuldadesSelecionadas, setDificuldadesSelecionadas] = useState<string[]>([])
   const [modalidadesSelecionadas, setModalidadesSelecionadas] = useState<string[]>([])
-
-  // Estado de respostas do usuário
-  const [respostasSelecionadas, setRespostasSelecionadas] = useState<{ [key: string]: string }>({})
-  const [questoesRespondidas, setQuestoesRespondidas] = useState<{ [key: string]: boolean }>({})
-  const [mostrarComentario, setMostrarComentario] = useState<{ [key: string]: boolean }>({})
 
   // Estados de UI
   const [isMobile, setIsMobile] = useState(false)
@@ -372,38 +368,7 @@ export default function QuestoesPage() {
     }
   }
 
-  // Selecionar resposta
-  const selecionarResposta = (questaoId: string, letra: string) => {
-    if (!questoesRespondidas[questaoId]) {
-      setRespostasSelecionadas(prev => ({ ...prev, [questaoId]: letra }))
-    }
-  }
-
-  // Responder questão
-  const responderQuestao = (questao: Questao) => {
-    setQuestoesRespondidas(prev => ({ ...prev, [questao.id]: true }))
-  }
-
-  // Toggle comentário
-  const toggleComentario = (questaoId: string) => {
-    setMostrarComentario(prev => ({ ...prev, [questaoId]: !prev[questaoId] }))
-  }
-
-  // Obter cor da dificuldade
-  const getDificuldadeColor = (dificuldade: string) => {
-    switch (dificuldade) {
-      case 'facil':
-        return 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-      case 'media':
-        return 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400'
-      case 'dificil':
-        return 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-      default:
-        return 'bg-gray-100 text-gray-600'
-    }
-  }
-
-  // Obter nome da dificuldade
+  // Obter nome da dificuldade (usado nos filtros)
   const getDificuldadeNome = (dificuldade: string) => {
     switch (dificuldade) {
       case 'facil': return 'Fácil'
@@ -411,12 +376,6 @@ export default function QuestoesPage() {
       case 'dificil': return 'Difícil'
       default: return dificuldade
     }
-  }
-
-  // Obter nome da banca formatado
-  const getBancaNome = (banca: string | null) => {
-    if (!banca) return ''
-    return banca.toUpperCase()
   }
 
   // Verificar se tem filtros aplicados
@@ -428,183 +387,6 @@ export default function QuestoesPage() {
            anosSelecionados.length > 0 ||
            dificuldadesSelecionadas.length > 0 ||
            modalidadesSelecionadas.length > 0
-  }
-
-  // Renderizar questão
-  const renderQuestao = (questao: Questao) => {
-    const respondida = questoesRespondidas[questao.id]
-    const respostaSelecionada = respostasSelecionadas[questao.id]
-    const isCertoErrado = questao.modalidade === 'certo_errado'
-
-    // Preparar opções
-    const opcoes = isCertoErrado
-      ? [
-          { letra: 'C', texto: 'Certo' },
-          { letra: 'E', texto: 'Errado' }
-        ]
-      : [
-          questao.alternativa_a && { letra: 'A', texto: questao.alternativa_a },
-          questao.alternativa_b && { letra: 'B', texto: questao.alternativa_b },
-          questao.alternativa_c && { letra: 'C', texto: questao.alternativa_c },
-          questao.alternativa_d && { letra: 'D', texto: questao.alternativa_d },
-          questao.alternativa_e && { letra: 'E', texto: questao.alternativa_e }
-        ].filter(Boolean) as { letra: string; texto: string }[]
-
-    // Converter gabarito para certo/errado se necessário
-    const gabaritoConvertido = isCertoErrado
-      ? (questao.gabarito === 'CERTO' ? 'C' : 'E')
-      : questao.gabarito
-
-    return (
-      <div
-        key={questao.id}
-        className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] overflow-hidden shadow-sm"
-      >
-        {/* Header */}
-        <div className="flex flex-wrap items-center gap-2 p-4 border-b border-gray-100 dark:border-[#283039]">
-          <span className="text-primary font-bold text-sm">{questao.id_original?.slice(-6).toUpperCase() || questao.id.slice(-6).toUpperCase()}</span>
-          <span className="text-gray-300 dark:text-gray-600">|</span>
-          <span className="text-gray-700 dark:text-gray-300 text-sm font-medium">{questao.disciplina}</span>
-          {questao.assunto && (
-            <>
-              <span className="text-gray-400">&gt;</span>
-              <span className="text-gray-500 dark:text-gray-400 text-sm">{questao.assunto}</span>
-            </>
-          )}
-          <div className="flex-1"></div>
-          {questao.banca && <span className="text-gray-500 dark:text-gray-400 text-sm">{getBancaNome(questao.banca)}</span>}
-          {questao.ano && (
-            <>
-              <span className="text-gray-300 dark:text-gray-600">|</span>
-              <span className="text-gray-500 dark:text-gray-400 text-sm">{questao.ano}</span>
-            </>
-          )}
-          <span className={`px-2 py-0.5 rounded text-xs font-medium ${getDificuldadeColor(questao.dificuldade)}`}>
-            {getDificuldadeNome(questao.dificuldade)}
-          </span>
-        </div>
-
-        {/* Conteúdo */}
-        <div className="p-4 lg:p-6">
-          {isCertoErrado && (
-            <p className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-wider mb-4">
-              JULGUE O ITEM A SEGUIR
-            </p>
-          )}
-          <p className="text-gray-800 dark:text-gray-200 text-base leading-relaxed mb-6 whitespace-pre-wrap">
-            {questao.enunciado}
-          </p>
-
-          {/* Opções */}
-          <div className="space-y-3">
-            {opcoes.map((opcao) => {
-              const isSelected = respostaSelecionada === opcao.letra
-              const isCorrect = gabaritoConvertido === opcao.letra
-              const showResult = respondida
-
-              let bgClass = 'border-gray-200 dark:border-[#283039] hover:border-gray-300 dark:hover:border-gray-600'
-              if (showResult) {
-                if (isCorrect) {
-                  bgClass = 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                } else if (isSelected && !isCorrect) {
-                  bgClass = 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                }
-              } else if (isSelected) {
-                bgClass = 'border-primary bg-primary/5'
-              }
-
-              return (
-                <label
-                  key={opcao.letra}
-                  onClick={() => !respondida && selecionarResposta(questao.id, opcao.letra)}
-                  className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${bgClass}`}
-                >
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm transition-all ${
-                      showResult && isCorrect
-                        ? 'bg-green-500 text-white'
-                        : showResult && isSelected && !isCorrect
-                        ? 'bg-red-500 text-white'
-                        : isSelected
-                        ? 'bg-primary text-white'
-                        : 'border-2 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                    {showResult && isCorrect ? (
-                      <span className="material-symbols-outlined text-sm">check</span>
-                    ) : showResult && isSelected && !isCorrect ? (
-                      <span className="material-symbols-outlined text-sm">close</span>
-                    ) : (
-                      opcao.letra
-                    )}
-                  </div>
-                  <span className={`text-sm pt-1 ${
-                    isSelected || (showResult && isCorrect)
-                      ? 'text-gray-900 dark:text-white font-medium'
-                      : 'text-gray-600 dark:text-gray-300'
-                  }`}>
-                    {opcao.texto}
-                  </span>
-                </label>
-              )
-            })}
-          </div>
-
-          {/* Comentário */}
-          {respondida && questao.comentario && mostrarComentario[questao.id] && (
-            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-              <h4 className="font-bold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
-                <span className="material-symbols-outlined text-lg">lightbulb</span>
-                Comentário
-              </h4>
-              <div className="text-sm text-blue-900 dark:text-blue-200 whitespace-pre-wrap leading-relaxed">
-                {questao.comentario}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex flex-wrap items-center justify-between gap-4 px-4 lg:px-6 py-4 border-t border-gray-100 dark:border-[#283039] bg-gray-50 dark:bg-[#161f28]">
-          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-            {respondida && questao.comentario && (
-              <button
-                onClick={() => toggleComentario(questao.id)}
-                className="flex items-center gap-1.5 hover:text-primary transition-colors"
-              >
-                <span className="material-symbols-outlined text-lg">
-                  {mostrarComentario[questao.id] ? 'visibility_off' : 'visibility'}
-                </span>
-                {mostrarComentario[questao.id] ? 'Ocultar Comentário' : 'Ver Comentário'}
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            {!respondida ? (
-              <button
-                onClick={() => responderQuestao(questao)}
-                disabled={!respostaSelecionada}
-                className={`px-6 py-2 rounded-lg text-sm font-bold shadow-md transition-all ${
-                  respostaSelecionada
-                    ? 'bg-primary hover:bg-blue-600 text-white shadow-primary/20'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                Responder
-              </button>
-            ) : (
-              <span className={`px-4 py-2 rounded-lg text-sm font-bold ${
-                respostaSelecionada === gabaritoConvertido
-                  ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-              }`}>
-                {respostaSelecionada === gabaritoConvertido ? 'Acertou!' : 'Errou!'}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    )
   }
 
   // Renderizar filtros aplicados (tags)
@@ -1186,13 +968,17 @@ export default function QuestoesPage() {
             ) : isMobile ? (
               // Mobile: uma questão por vez
               <>
-                {questoes[questaoAtualMobile] && renderQuestao(questoes[questaoAtualMobile])}
+                {questoes[questaoAtualMobile] && (
+                  <QuestaoCard key={questoes[questaoAtualMobile].id} questao={questoes[questaoAtualMobile]} />
+                )}
                 <div className="h-20"></div> {/* Espaço para a navegação fixa */}
               </>
             ) : (
               // Desktop: lista de questões
               <>
-                {questoes.map(renderQuestao)}
+                {questoes.map(questao => (
+                  <QuestaoCard key={questao.id} questao={questao} />
+                ))}
                 {renderPaginacaoDesktop()}
               </>
             )}
