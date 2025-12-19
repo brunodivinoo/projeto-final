@@ -51,9 +51,6 @@ export default function FlashcardsPage() {
   // Estados do formulario de criar deck
   const [novoDeckNome, setNovoDeckNome] = useState('')
   const [novoDeckDescricao, setNovoDeckDescricao] = useState('')
-  const [novoDeckDisciplina, setNovoDeckDisciplina] = useState('')
-  const [novoDeckAssunto, setNovoDeckAssunto] = useState('')
-  const [novoDeckSubassunto, setNovoDeckSubassunto] = useState('')
   const [novoDeckCor, setNovoDeckCor] = useState(CORES_DECK[0])
   const [novoDeckIcone, setNovoDeckIcone] = useState(ICONES_DECK[0])
 
@@ -101,9 +98,6 @@ export default function FlashcardsPage() {
     const novoDeck = await criarDeck({
       nome: novoDeckNome,
       descricao: novoDeckDescricao,
-      disciplina: novoDeckDisciplina,
-      assunto: novoDeckAssunto,
-      subassunto: novoDeckSubassunto,
       cor: novoDeckCor,
       icone: novoDeckIcone
     })
@@ -112,9 +106,6 @@ export default function FlashcardsPage() {
       setShowCreateDeck(false)
       setNovoDeckNome('')
       setNovoDeckDescricao('')
-      setNovoDeckDisciplina('')
-      setNovoDeckAssunto('')
-      setNovoDeckSubassunto('')
     }
   }
 
@@ -604,45 +595,6 @@ export default function FlashcardsPage() {
                         className="w-full px-4 py-2 bg-slate-50 dark:bg-[#101922] border border-slate-200 dark:border-slate-700 rounded-lg focus:border-primary focus:ring-0 text-slate-900 dark:text-white resize-none h-20"
                         placeholder="Descricao opcional..."
                       />
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                          Disciplina
-                        </label>
-                        <input
-                          type="text"
-                          value={novoDeckDisciplina}
-                          onChange={e => setNovoDeckDisciplina(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101922] border border-slate-200 dark:border-slate-700 rounded-lg focus:border-primary focus:ring-0 text-slate-900 dark:text-white text-sm"
-                          placeholder="Direito"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                          Assunto
-                        </label>
-                        <input
-                          type="text"
-                          value={novoDeckAssunto}
-                          onChange={e => setNovoDeckAssunto(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101922] border border-slate-200 dark:border-slate-700 rounded-lg focus:border-primary focus:ring-0 text-slate-900 dark:text-white text-sm"
-                          placeholder="Const."
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                          Subassunto
-                        </label>
-                        <input
-                          type="text"
-                          value={novoDeckSubassunto}
-                          onChange={e => setNovoDeckSubassunto(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101922] border border-slate-200 dark:border-slate-700 rounded-lg focus:border-primary focus:ring-0 text-slate-900 dark:text-white text-sm"
-                          placeholder="Art. 5"
-                        />
-                      </div>
                     </div>
 
                     <div>
