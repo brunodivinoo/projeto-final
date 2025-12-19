@@ -213,6 +213,8 @@ export function ComentariosTab({ questaoId }: ComentariosTabProps) {
   const [novoComentario, setNovoComentario] = useState('')
   const [respondendoA, setRespondendoA] = useState<string | null>(null)
   const [respostaComentario, setRespostaComentario] = useState('')
+  const [editandoId, setEditandoId] = useState<string | null>(null)
+  const [conteudoEdicao, setConteudoEdicao] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -326,6 +328,51 @@ export function ComentariosTab({ questaoId }: ComentariosTabProps) {
     }
   }
 
+  const iniciarEdicao = (comentario: Comentario) => {
+    setEditandoId(comentario.id)
+    setConteudoEdicao(comentario.conteudo)
+  }
+
+  const cancelarEdicao = () => {
+    setEditandoId(null)
+    setConteudoEdicao('')
+  }
+
+  const salvarEdicao = async (comentarioId: string) => {
+    const conteudoLimpo = conteudoEdicao.replace(/<[^>]*>/g, '').trim()
+    if (!conteudoLimpo || !user) return
+
+    setEnviando(true)
+    try {
+      const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession()
+      if (!session?.access_token) return
+
+      const res = await fetch(`/api/questoes/${questaoId}/comentarios`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ comentario_id: comentarioId, conteudo: conteudoEdicao })
+      })
+
+      if (res.ok) {
+        const atualizarComentario = (c: Comentario): Comentario => {
+          if (c.id === comentarioId) {
+            return { ...c, conteudo: conteudoEdicao }
+          }
+          return { ...c, respostas: c.respostas.map(atualizarComentario) }
+        }
+        setComentarios(prev => prev.map(atualizarComentario))
+        cancelarEdicao()
+      }
+    } catch (error) {
+      console.error('Erro ao editar comentário:', error)
+    } finally {
+      setEnviando(false)
+    }
+  }
+
   const handleLike = async (comentarioId: string, tipo: 'like' | 'dislike') => {
     if (!user) return
 
@@ -357,97 +404,161 @@ export function ComentariosTab({ questaoId }: ComentariosTabProps) {
     }
   }
 
-  const renderComentario = (comentario: Comentario, isResposta = false) => (
-    <div key={comentario.id} className={`${isResposta ? 'ml-8 mt-3' : ''}`}>
-      <div className="flex gap-3">
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-          {comentario.profiles?.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={comentario.profiles.avatar_url} alt="" className="w-8 h-8 rounded-full" />
-          ) : (
-            <span className="text-primary text-sm font-bold">
-              {comentario.profiles?.nome?.charAt(0)?.toUpperCase() || 'U'}
-            </span>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
-              {comentario.profiles?.nome || 'Usuário'}
-            </span>
-            <span className="text-xs text-gray-400">{formatarData(comentario.created_at)}</span>
-          </div>
-          {/* Renderizar HTML formatado */}
-          <div
-            className="text-sm text-gray-700 dark:text-gray-300 mb-2 break-words prose prose-sm dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: comentario.conteudo }}
-          />
+  const renderComentario = (comentario: Comentario, isResposta = false) => {
+    const isProprioComentario = user && comentario.user_id === user.id
+    const estaEditando = editandoId === comentario.id
 
-          <div className="flex items-center gap-4 flex-wrap">
-            <button
-              onClick={() => handleLike(comentario.id, 'like')}
-              className={`flex items-center gap-1 text-xs ${
-                comentario.userLike === 'like' ? 'text-green-500' : 'text-gray-400 hover:text-green-500'
-              }`}
-            >
-              <span className="material-symbols-outlined text-base">thumb_up</span>
-              {comentario.likes_count > 0 && comentario.likes_count}
-            </button>
-            <button
-              onClick={() => handleLike(comentario.id, 'dislike')}
-              className={`flex items-center gap-1 text-xs ${
-                comentario.userLike === 'dislike' ? 'text-red-500' : 'text-gray-400 hover:text-red-500'
-              }`}
-            >
-              <span className="material-symbols-outlined text-base">thumb_down</span>
-              {comentario.dislikes_count > 0 && comentario.dislikes_count}
-            </button>
-            {!isResposta && user && (
-              <button
-                onClick={() => setRespondendoA(respondendoA === comentario.id ? null : comentario.id)}
-                className="text-xs text-gray-400 hover:text-primary"
-              >
-                Responder
-              </button>
-            )}
-            {user && comentario.user_id === user.id && (
-              <button onClick={() => excluirComentario(comentario.id)} className="text-xs text-gray-400 hover:text-red-500">
-                Excluir
-              </button>
+    return (
+      <div key={comentario.id} className={`${isResposta ? 'ml-8 mt-3' : ''}`}>
+        <div className="flex gap-3">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            {comentario.profiles?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={comentario.profiles.avatar_url} alt="" className="w-8 h-8 rounded-full" />
+            ) : (
+              <span className="text-primary text-sm font-bold">
+                {comentario.profiles?.nome?.charAt(0)?.toUpperCase() || 'U'}
+              </span>
             )}
           </div>
-
-          {respondendoA === comentario.id && user && (
-            <div className="mt-3">
-              <RichTextEditor
-                value={respostaComentario}
-                onChange={setRespostaComentario}
-                placeholder="Escreva uma resposta..."
-                rows={2}
-              />
-              <div className="flex justify-end gap-2 mt-2">
-                <button
-                  onClick={() => setRespondendoA(null)}
-                  className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => enviarComentario(comentario.id)}
-                  disabled={enviando}
-                  className="px-4 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-blue-600 disabled:opacity-50"
-                >
-                  {enviando ? 'Enviando...' : 'Enviar'}
-                </button>
-              </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                {comentario.profiles?.nome || 'Usuário'}
+              </span>
+              <span className="text-xs text-gray-400">{formatarData(comentario.created_at)}</span>
+              {isProprioComentario && (
+                <span className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded">Você</span>
+              )}
             </div>
-          )}
 
-          {comentario.respostas.map(r => renderComentario(r, true))}
+            {/* Modo de edição ou visualização */}
+            {estaEditando ? (
+              <div className="mb-2">
+                <RichTextEditor
+                  value={conteudoEdicao}
+                  onChange={setConteudoEdicao}
+                  placeholder="Edite seu comentário..."
+                  rows={2}
+                />
+                <div className="flex justify-end gap-2 mt-2">
+                  <button
+                    onClick={cancelarEdicao}
+                    className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => salvarEdicao(comentario.id)}
+                    disabled={enviando}
+                    className="px-4 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                  >
+                    {enviando ? 'Salvando...' : 'Salvar'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                className="text-sm text-gray-700 dark:text-gray-300 mb-2 break-words prose prose-sm dark:prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: comentario.conteudo }}
+              />
+            )}
+
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* Like/Dislike - apenas para comentários de outros usuários */}
+              {!isProprioComentario && (
+                <>
+                  <button
+                    onClick={() => handleLike(comentario.id, 'like')}
+                    className={`flex items-center gap-1 text-xs ${
+                      comentario.userLike === 'like' ? 'text-green-500' : 'text-gray-400 hover:text-green-500'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">thumb_up</span>
+                    {comentario.likes_count > 0 && comentario.likes_count}
+                  </button>
+                  <button
+                    onClick={() => handleLike(comentario.id, 'dislike')}
+                    className={`flex items-center gap-1 text-xs ${
+                      comentario.userLike === 'dislike' ? 'text-red-500' : 'text-gray-400 hover:text-red-500'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">thumb_down</span>
+                    {comentario.dislikes_count > 0 && comentario.dislikes_count}
+                  </button>
+                </>
+              )}
+              {/* Mostrar contadores para próprio comentário (sem botão) */}
+              {isProprioComentario && (comentario.likes_count > 0 || comentario.dislikes_count > 0) && (
+                <>
+                  <span className="flex items-center gap-1 text-xs text-gray-400">
+                    <span className="material-symbols-outlined text-base">thumb_up</span>
+                    {comentario.likes_count}
+                  </span>
+                  <span className="flex items-center gap-1 text-xs text-gray-400">
+                    <span className="material-symbols-outlined text-base">thumb_down</span>
+                    {comentario.dislikes_count}
+                  </span>
+                </>
+              )}
+              {!isResposta && user && (
+                <button
+                  onClick={() => setRespondendoA(respondendoA === comentario.id ? null : comentario.id)}
+                  className="text-xs text-gray-400 hover:text-primary"
+                >
+                  Responder
+                </button>
+              )}
+              {isProprioComentario && !estaEditando && (
+                <>
+                  <button
+                    onClick={() => iniciarEdicao(comentario)}
+                    className="text-xs text-gray-400 hover:text-primary"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => excluirComentario(comentario.id)}
+                    className="text-xs text-gray-400 hover:text-red-500"
+                  >
+                    Excluir
+                  </button>
+                </>
+              )}
+            </div>
+
+            {respondendoA === comentario.id && user && (
+              <div className="mt-3">
+                <RichTextEditor
+                  value={respostaComentario}
+                  onChange={setRespostaComentario}
+                  placeholder="Escreva uma resposta..."
+                  rows={2}
+                />
+                <div className="flex justify-end gap-2 mt-2">
+                  <button
+                    onClick={() => setRespondendoA(null)}
+                    className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => enviarComentario(comentario.id)}
+                    disabled={enviando}
+                    className="px-4 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                  >
+                    {enviando ? 'Enviando...' : 'Enviar'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {comentario.respostas.map(r => renderComentario(r, true))}
+          </div>
         </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   if (loading) {
     return (

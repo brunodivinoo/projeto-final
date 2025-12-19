@@ -137,6 +137,23 @@ export function QuestaoCard({ questao, onResponder }: QuestaoCardProps) {
         <span className={`px-2 py-0.5 rounded text-xs font-medium ${getDificuldadeColor(questao.dificuldade)}`}>
           {getDificuldadeNome(questao.dificuldade)}
         </span>
+        {/* Ícones de ação */}
+        <div className="flex items-center gap-1 ml-2">
+          <button
+            onClick={() => alert('Funcionalidade de compartilhamento em desenvolvimento!')}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            title="Compartilhar questão (em breve)"
+          >
+            <span className="material-symbols-outlined text-lg">share</span>
+          </button>
+          <button
+            onClick={() => alert('Funcionalidade de salvar em desenvolvimento!')}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-yellow-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            title="Salvar questão (em breve)"
+          >
+            <span className="material-symbols-outlined text-lg">bookmark</span>
+          </button>
+        </div>
       </div>
 
       {/* Conteúdo */}

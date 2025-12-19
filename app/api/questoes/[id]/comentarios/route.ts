@@ -205,3 +205,57 @@ export async function DELETE(
     return NextResponse.json({ error: 'Erro ao excluir comentário' }, { status: 500 })
   }
 }
+
+// PATCH - Editar comentário
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const body = await request.json()
+    const { comentario_id, conteudo } = body
+
+    if (!comentario_id || !conteudo || conteudo.trim().length === 0) {
+      return NextResponse.json({ error: 'Dados inválidos' }, { status: 400 })
+    }
+
+    // Verificar autenticação
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    // Verificar se o comentário pertence ao usuário
+    const { data: comentario } = await supabase
+      .from('questoes_comentarios')
+      .select('user_id')
+      .eq('id', comentario_id)
+      .single()
+
+    if (!comentario || comentario.user_id !== user.id) {
+      return NextResponse.json({ error: 'Não autorizado a editar este comentário' }, { status: 403 })
+    }
+
+    // Atualizar comentário
+    const { data, error } = await supabase
+      .from('questoes_comentarios')
+      .update({ conteudo: conteudo.trim() })
+      .eq('id', comentario_id)
+      .select('id, conteudo')
+      .single()
+
+    if (error) throw error
+
+    return NextResponse.json({ success: true, comentario: data })
+  } catch (error) {
+    console.error('Erro ao editar comentário:', error)
+    return NextResponse.json({ error: 'Erro ao editar comentário' }, { status: 500 })
+  }
+}

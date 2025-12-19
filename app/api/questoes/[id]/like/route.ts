@@ -32,6 +32,17 @@ export async function POST(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
+    // Verificar se o comentário pertence ao próprio usuário (não pode curtir próprio comentário)
+    const { data: comentarioData } = await supabase
+      .from('questoes_comentarios')
+      .select('user_id')
+      .eq('id', comentario_id)
+      .single()
+
+    if (comentarioData?.user_id === user.id) {
+      return NextResponse.json({ error: 'Você não pode curtir seu próprio comentário' }, { status: 403 })
+    }
+
     // Verificar se já existe um like/dislike do usuário
     const { data: existingLike } = await supabase
       .from('questoes_comentarios_likes')
