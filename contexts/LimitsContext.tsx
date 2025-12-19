@@ -43,10 +43,23 @@ export function LimitsProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// Valores padrão para quando não há contexto
+const defaultLimitsData: LimitsContextData = {
+  plano: 'FREE',
+  isPro: false,
+  limites: [],
+  loading: false,
+  error: null,
+  refresh: async () => {},
+  consumirRecurso: async () => false
+}
+
 export function useLimitsContext() {
   const context = useContext(LimitsContext)
+  // Retornar valores padrão se não estiver dentro do provider (evita crash)
   if (!context) {
-    throw new Error('useLimitsContext deve ser usado dentro de um LimitsProvider')
+    console.warn('useLimitsContext usado fora do LimitsProvider - usando valores padrão')
+    return defaultLimitsData
   }
   return context
 }

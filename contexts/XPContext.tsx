@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
-import { useXP, TipoAcaoXP, calcularNivel, NivelInfo } from '@/hooks/useXP'
+import { useXP, TipoAcaoXP, calcularNivel, NivelInfo, NIVEIS_CONFIG } from '@/hooks/useXP'
 import { XPGainToast } from '@/components/xp'
 
 interface XPToast {
@@ -95,10 +95,29 @@ export function XPProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// Valores padrão para quando não há contexto
+const defaultXPData: XPContextData = {
+  ganharXP: async () => ({ xpGanho: 0, nivelUp: false }),
+  xpTotal: 0,
+  xpHoje: 0,
+  nivel: 1,
+  nivelInfo: NIVEIS_CONFIG[0],
+  proximoNivel: NIVEIS_CONFIG[1],
+  progressoNivel: 0,
+  xpParaProximoNivel: 100,
+  sequenciaDias: 0,
+  maiorSequencia: 0,
+  multiplicador: 1,
+  loading: false,
+  refresh: async () => {}
+}
+
 export function useXPContext() {
   const context = useContext(XPContext)
+  // Retornar valores padrão se não estiver dentro do provider (evita crash)
   if (!context) {
-    throw new Error('useXPContext deve ser usado dentro de um XPProvider')
+    console.warn('useXPContext usado fora do XPProvider - usando valores padrão')
+    return defaultXPData
   }
   return context
 }
