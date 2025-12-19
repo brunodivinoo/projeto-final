@@ -81,44 +81,49 @@ export interface EstatisticasData {
   filtrarAtividades: (periodo: 'dia' | 'semana' | 'mes' | 'custom', dataInicio?: string, dataFim?: string) => Promise<Atividade[]>
 }
 
-// Gerar evolucao vazia para 30 dias (sem dados mock)
-const gerarEvolucaoVazia = (): EvolucaoDiaria[] => {
-  return Array.from({ length: 30 }, (_, i) => {
-    const data = new Date()
-    data.setDate(data.getDate() - (29 - i))
-    return {
-      data: data.toISOString().split('T')[0],
-      questoes: 0,
-      acertos: 0,
-      taxa: 0
-    }
-  })
+// DADOS PADRÃO FORA DO HOOK (evita recriação)
+const EVOLUCAO_VAZIA: EvolucaoDiaria[] = Array.from({ length: 30 }, (_, i) => {
+  const data = new Date()
+  data.setDate(data.getDate() - (29 - i))
+  return {
+    data: data.toISOString().split('T')[0],
+    questoes: 0,
+    acertos: 0,
+    taxa: 0
+  }
+})
+
+const DADOS_PADRAO = {
+  questoesTotal: 0,
+  questoesHoje: 0,
+  questoesSemana: 0,
+  questoesMes: 0,
+  acertosTotal: 0,
+  taxaAcertoGeral: 0,
+  sequenciaDias: 0,
+  horasEstudadas: 0,
+  desempenhoDisciplinas: [] as DesempenhoDisciplina[],
+  desempenhoDificuldade: [] as DesempenhoDificuldade[],
+  evolucao30Dias: EVOLUCAO_VAZIA,
+  atividades: [] as Atividade[]
 }
 
 export function useEstatisticas(): EstatisticasData {
+  // PEGAR authLoading DO CONTEXT
   const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Estados
-  const [questoesTotal, setQuestoesTotal] = useState(0)
-  const [questoesHoje, setQuestoesHoje] = useState(0)
-  const [questoesSemana, setQuestoesSemana] = useState(0)
-  const [questoesMes, setQuestoesMes] = useState(0)
-  const [acertosTotal, setAcertosTotal] = useState(0)
-  const [taxaAcertoGeral, setTaxaAcertoGeral] = useState(0)
-  const [sequenciaDias, setSequenciaDias] = useState(0)
-  const [horasEstudadas, setHorasEstudadas] = useState(0)
-
-  const [desempenhoDisciplinas, setDesempenhoDisciplinas] = useState<DesempenhoDisciplina[]>([])
-  const [desempenhoDificuldade, setDesempenhoDificuldade] = useState<DesempenhoDificuldade[]>([])
-  const [evolucao30Dias, setEvolucao30Dias] = useState<EvolucaoDiaria[]>(gerarEvolucaoVazia())
-  const [atividades, setAtividades] = useState<Atividade[]>([])
+  // Estados com valores padrão
+  const [dados, setDados] = useState(DADOS_PADRAO)
 
   const fetchEstatisticas = useCallback(async () => {
+    // AGUARDAR AUTH CARREGAR PRIMEIRO
     if (authLoading) return
 
+    // SEM USUÁRIO = USAR PADRÃO E PARAR
     if (!user) {
+      setDados(DADOS_PADRAO)
       setLoading(false)
       return
     }
@@ -133,55 +138,55 @@ export function useEstatisticas(): EstatisticasData {
       const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString()
       const inicio30Dias = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 30).toISOString()
 
-      // Buscar todas as respostas do usuario
-      const { data: respostas, error: respostasError } = await supabase
-        .from('respostas_usuario')
-        .select(`
-          id,
-          questao_id,
-          acertou,
-          tempo_segundos,
-          created_at,
-          questoes (
-            disciplina,
-            assunto,
-            subassunto,
-            dificuldade
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+      // USAR PROMISE.ALL PARA QUERIES PARALELAS
+      const [respostasResult, statsResult, atividadesResult] = await Promise.all([
+        // Buscar todas as respostas do usuario
+        supabase
+          .from('respostas_usuario')
+          .select(`
+            id,
+            questao_id,
+            acertou,
+            tempo_segundos,
+            created_at,
+            questoes (
+              disciplina,
+              assunto,
+              subassunto,
+              dificuldade
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
 
-      if (respostasError) {
-        console.error('Erro ao buscar respostas:', respostasError)
-        throw respostasError
-      }
+        // Buscar estatisticas do usuario
+        supabase
+          .from('estatisticas_usuario')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle(),
 
-      // Buscar estatisticas do usuario
-      const { data: stats } = await supabase
-        .from('estatisticas_usuario')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
+        // Buscar atividades recentes
+        supabase
+          .from('historico_atividades')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(20)
+      ])
 
       // Processar respostas
-      const todasRespostas = respostas || []
-      const total = todasRespostas.length
-      const acertos = todasRespostas.filter(r => r.acertou).length
+      const respostas = respostasResult.data || []
+      const stats = statsResult.data
+      const atividadesData = atividadesResult.data || []
+
+      const total = respostas.length
+      const acertos = respostas.filter(r => r.acertou).length
 
       // Questoes por periodo
-      const respostasHoje = todasRespostas.filter(r => r.created_at >= inicioHoje)
-      const respostasSemana = todasRespostas.filter(r => r.created_at >= inicioSemana)
-      const respostasMes = todasRespostas.filter(r => r.created_at >= inicioMes)
-
-      setQuestoesTotal(total)
-      setQuestoesHoje(respostasHoje.length)
-      setQuestoesSemana(respostasSemana.length)
-      setQuestoesMes(respostasMes.length)
-      setAcertosTotal(acertos)
-      setTaxaAcertoGeral(total > 0 ? Math.round((acertos / total) * 100) : 0)
-      setSequenciaDias(stats?.sequencia_dias || 0)
-      setHorasEstudadas(Number(stats?.horas_estudadas) || 0)
+      const respostasHoje = respostas.filter(r => r.created_at >= inicioHoje)
+      const respostasSemana = respostas.filter(r => r.created_at >= inicioSemana)
+      const respostasMes = respostas.filter(r => r.created_at >= inicioMes)
 
       // Processar desempenho por disciplina
       const disciplinasMap = new Map<string, {
@@ -194,7 +199,7 @@ export function useEstatisticas(): EstatisticasData {
         }>
       }>()
 
-      todasRespostas.forEach(r => {
+      respostas.forEach(r => {
         const questao = r.questoes as { disciplina?: string; assunto?: string; subassunto?: string; dificuldade?: string } | null
         if (!questao) return
 
@@ -234,14 +239,14 @@ export function useEstatisticas(): EstatisticasData {
           acertos: data.acertos,
           taxa: data.total > 0 ? Math.round((data.acertos / data.total) * 100) : 0,
           assuntos: Array.from(data.assuntos.entries())
-            .map(([assunto, assData]) => ({
-              assunto,
+            .map(([assuntoNome, assData]) => ({
+              assunto: assuntoNome,
               total: assData.total,
               acertos: assData.acertos,
               taxa: assData.total > 0 ? Math.round((assData.acertos / assData.total) * 100) : 0,
               subassuntos: Array.from(assData.subassuntos.entries())
-                .map(([subassunto, subData]) => ({
-                  subassunto,
+                .map(([subassuntoNome, subData]) => ({
+                  subassunto: subassuntoNome,
                   total: subData.total,
                   acertos: subData.acertos,
                   taxa: subData.total > 0 ? Math.round((subData.acertos / subData.total) * 100) : 0
@@ -252,12 +257,10 @@ export function useEstatisticas(): EstatisticasData {
         }))
         .sort((a, b) => b.total - a.total)
 
-      setDesempenhoDisciplinas(desempenhoDisciplinasData)
-
       // Processar desempenho por dificuldade
       const dificuldadeMap = new Map<string, { total: number; acertos: number }>()
 
-      todasRespostas.forEach(r => {
+      respostas.forEach(r => {
         const questao = r.questoes as { dificuldade?: string } | null
         const dificuldade = questao?.dificuldade || 'media'
         const dificuldadeNome = dificuldade === 'facil' ? 'Fácil' : dificuldade === 'media' ? 'Médio' : 'Difícil'
@@ -279,8 +282,6 @@ export function useEstatisticas(): EstatisticasData {
           taxa: data.total > 0 ? Math.round((data.acertos / data.total) * 100) : 0
         }))
 
-      setDesempenhoDificuldade(desempenhoDificuldadeData)
-
       // Processar evolucao 30 dias
       const evolucaoMap = new Map<string, { questoes: number; acertos: number }>()
 
@@ -293,7 +294,7 @@ export function useEstatisticas(): EstatisticasData {
       }
 
       // Preencher com dados reais
-      const respostas30Dias = todasRespostas.filter(r => r.created_at >= inicio30Dias)
+      const respostas30Dias = respostas.filter(r => r.created_at >= inicio30Dias)
       respostas30Dias.forEach(r => {
         const dataStr = r.created_at.split('T')[0]
         if (evolucaoMap.has(dataStr)) {
@@ -311,21 +312,27 @@ export function useEstatisticas(): EstatisticasData {
           taxa: values.questoes > 0 ? Math.round((values.acertos / values.questoes) * 100) : 0
         }))
 
-      setEvolucao30Dias(evolucaoData)
-
-      // Buscar atividades recentes
-      const { data: atividadesData } = await supabase
-        .from('historico_atividades')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20)
-
-      setAtividades(atividadesData || [])
+      // Atualizar todos os dados de uma vez
+      setDados({
+        questoesTotal: total,
+        questoesHoje: respostasHoje.length,
+        questoesSemana: respostasSemana.length,
+        questoesMes: respostasMes.length,
+        acertosTotal: acertos,
+        taxaAcertoGeral: total > 0 ? Math.round((acertos / total) * 100) : 0,
+        sequenciaDias: stats?.sequencia_dias || 0,
+        horasEstudadas: Number(stats?.horas_estudadas) || 0,
+        desempenhoDisciplinas: desempenhoDisciplinasData,
+        desempenhoDificuldade: desempenhoDificuldadeData,
+        evolucao30Dias: evolucaoData,
+        atividades: atividadesData
+      })
 
     } catch (err) {
       console.error('Erro ao buscar estatisticas:', err)
       setError('Erro ao carregar estatísticas')
+      // FALLBACK PARA PADRÃO EM ERRO
+      setDados(DADOS_PADRAO)
     } finally {
       setLoading(false)
     }
@@ -380,19 +387,9 @@ export function useEstatisticas(): EstatisticasData {
     fetchEstatisticas()
   }, [fetchEstatisticas])
 
+  // COMBINAR LOADING STATES
   return {
-    questoesTotal,
-    questoesHoje,
-    questoesSemana,
-    questoesMes,
-    acertosTotal,
-    taxaAcertoGeral,
-    sequenciaDias,
-    horasEstudadas,
-    desempenhoDisciplinas,
-    desempenhoDificuldade,
-    evolucao30Dias,
-    atividades,
+    ...dados,
     loading: loading || authLoading,
     error,
     refresh: fetchEstatisticas,
