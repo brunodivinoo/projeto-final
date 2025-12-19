@@ -73,6 +73,7 @@ export default function FlashcardsPage() {
   const [filtroDisciplina, setFiltroDisciplina] = useState<string>('todas')
   const [filtroAssunto, setFiltroAssunto] = useState<string>('todos')
   const [filtroSubassunto, setFiltroSubassunto] = useState<string>('todos')
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null)
 
   // Carregar preferencias salvas do gerador
   useEffect(() => {
@@ -145,12 +146,13 @@ export default function FlashcardsPage() {
     setViewMode('revisar')
   }
 
-  // Iniciar revisao a partir do deck-detail
+  // Iniciar revisao a partir do deck-detail (usa todos os cards do deck)
   const iniciarRevisaoDoDeckDetail = async () => {
     if (!selectedDeck) return
-    const cards = await getCardsParaRevisarDoDeck(selectedDeck.id)
+    // Usar allDeckCards se ja carregado, senao buscar
+    const cards = allDeckCards.length > 0 ? allDeckCards : await getFlashcardsDoDeck(selectedDeck.id)
     if (cards.length === 0) {
-      alert('Nenhum card para revisar neste deck!')
+      alert('Nenhum card neste deck!')
       return
     }
     setDeckCards(cards)
@@ -564,11 +566,11 @@ export default function FlashcardsPage() {
                   </button>
                   <button
                     onClick={iniciarRevisaoDoDeckDetail}
-                    disabled={cardsParaRevisar.filter(c => c.deck_id === selectedDeck.id).length === 0}
+                    disabled={allDeckCards.length === 0}
                     className="flex items-center gap-2 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                   >
                     <span className="material-symbols-outlined text-lg">play_arrow</span>
-                    Revisar ({cardsParaRevisar.filter(c => c.deck_id === selectedDeck.id).length})
+                    Revisar ({allDeckCards.length})
                   </button>
                 </div>
               </div>
@@ -728,92 +730,118 @@ export default function FlashcardsPage() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {cardsFiltrados.map((card, index) => (
-                    <div
-                      key={card.id}
-                      className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden group hover:border-primary/50 hover:shadow-lg transition-all"
-                    >
-                      {/* Header do card */}
-                      <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs text-slate-400 font-mono">#{index + 1}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            card.status === 'dominado' ? 'bg-green-500/10 text-green-500' :
-                            card.status === 'revisao' ? 'bg-blue-500/10 text-blue-500' :
-                            card.status === 'aprendendo' ? 'bg-orange-500/10 text-orange-500' :
-                            'bg-slate-500/10 text-slate-500'
-                          }`}>
-                            {card.status}
-                          </span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            card.dificuldade === 'facil' ? 'bg-green-500/10 text-green-500' :
-                            card.dificuldade === 'dificil' ? 'bg-red-500/10 text-red-500' :
-                            'bg-yellow-500/10 text-yellow-500'
-                          }`}>
-                            {card.dificuldade}
-                          </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {cardsFiltrados.map((card, index) => {
+                    const isExpanded = expandedCardId === card.id
+                    return (
+                      <div
+                        key={card.id}
+                        onClick={() => setExpandedCardId(isExpanded ? null : card.id)}
+                        className={`bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden cursor-pointer group hover:border-primary/50 hover:shadow-lg transition-all ${isExpanded ? 'sm:col-span-2 lg:col-span-3' : ''}`}
+                      >
+                        {/* Header do card */}
+                        <div className="px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs text-slate-400 font-mono">#{index + 1}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                              card.status === 'dominado' ? 'bg-green-500/10 text-green-500' :
+                              card.status === 'revisao' ? 'bg-blue-500/10 text-blue-500' :
+                              card.status === 'aprendendo' ? 'bg-orange-500/10 text-orange-500' :
+                              'bg-slate-500/10 text-slate-500'
+                            }`}>
+                              {card.status}
+                            </span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                              card.dificuldade === 'facil' ? 'bg-green-500/10 text-green-500' :
+                              card.dificuldade === 'dificil' ? 'bg-red-500/10 text-red-500' :
+                              'bg-yellow-500/10 text-yellow-500'
+                            }`}>
+                              {card.dificuldade}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-slate-400 text-sm">
+                              {isExpanded ? 'expand_less' : 'expand_more'}
+                            </span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeletarFlashcard(card.id) }}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 transition-all"
+                            >
+                              <span className="material-symbols-outlined text-base">delete</span>
+                            </button>
+                          </div>
                         </div>
-                        <button
-                          onClick={() => handleDeletarFlashcard(card.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 transition-all"
-                        >
-                          <span className="material-symbols-outlined text-lg">delete</span>
-                        </button>
-                      </div>
 
-                      {/* Conteudo do card */}
-                      <div className="p-4">
-                        {/* Tags de disciplina/assunto */}
-                        {(card.disciplina || card.assunto) && (
-                          <div className="flex flex-wrap gap-1 mb-3">
-                            {card.disciplina && (
-                              <span className="text-xs px-2 py-0.5 rounded bg-purple-500/10 text-purple-500">
-                                {card.disciplina}
-                              </span>
-                            )}
-                            {card.assunto && (
-                              <span className="text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-500">
-                                {card.assunto}
-                              </span>
-                            )}
-                            {card.subassunto && (
-                              <span className="text-xs px-2 py-0.5 rounded bg-teal-500/10 text-teal-500">
-                                {card.subassunto}
-                              </span>
+                        {/* Conteudo do card */}
+                        <div className="p-3">
+                          {/* Tags de disciplina/assunto - só mostra se expandido */}
+                          {isExpanded && (card.disciplina || card.assunto) && (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {card.disciplina && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-500">
+                                  {card.disciplina}
+                                </span>
+                              )}
+                              {card.assunto && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">
+                                  {card.assunto}
+                                </span>
+                              )}
+                              {card.subassunto && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-500">
+                                  {card.subassunto}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Frente - Preview ou completo */}
+                          <div className={isExpanded ? 'mb-3' : ''}>
+                            <p className="text-xs uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-xs">help</span>
+                              Pergunta
+                            </p>
+                            {isExpanded ? (
+                              <MarkdownText
+                                text={card.frente}
+                                className="text-slate-900 dark:text-white text-sm"
+                              />
+                            ) : (
+                              <p className="text-slate-900 dark:text-white text-sm line-clamp-2">
+                                {card.frente.replace(/[*_#`]/g, '').substring(0, 100)}
+                                {card.frente.length > 100 ? '...' : ''}
+                              </p>
                             )}
                           </div>
-                        )}
 
-                        {/* Frente */}
-                        <div className="mb-4">
-                          <p className="text-xs uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                            <span className="material-symbols-outlined text-sm">help</span>
-                            Pergunta
-                          </p>
-                          <MarkdownText
-                            text={card.frente}
-                            className="text-slate-900 dark:text-white text-sm"
-                          />
-                        </div>
+                          {/* Verso - Só mostra se expandido */}
+                          {isExpanded && (
+                            <>
+                              <div className="border-t border-dashed border-slate-200 dark:border-slate-700 my-3" />
+                              <div>
+                                <p className="text-xs uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-xs">lightbulb</span>
+                                  Resposta
+                                </p>
+                                <MarkdownText
+                                  text={card.verso}
+                                  className="text-slate-600 dark:text-slate-400 text-sm"
+                                />
+                              </div>
+                            </>
+                          )}
 
-                        {/* Divisor */}
-                        <div className="border-t border-dashed border-slate-200 dark:border-slate-700 my-3" />
-
-                        {/* Verso */}
-                        <div>
-                          <p className="text-xs uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                            <span className="material-symbols-outlined text-sm">lightbulb</span>
-                            Resposta
-                          </p>
-                          <MarkdownText
-                            text={card.verso}
-                            className="text-slate-600 dark:text-slate-400 text-sm"
-                          />
+                          {/* Indicador de clique para expandir */}
+                          {!isExpanded && (
+                            <p className="text-xs text-primary/60 mt-2 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-xs">touch_app</span>
+                              Clique para ver resposta
+                            </p>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
