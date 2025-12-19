@@ -1,6 +1,7 @@
 'use client'
 import { useEffect } from 'react'
-import { useXP, NIVEIS_CONFIG, XP_ACOES } from '@/hooks/useXP'
+import { useXPContext } from '@/contexts/XPContext'
+import { NIVEIS_CONFIG, XP_ACOES } from '@/hooks/useXP'
 import Link from 'next/link'
 
 interface XPModalProps {
@@ -20,7 +21,7 @@ export function XPModal({ isOpen, onClose }: XPModalProps) {
     sequenciaDias,
     maiorSequencia,
     multiplicador
-  } = useXP()
+  } = useXPContext()
 
   // Fechar com ESC
   useEffect(() => {

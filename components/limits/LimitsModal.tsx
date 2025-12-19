@@ -1,7 +1,7 @@
 'use client'
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { useLimits, calcularPorcentagem, getMensagemMotivacional, getCorPorcentagem } from '@/hooks/useLimits'
+import { useLimitsContext, calcularPorcentagem, getMensagemMotivacional, getCorPorcentagem } from '@/contexts/LimitsContext'
 
 interface LimitsModalProps {
   isOpen: boolean
@@ -9,7 +9,7 @@ interface LimitsModalProps {
 }
 
 export function LimitsModal({ isOpen, onClose }: LimitsModalProps) {
-  const { plano, isPro, limites, loading, refresh } = useLimits()
+  const { plano, isPro, limites, loading, refresh } = useLimitsContext()
 
   // Fechar modal com ESC
   useEffect(() => {

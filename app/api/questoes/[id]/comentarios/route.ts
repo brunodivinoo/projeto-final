@@ -95,6 +95,11 @@ export async function POST(
     const body = await request.json()
     const { conteudo, parent_id } = body
 
+    // Validar conteudo
+    if (!conteudo || conteudo.trim().length === 0) {
+      return NextResponse.json({ error: 'Conteúdo do comentário é obrigatório' }, { status: 400 })
+    }
+
     // Verificar autenticação
     const authHeader = request.headers.get('authorization')
     if (!authHeader) {
@@ -105,39 +110,47 @@ export async function POST(
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
 
     if (authError || !user) {
+      console.error('Auth error:', authError)
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Criar comentário
-    const { data, error } = await supabase
+    // Criar comentário primeiro (sem join)
+    const { data: inserted, error: insertError } = await supabase
       .from('questoes_comentarios')
       .insert({
         questao_id: questaoId,
         user_id: user.id,
-        conteudo,
-        parent_id: parent_id || null
+        conteudo: conteudo.trim(),
+        parent_id: parent_id || null,
+        likes_count: 0,
+        dislikes_count: 0
       })
-      .select(`
-        id,
-        conteudo,
-        parent_id,
-        likes_count,
-        dislikes_count,
-        created_at,
-        user_id,
-        profiles:user_id (
-          nome,
-          avatar_url
-        )
-      `)
+      .select('id, conteudo, parent_id, likes_count, dislikes_count, created_at, user_id')
       .single()
 
-    if (error) throw error
+    if (insertError) {
+      console.error('Insert error:', insertError)
+      return NextResponse.json({ error: 'Erro ao criar comentário: ' + insertError.message }, { status: 500 })
+    }
 
-    return NextResponse.json({ comentario: { ...data, respostas: [], userLike: null } })
+    // Buscar dados do profile separadamente
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('nome, avatar_url')
+      .eq('id', user.id)
+      .single()
+
+    const comentario = {
+      ...inserted,
+      profiles: profile || { nome: 'Usuário', avatar_url: null },
+      respostas: [],
+      userLike: null
+    }
+
+    return NextResponse.json({ comentario })
   } catch (error) {
     console.error('Erro ao criar comentário:', error)
-    return NextResponse.json({ error: 'Erro ao criar comentário' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro interno ao criar comentário' }, { status: 500 })
   }
 }
 

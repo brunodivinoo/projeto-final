@@ -1,11 +1,11 @@
 'use client'
 import { useState } from 'react'
-import { useLimits, calcularPorcentagem } from '@/hooks/useLimits'
+import { useLimitsContext, calcularPorcentagem } from '@/contexts/LimitsContext'
 import { LimitsModal } from './LimitsModal'
 
 export function LimitsIndicator() {
   const [showModal, setShowModal] = useState(false)
-  const { limites, loading, isPro } = useLimits()
+  const { limites, loading, isPro } = useLimitsContext()
 
   // Calcular porcentagem média de uso
   const porcentagemMedia = limites.length > 0

@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useXP } from '@/hooks/useXP'
+import { useXPContext } from '@/contexts/XPContext'
+import { useLimitsContext } from '@/contexts/LimitsContext'
 import { ComentariosTab } from './ComentariosTab'
 import { EstatisticasTab } from './EstatisticasTab'
 
@@ -35,7 +36,8 @@ type TabType = 'gabarito' | 'comentarios' | 'estatisticas' | 'reportar'
 
 export function QuestaoCard({ questao, onResponder }: QuestaoCardProps) {
   const { user } = useAuth()
-  const { addXP } = useXP()
+  const { ganharXP } = useXPContext()
+  const { consumirRecurso } = useLimitsContext()
   const [respostaSelecionada, setRespostaSelecionada] = useState<string | null>(null)
   const [respondida, setRespondida] = useState(false)
   const [abaAtiva, setAbaAtiva] = useState<TabType | null>(null)
@@ -88,9 +90,12 @@ export function QuestaoCard({ questao, onResponder }: QuestaoCardProps) {
           })
         }
 
-        // Adicionar XP baseado na resposta
+        // Consumir limite de questões/dia (atualiza em tempo real)
+        await consumirRecurso('questoes', 1)
+
+        // Adicionar XP baseado na resposta (usa contexto - atualiza em tempo real)
         const tipoXP = correta ? 'questao_correta' : 'questao_errada'
-        const resultado = await addXP(tipoXP, `Questão ${questao.id_original || questao.id}`)
+        const resultado = await ganharXP(tipoXP, `Questão ${questao.id_original || questao.id}`)
         if (resultado.xpGanho > 0) {
           setXpGanho(resultado.xpGanho)
         }

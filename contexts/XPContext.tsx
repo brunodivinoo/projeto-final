@@ -12,10 +12,19 @@ interface XPToast {
 }
 
 interface XPContextData {
-  ganharXP: (tipo: TipoAcaoXP, descricao?: string) => Promise<void>
+  ganharXP: (tipo: TipoAcaoXP, descricao?: string) => Promise<{ xpGanho: number; nivelUp: boolean }>
   xpTotal: number
+  xpHoje: number
   nivel: number
   nivelInfo: NivelInfo
+  proximoNivel: NivelInfo | null
+  progressoNivel: number
+  xpParaProximoNivel: number
+  sequenciaDias: number
+  maiorSequencia: number
+  multiplicador: number
+  loading: boolean
+  refresh: () => Promise<void>
 }
 
 const XPContext = createContext<XPContextData | null>(null)
@@ -43,14 +52,25 @@ export function XPProvider({ children }: { children: ReactNode }) {
         novoNivel
       }])
     }
+
+    return result
   }, [xpData])
 
   return (
     <XPContext.Provider value={{
       ganharXP,
       xpTotal: xpData.xpTotal,
+      xpHoje: xpData.xpHoje,
       nivel: xpData.nivel,
-      nivelInfo: xpData.nivelInfo
+      nivelInfo: xpData.nivelInfo,
+      proximoNivel: xpData.proximoNivel,
+      progressoNivel: xpData.progressoNivel,
+      xpParaProximoNivel: xpData.xpParaProximoNivel,
+      sequenciaDias: xpData.sequenciaDias,
+      maiorSequencia: xpData.maiorSequencia,
+      multiplicador: xpData.multiplicador,
+      loading: xpData.loading,
+      refresh: xpData.refresh
     }}>
       {children}
 

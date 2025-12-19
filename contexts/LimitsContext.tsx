@@ -1,0 +1,55 @@
+'use client'
+import { createContext, useContext, ReactNode } from 'react'
+import { useLimits, LimitItem, calcularPorcentagem, getMensagemMotivacional, getCorPorcentagem } from '@/hooks/useLimits'
+import { useConsumeLimit, TipoRecurso } from '@/hooks/useCheckLimit'
+
+interface LimitsContextData {
+  plano: string
+  isPro: boolean
+  limites: LimitItem[]
+  loading: boolean
+  error: string | null
+  refresh: () => Promise<void>
+  consumirRecurso: (recurso: TipoRecurso, quantidade?: number) => Promise<boolean>
+}
+
+const LimitsContext = createContext<LimitsContextData | null>(null)
+
+export function LimitsProvider({ children }: { children: ReactNode }) {
+  const limitsData = useLimits()
+  const { consumeLimit } = useConsumeLimit()
+
+  const consumirRecurso = async (recurso: TipoRecurso, quantidade: number = 1): Promise<boolean> => {
+    const result = await consumeLimit(recurso, quantidade)
+    if (result) {
+      // Atualizar limites após consumir
+      await limitsData.refresh()
+    }
+    return result
+  }
+
+  return (
+    <LimitsContext.Provider value={{
+      plano: limitsData.plano,
+      isPro: limitsData.isPro,
+      limites: limitsData.limites,
+      loading: limitsData.loading,
+      error: limitsData.error,
+      refresh: limitsData.refresh,
+      consumirRecurso
+    }}>
+      {children}
+    </LimitsContext.Provider>
+  )
+}
+
+export function useLimitsContext() {
+  const context = useContext(LimitsContext)
+  if (!context) {
+    throw new Error('useLimitsContext deve ser usado dentro de um LimitsProvider')
+  }
+  return context
+}
+
+// Re-exportar funções utilitárias
+export { calcularPorcentagem, getMensagemMotivacional, getCorPorcentagem }

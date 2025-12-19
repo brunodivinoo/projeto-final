@@ -1,11 +1,11 @@
 'use client'
 import { useState } from 'react'
-import { useXP } from '@/hooks/useXP'
+import { useXPContext } from '@/contexts/XPContext'
 import { XPModal } from './XPModal'
 
 export function XPIndicator() {
   const [showModal, setShowModal] = useState(false)
-  const { xpTotal, nivel, nivelInfo, progressoNivel, loading, multiplicador } = useXP()
+  const { xpTotal, nivel, nivelInfo, progressoNivel, loading, multiplicador } = useXPContext()
 
   if (loading) {
     return (
