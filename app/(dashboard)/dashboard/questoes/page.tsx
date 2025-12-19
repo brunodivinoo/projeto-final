@@ -103,15 +103,31 @@ export default function QuestoesPage() {
   // Estados de UI
   const [isMobile, setIsMobile] = useState(false)
   const [questaoAtualMobile, setQuestaoAtualMobile] = useState(0)
-  const [showFilters, setShowFilters] = useState(false)
 
   // Estados dos dropdowns
   const [dropdownAberto, setDropdownAberto] = useState<string | null>(null)
+
+  // Estado de pesquisa nos dropdowns
+  const [pesquisaDisciplina, setPesquisaDisciplina] = useState('')
+  const [pesquisaAssunto, setPesquisaAssunto] = useState('')
+  const [pesquisaBanca, setPesquisaBanca] = useState('')
 
   // Toggle dropdown
   const toggleDropdown = (nome: string) => {
     setDropdownAberto(dropdownAberto === nome ? null : nome)
   }
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('.dropdown-container')) {
+        setDropdownAberto(null)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [])
 
   // Detectar mobile
   useEffect(() => {
@@ -326,6 +342,23 @@ export default function QuestoesPage() {
     setModalidadesSelecionadas([])
   }
 
+  // Remover filtro individual
+  const removerDisciplina = (nome: string) => {
+    const disc = disciplinasDisponiveis.find(d => d.nome === nome)
+    if (disc) {
+      setDisciplinasSelecionadas(prev => prev.filter(d => d !== nome))
+      setDisciplinaIdsSelecionadas(prev => prev.filter(id => id !== disc.id))
+    }
+  }
+
+  const removerAssunto = (nome: string) => {
+    const assuntoEncontrado = assuntosDisponiveis.flatMap(g => g.assuntos).find(a => a.nome === nome)
+    if (assuntoEncontrado) {
+      setAssuntosSelecionados(prev => prev.filter(a => a !== nome))
+      setAssuntoIdsSelecionados(prev => prev.filter(id => id !== assuntoEncontrado.id))
+    }
+  }
+
   // Selecionar resposta
   const selecionarResposta = (questaoId: string, letra: string) => {
     if (!questoesRespondidas[questaoId]) {
@@ -371,6 +404,17 @@ export default function QuestoesPage() {
   const getBancaNome = (banca: string | null) => {
     if (!banca) return ''
     return banca.toUpperCase()
+  }
+
+  // Verificar se tem filtros aplicados
+  const temFiltrosAplicados = () => {
+    return disciplinasSelecionadas.length > 0 ||
+           assuntosSelecionados.length > 0 ||
+           subassuntosSelecionados.length > 0 ||
+           bancasSelecionadas.length > 0 ||
+           anosSelecionados.length > 0 ||
+           dificuldadesSelecionadas.length > 0 ||
+           modalidadesSelecionadas.length > 0
   }
 
   // Renderizar questão
@@ -550,268 +594,415 @@ export default function QuestoesPage() {
     )
   }
 
-  // Componente Dropdown
+  // Renderizar filtros aplicados (tags)
+  const renderFiltrosAplicados = () => {
+    if (!temFiltrosAplicados()) return null
+
+    return (
+      <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-4 mb-4">
+        {/* Disciplinas */}
+        {disciplinasSelecionadas.length > 0 && (
+          <div className="flex flex-wrap items-start gap-2 mb-3">
+            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 py-1 min-w-[80px]">Disciplinas</span>
+            <div className="flex flex-wrap gap-2">
+              {disciplinasSelecionadas.map(nome => (
+                <span
+                  key={nome}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm"
+                >
+                  {nome}
+                  <button onClick={() => removerDisciplina(nome)} className="hover:text-blue-900 dark:hover:text-blue-100">
+                    <span className="material-symbols-outlined text-sm">close</span>
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Assuntos */}
+        {assuntosSelecionados.length > 0 && (
+          <div className="flex flex-wrap items-start gap-2 mb-3">
+            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 py-1 min-w-[80px]">Assuntos</span>
+            <div className="flex flex-wrap gap-2">
+              {assuntosSelecionados.map(nome => (
+                <span
+                  key={nome}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm"
+                >
+                  {nome}
+                  <button onClick={() => removerAssunto(nome)} className="hover:text-purple-900 dark:hover:text-purple-100">
+                    <span className="material-symbols-outlined text-sm">close</span>
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Subassuntos */}
+        {subassuntosSelecionados.length > 0 && (
+          <div className="flex flex-wrap items-start gap-2 mb-3">
+            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 py-1 min-w-[80px]">Subassuntos</span>
+            <div className="flex flex-wrap gap-2">
+              {subassuntosSelecionados.map(nome => (
+                <span
+                  key={nome}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-sm"
+                >
+                  {nome}
+                  <button onClick={() => setSubassuntosSelecionados(prev => prev.filter(s => s !== nome))} className="hover:text-indigo-900 dark:hover:text-indigo-100">
+                    <span className="material-symbols-outlined text-sm">close</span>
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bancas */}
+        {bancasSelecionadas.length > 0 && (
+          <div className="flex flex-wrap items-start gap-2 mb-3">
+            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 py-1 min-w-[80px]">Bancas</span>
+            <div className="flex flex-wrap gap-2">
+              {bancasSelecionadas.map(nome => (
+                <span
+                  key={nome}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full text-sm"
+                >
+                  {nome.toUpperCase()}
+                  <button onClick={() => setBancasSelecionadas(prev => prev.filter(b => b !== nome))} className="hover:text-orange-900 dark:hover:text-orange-100">
+                    <span className="material-symbols-outlined text-sm">close</span>
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Anos */}
+        {anosSelecionados.length > 0 && (
+          <div className="flex flex-wrap items-start gap-2 mb-3">
+            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 py-1 min-w-[80px]">Anos</span>
+            <div className="flex flex-wrap gap-2">
+              {anosSelecionados.map(ano => (
+                <span
+                  key={ano}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm"
+                >
+                  {ano}
+                  <button onClick={() => setAnosSelecionados(prev => prev.filter(a => a !== ano))} className="hover:text-green-900 dark:hover:text-green-100">
+                    <span className="material-symbols-outlined text-sm">close</span>
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Botão limpar tudo */}
+        <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-[#283039] mt-2">
+          <button
+            onClick={limparFiltros}
+            className="text-sm text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 flex items-center gap-1"
+          >
+            <span className="material-symbols-outlined text-sm">delete</span>
+            Limpar todos os filtros
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Componente Dropdown de Filtro
   const DropdownFiltro = ({
     nome,
     titulo,
     children,
-    disabled = false,
-    badge = 0
+    disabled = false
   }: {
     nome: string
     titulo: string
     children: React.ReactNode
     disabled?: boolean
-    badge?: number
   }) => (
-    <div className="border-b border-gray-200 dark:border-[#283039]">
+    <div className="dropdown-container relative">
       <button
-        onClick={() => !disabled && toggleDropdown(nome)}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (!disabled) toggleDropdown(nome)
+        }}
         disabled={disabled}
-        className={`w-full flex items-center justify-between p-4 transition-all ${
+        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
           disabled
-            ? 'bg-gray-100 dark:bg-[#1a2129] cursor-not-allowed opacity-50'
-            : 'hover:bg-gray-50 dark:hover:bg-[#1a2129]'
-        } ${dropdownAberto === nome ? 'bg-primary text-white' : ''}`}
+            ? 'bg-gray-100 dark:bg-[#1a2129] border-gray-200 dark:border-[#283039] cursor-not-allowed opacity-50'
+            : dropdownAberto === nome
+            ? 'bg-primary text-white border-primary'
+            : 'bg-white dark:bg-[#1C252E] border-gray-200 dark:border-[#283039] hover:border-primary'
+        }`}
       >
-        <span className={`font-medium ${dropdownAberto === nome ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+        <span className={`font-medium text-sm ${dropdownAberto === nome ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
           {titulo}
         </span>
-        <div className="flex items-center gap-2">
-          {badge > 0 && (
-            <span className={`text-xs px-2 py-0.5 rounded-full ${
-              dropdownAberto === nome
-                ? 'bg-white/20 text-white'
-                : 'bg-primary/10 text-primary'
-            }`}>
-              {badge}
-            </span>
-          )}
-          <span className={`material-symbols-outlined transition-transform ${
-            dropdownAberto === nome ? 'rotate-180 text-white' : 'text-gray-400'
-          }`}>
-            expand_more
-          </span>
-        </div>
+        <span className={`material-symbols-outlined transition-transform ${
+          dropdownAberto === nome ? 'rotate-180 text-white' : 'text-gray-400'
+        }`}>
+          expand_more
+        </span>
       </button>
       {dropdownAberto === nome && (
-        <div className="p-4 bg-white dark:bg-[#1C252E] max-h-64 overflow-y-auto">
+        <div className="absolute z-50 mt-2 w-full min-w-[300px] bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] shadow-xl max-h-[400px] overflow-hidden">
           {children}
         </div>
       )}
     </div>
   )
 
-  // Renderizar filtros
+  // Renderizar filtros no topo
   const renderFiltros = () => (
-    <div className="border border-gray-200 dark:border-[#283039] rounded-xl overflow-hidden">
-      {/* Disciplina */}
-      <DropdownFiltro
-        nome="disciplina"
-        titulo="Disciplina"
-        badge={disciplinasSelecionadas.length}
-      >
-        <div className="space-y-1">
-          {disciplinasDisponiveis.map((disc) => (
-            <label
-              key={disc.id}
-              className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={disciplinasSelecionadas.includes(disc.nome)}
-                onChange={() => toggleDisciplina(disc)}
-                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{disc.nome}</span>
-              <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
-                {disc.qtd_questoes}
-              </span>
-            </label>
-          ))}
-        </div>
-      </DropdownFiltro>
+    <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+        {/* Disciplina */}
+        <DropdownFiltro nome="disciplina" titulo="Disciplina">
+          <div className="p-3 border-b border-gray-200 dark:border-[#283039]">
+            <input
+              type="text"
+              placeholder="Pesquisar..."
+              value={pesquisaDisciplina}
+              onChange={(e) => setPesquisaDisciplina(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-[#283039] rounded-lg bg-gray-50 dark:bg-[#161f28] text-gray-900 dark:text-white focus:outline-none focus:border-primary"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="overflow-y-auto max-h-[300px] p-2">
+            {disciplinasDisponiveis
+              .filter(d => d.nome.toLowerCase().includes(pesquisaDisciplina.toLowerCase()))
+              .map((disc) => (
+                <label
+                  key={disc.id}
+                  className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={disciplinasSelecionadas.includes(disc.nome)}
+                    onChange={() => toggleDisciplina(disc)}
+                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{disc.nome}</span>
+                  <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
+                    {disc.qtd_questoes}
+                  </span>
+                </label>
+              ))}
+          </div>
+        </DropdownFiltro>
 
-      {/* Assunto */}
-      <DropdownFiltro
-        nome="assunto"
-        titulo="Assunto"
-        disabled={disciplinasSelecionadas.length === 0}
-        badge={assuntosSelecionados.length}
-      >
-        <div className="space-y-4">
-          {assuntosDisponiveis.map((grupo) => (
-            <div key={grupo.disciplina_id}>
-              <p className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
-                <span className="material-symbols-outlined text-sm">visibility</span>
-                {grupo.disciplina}
-              </p>
-              <div className="space-y-1 ml-2">
-                {grupo.assuntos.map((assunto) => (
-                  <label
-                    key={assunto.id}
-                    className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={assuntosSelecionados.includes(assunto.nome)}
-                      onChange={() => toggleAssunto(assunto)}
-                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{assunto.nome}</span>
-                    <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
-                      {assunto.qtd_questoes}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </DropdownFiltro>
-
-      {/* Subassunto - só aparece se tiver assunto selecionado */}
-      {assuntosSelecionados.length > 0 && subassuntosDisponiveis.length > 0 && (
+        {/* Assunto (com subassuntos hierárquicos) */}
         <DropdownFiltro
-          nome="subassunto"
-          titulo="Subassunto"
-          badge={subassuntosSelecionados.length}
+          nome="assunto"
+          titulo="Assunto"
+          disabled={disciplinasSelecionadas.length === 0}
         >
-          <div className="space-y-4">
-            {subassuntosDisponiveis.map((grupo) => (
-              <div key={grupo.assunto_id}>
-                <p className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm">visibility</span>
-                  {grupo.assunto}
-                </p>
-                <div className="space-y-1 ml-2">
-                  {grupo.subassuntos.map((sub) => (
-                    <label
-                      key={sub.id}
-                      className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={subassuntosSelecionados.includes(sub.nome)}
-                        onChange={() => toggleSubassunto(sub.nome)}
-                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{sub.nome}</span>
-                      <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
-                        {sub.qtd_questoes}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+          <div className="p-3 border-b border-gray-200 dark:border-[#283039]">
+            <input
+              type="text"
+              placeholder="Pesquisar..."
+              value={pesquisaAssunto}
+              onChange={(e) => setPesquisaAssunto(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-[#283039] rounded-lg bg-gray-50 dark:bg-[#161f28] text-gray-900 dark:text-white focus:outline-none focus:border-primary"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="overflow-y-auto max-h-[300px] p-2">
+            {assuntosDisponiveis.map((grupo) => (
+              <div key={grupo.disciplina_id} className="mb-4">
+                {/* Nome da Disciplina como header se tiver múltiplas */}
+                {disciplinasSelecionadas.length > 1 && (
+                  <p className="text-xs font-bold text-primary px-2 py-1 bg-primary/5 rounded mb-2">
+                    {grupo.disciplina}
+                  </p>
+                )}
+                {grupo.assuntos
+                  .filter(a => a.nome.toLowerCase().includes(pesquisaAssunto.toLowerCase()))
+                  .map((assunto) => {
+                    // Verificar se tem subassuntos para esse assunto
+                    const subassuntosDoAssunto = subassuntosDisponiveis.find(s => s.assunto_id === assunto.id)
+
+                    return (
+                      <div key={assunto.id}>
+                        {/* Assunto principal */}
+                        <label
+                          className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={assuntosSelecionados.includes(assunto.nome)}
+                            onChange={() => toggleAssunto(assunto)}
+                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 font-medium">{assunto.nome}</span>
+                          <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
+                            {assunto.qtd_questoes}
+                          </span>
+                        </label>
+
+                        {/* Subassuntos aninhados (se o assunto estiver selecionado) */}
+                        {assuntosSelecionados.includes(assunto.nome) && subassuntosDoAssunto && (
+                          <div className="ml-6 border-l-2 border-gray-200 dark:border-[#283039] pl-3 mb-2">
+                            {subassuntosDoAssunto.subassuntos
+                              .filter(s => s.nome.toLowerCase().includes(pesquisaAssunto.toLowerCase()))
+                              .map((sub) => (
+                                <label
+                                  key={sub.id}
+                                  className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={subassuntosSelecionados.includes(sub.nome)}
+                                    onChange={() => toggleSubassunto(sub.nome)}
+                                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                  />
+                                  <span className="text-sm text-gray-600 dark:text-gray-400 flex-1">{sub.nome}</span>
+                                  <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
+                                    {sub.qtd_questoes}
+                                  </span>
+                                </label>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
               </div>
             ))}
           </div>
         </DropdownFiltro>
-      )}
 
-      {/* Banca */}
-      <DropdownFiltro nome="banca" titulo="Banca" badge={bancasSelecionadas.length}>
-        <div className="space-y-1">
-          {bancasDisponiveis.map((banca) => (
-            <label
-              key={banca.nome}
-              className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={bancasSelecionadas.includes(banca.nome)}
-                onChange={() => toggleBanca(banca.nome)}
-                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{banca.nome.toUpperCase()}</span>
-              <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
-                {banca.qtd_questoes}
-              </span>
-            </label>
-          ))}
-        </div>
-      </DropdownFiltro>
-
-      {/* Ano */}
-      <DropdownFiltro nome="ano" titulo="Ano" badge={anosSelecionados.length}>
-        <div className="space-y-1">
-          {anosDisponiveis.map((ano) => (
-            <label
-              key={ano.ano}
-              className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={anosSelecionados.includes(ano.ano)}
-                onChange={() => toggleAno(ano.ano)}
-                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{ano.ano}</span>
-              <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
-                {ano.qtd_questoes}
-              </span>
-            </label>
-          ))}
-        </div>
-      </DropdownFiltro>
-
-      {/* Dificuldade */}
-      <DropdownFiltro nome="dificuldade" titulo="Dificuldade" badge={dificuldadesSelecionadas.length}>
-        <div className="space-y-1">
-          {['facil', 'media', 'dificil'].map((dif) => (
-            <label
-              key={dif}
-              className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={dificuldadesSelecionadas.includes(dif)}
-                onChange={() => toggleDificuldade(dif)}
-                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{getDificuldadeNome(dif)}</span>
-            </label>
-          ))}
-        </div>
-      </DropdownFiltro>
-
-      {/* Modalidade */}
-      <DropdownFiltro nome="modalidade" titulo="Modalidade" badge={modalidadesSelecionadas.length}>
-        <div className="space-y-1">
-          <label className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors">
+        {/* Banca */}
+        <DropdownFiltro nome="banca" titulo="Banca">
+          <div className="p-3 border-b border-gray-200 dark:border-[#283039]">
             <input
-              type="checkbox"
-              checked={modalidadesSelecionadas.includes('multipla_escolha_5')}
-              onChange={() => toggleModalidade('multipla_escolha_5')}
-              className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+              type="text"
+              placeholder="Pesquisar..."
+              value={pesquisaBanca}
+              onChange={(e) => setPesquisaBanca(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-[#283039] rounded-lg bg-gray-50 dark:bg-[#161f28] text-gray-900 dark:text-white focus:outline-none focus:border-primary"
+              onClick={(e) => e.stopPropagation()}
             />
-            <span className="text-sm text-gray-700 dark:text-gray-300">Múltipla Escolha</span>
-          </label>
-          <label className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors">
-            <input
-              type="checkbox"
-              checked={modalidadesSelecionadas.includes('certo_errado')}
-              onChange={() => toggleModalidade('certo_errado')}
-              className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <span className="text-sm text-gray-700 dark:text-gray-300">Certo / Errado</span>
-          </label>
-        </div>
-      </DropdownFiltro>
+          </div>
+          <div className="overflow-y-auto max-h-[300px] p-2">
+            {bancasDisponiveis
+              .filter(b => b.nome.toLowerCase().includes(pesquisaBanca.toLowerCase()))
+              .map((banca) => (
+                <label
+                  key={banca.nome}
+                  className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={bancasSelecionadas.includes(banca.nome)}
+                    onChange={() => toggleBanca(banca.nome)}
+                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{banca.nome.toUpperCase()}</span>
+                  <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
+                    {banca.qtd_questoes}
+                  </span>
+                </label>
+              ))}
+          </div>
+        </DropdownFiltro>
 
-      {/* Botões */}
-      <div className="p-4 space-y-2 bg-gray-50 dark:bg-[#161f28]">
+        {/* Ano */}
+        <DropdownFiltro nome="ano" titulo="Ano">
+          <div className="overflow-y-auto max-h-[300px] p-2">
+            {anosDisponiveis.map((ano) => (
+              <label
+                key={ano.ano}
+                className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input
+                  type="checkbox"
+                  checked={anosSelecionados.includes(ano.ano)}
+                  onChange={() => toggleAno(ano.ano)}
+                  className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">{ano.ano}</span>
+                <span className="text-xs text-gray-400 bg-gray-100 dark:bg-[#283039] px-2 py-0.5 rounded">
+                  {ano.qtd_questoes}
+                </span>
+              </label>
+            ))}
+          </div>
+        </DropdownFiltro>
+
+        {/* Dificuldade */}
+        <DropdownFiltro nome="dificuldade" titulo="Dificuldade">
+          <div className="p-2">
+            {['facil', 'media', 'dificil'].map((dif) => (
+              <label
+                key={dif}
+                className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input
+                  type="checkbox"
+                  checked={dificuldadesSelecionadas.includes(dif)}
+                  onChange={() => toggleDificuldade(dif)}
+                  className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">{getDificuldadeNome(dif)}</span>
+              </label>
+            ))}
+          </div>
+        </DropdownFiltro>
+
+        {/* Modalidade */}
+        <DropdownFiltro nome="modalidade" titulo="Modalidade">
+          <div className="p-2">
+            <label
+              className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                type="checkbox"
+                checked={modalidadesSelecionadas.includes('multipla_escolha_5')}
+                onChange={() => toggleModalidade('multipla_escolha_5')}
+                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">Múltipla Escolha</span>
+            </label>
+            <label
+              className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                type="checkbox"
+                checked={modalidadesSelecionadas.includes('certo_errado')}
+                onChange={() => toggleModalidade('certo_errado')}
+                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">Certo / Errado</span>
+            </label>
+          </div>
+        </DropdownFiltro>
+      </div>
+
+      {/* Botão Buscar */}
+      <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-[#283039]">
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          {buscaInicial && `${paginacao.total.toLocaleString()} questões encontradas`}
+        </span>
         <button
           onClick={() => buscarQuestoes(1)}
-          className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-primary/20 transition-all"
+          className="px-6 py-2.5 bg-primary hover:bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition-all"
         >
           Buscar Questões
-        </button>
-        <button
-          onClick={limparFiltros}
-          className="w-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium py-2 text-sm transition-all"
-        >
-          Limpar Filtros
         </button>
       </div>
     </div>
@@ -928,83 +1119,48 @@ export default function QuestoesPage() {
       <Header title="Questões" />
 
       <div className="p-4 lg:p-6">
-        <div className="max-w-[1400px] mx-auto">
+        <div className="max-w-[1200px] mx-auto">
+          {/* Filtros no topo */}
+          {renderFiltros()}
 
-          {/* Mobile: Botão de filtros */}
-          {isMobile && (
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="w-full mb-4 bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] rounded-xl p-4 flex items-center justify-between"
-            >
-              <span className="font-medium text-gray-700 dark:text-gray-300">Filtros</span>
-              <span className="material-symbols-outlined text-gray-400">
-                {showFilters ? 'expand_less' : 'expand_more'}
-              </span>
-            </button>
-          )}
+          {/* Filtros aplicados (tags) */}
+          {renderFiltrosAplicados()}
 
-          {/* Mobile: Filtros expandidos */}
-          {isMobile && showFilters && (
-            <div className="mb-4 bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] rounded-xl p-4">
-              {renderFiltros()}
-            </div>
-          )}
-
-          {/* Layout principal */}
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Lista de questões */}
-            <div className="flex-1 space-y-4">
-              {loading ? (
-                <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-8 text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-                  <p className="text-gray-500 dark:text-gray-400">Buscando questões...</p>
-                </div>
-              ) : !buscaInicial ? (
-                <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-8 text-center">
-                  <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">search</span>
-                  <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">Selecione os filtros</h3>
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Use os filtros ao lado para buscar questões
-                  </p>
-                </div>
-              ) : questoes.length === 0 ? (
-                <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-8 text-center">
-                  <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">quiz</span>
-                  <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">Nenhuma questão encontrada</h3>
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Tente ajustar os filtros para encontrar questões
-                  </p>
-                </div>
-              ) : isMobile ? (
-                // Mobile: uma questão por vez
-                <>
-                  {questoes[questaoAtualMobile] && renderQuestao(questoes[questaoAtualMobile])}
-                  <div className="h-20"></div> {/* Espaço para a navegação fixa */}
-                </>
-              ) : (
-                // Desktop: lista de questões
-                <>
-                  {questoes.map(renderQuestao)}
-                  {renderPaginacaoDesktop()}
-                </>
-              )}
-            </div>
-
-            {/* Sidebar - Filtros (Desktop) */}
-            {!isMobile && (
-              <aside className="w-full lg:w-80 space-y-6">
-                <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-5 shadow-sm">
-                  <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Filtros</h3>
-                    {buscaInicial && (
-                      <span className="text-sm text-primary font-medium">
-                        {paginacao.total.toLocaleString()} questões
-                      </span>
-                    )}
-                  </div>
-                  {renderFiltros()}
-                </div>
-              </aside>
+          {/* Lista de questões */}
+          <div className="space-y-4">
+            {loading ? (
+              <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-8 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                <p className="text-gray-500 dark:text-gray-400">Buscando questões...</p>
+              </div>
+            ) : !buscaInicial ? (
+              <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-8 text-center">
+                <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">search</span>
+                <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">Selecione os filtros</h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Use os filtros acima para buscar questões
+                </p>
+              </div>
+            ) : questoes.length === 0 ? (
+              <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-8 text-center">
+                <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">quiz</span>
+                <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">Nenhuma questão encontrada</h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Tente ajustar os filtros para encontrar questões
+                </p>
+              </div>
+            ) : isMobile ? (
+              // Mobile: uma questão por vez
+              <>
+                {questoes[questaoAtualMobile] && renderQuestao(questoes[questaoAtualMobile])}
+                <div className="h-20"></div> {/* Espaço para a navegação fixa */}
+              </>
+            ) : (
+              // Desktop: lista de questões
+              <>
+                {questoes.map(renderQuestao)}
+                {renderPaginacaoDesktop()}
+              </>
             )}
           </div>
         </div>
