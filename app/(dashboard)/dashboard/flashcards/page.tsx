@@ -1245,7 +1245,7 @@ export default function FlashcardsPage() {
                               Limite diario atingido!
                             </h4>
                             <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
-                              Voce ja gerou {geracoesHoje} flashcards hoje. Estudantes PRO geram <strong>flashcards ilimitados</strong> e aceleram seus estudos em ate 3x mais rapido!
+                              Voce ja usou suas {geracoesHoje} geracoes de hoje. Estudantes PRO tem <strong>geracoes ilimitadas</strong> e aceleram seus estudos em ate 3x mais rapido!
                             </p>
                             <div className="flex flex-col gap-2">
                               <a
