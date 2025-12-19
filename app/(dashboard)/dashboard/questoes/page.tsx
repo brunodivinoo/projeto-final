@@ -103,6 +103,7 @@ export default function QuestoesPage() {
   // Estados de UI
   const [isMobile, setIsMobile] = useState(false)
   const [questaoAtualMobile, setQuestaoAtualMobile] = useState(0)
+  const [filtrosExpandidosMobile, setFiltrosExpandidosMobile] = useState(true)
 
   // Estados dos dropdowns
   const [dropdownAberto, setDropdownAberto] = useState<string | null>(null)
@@ -155,15 +156,17 @@ export default function QuestoesPage() {
     }
   }, [disciplinaIdsSelecionadas])
 
-  // Carregar subassuntos quando assuntos mudam
+  // Carregar subassuntos quando assuntos disponíveis mudam (para mostrar expandidos)
   useEffect(() => {
-    if (assuntoIdsSelecionados.length > 0) {
-      carregarSubassuntos()
+    if (assuntosDisponiveis.length > 0) {
+      // Pegar todos os IDs de assuntos disponíveis para carregar seus subassuntos
+      const todosAssuntoIds = assuntosDisponiveis.flatMap(g => g.assuntos.map(a => a.id))
+      carregarSubassuntosPorIds(todosAssuntoIds)
     } else {
       setSubassuntosDisponiveis([])
       setSubassuntosSelecionados([])
     }
-  }, [assuntoIdsSelecionados])
+  }, [assuntosDisponiveis])
 
   // Funções de carregamento de filtros
   const carregarDisciplinas = async () => {
@@ -186,9 +189,13 @@ export default function QuestoesPage() {
     }
   }
 
-  const carregarSubassuntos = async () => {
+  const carregarSubassuntosPorIds = async (assuntoIds: string[]) => {
+    if (assuntoIds.length === 0) {
+      setSubassuntosDisponiveis([])
+      return
+    }
     try {
-      const res = await fetch(`/api/questoes/filtros?tipo=subassuntos&assunto_ids=${assuntoIdsSelecionados.join(',')}`)
+      const res = await fetch(`/api/questoes/filtros?tipo=subassuntos&assunto_ids=${assuntoIds.join(',')}`)
       const data = await res.json()
       setSubassuntosDisponiveis(data.subassuntos || [])
     } catch (error) {
@@ -255,6 +262,12 @@ export default function QuestoesPage() {
       setQuestoes(data.questoes || [])
       setPaginacao(prev => ({ ...prev, ...data.paginacao }))
       setQuestaoAtualMobile(0)
+
+      // Recolher filtros no mobile após buscar
+      if (isMobile) {
+        setFiltrosExpandidosMobile(false)
+        setDropdownAberto(null)
+      }
     } catch (error) {
       console.error('Erro ao buscar questões:', error)
     } finally {
@@ -848,8 +861,8 @@ export default function QuestoesPage() {
                           </span>
                         </label>
 
-                        {/* Subassuntos aninhados (se o assunto estiver selecionado) */}
-                        {assuntosSelecionados.includes(assunto.nome) && subassuntosDoAssunto && (
+                        {/* Subassuntos sempre visíveis (expandidos) */}
+                        {subassuntosDoAssunto && subassuntosDoAssunto.subassuntos.length > 0 && (
                           <div className="ml-6 border-l-2 border-gray-200 dark:border-[#283039] pl-3 mb-2">
                             {subassuntosDoAssunto.subassuntos
                               .filter(s => s.nome.toLowerCase().includes(pesquisaAssunto.toLowerCase()))
@@ -1120,8 +1133,29 @@ export default function QuestoesPage() {
 
       <div className="p-4 lg:p-6">
         <div className="max-w-[1200px] mx-auto">
-          {/* Filtros no topo */}
-          {renderFiltros()}
+          {/* Mobile: Botão para expandir/recolher filtros */}
+          {isMobile && buscaInicial && (
+            <button
+              onClick={() => setFiltrosExpandidosMobile(!filtrosExpandidosMobile)}
+              className="w-full mb-4 bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] rounded-xl p-4 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">filter_list</span>
+                <span className="font-medium text-gray-700 dark:text-gray-300">Filtros</span>
+                {temFiltrosAplicados() && (
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                    Filtros aplicados
+                  </span>
+                )}
+              </div>
+              <span className="material-symbols-outlined text-gray-400">
+                {filtrosExpandidosMobile ? 'expand_less' : 'expand_more'}
+              </span>
+            </button>
+          )}
+
+          {/* Filtros no topo - sempre visível no desktop, expandível no mobile */}
+          {(!isMobile || filtrosExpandidosMobile || !buscaInicial) && renderFiltros()}
 
           {/* Filtros aplicados (tags) */}
           {renderFiltrosAplicados()}
