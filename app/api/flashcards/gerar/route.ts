@@ -93,33 +93,96 @@ export async function POST(req: NextRequest) {
       }, { status: 429 })
     }
 
-    // Construir prompt para o Gemini
-    let topico = disciplina || 'tema geral'
-    if (assunto) topico += ` - ${assunto}`
-    if (subassunto) topico += ` - ${subassunto}`
+    // Construir contexto hierarquico
+    const temDisciplina = disciplina && disciplina.trim()
+    const temAssunto = assunto && assunto.trim()
+    const temSubassunto = subassunto && subassunto.trim()
 
-    const nivelDificuldade = dificuldade === 'facil' ? 'basico, para iniciantes' :
-                            dificuldade === 'dificil' ? 'avancado, para estudantes experientes' :
-                            'intermediario'
+    let contextoTopico = ''
+    if (temDisciplina) {
+      contextoTopico = `Disciplina: ${disciplina}`
+      if (temAssunto) {
+        contextoTopico += `\nAssunto: ${assunto}`
+        if (temSubassunto) {
+          contextoTopico += `\nTopico especifico: ${subassunto}`
+        }
+      }
+    } else {
+      contextoTopico = 'Tema: Conhecimentos gerais para concursos'
+    }
 
-    const prompt = `Voce e um especialista em criar flashcards educacionais para concursos publicos e vestibulares.
+    // Configuracao de dificuldade detalhada
+    const configDificuldade = {
+      facil: {
+        nivel: 'BASICO',
+        descricao: 'conceitos fundamentais, definicoes diretas, informacoes introdutorias',
+        tipoPerguntas: 'O que e...?, Qual a definicao de...?, Cite...',
+        complexidadeResposta: 'respostas curtas e diretas (1-2 frases)'
+      },
+      medio: {
+        nivel: 'INTERMEDIARIO',
+        descricao: 'aplicacao de conceitos, relacoes entre temas, casos praticos',
+        tipoPerguntas: 'Qual a diferenca entre...?, Como funciona...?, Em que situacao...?',
+        complexidadeResposta: 'respostas moderadas com explicacao (2-3 frases)'
+      },
+      dificil: {
+        nivel: 'AVANCADO',
+        descricao: 'excecoes, jurisprudencia, casos controversos, detalhes especificos',
+        tipoPerguntas: 'Qual a excecao...?, Segundo o STF...?, Diferencie criticamente...',
+        complexidadeResposta: 'respostas completas com fundamentacao (3-4 frases)'
+      }
+    }
 
-Gere exatamente ${qtd} flashcards sobre o topico: "${topico}"
+    const config = configDificuldade[dificuldade as keyof typeof configDificuldade] || configDificuldade.medio
 
-Nivel de dificuldade: ${nivelDificuldade}
+    const prompt = `Voce e um ESPECIALISTA em criar flashcards para CONCURSOS PUBLICOS brasileiros, com vasta experiencia em bancas como CESPE/CEBRASPE, FGV, FCC, VUNESP.
 
-Instrucoes:
-1. Cada flashcard deve ter uma pergunta (frente) e resposta (verso)
-2. As perguntas devem ser claras e objetivas
-3. As respostas devem ser concisas mas completas
-4. Use linguagem formal e tecnica quando apropriado
-5. Varie os tipos de perguntas (definicao, conceito, aplicacao, comparacao)
-6. Evite perguntas muito longas ou respostas excessivamente complexas
+## CONTEXTO DO ESTUDO
+${contextoTopico}
 
-IMPORTANTE: Retorne APENAS um array JSON valido, sem markdown, sem explicacoes, no formato:
+## CONFIGURACAO
+- Quantidade: ${qtd} flashcards
+- Nivel: ${config.nivel}
+- Foco: ${config.descricao}
+
+## REGRAS OBRIGATORIAS PARA OS FLASHCARDS
+
+### FRENTE (Pergunta):
+- Use linguagem clara e objetiva, como questoes de concurso
+- Tipos de pergunta recomendados: ${config.tipoPerguntas}
+- Seja especifico - evite perguntas vagas ou muito amplas
+- Maximo 2 linhas
+
+### VERSO (Resposta):
+- ${config.complexidadeResposta}
+- Inclua palavras-chave que facilitam memorizacao
+- Use estrutura: conceito principal + detalhe importante (quando aplicavel)
+- Para listas, limite a 3-4 itens principais
+- Quando relevante, inclua: artigo de lei, sumula, ou jurisprudencia
+
+### TECNICAS DE MEMORIZACAO (aplique quando possivel):
+- Acronimos ou mnemonicos conhecidos da area
+- Associacoes logicas
+- Destaque de excecoes importantes
+- Comparacoes que caem em prova
+
+### VARIEDADE - cada flashcard deve ser DIFERENTE:
+1. Definicao/Conceito
+2. Diferenciacao (X vs Y)
+3. Aplicacao pratica
+4. Excecao ou detalhe importante
+5. Classificacao ou lista
+6. Caso concreto ou exemplo
+
+## FORMATO DE SAIDA
+Retorne APENAS um array JSON valido, sem markdown, sem explicacoes:
 [{"frente":"pergunta aqui","verso":"resposta aqui"}]
 
-Retorne APENAS o JSON, nada mais.`
+IMPORTANTE:
+- Nao repita conteudo entre flashcards
+- Cada card deve cobrir um aspecto diferente do tema
+- Foque no que MAIS CAI em provas de concurso
+- Retorne SOMENTE o JSON, nada antes ou depois`
 
     // Chamar API do Gemini
     const response = await fetch(
