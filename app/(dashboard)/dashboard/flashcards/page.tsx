@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { Header } from '@/components/layout/Header'
 import { useFlashcards, Deck, Flashcard, calcularIntervaloDisplay } from '@/hooks/useFlashcards'
 import { useAuth } from '@/contexts/AuthContext'
+import { useNotifications } from '@/contexts/NotificationContext'
+import { MarkdownText } from '@/components/ui/MarkdownText'
 
 type ViewMode = 'decks' | 'revisar' | 'gerar' | 'deck-detail'
 
@@ -21,6 +23,7 @@ const ICONES_DECK = [
 
 export default function FlashcardsPage() {
   const { user } = useAuth()
+  const { startGeneration, hasActiveGeneration } = useNotifications()
   const {
     decks,
     cardsParaRevisar,
@@ -35,14 +38,16 @@ export default function FlashcardsPage() {
     criarDeck,
     deletarDeck,
     registrarRevisao,
-    getCardsParaRevisarDoDeck
+    getCardsParaRevisarDoDeck,
+    getFlashcardsDoDeck,
+    deletarFlashcard
   } = useFlashcards()
 
   // Estados da UI
   const [viewMode, setViewMode] = useState<ViewMode>('decks')
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null)
   const [deckCards, setDeckCards] = useState<Flashcard[]>([])
+  const [allDeckCards, setAllDeckCards] = useState<Flashcard[]>([])
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const [showAnswer, setShowAnswer] = useState(false)
   const [showCreateDeck, setShowCreateDeck] = useState(false)
@@ -61,9 +66,10 @@ export default function FlashcardsPage() {
   const [gerarDificuldade, setGerarDificuldade] = useState('medio')
   const [gerarQuantidade, setGerarQuantidade] = useState(5)
   const [gerarDeckId, setGerarDeckId] = useState('')
-  const [gerando, setGerando] = useState(false)
-  const [gerarErro, setGerarErro] = useState('')
-  const [gerarSucesso, setGerarSucesso] = useState('')
+
+  // Estados de filtro para deck-detail
+  const [filtroStatus, setFiltroStatus] = useState<string>('todos')
+  const [filtroTexto, setFiltroTexto] = useState('')
 
   // Carregar preferencias salvas do gerador
   useEffect(() => {
@@ -109,6 +115,16 @@ export default function FlashcardsPage() {
     }
   }
 
+  // Abrir detalhes do deck (lista de todos os flashcards)
+  const abrirDeckDetail = async (deck: Deck) => {
+    const cards = await getFlashcardsDoDeck(deck.id)
+    setSelectedDeck(deck)
+    setAllDeckCards(cards)
+    setFiltroStatus('todos')
+    setFiltroTexto('')
+    setViewMode('deck-detail')
+  }
+
   // Iniciar revisao de um deck
   const iniciarRevisao = async (deck: Deck) => {
     const cards = await getCardsParaRevisarDoDeck(deck.id)
@@ -117,6 +133,20 @@ export default function FlashcardsPage() {
       return
     }
     setSelectedDeck(deck)
+    setDeckCards(cards)
+    setCurrentCardIndex(0)
+    setShowAnswer(false)
+    setViewMode('revisar')
+  }
+
+  // Iniciar revisao a partir do deck-detail
+  const iniciarRevisaoDoDeckDetail = async () => {
+    if (!selectedDeck) return
+    const cards = await getCardsParaRevisarDoDeck(selectedDeck.id)
+    if (cards.length === 0) {
+      alert('Nenhum card para revisar neste deck!')
+      return
+    }
     setDeckCards(cards)
     setCurrentCardIndex(0)
     setShowAnswer(false)
@@ -134,6 +164,21 @@ export default function FlashcardsPage() {
     setCurrentCardIndex(0)
     setShowAnswer(false)
     setViewMode('revisar')
+  }
+
+  // Navegacao entre cards
+  const irParaProximo = () => {
+    if (currentCardIndex < deckCards.length - 1) {
+      setCurrentCardIndex(prev => prev + 1)
+      setShowAnswer(false)
+    }
+  }
+
+  const irParaAnterior = () => {
+    if (currentCardIndex > 0) {
+      setCurrentCardIndex(prev => prev - 1)
+      setShowAnswer(false)
+    }
   }
 
   // Registrar resposta na revisao
@@ -154,52 +199,64 @@ export default function FlashcardsPage() {
     }
   }
 
-  // Gerar flashcards com IA
+  // Gerar flashcards com IA em background
   const handleGerarFlashcards = async () => {
-    if (!gerarDeckId || !user) return
+    // Usar gerarDeckId se definido, senao usar selectedDeck.id
+    const deckIdParaGerar = gerarDeckId || selectedDeck?.id
+    if (!deckIdParaGerar || !user) return
 
-    setGerando(true)
-    setGerarErro('')
-    setGerarSucesso('')
     salvarPreferenciasGerador()
 
-    try {
-      const response = await fetch('/api/flashcards/gerar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.id,
-          deck_id: gerarDeckId,
-          disciplina: gerarDisciplina,
-          assunto: gerarAssunto,
-          subassunto: gerarSubassunto,
-          dificuldade: gerarDificuldade,
-          quantidade: gerarQuantidade
-        })
-      })
+    // Encontrar nome do deck selecionado
+    const deckSelecionado = decks.find(d => d.id === deckIdParaGerar)
+    if (!deckSelecionado) return
 
-      const data = await response.json()
+    // Fechar modal imediatamente
+    setShowGenerator(false)
 
-      if (!response.ok) {
-        setGerarErro(data.error || 'Erro ao gerar flashcards')
-        return
+    // Iniciar geracao em background
+    startGeneration(
+      deckIdParaGerar,
+      deckSelecionado.nome,
+      gerarQuantidade,
+      {
+        user_id: user.id,
+        disciplina: gerarDisciplina,
+        assunto: gerarAssunto,
+        subassunto: gerarSubassunto,
+        dificuldade: gerarDificuldade
       }
-
-      setGerarSucesso(`${data.quantidade} flashcards gerados com sucesso!`)
+    ).then(() => {
+      // Atualizar lista quando terminar
       refresh()
+      // Atualizar a lista do deck se estivermos no deck-detail
+      if (selectedDeck && viewMode === 'deck-detail') {
+        getFlashcardsDoDeck(selectedDeck.id).then(setAllDeckCards)
+      }
+    })
+  }
 
-      // Limpar apos sucesso
-      setTimeout(() => {
-        setGerarSucesso('')
-        setShowGenerator(false)
-      }, 2000)
-    } catch (err) {
-      console.error('Erro ao gerar:', err)
-      setGerarErro('Erro ao gerar flashcards')
-    } finally {
-      setGerando(false)
+  // Deletar flashcard do deck-detail
+  const handleDeletarFlashcard = async (flashcardId: string) => {
+    if (!confirm('Deletar este flashcard?')) return
+    const sucesso = await deletarFlashcard(flashcardId)
+    if (sucesso) {
+      setAllDeckCards(prev => prev.filter(c => c.id !== flashcardId))
     }
   }
+
+  // Filtrar cards no deck-detail
+  const cardsFiltrados = allDeckCards.filter(card => {
+    // Filtro por status
+    if (filtroStatus !== 'todos' && card.status !== filtroStatus) return false
+    // Filtro por texto
+    if (filtroTexto) {
+      const texto = filtroTexto.toLowerCase()
+      return card.frente.toLowerCase().includes(texto) ||
+             card.verso.toLowerCase().includes(texto)
+    }
+    return true
+  })
 
   // Card atual para revisao
   const cardAtual = deckCards[currentCardIndex]
@@ -255,10 +312,11 @@ export default function FlashcardsPage() {
 
                   <button
                     onClick={() => setShowGenerator(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-medium transition-colors"
+                    disabled={hasActiveGeneration}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white rounded-xl font-medium transition-colors"
                   >
                     <span className="material-symbols-outlined">auto_awesome</span>
-                    Gerar com IA
+                    {hasActiveGeneration ? 'Gerando...' : 'Gerar com IA'}
                   </button>
 
                   <button
@@ -354,7 +412,8 @@ export default function FlashcardsPage() {
                     return (
                       <div
                         key={deck.id}
-                        className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:border-primary/50 transition-colors group"
+                        onClick={() => abrirDeckDetail(deck)}
+                        className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:border-primary/50 transition-colors group cursor-pointer"
                       >
                         {/* Header colorido */}
                         <div
@@ -411,7 +470,10 @@ export default function FlashcardsPage() {
                           </div>
 
                           <button
-                            onClick={() => iniciarRevisao(deck)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              iniciarRevisao(deck)
+                            }}
                             disabled={cardsParaRevisarDeck === 0}
                             className="w-full py-2 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-300 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                           >
@@ -446,13 +508,190 @@ export default function FlashcardsPage() {
             </>
           )}
 
+          {/* Modo deck-detail - Lista de todos os flashcards */}
+          {viewMode === 'deck-detail' && selectedDeck && (
+            <div className="max-w-4xl mx-auto">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <button
+                  onClick={() => setViewMode('decks')}
+                  className="flex items-center gap-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                >
+                  <span className="material-symbols-outlined">arrow_back</span>
+                  Voltar
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setGerarDeckId(selectedDeck.id)
+                      setShowGenerator(true)
+                    }}
+                    disabled={hasActiveGeneration}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-lg">auto_awesome</span>
+                    Gerar mais
+                  </button>
+                  <button
+                    onClick={iniciarRevisaoDoDeckDetail}
+                    disabled={cardsParaRevisar.filter(c => c.deck_id === selectedDeck.id).length === 0}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-lg">play_arrow</span>
+                    Revisar ({cardsParaRevisar.filter(c => c.deck_id === selectedDeck.id).length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Deck info */}
+              <div
+                className="bg-white dark:bg-[#1c252e] rounded-xl p-6 mb-6 border border-slate-200 dark:border-slate-700"
+                style={{ borderTopColor: selectedDeck.cor, borderTopWidth: '4px' }}
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className="w-14 h-14 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: `${selectedDeck.cor}20` }}
+                  >
+                    <span
+                      className="material-symbols-outlined text-3xl"
+                      style={{ color: selectedDeck.cor }}
+                    >
+                      {selectedDeck.icone}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {selectedDeck.nome}
+                    </h1>
+                    {selectedDeck.descricao && (
+                      <p className="text-slate-500 text-sm mt-1">{selectedDeck.descricao}</p>
+                    )}
+                    <div className="flex gap-4 mt-2 text-sm text-slate-500">
+                      <span>{allDeckCards.length} flashcards</span>
+                      <span>{allDeckCards.filter(c => c.status === 'dominado').length} dominados</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filtros */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 material-symbols-outlined text-lg">
+                    search
+                  </span>
+                  <input
+                    type="text"
+                    value={filtroTexto}
+                    onChange={e => setFiltroTexto(e.target.value)}
+                    placeholder="Buscar flashcards..."
+                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-[#1c252e] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white text-sm focus:border-primary focus:ring-0"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  {['todos', 'novo', 'aprendendo', 'revisao', 'dominado'].map(status => (
+                    <button
+                      key={status}
+                      onClick={() => setFiltroStatus(status)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filtroStatus === status
+                          ? 'bg-primary text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {status === 'todos' ? 'Todos' : status.charAt(0).toUpperCase() + status.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Lista de flashcards */}
+              {cardsFiltrados.length === 0 ? (
+                <div className="bg-white dark:bg-[#1c252e] rounded-xl p-12 text-center border border-slate-200 dark:border-slate-700">
+                  <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mb-2">
+                    search_off
+                  </span>
+                  <p className="text-slate-500">
+                    {allDeckCards.length === 0
+                      ? 'Nenhum flashcard neste deck ainda. Gere alguns com IA!'
+                      : 'Nenhum flashcard encontrado com esses filtros'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {cardsFiltrados.map((card, index) => (
+                    <div
+                      key={card.id}
+                      className="bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden group hover:border-primary/50 transition-colors"
+                    >
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs text-slate-400 font-mono">#{index + 1}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                card.status === 'dominado' ? 'bg-green-500/10 text-green-500' :
+                                card.status === 'revisao' ? 'bg-blue-500/10 text-blue-500' :
+                                card.status === 'aprendendo' ? 'bg-orange-500/10 text-orange-500' :
+                                'bg-slate-500/10 text-slate-500'
+                              }`}>
+                                {card.status}
+                              </span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                card.dificuldade === 'facil' ? 'bg-green-500/10 text-green-500' :
+                                card.dificuldade === 'dificil' ? 'bg-red-500/10 text-red-500' :
+                                'bg-yellow-500/10 text-yellow-500'
+                              }`}>
+                                {card.dificuldade}
+                              </span>
+                            </div>
+
+                            <div className="mb-3">
+                              <p className="text-xs uppercase tracking-wider text-slate-400 mb-1">Frente</p>
+                              <MarkdownText
+                                text={card.frente}
+                                className="text-slate-900 dark:text-white text-sm"
+                              />
+                            </div>
+
+                            <div>
+                              <p className="text-xs uppercase tracking-wider text-slate-400 mb-1">Verso</p>
+                              <MarkdownText
+                                text={card.verso}
+                                className="text-slate-600 dark:text-slate-400 text-sm"
+                              />
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleDeletarFlashcard(card.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-500 transition-all"
+                          >
+                            <span className="material-symbols-outlined text-lg">delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Modo revisao */}
           {viewMode === 'revisar' && cardAtual && (
             <div className="max-w-2xl mx-auto">
               {/* Header da revisao */}
               <div className="flex items-center justify-between mb-6">
                 <button
-                  onClick={() => setViewMode('decks')}
+                  onClick={() => {
+                    if (selectedDeck) {
+                      abrirDeckDetail(selectedDeck)
+                    } else {
+                      setViewMode('decks')
+                    }
+                  }}
                   className="flex items-center gap-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
                 >
                   <span className="material-symbols-outlined">arrow_back</span>
@@ -474,20 +713,43 @@ export default function FlashcardsPage() {
               {/* Card de revisao */}
               <div
                 onClick={() => setShowAnswer(!showAnswer)}
-                className="bg-white dark:bg-[#1c252e] rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 min-h-[300px] p-8 cursor-pointer flex flex-col items-center justify-center text-center relative group mb-8"
+                className="bg-white dark:bg-[#1c252e] rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 min-h-[300px] p-8 cursor-pointer flex flex-col items-center justify-center text-center relative group mb-6"
               >
                 <span className="absolute top-4 left-4 text-xs font-bold tracking-widest text-slate-400 uppercase">
                   {showAnswer ? 'Resposta' : 'Pergunta'}
                 </span>
 
-                <p className="text-2xl font-medium text-slate-900 dark:text-white leading-relaxed">
-                  {showAnswer ? cardAtual.verso : cardAtual.frente}
-                </p>
+                <div className="max-w-full overflow-hidden">
+                  <MarkdownText
+                    text={showAnswer ? cardAtual.verso : cardAtual.frente}
+                    className="text-xl lg:text-2xl font-medium text-slate-900 dark:text-white leading-relaxed"
+                  />
+                </div>
 
                 <div className="absolute bottom-4 text-slate-400 text-sm flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <span className="material-symbols-outlined text-lg">touch_app</span>
                   Clique para {showAnswer ? 'ver pergunta' : 'ver resposta'}
                 </div>
+              </div>
+
+              {/* Navegacao */}
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <button
+                  onClick={irParaAnterior}
+                  disabled={currentCardIndex === 0}
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 rounded-xl font-medium transition-colors"
+                >
+                  <span className="material-symbols-outlined">chevron_left</span>
+                  Anterior
+                </button>
+                <button
+                  onClick={irParaProximo}
+                  disabled={currentCardIndex === deckCards.length - 1}
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 rounded-xl font-medium transition-colors"
+                >
+                  Proximo
+                  <span className="material-symbols-outlined">chevron_right</span>
+                </button>
               </div>
 
               {/* Botoes de dificuldade */}
@@ -686,7 +948,7 @@ export default function FlashcardsPage() {
                         Deck de destino *
                       </label>
                       <select
-                        value={gerarDeckId}
+                        value={gerarDeckId || (selectedDeck?.id ?? '')}
                         onChange={e => setGerarDeckId(e.target.value)}
                         className="w-full px-4 py-2 bg-slate-50 dark:bg-[#101922] border border-slate-200 dark:border-slate-700 rounded-lg focus:border-primary focus:ring-0 text-slate-900 dark:text-white"
                       >
@@ -778,30 +1040,23 @@ export default function FlashcardsPage() {
                       </div>
                     </div>
 
-                    {/* Erros e sucessos */}
-                    {gerarErro && (
-                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm">
-                        {gerarErro}
-                      </div>
-                    )}
-                    {gerarSucesso && (
-                      <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-green-500 text-sm flex items-center gap-2">
-                        <span className="material-symbols-outlined">check_circle</span>
-                        {gerarSucesso}
-                      </div>
-                    )}
+                    {/* Info sobre geracao em background */}
+                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-600 dark:text-blue-400 text-sm flex items-start gap-2">
+                      <span className="material-symbols-outlined text-lg">info</span>
+                      <span>A geracao acontecera em segundo plano. Voce pode navegar normalmente e sera notificado quando terminar.</span>
+                    </div>
                   </div>
 
                   <div className="p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#161f28]">
                     <button
                       onClick={handleGerarFlashcards}
-                      disabled={!gerarDeckId || gerando || (limiteGeracoesDia !== -1 && geracoesHoje >= limiteGeracoesDia)}
+                      disabled={!(gerarDeckId || selectedDeck?.id) || hasActiveGeneration || (limiteGeracoesDia !== -1 && geracoesHoje >= limiteGeracoesDia)}
                       className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 disabled:opacity-50 text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2"
                     >
-                      {gerando ? (
+                      {hasActiveGeneration ? (
                         <>
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                          Gerando...
+                          Ja ha uma geracao em andamento
                         </>
                       ) : (
                         <>

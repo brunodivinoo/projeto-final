@@ -6,6 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useSidebar } from '@/contexts/SidebarContext'
 import { LimitsIndicator } from '@/components/limits'
 import { XPIndicator } from '@/components/xp'
+import { NotificationBell } from '@/components/notifications'
 
 export function Header({ title, searchPlaceholder }: { title: string; searchPlaceholder?: string }) {
   const [search, setSearch] = useState('')
@@ -79,10 +80,7 @@ export function Header({ title, searchPlaceholder }: { title: string; searchPlac
         </button>
 
         {/* Notifications */}
-        <button className="w-9 h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative">
-          <span className="material-symbols-outlined text-xl">notifications</span>
-          <span className="absolute top-1 right-1 lg:top-2 lg:right-2 w-2 h-2 lg:w-2.5 lg:h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-[#1c252e]" />
-        </button>
+        <NotificationBell />
 
         {/* Avatar with Dropdown */}
         <div className="relative" ref={dropdownRef}>
