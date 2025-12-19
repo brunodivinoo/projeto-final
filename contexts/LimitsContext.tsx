@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext, ReactNode, useCallback, useMemo } from 'react'
 import { useLimits, LimitItem, calcularPorcentagem, getMensagemMotivacional, getCorPorcentagem } from '@/hooks/useLimits'
 import { useConsumeLimit, TipoRecurso } from '@/hooks/useCheckLimit'
 
@@ -19,25 +19,26 @@ export function LimitsProvider({ children }: { children: ReactNode }) {
   const limitsData = useLimits()
   const { consumeLimit } = useConsumeLimit()
 
-  const consumirRecurso = async (recurso: TipoRecurso, quantidade: number = 1): Promise<boolean> => {
+  const consumirRecurso = useCallback(async (recurso: TipoRecurso, quantidade: number = 1): Promise<boolean> => {
     const result = await consumeLimit(recurso, quantidade)
     if (result) {
-      // Atualizar limites após consumir
       await limitsData.refresh()
     }
     return result
-  }
+  }, [consumeLimit, limitsData.refresh])
+
+  const value = useMemo(() => ({
+    plano: limitsData.plano,
+    isPro: limitsData.isPro,
+    limites: limitsData.limites,
+    loading: limitsData.loading,
+    error: limitsData.error,
+    refresh: limitsData.refresh,
+    consumirRecurso
+  }), [limitsData.plano, limitsData.isPro, limitsData.limites, limitsData.loading, limitsData.error, limitsData.refresh, consumirRecurso])
 
   return (
-    <LimitsContext.Provider value={{
-      plano: limitsData.plano,
-      isPro: limitsData.isPro,
-      limites: limitsData.limites,
-      loading: limitsData.loading,
-      error: limitsData.error,
-      refresh: limitsData.refresh,
-      consumirRecurso
-    }}>
+    <LimitsContext.Provider value={value}>
       {children}
     </LimitsContext.Provider>
   )

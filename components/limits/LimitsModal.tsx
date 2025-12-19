@@ -26,10 +26,12 @@ export function LimitsModal({ isOpen, onClose }: LimitsModalProps) {
     }
   }, [isOpen, onClose])
 
-  // Atualizar ao abrir
+  // Atualizar ao abrir (apenas se tiver limites vazios)
   useEffect(() => {
-    if (isOpen) refresh()
-  }, [isOpen, refresh])
+    if (isOpen && limites.length === 0 && !loading) {
+      refresh()
+    }
+  }, [isOpen]) // Removido refresh e limites das dependencias para evitar loop
 
   if (!isOpen) return null
 

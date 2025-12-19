@@ -36,10 +36,10 @@ const MOCK_LIMITS: LimitItem[] = [
 
 export function useLimits(): LimitsData {
   const { user, loading: authLoading } = useAuth()
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false) // Comecar como false para nao bloquear UI
   const [error, setError] = useState<string | null>(null)
   const [plano, setPlano] = useState('FREE')
-  const [limites, setLimites] = useState<LimitItem[]>([])
+  const [limites, setLimites] = useState<LimitItem[]>(MOCK_LIMITS) // Inicializar com mock para ter dados
 
   const fetchLimits = useCallback(async () => {
     // Aguardar autenticacao carregar primeiro
@@ -181,7 +181,7 @@ export function useLimits(): LimitsData {
     plano,
     isPro: plano === 'ESTUDA_PRO',
     limites,
-    loading: loading || authLoading,
+    loading, // Nao bloquear UI enquanto auth carrega
     error,
     refresh: fetchLimits
   }
