@@ -44,19 +44,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     lastFetchedUserIdRef.current = userId
 
     try {
-      // Buscar profile e stats em paralelo para melhor performance
-      const [profileResult, statsResult] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single(),
-        supabase
+      // Buscar profile primeiro (mais importante)
+      const profileResult = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      // Buscar stats separadamente (menos crítico)
+      let statsResult: { data: Estatisticas | null; error: { code?: string } | null } = { data: null, error: null }
+      try {
+        statsResult = await supabase
           .from('estatisticas_usuario')
           .select('*')
           .eq('user_id', userId)
           .single()
-      ])
+      } catch {
+        // Ignorar erros de stats - não é crítico
+        console.warn('Erro ao buscar estatisticas - ignorando')
+      }
 
       // Processar profile
       if (profileResult.error && profileResult.error.code === 'PGRST116') {
@@ -80,27 +86,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsNewUser(false)
       }
 
-      // Processar stats
-      if (statsResult.error && statsResult.error.code === 'PGRST116') {
-        // Estatisticas nao existem - criar novas
-        const { data: newStats } = await supabase
-          .from('estatisticas_usuario')
-          .insert({
-            user_id: userId,
-            questoes_hoje: 0,
-            questoes_total: 0,
-            taxa_acerto: 0,
-            horas_estudadas: 0,
-            sequencia_dias: 0,
-          })
-          .select()
-          .single()
+      // Processar stats (com tratamento de erro robusto)
+      try {
+        if (statsResult.error && statsResult.error.code === 'PGRST116') {
+          // Estatisticas nao existem - criar novas
+          const { data: newStats } = await supabase
+            .from('estatisticas_usuario')
+            .insert({
+              user_id: userId,
+              questoes_hoje: 0,
+              questoes_total: 0,
+              taxa_acerto: 0,
+              horas_estudadas: 0,
+              sequencia_dias: 0,
+            })
+            .select()
+            .single()
 
-        if (newStats) {
-          setStats(newStats as Estatisticas)
+          if (newStats) {
+            setStats(newStats as Estatisticas)
+          }
+        } else if (statsResult.data) {
+          setStats(statsResult.data as Estatisticas)
         }
-      } else if (statsResult.data) {
-        setStats(statsResult.data as Estatisticas)
+      } catch {
+        // Ignorar erros de stats - não bloquear a UI
+        console.warn('Erro ao processar estatisticas - usando valores padrão')
+        setStats(null)
       }
     } catch (error) {
       console.error('Erro ao buscar perfil:', error)
