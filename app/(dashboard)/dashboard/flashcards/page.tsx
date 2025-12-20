@@ -146,16 +146,15 @@ export default function FlashcardsPage() {
     setViewMode('revisar')
   }
 
-  // Iniciar revisao a partir do deck-detail (usa todos os cards do deck)
+  // Iniciar revisao a partir do deck-detail (usa cards filtrados)
   const iniciarRevisaoDoDeckDetail = async () => {
     if (!selectedDeck) return
-    // Usar allDeckCards se ja carregado, senao buscar
-    const cards = allDeckCards.length > 0 ? allDeckCards : await getFlashcardsDoDeck(selectedDeck.id)
-    if (cards.length === 0) {
-      alert('Nenhum card neste deck!')
+    // Usar cardsFiltrados para respeitar os filtros ativos
+    if (cardsFiltrados.length === 0) {
+      alert('Nenhum card para revisar com os filtros atuais!')
       return
     }
-    setDeckCards(cards)
+    setDeckCards(cardsFiltrados)
     setCurrentCardIndex(0)
     setShowAnswer(false)
     setViewMode('revisar')
@@ -566,11 +565,11 @@ export default function FlashcardsPage() {
                   </button>
                   <button
                     onClick={iniciarRevisaoDoDeckDetail}
-                    disabled={allDeckCards.length === 0}
+                    disabled={cardsFiltrados.length === 0}
                     className="flex items-center gap-2 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                   >
                     <span className="material-symbols-outlined text-lg">play_arrow</span>
-                    Revisar ({allDeckCards.length})
+                    Revisar ({cardsFiltrados.length})
                   </button>
                 </div>
               </div>
