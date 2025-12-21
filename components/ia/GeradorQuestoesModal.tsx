@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useQuestoesIA, ConfigGeracaoQuestoes } from '@/hooks/useQuestoesIA'
 import { useCheckLimit } from '@/hooks/useCheckLimit'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface Props {
   isOpen: boolean
@@ -22,6 +23,7 @@ type _ItemComPeso = ItemComPeso
 interface Disciplina {
   id: string
   nome: string
+  isCustom?: boolean
 }
 
 interface Assunto {
@@ -29,6 +31,7 @@ interface Assunto {
   nome: string
   disciplina_id: string
   disciplina_nome?: string
+  isCustom?: boolean
 }
 
 interface Subassunto {
@@ -37,11 +40,22 @@ interface Subassunto {
   assunto_id: string
   assunto_nome?: string
   disciplina_nome?: string
+  isCustom?: boolean
 }
 
 interface Banca {
   id: string
   nome: string
+  nome_normalizado?: string
+}
+
+// Função para normalizar texto (remove acentos e lowercase)
+function normalizar(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
 }
 
 // Item selecionado no dropdown unificado
@@ -59,6 +73,7 @@ interface ConteudoHierarquicoProps {
   subassuntos: Subassunto[]
   selecionados: ItemSelecionado[]
   onToggle: (item: ItemSelecionado) => void
+  onCreateCustom: (tipo: 'disciplina' | 'assunto' | 'subassunto', nome: string, disciplina?: string, assunto?: string) => void
 }
 
 function ConteudoHierarquico({
@@ -66,12 +81,17 @@ function ConteudoHierarquico({
   assuntos,
   subassuntos,
   selecionados,
-  onToggle
+  onToggle,
+  onCreateCustom
 }: ConteudoHierarquicoProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [expandedDisciplinas, setExpandedDisciplinas] = useState<string[]>([])
   const [expandedAssuntos, setExpandedAssuntos] = useState<string[]>([])
   const [busca, setBusca] = useState('')
+  const [showCreateMenu, setShowCreateMenu] = useState(false)
+  const [createType, setCreateType] = useState<'disciplina' | 'assunto' | 'subassunto' | null>(null)
+  const [createDisciplina, setCreateDisciplina] = useState('')
+  const [createAssunto, setCreateAssunto] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Fechar dropdown ao clicar fora
@@ -194,6 +214,137 @@ function ConteudoHierarquico({
               </div>
             </div>
 
+            {/* Barra de criação de item customizado */}
+            {showCreateMenu && (
+              <div className="p-3 border-b border-gray-100 dark:border-[#283039] bg-[#137fec]/5">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="material-symbols-outlined text-[#137fec] text-sm">add_circle</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">Criar novo item</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateMenu(false)
+                      setCreateType(null)
+                      setCreateDisciplina('')
+                      setCreateAssunto('')
+                    }}
+                    className="ml-auto text-[#9dabb9] hover:text-red-500"
+                  >
+                    <span className="material-symbols-outlined text-sm">close</span>
+                  </button>
+                </div>
+
+                {/* Seleção de tipo */}
+                <div className="flex gap-2 mb-2">
+                  {(['disciplina', 'assunto', 'subassunto'] as const).map(tipo => (
+                    <button
+                      key={tipo}
+                      type="button"
+                      onClick={() => setCreateType(tipo)}
+                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                        createType === tipo
+                          ? tipo === 'disciplina'
+                            ? 'bg-[#137fec] text-white'
+                            : tipo === 'assunto'
+                            ? 'bg-purple-500 text-white'
+                            : 'bg-emerald-500 text-white'
+                          : 'bg-gray-200 dark:bg-[#283039] text-gray-600 dark:text-gray-300'
+                      }`}
+                    >
+                      {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Campos baseados no tipo */}
+                {createType === 'assunto' && (
+                  <select
+                    value={createDisciplina}
+                    onChange={(e) => setCreateDisciplina(e.target.value)}
+                    className="w-full mb-2 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-[#283039] bg-white dark:bg-[#141A21] text-gray-900 dark:text-white"
+                  >
+                    <option value="">Selecione a disciplina...</option>
+                    {disciplinas.map(d => (
+                      <option key={d.id} value={d.nome}>{d.nome}</option>
+                    ))}
+                  </select>
+                )}
+
+                {createType === 'subassunto' && (
+                  <>
+                    <select
+                      value={createDisciplina}
+                      onChange={(e) => {
+                        setCreateDisciplina(e.target.value)
+                        setCreateAssunto('')
+                      }}
+                      className="w-full mb-2 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-[#283039] bg-white dark:bg-[#141A21] text-gray-900 dark:text-white"
+                    >
+                      <option value="">Selecione a disciplina...</option>
+                      {disciplinas.map(d => (
+                        <option key={d.id} value={d.nome}>{d.nome}</option>
+                      ))}
+                    </select>
+                    {createDisciplina && (
+                      <select
+                        value={createAssunto}
+                        onChange={(e) => setCreateAssunto(e.target.value)}
+                        className="w-full mb-2 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-[#283039] bg-white dark:bg-[#141A21] text-gray-900 dark:text-white"
+                      >
+                        <option value="">Selecione o assunto...</option>
+                        {assuntos.filter(a => a.disciplina_nome === createDisciplina).map(a => (
+                          <option key={a.id} value={a.nome}>{a.nome}</option>
+                        ))}
+                      </select>
+                    )}
+                  </>
+                )}
+
+                {/* Botão criar */}
+                {createType && busca.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (createType === 'disciplina') {
+                        onCreateCustom('disciplina', busca.trim())
+                      } else if (createType === 'assunto' && createDisciplina) {
+                        onCreateCustom('assunto', busca.trim(), createDisciplina)
+                      } else if (createType === 'subassunto' && createDisciplina && createAssunto) {
+                        onCreateCustom('subassunto', busca.trim(), createDisciplina, createAssunto)
+                      }
+                      setShowCreateMenu(false)
+                      setCreateType(null)
+                      setCreateDisciplina('')
+                      setCreateAssunto('')
+                      setBusca('')
+                    }}
+                    disabled={
+                      (createType === 'assunto' && !createDisciplina) ||
+                      (createType === 'subassunto' && (!createDisciplina || !createAssunto))
+                    }
+                    className="w-full px-3 py-2 text-sm bg-[#137fec] text-white rounded-lg hover:bg-[#137fec]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-sm">add</span>
+                    Criar &quot;{busca.trim()}&quot;
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Botão para abrir menu de criação */}
+            {!showCreateMenu && (
+              <div className="px-3 py-2 border-b border-gray-100 dark:border-[#283039]">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateMenu(true)}
+                  className="flex items-center gap-2 text-xs text-[#137fec] hover:underline"
+                >
+                  <span className="material-symbols-outlined text-sm">add_circle</span>
+                  Criar disciplina, assunto ou subassunto personalizado
+                </button>
+              </div>
+            )}
+
             {/* Resumo dos selecionados */}
             {totalSelecionados > 0 && (
               <div className="px-3 py-2 bg-gray-50 dark:bg-[#141A21] border-b border-gray-100 dark:border-[#283039] flex items-center gap-2 text-xs flex-wrap">
@@ -312,8 +463,20 @@ function ConteudoHierarquico({
                   })}
 
                   {disciplinasFiltradas.length === 0 && assuntosFiltrados.length === 0 && subassuntosFiltrados.length === 0 && (
-                    <div className="p-4 text-center text-[#9dabb9] text-sm">
-                      Nenhum resultado encontrado para &quot;{busca}&quot;
+                    <div className="p-4 text-center">
+                      <p className="text-[#9dabb9] text-sm mb-3">
+                        Nenhum resultado encontrado para &quot;{busca}&quot;
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCreateType('disciplina')
+                          setShowCreateMenu(true)
+                        }}
+                        className="px-3 py-1.5 text-xs bg-[#137fec]/20 text-[#137fec] rounded-lg hover:bg-[#137fec]/30 transition-colors"
+                      >
+                        + Criar &quot;{busca}&quot; como disciplina
+                      </button>
                     </div>
                   )}
                 </div>
@@ -484,6 +647,7 @@ function ConteudoHierarquico({
 export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
   const { gerarQuestoes, gerando } = useQuestoesIA()
   const { checkLimit } = useCheckLimit()
+  const { user } = useAuth()
 
   // Estados do formulário
   const [step, setStep] = useState<'config' | 'gerando' | 'sucesso'>('config')
@@ -501,12 +665,28 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
   const [todosSubassuntos, setTodosSubassuntos] = useState<Subassunto[]>([])
   const [todasBancas, setTodasBancas] = useState<Banca[]>([])
 
+  // Bancas customizadas do usuário
+  const [bancasCustomizadas, setBancasCustomizadas] = useState<string[]>([])
+
   // Inputs de busca/adição
   const [inputBanca, setInputBanca] = useState('')
+  const [showBancaDropdown, setShowBancaDropdown] = useState(false)
+  const bancaInputRef = useRef<HTMLDivElement>(null)
 
   // Limite info
   const [limitInfo, setLimitInfo] = useState<{ usado: number; limite: number; restante: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Fechar dropdown de banca ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (bancaInputRef.current && !bancaInputRef.current.contains(event.target as Node)) {
+        setShowBancaDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Extrair disciplinas, assuntos e subassuntos do conteúdo selecionado
   const disciplinasSelecionadas = conteudoSelecionado
@@ -527,23 +707,75 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
 
     const carregarDados = async () => {
       try {
+        // Carregar dados das tabelas principais
         const [discRes, assRes, subRes, bancRes] = await Promise.all([
           supabase.from('disciplinas').select('id, nome').order('nome'),
           supabase.from('assuntos').select('id, nome, disciplina_id, disciplinas(nome)').order('nome'),
           supabase.from('subassuntos').select('id, nome, assunto_id, assuntos(nome, disciplinas(nome))').order('nome'),
-          supabase.from('bancas').select('id, nome').order('nome')
+          supabase.from('bancas').select('id, nome, nome_normalizado').order('nome')
         ])
 
-        setTodasDisciplinas(discRes.data || [])
-        setTodosAssuntos((assRes.data || []).map(a => ({
+        let disciplinasCombinadas: Disciplina[] = (discRes.data || [])
+        let assuntosCombinados: Assunto[] = (assRes.data || []).map(a => ({
           ...a,
           disciplina_nome: (a.disciplinas as { nome?: string } | null)?.nome
-        })))
-        setTodosSubassuntos((subRes.data || []).map(s => ({
+        }))
+        let subassuntosCombinados: Subassunto[] = (subRes.data || []).map(s => ({
           ...s,
           assunto_nome: (s.assuntos as { nome?: string; disciplinas?: { nome?: string } } | null)?.nome,
           disciplina_nome: (s.assuntos as { nome?: string; disciplinas?: { nome?: string } } | null)?.disciplinas?.nome
-        })))
+        }))
+
+        // Carregar itens customizados do usuário
+        if (user) {
+          const { data: customData } = await supabase
+            .from('conteudo_customizado')
+            .select('*')
+            .eq('user_id', user.id)
+
+          if (customData) {
+            // Adicionar disciplinas customizadas
+            const discsCustom = customData
+              .filter(c => c.tipo === 'disciplina')
+              .map(c => ({ id: `custom-${c.id}`, nome: c.nome, isCustom: true }))
+            disciplinasCombinadas = [...disciplinasCombinadas, ...discsCustom]
+
+            // Adicionar assuntos customizados
+            const assuntosCustom = customData
+              .filter(c => c.tipo === 'assunto')
+              .map(c => ({
+                id: `custom-${c.id}`,
+                nome: c.nome,
+                disciplina_id: '',
+                disciplina_nome: c.disciplina || undefined,
+                isCustom: true
+              }))
+            assuntosCombinados = [...assuntosCombinados, ...assuntosCustom]
+
+            // Adicionar subassuntos customizados
+            const subassuntosCustom = customData
+              .filter(c => c.tipo === 'subassunto')
+              .map(c => ({
+                id: `custom-${c.id}`,
+                nome: c.nome,
+                assunto_id: '',
+                assunto_nome: c.assunto || undefined,
+                disciplina_nome: c.disciplina || undefined,
+                isCustom: true
+              }))
+            subassuntosCombinados = [...subassuntosCombinados, ...subassuntosCustom]
+
+            // Carregar bancas customizadas
+            const bancasCustom = customData
+              .filter(c => c.tipo === 'banca')
+              .map(c => c.nome)
+            setBancasCustomizadas(bancasCustom)
+          }
+        }
+
+        setTodasDisciplinas(disciplinasCombinadas)
+        setTodosAssuntos(assuntosCombinados)
+        setTodosSubassuntos(subassuntosCombinados)
         setTodasBancas(bancRes.data || [])
       } catch (err) {
         console.error('Erro ao carregar dados:', err)
@@ -551,7 +783,7 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
     }
 
     carregarDados()
-  }, [isOpen])
+  }, [isOpen, user])
 
   // Verificar limite ao abrir
   useEffect(() => {
@@ -581,11 +813,27 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
     }
   }, [isOpen])
 
-  // Filtrar bancas baseado no input
-  const bancasFiltradas = todasBancas.filter(b =>
-    b.nome.toLowerCase().includes(inputBanca.toLowerCase()) &&
-    !bancasSelecionadas.includes(b.nome)
-  ).slice(0, 5)
+  // Filtrar bancas baseado no input (incluindo customizadas)
+  const inputNormalizado = normalizar(inputBanca)
+  const bancasFiltradas = [
+    // Bancas do sistema
+    ...todasBancas.filter(b =>
+      normalizar(b.nome).includes(inputNormalizado) &&
+      !bancasSelecionadas.some(sel => normalizar(sel) === normalizar(b.nome))
+    ),
+    // Bancas customizadas do usuário
+    ...bancasCustomizadas
+      .filter(b =>
+        normalizar(b).includes(inputNormalizado) &&
+        !bancasSelecionadas.some(sel => normalizar(sel) === normalizar(b)) &&
+        !todasBancas.some(tb => normalizar(tb.nome) === normalizar(b))
+      )
+      .map(nome => ({ id: `custom-${nome}`, nome, nome_normalizado: normalizar(nome) }))
+  ].slice(0, 8)
+
+  // Verificar se a banca digitada já existe (case-insensitive)
+  const bancaExistente = [...todasBancas, ...bancasCustomizadas.map(b => ({ nome: b }))]
+    .find(b => normalizar(b.nome) === inputNormalizado)
 
   // Toggle item do conteúdo (adicionar/remover)
   const toggleConteudo = (item: ItemSelecionado) => {
@@ -602,13 +850,139 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
     })
   }
 
-  // Adicionar banca
-  const adicionarBanca = (nome: string) => {
+  // Criar item customizado
+  const criarItemCustomizado = async (
+    tipo: 'disciplina' | 'assunto' | 'subassunto',
+    nome: string,
+    disciplina?: string,
+    assunto?: string
+  ) => {
+    if (!user || !nome.trim()) return
+
+    const nomeNorm = normalizar(nome)
+
+    try {
+      // Verificar se já existe
+      const { data: existente } = await supabase
+        .from('conteudo_customizado')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('tipo', tipo)
+        .eq('nome_normalizado', nomeNorm)
+        .eq('disciplina_normalizada', disciplina ? normalizar(disciplina) : '')
+        .eq('assunto_normalizado', assunto ? normalizar(assunto) : '')
+        .single()
+
+      if (existente) {
+        // Já existe, apenas selecionar
+        toggleConteudo({
+          tipo,
+          nome: nome.trim(),
+          disciplina,
+          assunto
+        })
+        return
+      }
+
+      // Criar novo
+      await supabase.from('conteudo_customizado').insert({
+        user_id: user.id,
+        tipo,
+        nome: nome.trim(),
+        nome_normalizado: nomeNorm,
+        disciplina: disciplina || null,
+        disciplina_normalizada: disciplina ? normalizar(disciplina) : null,
+        assunto: assunto || null,
+        assunto_normalizado: assunto ? normalizar(assunto) : null
+      })
+
+      // Adicionar localmente e selecionar
+      if (tipo === 'disciplina') {
+        const newDisc = { id: `temp-${Date.now()}`, nome: nome.trim(), isCustom: true }
+        setTodasDisciplinas(prev => [...prev, newDisc])
+      } else if (tipo === 'assunto') {
+        const newAss = {
+          id: `temp-${Date.now()}`,
+          nome: nome.trim(),
+          disciplina_id: '',
+          disciplina_nome: disciplina,
+          isCustom: true
+        }
+        setTodosAssuntos(prev => [...prev, newAss])
+      } else if (tipo === 'subassunto') {
+        const newSub = {
+          id: `temp-${Date.now()}`,
+          nome: nome.trim(),
+          assunto_id: '',
+          assunto_nome: assunto,
+          disciplina_nome: disciplina,
+          isCustom: true
+        }
+        setTodosSubassuntos(prev => [...prev, newSub])
+      }
+
+      // Selecionar automaticamente
+      toggleConteudo({
+        tipo,
+        nome: nome.trim(),
+        disciplina,
+        assunto
+      })
+    } catch (err) {
+      console.error('Erro ao criar item customizado:', err)
+    }
+  }
+
+  // Adicionar banca (com padronização)
+  const adicionarBanca = async (nome: string) => {
     if (!nome.trim()) return
-    const normalizado = nome.trim()
-    if (bancasSelecionadas.includes(normalizado)) return
-    setBancasSelecionadas(prev => [...prev, normalizado])
+    const nomeInput = nome.trim()
+    const nomeNorm = normalizar(nomeInput)
+
+    // Verificar se já está selecionada (case-insensitive)
+    if (bancasSelecionadas.some(b => normalizar(b) === nomeNorm)) return
+
+    // Verificar se existe no sistema
+    const bancaSistema = todasBancas.find(b => normalizar(b.nome) === nomeNorm)
+    if (bancaSistema) {
+      // Usar o nome padronizado do sistema
+      setBancasSelecionadas(prev => [...prev, bancaSistema.nome])
+      setInputBanca('')
+      setShowBancaDropdown(false)
+      return
+    }
+
+    // Verificar se existe nas customizadas
+    const bancaCustom = bancasCustomizadas.find(b => normalizar(b) === nomeNorm)
+    if (bancaCustom) {
+      setBancasSelecionadas(prev => [...prev, bancaCustom])
+      setInputBanca('')
+      setShowBancaDropdown(false)
+      return
+    }
+
+    // Nova banca customizada - salvar no banco
+    if (user) {
+      try {
+        await supabase.from('conteudo_customizado').insert({
+          user_id: user.id,
+          tipo: 'banca',
+          nome: nomeInput,
+          nome_normalizado: nomeNorm,
+          disciplina: null,
+          disciplina_normalizada: null,
+          assunto: null,
+          assunto_normalizado: null
+        })
+        setBancasCustomizadas(prev => [...prev, nomeInput])
+      } catch (err) {
+        console.error('Erro ao salvar banca customizada:', err)
+      }
+    }
+
+    setBancasSelecionadas(prev => [...prev, nomeInput])
     setInputBanca('')
+    setShowBancaDropdown(false)
   }
 
   // Remover banca
@@ -808,18 +1182,24 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
                 subassuntos={todosSubassuntos}
                 selecionados={conteudoSelecionado}
                 onToggle={toggleConteudo}
+                onCreateCustom={criarItemCustomizado}
               />
 
               {/* Bancas */}
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-1">
                   Bancas <span className="text-red-500">*</span>
+                  <span className="text-xs text-[#9dabb9] font-normal ml-1">(Digite para buscar ou criar)</span>
                 </label>
-                <div className="relative">
+                <div className="relative" ref={bancaInputRef}>
                   <input
                     type="text"
                     value={inputBanca}
-                    onChange={(e) => setInputBanca(e.target.value)}
+                    onChange={(e) => {
+                      setInputBanca(e.target.value)
+                      setShowBancaDropdown(true)
+                    }}
+                    onFocus={() => setShowBancaDropdown(true)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && inputBanca.trim()) {
                         e.preventDefault()
@@ -829,17 +1209,40 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
                     placeholder="Digite ou selecione uma banca..."
                     className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white placeholder:text-[#9dabb9] focus:ring-2 focus:ring-[#137fec] focus:border-transparent"
                   />
-                  {inputBanca && bancasFiltradas.length > 0 && (
+                  {showBancaDropdown && (inputBanca || bancasFiltradas.length > 0) && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
+                      {/* Bancas encontradas */}
                       {bancasFiltradas.map(b => (
                         <button
                           key={b.id}
                           onClick={() => adicionarBanca(b.nome)}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#283039]"
+                          className="w-full px-4 py-2 text-left text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#283039] flex items-center gap-2"
                         >
+                          <span className="material-symbols-outlined text-amber-500 text-sm">gavel</span>
                           {b.nome}
+                          {bancasCustomizadas.includes(b.nome) && (
+                            <span className="ml-auto text-xs text-[#9dabb9]">(sua)</span>
+                          )}
                         </button>
                       ))}
+
+                      {/* Opção de criar nova banca */}
+                      {inputBanca.trim() && !bancaExistente && (
+                        <button
+                          onClick={() => adicionarBanca(inputBanca)}
+                          className="w-full px-4 py-2 text-left text-sm text-[#137fec] hover:bg-[#137fec]/10 flex items-center gap-2 border-t border-gray-100 dark:border-[#283039]"
+                        >
+                          <span className="material-symbols-outlined text-sm">add_circle</span>
+                          Criar &quot;{inputBanca.trim()}&quot;
+                        </button>
+                      )}
+
+                      {/* Indicação de banca existente com nome diferente */}
+                      {inputBanca.trim() && bancaExistente && normalizar(bancaExistente.nome) === inputNormalizado && bancaExistente.nome !== inputBanca.trim() && (
+                        <div className="px-4 py-2 text-xs text-[#9dabb9] border-t border-gray-100 dark:border-[#283039]">
+                          Será adicionada como &quot;{bancaExistente.nome}&quot; (padronizado)
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -850,6 +1253,7 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
                         key={b}
                         className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-sm"
                       >
+                        <span className="material-symbols-outlined text-xs">gavel</span>
                         {b}
                         <button onClick={() => removerBanca(b)} className="hover:text-red-500">
                           <span className="material-symbols-outlined text-sm">close</span>
