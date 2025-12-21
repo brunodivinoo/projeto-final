@@ -650,19 +650,95 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
     setError(null)
     setStep('gerando')
 
+    // LÓGICA DE CASCATA: Expandir seleções para incluir todos os filhos
+    // Se selecionou disciplina → incluir todos os assuntos e subassuntos dessa disciplina
+    // Se selecionou assunto → incluir todos os subassuntos desse assunto
+
+    // 1. Coletar disciplinas selecionadas
+    const discsSelecionadas = disciplinasSelecionadas.map(d => d.nome)
+
+    // 2. Expandir assuntos: incluir os selecionados manualmente + todos das disciplinas selecionadas
+    const assuntosExpandidos = new Map<string, { nome: string; disciplina: string; peso: number }>()
+
+    // Adicionar assuntos selecionados manualmente
+    assuntosSelecionados.forEach(a => {
+      assuntosExpandidos.set(`${a.disciplina}::${a.nome}`, {
+        nome: a.nome,
+        disciplina: a.disciplina || '',
+        peso: a.peso
+      })
+    })
+
+    // Se uma disciplina foi selecionada, adicionar TODOS os seus assuntos
+    discsSelecionadas.forEach(discNome => {
+      todosAssuntos
+        .filter(a => a.disciplina_nome === discNome)
+        .forEach(a => {
+          const key = `${a.disciplina_nome}::${a.nome}`
+          if (!assuntosExpandidos.has(key)) {
+            assuntosExpandidos.set(key, {
+              nome: a.nome,
+              disciplina: a.disciplina_nome || '',
+              peso: 1
+            })
+          }
+        })
+    })
+
+    // 3. Expandir subassuntos: incluir os selecionados manualmente + todos das disciplinas e assuntos selecionados
+    const subassuntosExpandidos = new Map<string, { nome: string; assunto: string; disciplina: string; peso: number }>()
+
+    // Adicionar subassuntos selecionados manualmente
+    subassuntosSelecionados.forEach(s => {
+      subassuntosExpandidos.set(`${s.disciplina}::${s.assunto}::${s.nome}`, {
+        nome: s.nome,
+        assunto: s.assunto || '',
+        disciplina: s.disciplina || '',
+        peso: s.peso
+      })
+    })
+
+    // Se uma disciplina foi selecionada, adicionar TODOS os subassuntos dessa disciplina
+    discsSelecionadas.forEach(discNome => {
+      todosSubassuntos
+        .filter(s => s.disciplina_nome === discNome)
+        .forEach(s => {
+          const key = `${s.disciplina_nome}::${s.assunto_nome}::${s.nome}`
+          if (!subassuntosExpandidos.has(key)) {
+            subassuntosExpandidos.set(key, {
+              nome: s.nome,
+              assunto: s.assunto_nome || '',
+              disciplina: s.disciplina_nome || '',
+              peso: 1
+            })
+          }
+        })
+    })
+
+    // Se um assunto foi selecionado (sem a disciplina pai), adicionar TODOS os subassuntos desse assunto
+    assuntosSelecionados.forEach(a => {
+      // Verificar se a disciplina do assunto NÃO está selecionada (para não duplicar)
+      if (!discsSelecionadas.includes(a.disciplina || '')) {
+        todosSubassuntos
+          .filter(s => s.assunto_nome === a.nome && s.disciplina_nome === a.disciplina)
+          .forEach(s => {
+            const key = `${s.disciplina_nome}::${s.assunto_nome}::${s.nome}`
+            if (!subassuntosExpandidos.has(key)) {
+              subassuntosExpandidos.set(key, {
+                nome: s.nome,
+                assunto: s.assunto_nome || '',
+                disciplina: s.disciplina_nome || '',
+                peso: 1
+              })
+            }
+          })
+      }
+    })
+
     const config: ConfigGeracaoQuestoes = {
       disciplinas: disciplinasSelecionadas,
-      assuntos: assuntosSelecionados.map(a => ({
-        nome: a.nome,
-        disciplina: a.disciplina || disciplinasSelecionadas[0]?.nome || '',
-        peso: a.peso
-      })),
-      subassuntos: subassuntosSelecionados.map(s => ({
-        nome: s.nome,
-        assunto: s.assunto || assuntosSelecionados[0]?.nome || '',
-        disciplina: s.disciplina || disciplinasSelecionadas[0]?.nome || '',
-        peso: s.peso
-      })),
+      assuntos: Array.from(assuntosExpandidos.values()),
+      subassuntos: Array.from(subassuntosExpandidos.values()),
       bancas: bancasSelecionadas,
       dificuldades,
       modalidade,

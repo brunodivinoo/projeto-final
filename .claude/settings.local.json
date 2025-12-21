@@ -30,7 +30,8 @@
       "Bash(node -e:*)",
       "Bash(node scripts/importar-questoes.js:*)",
       "Bash(curl:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(del \"c:\\\\Users\\\\PC\\\\OneDrive\\\\Área de Trabalho\\\\Projeto Final\\\\check-questoes.js\")"
     ]
   }
 }
