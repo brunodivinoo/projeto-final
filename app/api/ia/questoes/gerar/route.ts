@@ -352,10 +352,11 @@ export async function POST(req: NextRequest) {
     // Distribuir questões
     const distribuicao = distribuirQuestoes(config)
 
-    // Gerar questões com IA
-    const questoesGeradas = []
+    // Função auxiliar para gerar uma questão com retry
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async function gerarUmaQuestao(item: typeof distribuicao[0], tentativa = 1): Promise<any | null> {
+      const MAX_TENTATIVAS = 3
 
-    for (const item of distribuicao) {
       const promptMultipla = `Você é um especialista em elaborar questões de concursos públicos brasileiros.
 
 CONFIGURAÇÃO:
@@ -425,7 +426,14 @@ Retorne APENAS o JSON, sem markdown ou explicações.`
           }
         )
 
-        if (!response.ok) continue
+        if (!response.ok) {
+          console.error(`Erro na API Gemini (tentativa ${tentativa}): ${response.status}`)
+          if (tentativa < MAX_TENTATIVAS) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * tentativa)) // Espera progressiva
+            return gerarUmaQuestao(item, tentativa + 1)
+          }
+          return null
+        }
 
         const data = await response.json()
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
@@ -442,21 +450,50 @@ Retorne APENAS o JSON, sem markdown ou explicações.`
         }
 
         if (questao && questao.enunciado && questao.gabarito) {
-          questoesGeradas.push({
+          return {
             ...item,
-            ...questao,
-            config_disciplinas: config.disciplinas,
-            config_assuntos: config.assuntos,
-            config_subassuntos: config.subassuntos,
-            config_bancas: config.bancas,
-            config_dificuldades: config.dificuldades,
-            config_modalidade: config.modalidade
-          })
+            ...questao
+          }
         }
+
+        // JSON inválido, tentar novamente
+        if (tentativa < MAX_TENTATIVAS) {
+          console.log(`JSON inválido (tentativa ${tentativa}), tentando novamente...`)
+          await new Promise(resolve => setTimeout(resolve, 500))
+          return gerarUmaQuestao(item, tentativa + 1)
+        }
+
+        return null
       } catch (err) {
-        console.error('Erro ao gerar questão:', err)
+        console.error(`Erro ao gerar questão (tentativa ${tentativa}):`, err)
+        if (tentativa < MAX_TENTATIVAS) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * tentativa))
+          return gerarUmaQuestao(item, tentativa + 1)
+        }
+        return null
       }
     }
+
+    // Gerar questões com IA (em paralelo para ser mais rápido)
+    console.log(`Gerando ${distribuicao.length} questões...`)
+    const resultados = await Promise.all(
+      distribuicao.map(item => gerarUmaQuestao(item))
+    )
+
+    // Filtrar resultados válidos e adicionar configs
+    const questoesGeradas = resultados
+      .filter((q): q is NonNullable<typeof q> => q !== null)
+      .map(q => ({
+        ...q,
+        config_disciplinas: config.disciplinas,
+        config_assuntos: config.assuntos,
+        config_subassuntos: config.subassuntos,
+        config_bancas: config.bancas,
+        config_dificuldades: config.dificuldades,
+        config_modalidade: config.modalidade
+      }))
+
+    console.log(`${questoesGeradas.length} questões geradas com sucesso`)
 
     if (questoesGeradas.length === 0) {
       return NextResponse.json({ error: 'Nenhuma questão gerada' }, { status: 500 })
