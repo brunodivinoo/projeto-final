@@ -12,7 +12,7 @@ export function Header({ title, searchPlaceholder }: { title: string; searchPlac
   const [search, setSearch] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const { profile, signOut } = useAuth()
+  const { profile, profileLoading, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const { toggleSidebar } = useSidebar()
 
@@ -88,12 +88,17 @@ export function Header({ title, searchPlaceholder }: { title: string; searchPlac
             onClick={() => setShowDropdown(!showDropdown)}
             className="flex items-center gap-2 lg:gap-3 pl-2 lg:pl-3 border-l border-slate-200 dark:border-slate-700 hover:opacity-80 transition-opacity"
           >
-            <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center relative">
-              <span className="text-white font-bold text-xs lg:text-sm">
-                {profile?.nome?.charAt(0).toUpperCase() || 'U'}
-              </span>
-              <span className="absolute -bottom-0.5 -right-0.5 lg:bottom-0 lg:right-0 w-2.5 h-2.5 lg:w-3 lg:h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#1c252e]"></span>
-            </div>
+            {profileLoading ? (
+              /* Skeleton enquanto carrega */
+              <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
+            ) : (
+              <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center relative">
+                <span className="text-white font-bold text-xs lg:text-sm">
+                  {profile?.nome?.charAt(0).toUpperCase() || 'U'}
+                </span>
+                <span className="absolute -bottom-0.5 -right-0.5 lg:bottom-0 lg:right-0 w-2.5 h-2.5 lg:w-3 lg:h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#1c252e]"></span>
+              </div>
+            )}
             <span className="material-symbols-outlined text-slate-400 text-base lg:text-lg">
               {showDropdown ? 'expand_less' : 'expand_more'}
             </span>
@@ -104,9 +109,20 @@ export function Header({ title, searchPlaceholder }: { title: string; searchPlac
             <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg py-2 z-50">
               {/* User info in dropdown */}
               <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-                <p className="text-sm font-bold text-slate-900 dark:text-white">{profile?.nome || 'Usuário'}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{profile?.email}</p>
-                <span className="inline-block mt-1 text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded capitalize">{profile?.plano || 'Free'}</span>
+                {profileLoading ? (
+                  /* Skeleton para dados do usuário */
+                  <div className="space-y-2">
+                    <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    <div className="h-3 w-32 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    <div className="h-5 w-12 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mt-1"></div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">{profile?.nome || 'Usuário'}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{profile?.email}</p>
+                    <span className="inline-block mt-1 text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded capitalize">{profile?.plano || 'Free'}</span>
+                  </>
+                )}
               </div>
 
               <Link

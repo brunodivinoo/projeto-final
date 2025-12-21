@@ -8,6 +8,7 @@ type AuthContextType = {
   profile: Profile | null
   stats: Estatisticas | null
   loading: boolean
+  profileLoading: boolean
   isNewUser: boolean
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   stats: null,
   loading: true,
+  profileLoading: true,
   isNewUser: false,
   signOut: async () => {},
   refreshProfile: async () => {},
@@ -28,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [stats, setStats] = useState<Estatisticas | null>(null)
   const [loading, setLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(true)
   const [isNewUser, setIsNewUser] = useState(false)
 
   // Ref para evitar chamadas duplicadas
@@ -42,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     fetchingRef.current = true
     lastFetchedUserIdRef.current = userId
+    setProfileLoading(true)
 
     try {
       // Buscar profile primeiro (mais importante)
@@ -118,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Erro ao buscar perfil:', error)
     } finally {
       fetchingRef.current = false
+      setProfileLoading(false)
     }
   }
 
@@ -144,9 +149,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             session.user.email,
             session.user.user_metadata?.nome
           )
+        } else {
+          // Sem usuário logado - não há profile para carregar
+          setProfileLoading(false)
         }
       } catch (error) {
         console.error('Erro ao buscar sessao:', error)
+        setProfileLoading(false)
       } finally {
         if (mounted) {
           setLoading(false)
@@ -176,6 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setStats(null)
           setIsNewUser(false)
           lastFetchedUserIdRef.current = null
+          setProfileLoading(false)
         }
         setLoading(false)
       }
@@ -197,7 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, stats, loading, isNewUser, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, stats, loading, profileLoading, isNewUser, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )
