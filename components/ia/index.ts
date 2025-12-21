@@ -1,2 +1,5 @@
 export { GeradorQuestoesModal } from './GeradorQuestoesModal'
 export { QuestoesIAList } from './QuestoesIAList'
+export { ChatIA } from './ChatIA'
+export { GeradorResumosModal } from './GeradorResumosModal'
+export { AnalisePdfModal } from './AnalisePdfModal'
