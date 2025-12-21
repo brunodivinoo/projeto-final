@@ -16,6 +16,8 @@ interface ItemComPeso {
   disciplina?: string
   assunto?: string
 }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _ItemComPeso = ItemComPeso
 
 interface Disciplina {
   id: string
@@ -42,24 +44,34 @@ interface Banca {
   nome: string
 }
 
-// Componente de dropdown hierárquico para assuntos
-interface AssuntosHierarquicosProps {
-  assuntos: Assunto[]
-  disciplinasSelecionadas: ItemComPeso[]
-  assuntosSelecionados: ItemComPeso[]
-  onSelect: (nome: string, disciplina?: string) => void
-  onRemove: (nome: string) => void
+// Item selecionado no dropdown unificado
+interface ItemSelecionado {
+  tipo: 'disciplina' | 'assunto' | 'subassunto'
+  nome: string
+  disciplina?: string
+  assunto?: string
 }
 
-function AssuntosHierarquicos({
+// Dropdown Hierárquico Unificado - Disciplinas → Assuntos → Subassuntos
+interface ConteudoHierarquicoProps {
+  disciplinas: Disciplina[]
+  assuntos: Assunto[]
+  subassuntos: Subassunto[]
+  selecionados: ItemSelecionado[]
+  onToggle: (item: ItemSelecionado) => void
+}
+
+function ConteudoHierarquico({
+  disciplinas,
   assuntos,
-  disciplinasSelecionadas,
-  assuntosSelecionados,
-  onSelect,
-  onRemove
-}: AssuntosHierarquicosProps) {
+  subassuntos,
+  selecionados,
+  onToggle
+}: ConteudoHierarquicoProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [expandedDisciplinas, setExpandedDisciplinas] = useState<string[]>([])
+  const [expandedAssuntos, setExpandedAssuntos] = useState<string[]>([])
+  const [busca, setBusca] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Fechar dropdown ao clicar fora
@@ -73,197 +85,45 @@ function AssuntosHierarquicos({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Filtrar assuntos baseado nas disciplinas selecionadas
-  const assuntosFiltrados = disciplinasSelecionadas.length > 0
-    ? assuntos.filter(a =>
-        disciplinasSelecionadas.some(d => d.nome.toLowerCase() === a.disciplina_nome?.toLowerCase())
-      )
-    : assuntos
-
-  // Agrupar por disciplina
-  const assuntosPorDisciplina = assuntosFiltrados.reduce((acc, assunto) => {
+  // Agrupar assuntos por disciplina
+  const assuntosPorDisciplina = assuntos.reduce((acc, assunto) => {
     const disc = assunto.disciplina_nome || 'Sem disciplina'
     if (!acc[disc]) acc[disc] = []
     acc[disc].push(assunto)
     return acc
   }, {} as Record<string, Assunto[]>)
 
-  // Ordenar disciplinas alfabeticamente
-  const disciplinasOrdenadas = Object.keys(assuntosPorDisciplina).sort()
-
-  const toggleDisciplina = (disc: string) => {
-    setExpandedDisciplinas(prev =>
-      prev.includes(disc) ? prev.filter(d => d !== disc) : [...prev, disc]
-    )
-  }
-
-  const isAssuntoSelecionado = (nome: string) =>
-    assuntosSelecionados.some(a => a.nome.toLowerCase() === nome.toLowerCase())
-
-  return (
-    <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium text-gray-900 dark:text-white">
-        Assuntos <span className="text-xs text-[#9dabb9]">(opcional)</span>
-      </label>
-
-      <div className="relative" ref={dropdownRef}>
-        {/* Botão do dropdown */}
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-left flex items-center justify-between hover:border-[#137fec] transition-colors"
-        >
-          <span className={assuntosSelecionados.length > 0 ? 'text-gray-900 dark:text-white' : 'text-[#9dabb9]'}>
-            {assuntosSelecionados.length > 0
-              ? `${assuntosSelecionados.length} assunto(s) selecionado(s)`
-              : 'Clique para selecionar assuntos...'}
-          </span>
-          <span className={`material-symbols-outlined text-[#9dabb9] transition-transform ${isOpen ? 'rotate-180' : ''}`}>
-            expand_more
-          </span>
-        </button>
-
-        {/* Dropdown aberto */}
-        {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] rounded-lg shadow-xl z-30 max-h-80 overflow-y-auto">
-            {disciplinasOrdenadas.length === 0 ? (
-              <div className="p-4 text-center text-[#9dabb9] text-sm">
-                {disciplinasSelecionadas.length > 0
-                  ? 'Nenhum assunto encontrado para as disciplinas selecionadas'
-                  : 'Selecione uma disciplina primeiro'}
-              </div>
-            ) : (
-              disciplinasOrdenadas.map(disc => (
-                <div key={disc} className="border-b border-gray-100 dark:border-[#283039] last:border-0">
-                  {/* Cabeçalho da disciplina */}
-                  <button
-                    type="button"
-                    onClick={() => toggleDisciplina(disc)}
-                    className="w-full px-4 py-2.5 flex items-center justify-between bg-gray-50 dark:bg-[#141A21] hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors"
-                  >
-                    <span className="font-medium text-sm text-[#137fec] flex items-center gap-2">
-                      <span className="material-symbols-outlined text-base">folder</span>
-                      {disc}
-                      <span className="text-xs text-[#9dabb9] font-normal">
-                        ({assuntosPorDisciplina[disc].length})
-                      </span>
-                    </span>
-                    <span className={`material-symbols-outlined text-[#9dabb9] text-sm transition-transform ${expandedDisciplinas.includes(disc) ? 'rotate-180' : ''}`}>
-                      expand_more
-                    </span>
-                  </button>
-
-                  {/* Lista de assuntos */}
-                  {expandedDisciplinas.includes(disc) && (
-                    <div className="py-1">
-                      {assuntosPorDisciplina[disc].sort((a, b) => a.nome.localeCompare(b.nome)).map(assunto => {
-                        const selecionado = isAssuntoSelecionado(assunto.nome)
-                        return (
-                          <button
-                            key={assunto.id}
-                            type="button"
-                            onClick={() => {
-                              if (selecionado) {
-                                onRemove(assunto.nome)
-                              } else {
-                                onSelect(assunto.nome, assunto.disciplina_nome)
-                              }
-                            }}
-                            className={`w-full px-4 pl-10 py-2 text-left text-sm flex items-center justify-between transition-colors ${
-                              selecionado
-                                ? 'bg-purple-500/10 text-purple-400'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#283039]'
-                            }`}
-                          >
-                            <span>{assunto.nome}</span>
-                            {selecionado && (
-                              <span className="material-symbols-outlined text-sm text-purple-400">check</span>
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Tags dos assuntos selecionados */}
-      {assuntosSelecionados.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-1">
-          {assuntosSelecionados.map(a => (
-            <span
-              key={a.nome}
-              className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-500/20 text-purple-400 text-sm"
-            >
-              {a.nome}
-              <button onClick={() => onRemove(a.nome)} className="hover:text-red-500">
-                <span className="material-symbols-outlined text-sm">close</span>
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Componente de dropdown hierárquico para subassuntos (Disciplina → Assunto → Subassunto)
-interface SubassuntosHierarquicosProps {
-  subassuntos: Subassunto[]
-  assuntosSelecionados: ItemComPeso[]
-  subassuntosSelecionados: ItemComPeso[]
-  onSelect: (nome: string, assunto?: string, disciplina?: string) => void
-  onRemove: (nome: string) => void
-}
-
-function SubassuntosHierarquicos({
-  subassuntos,
-  assuntosSelecionados,
-  subassuntosSelecionados,
-  onSelect,
-  onRemove
-}: SubassuntosHierarquicosProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [expandedDisciplinas, setExpandedDisciplinas] = useState<string[]>([])
-  const [expandedAssuntos, setExpandedAssuntos] = useState<string[]>([])
-  const dropdownRef = useRef<HTMLDivElement>(null)
-
-  // Fechar dropdown ao clicar fora
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  // Filtrar subassuntos baseado nos assuntos selecionados
-  const subassuntosFiltrados = assuntosSelecionados.length > 0
-    ? subassuntos.filter(s =>
-        assuntosSelecionados.some(a => a.nome.toLowerCase() === s.assunto_nome?.toLowerCase())
-      )
-    : subassuntos
-
-  // Agrupar por Disciplina → Assunto → Subassuntos
-  const hierarquia = subassuntosFiltrados.reduce((acc, sub) => {
-    const disc = sub.disciplina_nome || 'Sem disciplina'
-    const ass = sub.assunto_nome || 'Sem assunto'
-
-    if (!acc[disc]) acc[disc] = {}
-    if (!acc[disc][ass]) acc[disc][ass] = []
-    acc[disc][ass].push(sub)
-
+  // Agrupar subassuntos por disciplina e assunto
+  const subassuntosPorAssunto = subassuntos.reduce((acc, sub) => {
+    const key = `${sub.disciplina_nome}::${sub.assunto_nome}`
+    if (!acc[key]) acc[key] = []
+    acc[key].push(sub)
     return acc
-  }, {} as Record<string, Record<string, Subassunto[]>>)
+  }, {} as Record<string, Subassunto[]>)
 
-  // Ordenar disciplinas alfabeticamente
-  const disciplinasOrdenadas = Object.keys(hierarquia).sort()
+  // Filtrar por busca
+  const disciplinasFiltradas = disciplinas.filter(d =>
+    d.nome.toLowerCase().includes(busca.toLowerCase())
+  )
+
+  const assuntosFiltrados = assuntos.filter(a =>
+    a.nome.toLowerCase().includes(busca.toLowerCase()) ||
+    a.disciplina_nome?.toLowerCase().includes(busca.toLowerCase())
+  )
+
+  const subassuntosFiltrados = subassuntos.filter(s =>
+    s.nome.toLowerCase().includes(busca.toLowerCase()) ||
+    s.assunto_nome?.toLowerCase().includes(busca.toLowerCase()) ||
+    s.disciplina_nome?.toLowerCase().includes(busca.toLowerCase())
+  )
+
+  // Verificar se item está selecionado
+  const isItemSelecionado = (tipo: 'disciplina' | 'assunto' | 'subassunto', nome: string) =>
+    selecionados.some(s => s.tipo === tipo && s.nome.toLowerCase() === nome.toLowerCase())
+
+  // Contar itens por tipo
+  const contarPorTipo = (tipo: 'disciplina' | 'assunto' | 'subassunto') =>
+    selecionados.filter(s => s.tipo === tipo).length
 
   const toggleDisciplina = (disc: string) => {
     setExpandedDisciplinas(prev =>
@@ -277,18 +137,27 @@ function SubassuntosHierarquicos({
     )
   }
 
-  const isSubassuntoSelecionado = (nome: string) =>
-    subassuntosSelecionados.some(s => s.nome.toLowerCase() === nome.toLowerCase())
-
-  // Contar total de subassuntos por disciplina
-  const contarSubassuntosDisciplina = (disc: string) => {
-    return Object.values(hierarquia[disc]).reduce((sum, subs) => sum + subs.length, 0)
+  // Contar assuntos de uma disciplina
+  const contarAssuntosDisciplina = (discNome: string) => {
+    return assuntosPorDisciplina[discNome]?.length || 0
   }
+
+  // Contar subassuntos de um assunto
+  const contarSubassuntosAssunto = (discNome: string, assNome: string) => {
+    return subassuntosPorAssunto[`${discNome}::${assNome}`]?.length || 0
+  }
+
+  // Resumo dos selecionados
+  const totalSelecionados = selecionados.length
+  const disciplinasSel = contarPorTipo('disciplina')
+  const assuntosSel = contarPorTipo('assunto')
+  const subassuntosSel = contarPorTipo('subassunto')
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium text-gray-900 dark:text-white">
-        Subassuntos <span className="text-xs text-[#9dabb9]">(opcional)</span>
+      <label className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+        Conteúdo <span className="text-red-500">*</span>
+        <span className="text-xs text-[#9dabb9] font-normal">(Disciplinas, Assuntos e Subassuntos)</span>
       </label>
 
       <div className="relative" ref={dropdownRef}>
@@ -298,10 +167,10 @@ function SubassuntosHierarquicos({
           onClick={() => setIsOpen(!isOpen)}
           className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-left flex items-center justify-between hover:border-[#137fec] transition-colors"
         >
-          <span className={subassuntosSelecionados.length > 0 ? 'text-gray-900 dark:text-white' : 'text-[#9dabb9]'}>
-            {subassuntosSelecionados.length > 0
-              ? `${subassuntosSelecionados.length} subassunto(s) selecionado(s)`
-              : 'Clique para selecionar subassuntos...'}
+          <span className={totalSelecionados > 0 ? 'text-gray-900 dark:text-white' : 'text-[#9dabb9]'}>
+            {totalSelecionados > 0
+              ? `${totalSelecionados} item(s) selecionado(s)`
+              : 'Clique para selecionar disciplinas, assuntos ou subassuntos...'}
           </span>
           <span className={`material-symbols-outlined text-[#9dabb9] transition-transform ${isOpen ? 'rotate-180' : ''}`}>
             expand_more
@@ -310,113 +179,298 @@ function SubassuntosHierarquicos({
 
         {/* Dropdown aberto */}
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] rounded-lg shadow-xl z-30 max-h-96 overflow-y-auto">
-            {disciplinasOrdenadas.length === 0 ? (
-              <div className="p-4 text-center text-[#9dabb9] text-sm">
-                Nenhum subassunto encontrado para os assuntos selecionados
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] rounded-lg shadow-xl z-30 max-h-[400px] overflow-hidden flex flex-col">
+            {/* Barra de busca */}
+            <div className="p-2 border-b border-gray-100 dark:border-[#283039]">
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#9dabb9] text-sm">search</span>
+                <input
+                  type="text"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Buscar disciplina, assunto ou subassunto..."
+                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white placeholder:text-[#9dabb9] focus:ring-1 focus:ring-[#137fec] focus:border-transparent"
+                />
               </div>
-            ) : (
-              disciplinasOrdenadas.map(disc => (
-                <div key={disc} className="border-b border-gray-100 dark:border-[#283039] last:border-0">
-                  {/* Nível 1: Disciplina */}
-                  <button
-                    type="button"
-                    onClick={() => toggleDisciplina(disc)}
-                    className="w-full px-4 py-2.5 flex items-center justify-between bg-[#137fec]/5 hover:bg-[#137fec]/10 transition-colors"
-                  >
-                    <span className="font-medium text-sm text-[#137fec] flex items-center gap-2">
-                      <span className="material-symbols-outlined text-base">folder</span>
-                      {disc}
-                      <span className="text-xs text-[#9dabb9] font-normal">
-                        ({contarSubassuntosDisciplina(disc)} subassuntos)
-                      </span>
-                    </span>
-                    <span className={`material-symbols-outlined text-[#9dabb9] text-sm transition-transform ${expandedDisciplinas.includes(disc) ? 'rotate-180' : ''}`}>
-                      expand_more
-                    </span>
-                  </button>
+            </div>
 
-                  {/* Nível 2: Assuntos dentro da disciplina */}
-                  {expandedDisciplinas.includes(disc) && (
-                    <div className="bg-gray-50/50 dark:bg-[#141A21]/50">
-                      {Object.keys(hierarquia[disc]).sort().map(ass => {
-                        const assuntoKey = `${disc}-${ass}`
-                        return (
-                          <div key={assuntoKey}>
-                            {/* Cabeçalho do Assunto */}
-                            <button
-                              type="button"
-                              onClick={() => toggleAssunto(assuntoKey)}
-                              className="w-full px-4 pl-8 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors"
-                            >
-                              <span className="font-medium text-sm text-purple-500 flex items-center gap-2">
-                                <span className="material-symbols-outlined text-base">topic</span>
-                                {ass}
-                                <span className="text-xs text-[#9dabb9] font-normal">
-                                  ({hierarquia[disc][ass].length})
-                                </span>
-                              </span>
-                              <span className={`material-symbols-outlined text-[#9dabb9] text-sm transition-transform ${expandedAssuntos.includes(assuntoKey) ? 'rotate-180' : ''}`}>
-                                expand_more
-                              </span>
-                            </button>
+            {/* Resumo dos selecionados */}
+            {totalSelecionados > 0 && (
+              <div className="px-3 py-2 bg-gray-50 dark:bg-[#141A21] border-b border-gray-100 dark:border-[#283039] flex items-center gap-2 text-xs flex-wrap">
+                <span className="text-[#9dabb9]">Selecionados:</span>
+                {disciplinasSel > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-[#137fec]/20 text-[#137fec]">
+                    {disciplinasSel} disciplina(s)
+                  </span>
+                )}
+                {assuntosSel > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">
+                    {assuntosSel} assunto(s)
+                  </span>
+                )}
+                {subassuntosSel > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
+                    {subassuntosSel} subassunto(s)
+                  </span>
+                )}
+              </div>
+            )}
 
-                            {/* Nível 3: Subassuntos */}
-                            {expandedAssuntos.includes(assuntoKey) && (
-                              <div className="py-1">
-                                {hierarquia[disc][ass].sort((a, b) => a.nome.localeCompare(b.nome)).map(sub => {
-                                  const selecionado = isSubassuntoSelecionado(sub.nome)
-                                  return (
-                                    <button
-                                      key={sub.id}
-                                      type="button"
-                                      onClick={() => {
-                                        if (selecionado) {
-                                          onRemove(sub.nome)
-                                        } else {
-                                          onSelect(sub.nome, sub.assunto_nome, sub.disciplina_nome)
-                                        }
-                                      }}
-                                      className={`w-full px-4 pl-14 py-2 text-left text-sm flex items-center justify-between transition-colors ${
-                                        selecionado
-                                          ? 'bg-emerald-500/10 text-emerald-400'
-                                          : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#283039]'
-                                      }`}
-                                    >
-                                      <span className="flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-xs text-emerald-500">subdirectory_arrow_right</span>
-                                        {sub.nome}
-                                      </span>
-                                      {selecionado && (
-                                        <span className="material-symbols-outlined text-sm text-emerald-400">check</span>
-                                      )}
-                                    </button>
-                                  )
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
+            {/* Lista hierárquica */}
+            <div className="overflow-y-auto flex-1">
+              {busca ? (
+                // Modo busca - mostrar resultados flat
+                <div className="py-1">
+                  {/* Disciplinas encontradas */}
+                  {disciplinasFiltradas.length > 0 && (
+                    <div className="px-3 py-1.5 text-xs text-[#9dabb9] uppercase tracking-wide bg-gray-50 dark:bg-[#141A21]">
+                      Disciplinas
+                    </div>
+                  )}
+                  {disciplinasFiltradas.map(d => {
+                    const selecionado = isItemSelecionado('disciplina', d.nome)
+                    return (
+                      <button
+                        key={`disc-${d.id}`}
+                        type="button"
+                        onClick={() => onToggle({ tipo: 'disciplina', nome: d.nome })}
+                        className={`w-full px-4 py-2 text-left text-sm flex items-center justify-between transition-colors ${
+                          selecionado
+                            ? 'bg-[#137fec]/10 text-[#137fec]'
+                            : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#283039]'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-base text-[#137fec]">folder</span>
+                          {d.nome}
+                        </span>
+                        {selecionado && <span className="material-symbols-outlined text-sm">check</span>}
+                      </button>
+                    )
+                  })}
+
+                  {/* Assuntos encontrados */}
+                  {assuntosFiltrados.length > 0 && (
+                    <div className="px-3 py-1.5 text-xs text-[#9dabb9] uppercase tracking-wide bg-gray-50 dark:bg-[#141A21] mt-1">
+                      Assuntos
+                    </div>
+                  )}
+                  {assuntosFiltrados.slice(0, 20).map(a => {
+                    const selecionado = isItemSelecionado('assunto', a.nome)
+                    return (
+                      <button
+                        key={`ass-${a.id}`}
+                        type="button"
+                        onClick={() => onToggle({ tipo: 'assunto', nome: a.nome, disciplina: a.disciplina_nome })}
+                        className={`w-full px-4 py-2 text-left text-sm flex items-center justify-between transition-colors ${
+                          selecionado
+                            ? 'bg-purple-500/10 text-purple-400'
+                            : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#283039]'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-base text-purple-500">topic</span>
+                          <span>
+                            {a.nome}
+                            <span className="text-xs text-[#9dabb9] ml-2">({a.disciplina_nome})</span>
+                          </span>
+                        </span>
+                        {selecionado && <span className="material-symbols-outlined text-sm">check</span>}
+                      </button>
+                    )
+                  })}
+
+                  {/* Subassuntos encontrados */}
+                  {subassuntosFiltrados.length > 0 && (
+                    <div className="px-3 py-1.5 text-xs text-[#9dabb9] uppercase tracking-wide bg-gray-50 dark:bg-[#141A21] mt-1">
+                      Subassuntos
+                    </div>
+                  )}
+                  {subassuntosFiltrados.slice(0, 20).map(s => {
+                    const selecionado = isItemSelecionado('subassunto', s.nome)
+                    return (
+                      <button
+                        key={`sub-${s.id}`}
+                        type="button"
+                        onClick={() => onToggle({ tipo: 'subassunto', nome: s.nome, assunto: s.assunto_nome, disciplina: s.disciplina_nome })}
+                        className={`w-full px-4 py-2 text-left text-sm flex items-center justify-between transition-colors ${
+                          selecionado
+                            ? 'bg-emerald-500/10 text-emerald-400'
+                            : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#283039]'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-xs text-emerald-500">subdirectory_arrow_right</span>
+                          <span>
+                            {s.nome}
+                            <span className="text-xs text-[#9dabb9] ml-2">({s.assunto_nome})</span>
+                          </span>
+                        </span>
+                        {selecionado && <span className="material-symbols-outlined text-sm">check</span>}
+                      </button>
+                    )
+                  })}
+
+                  {disciplinasFiltradas.length === 0 && assuntosFiltrados.length === 0 && subassuntosFiltrados.length === 0 && (
+                    <div className="p-4 text-center text-[#9dabb9] text-sm">
+                      Nenhum resultado encontrado para &quot;{busca}&quot;
                     </div>
                   )}
                 </div>
-              ))
-            )}
+              ) : (
+                // Modo hierárquico normal
+                disciplinas.sort((a, b) => a.nome.localeCompare(b.nome)).map(disc => {
+                  const discSelecionada = isItemSelecionado('disciplina', disc.nome)
+                  const assuntosDaDisc = assuntosPorDisciplina[disc.nome] || []
+
+                  return (
+                    <div key={disc.id} className="border-b border-gray-100 dark:border-[#283039] last:border-0">
+                      {/* Nível 1: Disciplina */}
+                      <div className="flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => onToggle({ tipo: 'disciplina', nome: disc.nome })}
+                          className={`flex-1 px-4 py-2.5 flex items-center gap-2 transition-colors ${
+                            discSelecionada
+                              ? 'bg-[#137fec]/10'
+                              : 'bg-[#137fec]/5 hover:bg-[#137fec]/10'
+                          }`}
+                        >
+                          <span className={`size-5 rounded border-2 flex items-center justify-center transition-colors ${
+                            discSelecionada
+                              ? 'bg-[#137fec] border-[#137fec]'
+                              : 'border-gray-300 dark:border-[#283039]'
+                          }`}>
+                            {discSelecionada && <span className="material-symbols-outlined text-white text-sm">check</span>}
+                          </span>
+                          <span className={`font-medium text-sm flex items-center gap-2 ${discSelecionada ? 'text-[#137fec]' : 'text-[#137fec]'}`}>
+                            <span className="material-symbols-outlined text-base">folder</span>
+                            {disc.nome}
+                          </span>
+                        </button>
+                        {assuntosDaDisc.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleDisciplina(disc.nome)}
+                            className="px-3 py-2.5 bg-[#137fec]/5 hover:bg-[#137fec]/10 transition-colors"
+                          >
+                            <span className="text-xs text-[#9dabb9] mr-2">({contarAssuntosDisciplina(disc.nome)})</span>
+                            <span className={`material-symbols-outlined text-[#9dabb9] text-sm transition-transform ${expandedDisciplinas.includes(disc.nome) ? 'rotate-180' : ''}`}>
+                              expand_more
+                            </span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Nível 2: Assuntos */}
+                      {expandedDisciplinas.includes(disc.nome) && assuntosDaDisc.length > 0 && (
+                        <div className="bg-gray-50/50 dark:bg-[#141A21]/50">
+                          {assuntosDaDisc.sort((a, b) => a.nome.localeCompare(b.nome)).map(ass => {
+                            const assSelecionado = isItemSelecionado('assunto', ass.nome)
+                            const assuntoKey = `${disc.nome}::${ass.nome}`
+                            const subsDaAss = subassuntosPorAssunto[assuntoKey] || []
+
+                            return (
+                              <div key={ass.id}>
+                                <div className="flex items-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => onToggle({ tipo: 'assunto', nome: ass.nome, disciplina: disc.nome })}
+                                    className={`flex-1 px-4 pl-8 py-2 flex items-center gap-2 transition-colors ${
+                                      assSelecionado
+                                        ? 'bg-purple-500/10'
+                                        : 'hover:bg-gray-100 dark:hover:bg-[#283039]'
+                                    }`}
+                                  >
+                                    <span className={`size-4 rounded border-2 flex items-center justify-center transition-colors ${
+                                      assSelecionado
+                                        ? 'bg-purple-500 border-purple-500'
+                                        : 'border-gray-300 dark:border-[#283039]'
+                                    }`}>
+                                      {assSelecionado && <span className="material-symbols-outlined text-white text-xs">check</span>}
+                                    </span>
+                                    <span className={`text-sm flex items-center gap-2 ${assSelecionado ? 'text-purple-400 font-medium' : 'text-gray-900 dark:text-white'}`}>
+                                      <span className="material-symbols-outlined text-base text-purple-500">topic</span>
+                                      {ass.nome}
+                                    </span>
+                                  </button>
+                                  {subsDaAss.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleAssunto(assuntoKey)}
+                                      className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors"
+                                    >
+                                      <span className="text-xs text-[#9dabb9] mr-2">({contarSubassuntosAssunto(disc.nome, ass.nome)})</span>
+                                      <span className={`material-symbols-outlined text-[#9dabb9] text-sm transition-transform ${expandedAssuntos.includes(assuntoKey) ? 'rotate-180' : ''}`}>
+                                        expand_more
+                                      </span>
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Nível 3: Subassuntos */}
+                                {expandedAssuntos.includes(assuntoKey) && subsDaAss.length > 0 && (
+                                  <div className="py-1 bg-gray-100/50 dark:bg-[#0D1117]/50">
+                                    {subsDaAss.sort((a, b) => a.nome.localeCompare(b.nome)).map(sub => {
+                                      const subSelecionado = isItemSelecionado('subassunto', sub.nome)
+                                      return (
+                                        <button
+                                          key={sub.id}
+                                          type="button"
+                                          onClick={() => onToggle({ tipo: 'subassunto', nome: sub.nome, assunto: ass.nome, disciplina: disc.nome })}
+                                          className={`w-full px-4 pl-14 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                                            subSelecionado
+                                              ? 'bg-emerald-500/10 text-emerald-400'
+                                              : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#283039]'
+                                          }`}
+                                        >
+                                          <span className={`size-4 rounded border-2 flex items-center justify-center transition-colors ${
+                                            subSelecionado
+                                              ? 'bg-emerald-500 border-emerald-500'
+                                              : 'border-gray-300 dark:border-[#283039]'
+                                          }`}>
+                                            {subSelecionado && <span className="material-symbols-outlined text-white text-xs">check</span>}
+                                          </span>
+                                          <span className="material-symbols-outlined text-xs text-emerald-500">subdirectory_arrow_right</span>
+                                          {sub.nome}
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Tags dos subassuntos selecionados */}
-      {subassuntosSelecionados.length > 0 && (
+      {/* Tags dos selecionados */}
+      {selecionados.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-1">
-          {subassuntosSelecionados.map(s => (
+          {selecionados.map(item => (
             <span
-              key={s.nome}
-              className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-sm"
+              key={`${item.tipo}-${item.nome}`}
+              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm ${
+                item.tipo === 'disciplina'
+                  ? 'bg-[#137fec]/20 text-[#137fec]'
+                  : item.tipo === 'assunto'
+                  ? 'bg-purple-500/20 text-purple-400'
+                  : 'bg-emerald-500/20 text-emerald-400'
+              }`}
             >
-              {s.nome}
-              <button onClick={() => onRemove(s.nome)} className="hover:text-red-500">
+              <span className="material-symbols-outlined text-xs">
+                {item.tipo === 'disciplina' ? 'folder' : item.tipo === 'assunto' ? 'topic' : 'subdirectory_arrow_right'}
+              </span>
+              {item.nome}
+              <button onClick={() => onToggle(item)} className="hover:text-red-500 ml-1">
                 <span className="material-symbols-outlined text-sm">close</span>
               </button>
             </span>
@@ -437,10 +491,8 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
   const [modalidade, setModalidade] = useState<'multipla_escolha' | 'certo_errado' | 'mista'>('multipla_escolha')
   const [dificuldades, setDificuldades] = useState<string[]>(['media'])
 
-  // Seleções hierárquicas
-  const [disciplinasSelecionadas, setDisciplinasSelecionadas] = useState<ItemComPeso[]>([])
-  const [assuntosSelecionados, setAssuntosSelecionados] = useState<ItemComPeso[]>([])
-  const [subassuntosSelecionados, setSubassuntosSelecionados] = useState<ItemComPeso[]>([])
+  // Seleção unificada de conteúdo (disciplinas, assuntos, subassuntos)
+  const [conteudoSelecionado, setConteudoSelecionado] = useState<ItemSelecionado[]>([])
   const [bancasSelecionadas, setBancasSelecionadas] = useState<string[]>([])
 
   // Dados do banco
@@ -450,12 +502,24 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
   const [todasBancas, setTodasBancas] = useState<Banca[]>([])
 
   // Inputs de busca/adição
-  const [inputDisciplina, setInputDisciplina] = useState('')
   const [inputBanca, setInputBanca] = useState('')
 
   // Limite info
   const [limitInfo, setLimitInfo] = useState<{ usado: number; limite: number; restante: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Extrair disciplinas, assuntos e subassuntos do conteúdo selecionado
+  const disciplinasSelecionadas = conteudoSelecionado
+    .filter(c => c.tipo === 'disciplina')
+    .map(c => ({ nome: c.nome, peso: 1 }))
+
+  const assuntosSelecionados = conteudoSelecionado
+    .filter(c => c.tipo === 'assunto')
+    .map(c => ({ nome: c.nome, peso: 1, disciplina: c.disciplina }))
+
+  const subassuntosSelecionados = conteudoSelecionado
+    .filter(c => c.tipo === 'subassunto')
+    .map(c => ({ nome: c.nome, peso: 1, assunto: c.assunto, disciplina: c.disciplina }))
 
   // Carregar dados do banco
   useEffect(() => {
@@ -517,47 +581,25 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
     }
   }, [isOpen])
 
-  // Filtrar disciplinas baseado no input
-  const disciplinasFiltradas = todasDisciplinas.filter(d =>
-    d.nome.toLowerCase().includes(inputDisciplina.toLowerCase()) &&
-    !disciplinasSelecionadas.some(sel => sel.nome.toLowerCase() === d.nome.toLowerCase())
-  ).slice(0, 5)
-
   // Filtrar bancas baseado no input
   const bancasFiltradas = todasBancas.filter(b =>
     b.nome.toLowerCase().includes(inputBanca.toLowerCase()) &&
     !bancasSelecionadas.includes(b.nome)
   ).slice(0, 5)
 
-  // Adicionar disciplina
-  const adicionarDisciplina = (nome: string) => {
-    if (!nome.trim()) return
-    const normalizado = nome.trim()
-    if (disciplinasSelecionadas.some(d => d.nome.toLowerCase() === normalizado.toLowerCase())) return
-    setDisciplinasSelecionadas(prev => [...prev, { nome: normalizado, peso: 1 }])
-    setInputDisciplina('')
-  }
-
-  // Adicionar assunto
-  const adicionarAssunto = (nome: string, disciplina?: string) => {
-    if (!nome.trim()) return
-    const normalizado = nome.trim()
-    if (assuntosSelecionados.some(a => a.nome.toLowerCase() === normalizado.toLowerCase())) return
-
-    // Se não tem disciplina, usar a primeira selecionada ou deixar vazio
-    const disc = disciplina || (disciplinasSelecionadas.length > 0 ? disciplinasSelecionadas[0].nome : '')
-    setAssuntosSelecionados(prev => [...prev, { nome: normalizado, peso: 1, disciplina: disc }])
-  }
-
-  // Adicionar subassunto
-  const adicionarSubassunto = (nome: string, assunto?: string, disciplina?: string) => {
-    if (!nome.trim()) return
-    const normalizado = nome.trim()
-    if (subassuntosSelecionados.some(s => s.nome.toLowerCase() === normalizado.toLowerCase())) return
-
-    const ass = assunto || (assuntosSelecionados.length > 0 ? assuntosSelecionados[0].nome : '')
-    const disc = disciplina || (disciplinasSelecionadas.length > 0 ? disciplinasSelecionadas[0].nome : '')
-    setSubassuntosSelecionados(prev => [...prev, { nome: normalizado, peso: 1, assunto: ass, disciplina: disc }])
+  // Toggle item do conteúdo (adicionar/remover)
+  const toggleConteudo = (item: ItemSelecionado) => {
+    setConteudoSelecionado(prev => {
+      const existe = prev.some(
+        c => c.tipo === item.tipo && c.nome.toLowerCase() === item.nome.toLowerCase()
+      )
+      if (existe) {
+        return prev.filter(
+          c => !(c.tipo === item.tipo && c.nome.toLowerCase() === item.nome.toLowerCase())
+        )
+      }
+      return [...prev, item]
+    })
   }
 
   // Adicionar banca
@@ -569,19 +611,7 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
     setInputBanca('')
   }
 
-  // Remover itens
-  const removerDisciplina = (nome: string) => {
-    setDisciplinasSelecionadas(prev => prev.filter(d => d.nome !== nome))
-  }
-
-  const removerAssunto = (nome: string) => {
-    setAssuntosSelecionados(prev => prev.filter(a => a.nome !== nome))
-  }
-
-  const removerSubassunto = (nome: string) => {
-    setSubassuntosSelecionados(prev => prev.filter(s => s.nome !== nome))
-  }
-
+  // Remover banca
   const removerBanca = (nome: string) => {
     setBancasSelecionadas(prev => prev.filter(b => b !== nome))
   }
@@ -595,8 +625,8 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
 
   // Gerar questões
   const handleGerar = async () => {
-    if (disciplinasSelecionadas.length === 0) {
-      setError('Selecione pelo menos uma disciplina')
+    if (conteudoSelecionado.length === 0) {
+      setError('Selecione pelo menos uma disciplina, assunto ou subassunto')
       return
     }
 
@@ -695,75 +725,14 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
                 </div>
               )}
 
-              {/* Disciplinas */}
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-1">
-                  Disciplinas <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={inputDisciplina}
-                    onChange={(e) => setInputDisciplina(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && inputDisciplina.trim()) {
-                        e.preventDefault()
-                        adicionarDisciplina(inputDisciplina)
-                      }
-                    }}
-                    placeholder="Digite ou selecione uma disciplina..."
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white placeholder:text-[#9dabb9] focus:ring-2 focus:ring-[#137fec] focus:border-transparent"
-                  />
-                  {inputDisciplina && disciplinasFiltradas.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
-                      {disciplinasFiltradas.map(d => (
-                        <button
-                          key={d.id}
-                          onClick={() => adicionarDisciplina(d.nome)}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#283039]"
-                        >
-                          {d.nome}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {disciplinasSelecionadas.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {disciplinasSelecionadas.map(d => (
-                      <span
-                        key={d.nome}
-                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#137fec]/20 text-[#137fec] text-sm"
-                      >
-                        {d.nome}
-                        <button onClick={() => removerDisciplina(d.nome)} className="hover:text-red-500">
-                          <span className="material-symbols-outlined text-sm">close</span>
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Assuntos - Dropdown Hierárquico */}
-              <AssuntosHierarquicos
+              {/* Conteúdo Hierárquico Unificado */}
+              <ConteudoHierarquico
+                disciplinas={todasDisciplinas}
                 assuntos={todosAssuntos}
-                disciplinasSelecionadas={disciplinasSelecionadas}
-                assuntosSelecionados={assuntosSelecionados}
-                onSelect={adicionarAssunto}
-                onRemove={removerAssunto}
+                subassuntos={todosSubassuntos}
+                selecionados={conteudoSelecionado}
+                onToggle={toggleConteudo}
               />
-
-              {/* Subassuntos - Dropdown Hierárquico */}
-              {assuntosSelecionados.length > 0 && (
-                <SubassuntosHierarquicos
-                  subassuntos={todosSubassuntos}
-                  assuntosSelecionados={assuntosSelecionados}
-                  subassuntosSelecionados={subassuntosSelecionados}
-                  onSelect={adicionarSubassunto}
-                  onRemove={removerSubassunto}
-                />
-              )}
 
               {/* Bancas */}
               <div className="flex flex-col gap-2">
@@ -891,7 +860,7 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
               {/* Botão Gerar */}
               <button
                 onClick={handleGerar}
-                disabled={gerando || disciplinasSelecionadas.length === 0 || bancasSelecionadas.length === 0 || dificuldades.length === 0}
+                disabled={gerando || conteudoSelecionado.length === 0 || bancasSelecionadas.length === 0 || dificuldades.length === 0}
                 className="w-full py-3 bg-[#137fec] hover:bg-[#137fec]/90 text-white font-bold rounded-lg shadow-lg shadow-[#137fec]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined">auto_awesome</span>
