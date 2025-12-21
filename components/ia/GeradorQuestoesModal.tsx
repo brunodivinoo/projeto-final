@@ -1,9 +1,11 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useQuestoesIA, ConfigGeracaoQuestoes } from '@/hooks/useQuestoesIA'
+import { ConfigGeracaoQuestoes } from '@/hooks/useQuestoesIA'
 import { useCheckLimit } from '@/hooks/useCheckLimit'
 import { useAuth } from '@/contexts/AuthContext'
+import { useNotifications } from '@/contexts/NotificationContext'
+import { GerenciarConteudoModal } from './GerenciarConteudoModal'
 
 interface Props {
   isOpen: boolean
@@ -74,6 +76,7 @@ interface ConteudoHierarquicoProps {
   selecionados: ItemSelecionado[]
   onToggle: (item: ItemSelecionado) => void
   onCreateCustom: (tipo: 'disciplina' | 'assunto' | 'subassunto', nome: string, disciplina?: string, assunto?: string) => void
+  onOpenGerenciamento: () => void
 }
 
 function ConteudoHierarquico({
@@ -82,7 +85,8 @@ function ConteudoHierarquico({
   subassuntos,
   selecionados,
   onToggle,
-  onCreateCustom
+  onCreateCustom,
+  onOpenGerenciamento
 }: ConteudoHierarquicoProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [expandedDisciplinas, setExpandedDisciplinas] = useState<string[]>([])
@@ -333,14 +337,22 @@ function ConteudoHierarquico({
 
             {/* Botão para abrir menu de criação */}
             {!showCreateMenu && (
-              <div className="px-3 py-2 border-b border-gray-100 dark:border-[#283039]">
+              <div className="px-3 py-2 border-b border-gray-100 dark:border-[#283039] flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => setShowCreateMenu(true)}
                   className="flex items-center gap-2 text-xs text-[#137fec] hover:underline"
                 >
                   <span className="material-symbols-outlined text-sm">add_circle</span>
-                  Criar disciplina, assunto ou subassunto personalizado
+                  Criar item personalizado
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenGerenciamento}
+                  className="flex items-center gap-2 text-xs text-[#9dabb9] hover:text-[#137fec] transition-colors"
+                >
+                  <span className="material-symbols-outlined text-sm">settings</span>
+                  Gerenciar
                 </button>
               </div>
             )}
@@ -645,12 +657,11 @@ function ConteudoHierarquico({
 }
 
 export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
-  const { gerarQuestoes, gerando } = useQuestoesIA()
   const { checkLimit } = useCheckLimit()
   const { user } = useAuth()
+  const { startQuestoesGeneration, hasActiveGeneration } = useNotifications()
 
   // Estados do formulário
-  const [step, setStep] = useState<'config' | 'gerando' | 'sucesso'>('config')
   const [quantidade, setQuantidade] = useState(10)
   const [modalidade, setModalidade] = useState<'multipla_escolha' | 'certo_errado' | 'mista'>('multipla_escolha')
   const [dificuldades, setDificuldades] = useState<string[]>(['media'])
@@ -676,6 +687,9 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
   // Limite info
   const [limitInfo, setLimitInfo] = useState<{ usado: number; limite: number; restante: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Modal de gerenciamento
+  const [showGerenciamento, setShowGerenciamento] = useState(false)
 
   // Fechar dropdown de banca ao clicar fora
   useEffect(() => {
@@ -805,10 +819,9 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
     verificarLimite()
   }, [isOpen, checkLimit])
 
-  // Resetar ao abrir
+  // Resetar erro ao abrir
   useEffect(() => {
     if (isOpen) {
-      setStep('config')
       setError(null)
     }
   }, [isOpen])
@@ -1022,7 +1035,6 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
     }
 
     setError(null)
-    setStep('gerando')
 
     // LÓGICA DE CASCATA: Expandir seleções para incluir todos os filhos
     // Se selecionou disciplina → incluir todos os assuntos e subassuntos dessa disciplina
@@ -1119,15 +1131,18 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
       quantidade
     }
 
-    const result = await gerarQuestoes(config)
+    // Fechar modal e iniciar geração em background
+    onClose()
 
-    if (result) {
-      setStep('sucesso')
-      onSuccess?.(result.length)
-    } else {
-      setStep('config')
-      setError('Erro ao gerar questões. Tente novamente.')
-    }
+    // Iniciar geração em background (não bloqueante)
+    startQuestoesGeneration({
+      user_id: user!.id,
+      ...config
+    }).then((result) => {
+      if (result.status === 'completed') {
+        onSuccess?.(result.result?.questoes || quantidade)
+      }
+    })
   }
 
   if (!isOpen) return null
@@ -1156,8 +1171,7 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
 
         {/* Content */}
         <div className="p-4 md:p-6">
-          {step === 'config' && (
-            <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6">
               {/* Limite info */}
               {limitInfo && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
@@ -1183,6 +1197,7 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
                 selecionados={conteudoSelecionado}
                 onToggle={toggleConteudo}
                 onCreateCustom={criarItemCustomizado}
+                onOpenGerenciamento={() => setShowGerenciamento(true)}
               />
 
               {/* Bancas */}
@@ -1340,54 +1355,93 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
               {/* Botão Gerar */}
               <button
                 onClick={handleGerar}
-                disabled={gerando || conteudoSelecionado.length === 0 || bancasSelecionadas.length === 0 || dificuldades.length === 0}
+                disabled={hasActiveGeneration || conteudoSelecionado.length === 0 || bancasSelecionadas.length === 0 || dificuldades.length === 0}
                 className="w-full py-3 bg-[#137fec] hover:bg-[#137fec]/90 text-white font-bold rounded-lg shadow-lg shadow-[#137fec]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined">auto_awesome</span>
-                Gerar {quantidade} Questões
+                {hasActiveGeneration ? 'Geração em andamento...' : `Gerar ${quantidade} Questões`}
               </button>
-            </div>
-          )}
-
-          {step === 'gerando' && (
-            <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <div className="size-16 rounded-full bg-[#137fec]/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-4xl text-[#137fec] animate-spin">progress_activity</span>
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Gerando questões...</h3>
-              <p className="text-sm text-[#9dabb9] text-center max-w-sm">
-                A IA está criando {quantidade} questões personalizadas. Isso pode levar alguns segundos.
-              </p>
-            </div>
-          )}
-
-          {step === 'sucesso' && (
-            <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <div className="size-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-4xl text-emerald-400">check_circle</span>
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Questões geradas!</h3>
-              <p className="text-sm text-[#9dabb9] text-center max-w-sm">
-                {quantidade} questões foram criadas com sucesso e adicionadas ao seu banco de questões.
-              </p>
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={() => setStep('config')}
-                  className="px-4 py-2 border border-gray-200 dark:border-[#283039] text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors"
-                >
-                  Gerar mais
-                </button>
-                <button
-                  onClick={onClose}
-                  className="px-4 py-2 bg-[#137fec] text-white font-bold rounded-lg hover:bg-[#137fec]/90 transition-colors"
-                >
-                  Ver questões
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
+
+      {/* Modal de Gerenciamento */}
+      <GerenciarConteudoModal
+        isOpen={showGerenciamento}
+        onClose={() => setShowGerenciamento(false)}
+        onUpdate={async () => {
+          // Recarregar dados após edição/exclusão
+          if (!user) return
+          try {
+            const { data: customData } = await supabase
+              .from('conteudo_customizado')
+              .select('*')
+              .eq('user_id', user.id)
+
+            if (customData) {
+              // Reconstruir disciplinas customizadas
+              const discsCustom = customData
+                .filter(c => c.tipo === 'disciplina')
+                .map(c => ({ id: `custom-${c.id}`, nome: c.nome, isCustom: true }))
+
+              // Reconstruir assuntos customizados
+              const assuntosCustom = customData
+                .filter(c => c.tipo === 'assunto')
+                .map(c => ({
+                  id: `custom-${c.id}`,
+                  nome: c.nome,
+                  disciplina_id: '',
+                  disciplina_nome: c.disciplina || undefined,
+                  isCustom: true
+                }))
+
+              // Reconstruir subassuntos customizados
+              const subassuntosCustom = customData
+                .filter(c => c.tipo === 'subassunto')
+                .map(c => ({
+                  id: `custom-${c.id}`,
+                  nome: c.nome,
+                  assunto_id: '',
+                  assunto_nome: c.assunto || undefined,
+                  disciplina_nome: c.disciplina || undefined,
+                  isCustom: true
+                }))
+
+              // Atualizar bancas customizadas
+              const bancasCustom = customData
+                .filter(c => c.tipo === 'banca')
+                .map(c => c.nome)
+              setBancasCustomizadas(bancasCustom)
+
+              // Recarregar do banco para manter items do sistema
+              const [discRes, assRes, subRes] = await Promise.all([
+                supabase.from('disciplinas').select('id, nome').order('nome'),
+                supabase.from('assuntos').select('id, nome, disciplina_id, disciplinas(nome)').order('nome'),
+                supabase.from('subassuntos').select('id, nome, assunto_id, assuntos(nome, disciplinas(nome))').order('nome')
+              ])
+
+              setTodasDisciplinas([...(discRes.data || []), ...discsCustom])
+              setTodosAssuntos([
+                ...(assRes.data || []).map(a => ({
+                  ...a,
+                  disciplina_nome: (a.disciplinas as { nome?: string } | null)?.nome
+                })),
+                ...assuntosCustom
+              ])
+              setTodosSubassuntos([
+                ...(subRes.data || []).map(s => ({
+                  ...s,
+                  assunto_nome: (s.assuntos as { nome?: string; disciplinas?: { nome?: string } } | null)?.nome,
+                  disciplina_nome: (s.assuntos as { nome?: string; disciplinas?: { nome?: string } } | null)?.disciplinas?.nome
+                })),
+                ...subassuntosCustom
+              ])
+            }
+          } catch (err) {
+            console.error('Erro ao recarregar dados:', err)
+          }
+        }}
+      />
     </div>
   )
 }
