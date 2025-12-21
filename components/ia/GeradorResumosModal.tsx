@@ -43,7 +43,7 @@ export function GeradorResumosModal({ isOpen, onClose, onSuccess }: Props) {
     })
 
     if (result) {
-      setResumoGerado(result.conteudo)
+      setResumoGerado(result.resumo)
       setStep('sucesso')
       onSuccess?.()
     } else {

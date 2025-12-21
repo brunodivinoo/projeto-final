@@ -5,13 +5,16 @@ import { useAuth } from '@/contexts/AuthContext'
 export interface ResumoIA {
   id: string
   user_id: string
+  pdf_id: string | null
   titulo: string
-  conteudo: string
-  texto_original: string
+  conteudo_original: string | null
+  resumo: string
   disciplina: string | null
   assunto: string | null
-  formato: string
-  pdf_origem_id: string | null
+  subassunto: string | null
+  compartilhado: boolean
+  likes: number
+  usos: number
   created_at: string
 }
 

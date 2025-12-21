@@ -6,7 +6,8 @@ export interface Conversa {
   id: string
   user_id: string
   titulo: string
-  contexto: string | null
+  ultima_mensagem: string | null
+  total_mensagens: number
   created_at: string
   updated_at: string
 }
@@ -14,8 +15,10 @@ export interface Conversa {
 export interface Mensagem {
   id: string
   conversa_id: string
-  role: 'user' | 'assistant'
-  content: string
+  user_id: string
+  tipo: 'user' | 'assistant'
+  conteudo: string
+  tokens_usados: number
   created_at: string
 }
 
@@ -100,8 +103,10 @@ export function useChatIA(): ChatData & ChatActions {
     const msgTemp: Mensagem = {
       id: `temp-${Date.now()}`,
       conversa_id: conversaAtual?.id || '',
-      role: 'user',
-      content: mensagem,
+      user_id: user.id,
+      tipo: 'user',
+      conteudo: mensagem,
+      tokens_usados: 0,
       created_at: new Date().toISOString()
     }
     setMensagens(prev => [...prev, msgTemp])
@@ -131,7 +136,8 @@ export function useChatIA(): ChatData & ChatActions {
           id: data.conversa_id,
           user_id: user.id,
           titulo: mensagem.substring(0, 50),
-          contexto: null,
+          ultima_mensagem: data.resposta?.substring(0, 100) || null,
+          total_mensagens: 2,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
@@ -143,8 +149,10 @@ export function useChatIA(): ChatData & ChatActions {
       const msgIA: Mensagem = {
         id: data.mensagem_id,
         conversa_id: data.conversa_id,
-        role: 'assistant',
-        content: data.resposta,
+        user_id: user.id,
+        tipo: 'assistant',
+        conteudo: data.resposta,
+        tokens_usados: 0,
         created_at: new Date().toISOString()
       }
 

@@ -7,13 +7,14 @@ export interface PdfAnalisado {
   user_id: string
   nome_arquivo: string
   tamanho_bytes: number
-  texto_extraido: string
-  disciplina_detectada: string | null
+  total_paginas: number | null
+  url_storage: string | null
+  conteudo_extraido: string | null
+  disciplinas_detectadas: string[]
   assuntos_detectados: string[]
   resumo_gerado: boolean
   flashcards_gerados: number
   questoes_geradas: number
-  status: string
   created_at: string
 }
 

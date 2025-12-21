@@ -194,10 +194,9 @@ CONTEÚDO:
         user_id,
         nome_arquivo: file.name,
         tamanho_bytes: file.size,
-        texto_extraido: conteudo.substring(0, 50000),
-        disciplina_detectada: disciplina,
-        assuntos_detectados: assuntos,
-        status: 'processado'
+        conteudo_extraido: conteudo.substring(0, 50000),
+        disciplinas_detectadas: [disciplina],
+        assuntos_detectados: assuntos
       })
       .select()
       .single()
@@ -247,13 +246,12 @@ Gere o resumo:`
             .from('resumos_ia')
             .insert({
               user_id,
+              pdf_id: pdfSalvo.id,
               titulo: `Resumo: ${file.name}`,
-              conteudo: resultados.resumo,
-              texto_original: conteudo.substring(0, 10000),
+              resumo: resultados.resumo,
+              conteudo_original: conteudo.substring(0, 10000),
               disciplina,
-              assunto: assuntos[0] || null,
-              formato: 'topicos',
-              pdf_origem_id: pdfSalvo.id
+              assunto: assuntos[0] || null
             })
         }
       }

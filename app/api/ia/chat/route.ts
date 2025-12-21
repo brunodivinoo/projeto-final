@@ -129,8 +129,9 @@ export async function POST(req: NextRequest) {
       .from('chat_mensagens')
       .insert({
         conversa_id: conversaAtual,
-        role: 'user',
-        content: mensagem
+        user_id,
+        tipo: 'user',
+        conteudo: mensagem
       })
 
     if (errMsgUser) throw errMsgUser
@@ -138,15 +139,15 @@ export async function POST(req: NextRequest) {
     // Buscar histórico da conversa para contexto
     const { data: historico } = await supabase
       .from('chat_mensagens')
-      .select('role, content')
+      .select('tipo, conteudo')
       .eq('conversa_id', conversaAtual)
       .order('created_at', { ascending: true })
       .limit(20) // Últimas 20 mensagens para contexto
 
     // Montar contexto para o Gemini
     const historicoFormatado = (historico || []).map(m => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.content }]
+      role: m.tipo === 'user' ? 'user' : 'model',
+      parts: [{ text: m.conteudo }]
     }))
 
     // Prompt de sistema
@@ -194,18 +195,27 @@ Suas principais características:
       .from('chat_mensagens')
       .insert({
         conversa_id: conversaAtual,
-        role: 'assistant',
-        content: respostaIA
+        user_id,
+        tipo: 'assistant',
+        conteudo: respostaIA
       })
       .select()
       .single()
 
     if (errMsgIA) throw errMsgIA
 
-    // Atualizar updated_at da conversa
+    // Atualizar conversa com última mensagem e contador
     await supabase
       .from('chat_conversas')
-      .update({ updated_at: new Date().toISOString() })
+      .update({
+        updated_at: new Date().toISOString(),
+        ultima_mensagem: respostaIA.substring(0, 100),
+        total_mensagens: (await supabase
+          .from('chat_mensagens')
+          .select('id', { count: 'exact', head: true })
+          .eq('conversa_id', conversaAtual)
+        ).count || 0
+      })
       .eq('id', conversaAtual)
 
     // Registrar uso diário

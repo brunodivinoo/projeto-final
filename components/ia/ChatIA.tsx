@@ -174,26 +174,26 @@ export function ChatIA() {
               {mensagens.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                  className={`flex gap-3 ${msg.tipo === 'user' ? 'flex-row-reverse' : ''}`}
                 >
                   <div className={`size-8 rounded-full flex items-center justify-center shrink-0 ${
-                    msg.role === 'user'
+                    msg.tipo === 'user'
                       ? 'bg-[#137fec]/20'
                       : 'bg-emerald-500/20'
                   }`}>
                     <span className={`material-symbols-outlined text-lg ${
-                      msg.role === 'user' ? 'text-[#137fec]' : 'text-emerald-500'
+                      msg.tipo === 'user' ? 'text-[#137fec]' : 'text-emerald-500'
                     }`}>
-                      {msg.role === 'user' ? 'person' : 'smart_toy'}
+                      {msg.tipo === 'user' ? 'person' : 'smart_toy'}
                     </span>
                   </div>
-                  <div className={`max-w-[80%] ${msg.role === 'user' ? 'text-right' : ''}`}>
+                  <div className={`max-w-[80%] ${msg.tipo === 'user' ? 'text-right' : ''}`}>
                     <div className={`inline-block p-3 rounded-2xl ${
-                      msg.role === 'user'
+                      msg.tipo === 'user'
                         ? 'bg-[#137fec] text-white rounded-br-md'
                         : 'bg-gray-100 dark:bg-[#283039] text-gray-900 dark:text-white rounded-bl-md'
                     }`}>
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      <p className="text-sm whitespace-pre-wrap">{msg.conteudo}</p>
                     </div>
                     <p className="text-xs text-[#9dabb9] mt-1 px-1">
                       {new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}

@@ -383,11 +383,10 @@ Retorne APENAS o título, sem aspas ou explicações.`
       .insert({
         user_id,
         titulo: tituloFinal.substring(0, 100),
-        conteudo: conteudoResumo,
-        texto_original: texto.substring(0, 10000),
+        resumo: conteudoResumo,
+        conteudo_original: texto.substring(0, 10000),
         disciplina: disciplina || null,
-        assunto: assunto || null,
-        formato: formato || 'topicos'
+        assunto: assunto || null
       })
       .select()
       .single()

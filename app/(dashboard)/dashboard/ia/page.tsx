@@ -376,7 +376,7 @@ export default function CentralIAPage() {
                               {resumo.titulo}
                             </h4>
                             <p className="text-xs text-[#9dabb9]">
-                              {formatarDataRelativa(resumo.created_at)} • {resumo.formato}
+                              {formatarDataRelativa(resumo.created_at)}
                             </p>
                           </div>
                         </div>
@@ -503,9 +503,11 @@ export default function CentralIAPage() {
                                   {resumo.disciplina}
                                 </span>
                               )}
-                              <span className="px-2 py-0.5 rounded bg-gray-500/20 text-gray-400 text-xs">
-                                {resumo.formato}
-                              </span>
+                              {resumo.assunto && (
+                                <span className="px-2 py-0.5 rounded bg-gray-500/20 text-gray-400 text-xs">
+                                  {resumo.assunto}
+                                </span>
+                              )}
                               <span className="text-xs text-[#9dabb9]">
                                 {formatarDataRelativa(resumo.created_at)}
                               </span>
@@ -515,7 +517,7 @@ export default function CentralIAPage() {
                       </div>
                       <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-[#141A21] max-h-32 overflow-hidden">
                         <p className="text-sm text-[#9dabb9] line-clamp-4 whitespace-pre-wrap">
-                          {resumo.conteudo}
+                          {resumo.resumo}
                         </p>
                       </div>
                     </div>
@@ -574,9 +576,9 @@ export default function CentralIAPage() {
                           <p className="text-xs text-[#9dabb9] mt-1">
                             {(pdf.tamanho_bytes / (1024 * 1024)).toFixed(2)} MB • {formatarDataRelativa(pdf.created_at)}
                           </p>
-                          {pdf.disciplina_detectada && (
+                          {pdf.disciplinas_detectadas && pdf.disciplinas_detectadas.length > 0 && (
                             <span className="inline-block mt-2 px-2 py-0.5 rounded bg-rose-500/20 text-rose-500 text-xs">
-                              {pdf.disciplina_detectada}
+                              {pdf.disciplinas_detectadas[0]}
                             </span>
                           )}
                         </div>
