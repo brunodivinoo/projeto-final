@@ -974,9 +974,28 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
       return
     }
 
-    // Nova banca customizada - salvar no banco
+    // Nova banca customizada - salvar no banco (com verificação de duplicata)
     if (user) {
       try {
+        // Verificar se já existe no banco antes de inserir
+        const { data: existente } = await supabase
+          .from('conteudo_customizado')
+          .select('id, nome')
+          .eq('user_id', user.id)
+          .eq('tipo', 'banca')
+          .eq('nome_normalizado', nomeNorm)
+          .single()
+
+        if (existente) {
+          // Já existe, usar o nome existente
+          setBancasCustomizadas(prev => prev.includes(existente.nome) ? prev : [...prev, existente.nome])
+          setBancasSelecionadas(prev => [...prev, existente.nome])
+          setInputBanca('')
+          setShowBancaDropdown(false)
+          return
+        }
+
+        // Criar novo
         await supabase.from('conteudo_customizado').insert({
           user_id: user.id,
           tipo: 'banca',
