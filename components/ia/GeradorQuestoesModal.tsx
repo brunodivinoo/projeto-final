@@ -211,7 +211,7 @@ function AssuntosHierarquicos({
   )
 }
 
-// Componente de dropdown hierárquico para subassuntos
+// Componente de dropdown hierárquico para subassuntos (Disciplina → Assunto → Subassunto)
 interface SubassuntosHierarquicosProps {
   subassuntos: Subassunto[]
   assuntosSelecionados: ItemComPeso[]
@@ -228,6 +228,7 @@ function SubassuntosHierarquicos({
   onRemove
 }: SubassuntosHierarquicosProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [expandedDisciplinas, setExpandedDisciplinas] = useState<string[]>([])
   const [expandedAssuntos, setExpandedAssuntos] = useState<string[]>([])
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -249,25 +250,40 @@ function SubassuntosHierarquicos({
       )
     : subassuntos
 
-  // Agrupar por assunto
-  const subassuntosPorAssunto = subassuntosFiltrados.reduce((acc, sub) => {
+  // Agrupar por Disciplina → Assunto → Subassuntos
+  const hierarquia = subassuntosFiltrados.reduce((acc, sub) => {
+    const disc = sub.disciplina_nome || 'Sem disciplina'
     const ass = sub.assunto_nome || 'Sem assunto'
-    if (!acc[ass]) acc[ass] = []
-    acc[ass].push(sub)
+
+    if (!acc[disc]) acc[disc] = {}
+    if (!acc[disc][ass]) acc[disc][ass] = []
+    acc[disc][ass].push(sub)
+
     return acc
-  }, {} as Record<string, Subassunto[]>)
+  }, {} as Record<string, Record<string, Subassunto[]>>)
 
-  // Ordenar assuntos alfabeticamente
-  const assuntosOrdenados = Object.keys(subassuntosPorAssunto).sort()
+  // Ordenar disciplinas alfabeticamente
+  const disciplinasOrdenadas = Object.keys(hierarquia).sort()
 
-  const toggleAssunto = (ass: string) => {
+  const toggleDisciplina = (disc: string) => {
+    setExpandedDisciplinas(prev =>
+      prev.includes(disc) ? prev.filter(d => d !== disc) : [...prev, disc]
+    )
+  }
+
+  const toggleAssunto = (key: string) => {
     setExpandedAssuntos(prev =>
-      prev.includes(ass) ? prev.filter(a => a !== ass) : [...prev, ass]
+      prev.includes(key) ? prev.filter(a => a !== key) : [...prev, key]
     )
   }
 
   const isSubassuntoSelecionado = (nome: string) =>
     subassuntosSelecionados.some(s => s.nome.toLowerCase() === nome.toLowerCase())
+
+  // Contar total de subassuntos por disciplina
+  const contarSubassuntosDisciplina = (disc: string) => {
+    return Object.values(hierarquia[disc]).reduce((sum, subs) => sum + subs.length, 0)
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -294,59 +310,92 @@ function SubassuntosHierarquicos({
 
         {/* Dropdown aberto */}
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] rounded-lg shadow-xl z-30 max-h-80 overflow-y-auto">
-            {assuntosOrdenados.length === 0 ? (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] rounded-lg shadow-xl z-30 max-h-96 overflow-y-auto">
+            {disciplinasOrdenadas.length === 0 ? (
               <div className="p-4 text-center text-[#9dabb9] text-sm">
                 Nenhum subassunto encontrado para os assuntos selecionados
               </div>
             ) : (
-              assuntosOrdenados.map(ass => (
-                <div key={ass} className="border-b border-gray-100 dark:border-[#283039] last:border-0">
-                  {/* Cabeçalho do assunto */}
+              disciplinasOrdenadas.map(disc => (
+                <div key={disc} className="border-b border-gray-100 dark:border-[#283039] last:border-0">
+                  {/* Nível 1: Disciplina */}
                   <button
                     type="button"
-                    onClick={() => toggleAssunto(ass)}
-                    className="w-full px-4 py-2.5 flex items-center justify-between bg-gray-50 dark:bg-[#141A21] hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors"
+                    onClick={() => toggleDisciplina(disc)}
+                    className="w-full px-4 py-2.5 flex items-center justify-between bg-[#137fec]/5 hover:bg-[#137fec]/10 transition-colors"
                   >
-                    <span className="font-medium text-sm text-emerald-500 flex items-center gap-2">
-                      <span className="material-symbols-outlined text-base">topic</span>
-                      {ass}
+                    <span className="font-medium text-sm text-[#137fec] flex items-center gap-2">
+                      <span className="material-symbols-outlined text-base">folder</span>
+                      {disc}
                       <span className="text-xs text-[#9dabb9] font-normal">
-                        ({subassuntosPorAssunto[ass].length})
+                        ({contarSubassuntosDisciplina(disc)} subassuntos)
                       </span>
                     </span>
-                    <span className={`material-symbols-outlined text-[#9dabb9] text-sm transition-transform ${expandedAssuntos.includes(ass) ? 'rotate-180' : ''}`}>
+                    <span className={`material-symbols-outlined text-[#9dabb9] text-sm transition-transform ${expandedDisciplinas.includes(disc) ? 'rotate-180' : ''}`}>
                       expand_more
                     </span>
                   </button>
 
-                  {/* Lista de subassuntos */}
-                  {expandedAssuntos.includes(ass) && (
-                    <div className="py-1">
-                      {subassuntosPorAssunto[ass].sort((a, b) => a.nome.localeCompare(b.nome)).map(sub => {
-                        const selecionado = isSubassuntoSelecionado(sub.nome)
+                  {/* Nível 2: Assuntos dentro da disciplina */}
+                  {expandedDisciplinas.includes(disc) && (
+                    <div className="bg-gray-50/50 dark:bg-[#141A21]/50">
+                      {Object.keys(hierarquia[disc]).sort().map(ass => {
+                        const assuntoKey = `${disc}-${ass}`
                         return (
-                          <button
-                            key={sub.id}
-                            type="button"
-                            onClick={() => {
-                              if (selecionado) {
-                                onRemove(sub.nome)
-                              } else {
-                                onSelect(sub.nome, sub.assunto_nome, sub.disciplina_nome)
-                              }
-                            }}
-                            className={`w-full px-4 pl-10 py-2 text-left text-sm flex items-center justify-between transition-colors ${
-                              selecionado
-                                ? 'bg-emerald-500/10 text-emerald-400'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#283039]'
-                            }`}
-                          >
-                            <span>{sub.nome}</span>
-                            {selecionado && (
-                              <span className="material-symbols-outlined text-sm text-emerald-400">check</span>
+                          <div key={assuntoKey}>
+                            {/* Cabeçalho do Assunto */}
+                            <button
+                              type="button"
+                              onClick={() => toggleAssunto(assuntoKey)}
+                              className="w-full px-4 pl-8 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-[#283039] transition-colors"
+                            >
+                              <span className="font-medium text-sm text-purple-500 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-base">topic</span>
+                                {ass}
+                                <span className="text-xs text-[#9dabb9] font-normal">
+                                  ({hierarquia[disc][ass].length})
+                                </span>
+                              </span>
+                              <span className={`material-symbols-outlined text-[#9dabb9] text-sm transition-transform ${expandedAssuntos.includes(assuntoKey) ? 'rotate-180' : ''}`}>
+                                expand_more
+                              </span>
+                            </button>
+
+                            {/* Nível 3: Subassuntos */}
+                            {expandedAssuntos.includes(assuntoKey) && (
+                              <div className="py-1">
+                                {hierarquia[disc][ass].sort((a, b) => a.nome.localeCompare(b.nome)).map(sub => {
+                                  const selecionado = isSubassuntoSelecionado(sub.nome)
+                                  return (
+                                    <button
+                                      key={sub.id}
+                                      type="button"
+                                      onClick={() => {
+                                        if (selecionado) {
+                                          onRemove(sub.nome)
+                                        } else {
+                                          onSelect(sub.nome, sub.assunto_nome, sub.disciplina_nome)
+                                        }
+                                      }}
+                                      className={`w-full px-4 pl-14 py-2 text-left text-sm flex items-center justify-between transition-colors ${
+                                        selecionado
+                                          ? 'bg-emerald-500/10 text-emerald-400'
+                                          : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#283039]'
+                                      }`}
+                                    >
+                                      <span className="flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-xs text-emerald-500">subdirectory_arrow_right</span>
+                                        {sub.nome}
+                                      </span>
+                                      {selecionado && (
+                                        <span className="material-symbols-outlined text-sm text-emerald-400">check</span>
+                                      )}
+                                    </button>
+                                  )
+                                })}
+                              </div>
                             )}
-                          </button>
+                          </div>
                         )
                       })}
                     </div>
