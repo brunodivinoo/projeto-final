@@ -88,8 +88,8 @@ QUESTÕES PARA ANALISAR:
 ${questoes.map((q, i) => `
 [${i + 1}] ID: ${q.id}
 Dados atuais (podem estar errados): Disc: ${q.disciplina} | Assunto: ${q.assunto} | Sub: ${q.subassunto || 'vazio'}
-ENUNCIADO: ${q.enunciado.slice(0, 400)}
-COMENTÁRIO: ${q.comentario ? q.comentario.slice(0, 400) : 'Não disponível'}
+ENUNCIADO COMPLETO: ${q.enunciado}
+COMENTÁRIO/GABARITO COMPLETO: ${q.comentario || 'Não disponível'}
 `).join('\n')}
 
 RESPONDA EM JSON:
