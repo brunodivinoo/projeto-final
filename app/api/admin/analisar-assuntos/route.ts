@@ -40,31 +40,28 @@ export async function POST(req: NextRequest) {
     // Montar prompt para análise
     const prompt = `Você é um especialista em concursos públicos brasileiros.
 
-Analise as questões abaixo e sugira o ASSUNTO correto para cada uma, baseado no enunciado e na disciplina.
+SUA TAREFA: Analisar o ENUNCIADO e o COMENTÁRIO/GABARITO de cada questão para identificar o ASSUNTO correto.
 
-REGRAS OBRIGATÓRIAS:
-1. O assunto deve ser um TEMA/TÓPICO que aparece em editais de concursos
-2. Considere a DISCIPLINA da questão para sugerir assuntos apropriados
-3. O assunto deve ter NO MÁXIMO 3-4 palavras
-4. Retorne APENAS o nome do assunto, sem incluir a disciplina
-5. NUNCA mantenha assuntos com palavras como: "súmula", "STF", "STJ", "processada", "jurisprudência", "repercussão", "para revisao", "geral"
+COMO ANALISAR:
+1. Leia o ENUNCIADO da questão para entender o tema abordado
+2. Leia o COMENTÁRIO para confirmar qual é o assunto específico tratado
+3. Identifique o tópico/tema principal que seria cobrado em um edital de concurso
+4. Sugira um assunto que represente o conteúdo real da questão
 
-EXEMPLOS POR DISCIPLINA:
-- Direito Constitucional: "Direitos Fundamentais", "Organização do Estado", "Controle de Constitucionalidade"
-- Direito Administrativo: "Atos Administrativos", "Licitações", "Servidores Públicos"
-- Direito Penal: "Crimes contra a Pessoa", "Crimes contra o Patrimônio", "Teoria do Crime"
-- Direito Civil: "Contratos", "Responsabilidade Civil", "Direito das Obrigações"
-- Português: "Interpretação de Texto", "Concordância Verbal", "Regência", "Pontuação"
-- Matemática: "Porcentagem", "Razão e Proporção", "Equações", "Geometria"
-- Raciocínio Lógico: "Lógica Proposicional", "Sequências", "Análise Combinatória"
-- Informática: "Sistemas Operacionais", "Redes de Computadores", "Segurança da Informação"
-- Contabilidade: "Balanço Patrimonial", "DRE", "Análise de Balanços"
+REGRAS PARA O ASSUNTO:
+- Deve ser um TEMA/TÓPICO que aparece em editais de concursos
+- Deve ter NO MÁXIMO 3-4 palavras
+- Retorne APENAS o nome do assunto, sem incluir a disciplina
+- NUNCA use palavras como: "súmula", "STF", "STJ", "processada", "jurisprudência", "repercussão", "para revisao", "geral"
 
-CORREÇÕES ESPERADAS:
-- "sumulas stf processadas" → use o tema real (ex: "Direitos Fundamentais")
-- "jurisprudencia stj" → use o tema real (ex: "Prescrição")
-- "sumulas para revisao" → use o tema real (ex: "Competência")
-- "repercussao geral" → use o tema real (ex: "Tributos em Espécie")
+EXEMPLOS DE ASSUNTOS VÁLIDOS:
+- Direitos Fundamentais, Organização do Estado, Controle de Constitucionalidade
+- Atos Administrativos, Licitações, Servidores Públicos, Responsabilidade Civil
+- Crimes contra a Pessoa, Crimes contra o Patrimônio, Teoria do Crime
+- Contratos, Obrigações, Prescrição e Decadência
+- Interpretação de Texto, Concordância Verbal, Regência, Pontuação
+- Porcentagem, Razão e Proporção, Equações, Geometria
+- Lógica Proposicional, Sequências, Análise Combinatória
 
 Assuntos já existentes no sistema (use preferencialmente se aplicável):
 ${assuntosPadrao.slice(0, 50).map(a => `- ${a.assunto}`).join('\n')}
@@ -72,8 +69,9 @@ ${assuntosPadrao.slice(0, 50).map(a => `- ${a.assunto}`).join('\n')}
 QUESTÕES PARA ANALISAR:
 ${questoes.map((q, i) => `
 [${i + 1}] ID: ${q.id}
-Disciplina: ${q.disciplina} | Assunto atual: ${q.assunto}
-Enunciado: ${q.enunciado.slice(0, 300)}
+Disciplina: ${q.disciplina} | Assunto atual (IGNORAR SE RUIM): ${q.assunto}
+ENUNCIADO: ${q.enunciado.slice(0, 400)}
+COMENTÁRIO: ${q.comentario ? q.comentario.slice(0, 300) : 'Não disponível'}
 `).join('\n')}
 
 RESPONDA EM JSON:
@@ -81,7 +79,7 @@ RESPONDA EM JSON:
   "analises": [
     {
       "questaoId": "id da questão",
-      "assuntoSugerido": "nome do assunto correto"
+      "assuntoSugerido": "nome do assunto identificado baseado no enunciado e comentário"
     }
   ]
 }
