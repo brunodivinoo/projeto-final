@@ -92,18 +92,19 @@ ENUNCIADO COMPLETO: ${q.enunciado}
 COMENTÁRIO/GABARITO COMPLETO: ${q.comentario || 'Não disponível'}
 `).join('\n')}
 
-RESPONDA EM JSON:
+RESPONDA EM JSON (TODOS OS CAMPOS SÃO OBRIGATÓRIOS):
 {
   "analises": [
     {
       "questaoId": "id da questão",
-      "disciplinaSugerida": "disciplina correta",
+      "disciplinaSugerida": "OBRIGATÓRIO - disciplina correta (NUNCA deixe vazio)",
       "assuntoSugerido": "assunto genérico de edital",
-      "subassuntoSugerido": "detalhamento específico ou vazio"
+      "subassuntoSugerido": "detalhamento específico ou string vazia"
     }
   ]
 }
 
+IMPORTANTE: O campo "disciplinaSugerida" é OBRIGATÓRIO e NUNCA pode ficar vazio ou nulo!
 Retorne APENAS o JSON, sem markdown.`
 
     const response = await fetch(
@@ -179,6 +180,9 @@ Retorne APENAS o JSON, sem markdown.`
       }, { status: 500 })
     }
 
+    // Log para debug
+    console.log('Resposta da IA:', JSON.stringify(resultado.analises[0], null, 2))
+
     // Enriquecer resultado com dados originais
     const analises = resultado.analises.map((a: {
       questaoId: string
@@ -187,12 +191,33 @@ Retorne APENAS o JSON, sem markdown.`
       subassuntoSugerido?: string
     }) => {
       const questaoOriginal = questoes.find(q => q.id === a.questaoId)
+
+      // Se a IA não retornou disciplina, tentar extrair do enunciado/comentário
+      let disciplina = a.disciplinaSugerida || ''
+      if (!disciplina && questaoOriginal) {
+        // Fallback: tentar identificar pelo texto
+        const texto = (questaoOriginal.enunciado + ' ' + questaoOriginal.comentario).toLowerCase()
+        if (texto.includes('direito penal') || texto.includes('crime') || texto.includes('pena')) {
+          disciplina = 'Direito Penal'
+        } else if (texto.includes('direito constitucional') || texto.includes('constituição') || texto.includes('cf/88')) {
+          disciplina = 'Direito Constitucional'
+        } else if (texto.includes('direito civil') || texto.includes('código civil')) {
+          disciplina = 'Direito Civil'
+        } else if (texto.includes('direito administrativo') || texto.includes('administração pública')) {
+          disciplina = 'Direito Administrativo'
+        } else if (texto.includes('processo penal') || texto.includes('cpp') || texto.includes('citação') || texto.includes('intimação')) {
+          disciplina = 'Direito Processual Penal'
+        } else if (texto.includes('processo civil') || texto.includes('cpc')) {
+          disciplina = 'Direito Processual Civil'
+        }
+      }
+
       return {
         questaoId: a.questaoId,
         disciplinaAtual: questaoOriginal?.disciplina || '',
         assuntoAtual: questaoOriginal?.assunto || '',
         subassuntoAtual: questaoOriginal?.subassunto || '',
-        disciplinaSugerida: a.disciplinaSugerida || questaoOriginal?.disciplina || '',
+        disciplinaSugerida: disciplina,
         assuntoSugerido: a.assuntoSugerido,
         subassuntoSugerido: a.subassuntoSugerido || '',
         enunciado: questaoOriginal?.enunciado || '',
