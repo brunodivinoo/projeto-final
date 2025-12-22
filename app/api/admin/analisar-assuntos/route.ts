@@ -105,13 +105,20 @@ Retorne APENAS o JSON, sem markdown.`
       }, { status: 500 })
     }
 
-    // Parse JSON
+    // Parse JSON - remover markdown se existir
     let resultado
+    let cleanText = text.trim()
+
+    // Remover blocos de código markdown (```json ... ``` ou ``` ... ```)
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+    }
+
     try {
-      resultado = JSON.parse(text.trim())
-    } catch (parseError) {
+      resultado = JSON.parse(cleanText)
+    } catch {
       console.log('Tentando extrair JSON da resposta...')
-      const jsonMatch = text.match(/\{[\s\S]*\}/)
+      const jsonMatch = cleanText.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         try {
           resultado = JSON.parse(jsonMatch[0])
@@ -119,14 +126,14 @@ Retorne APENAS o JSON, sem markdown.`
           console.error('Falha ao parsear JSON extraído:', e)
           return NextResponse.json({
             error: 'Erro ao parsear resposta da IA',
-            details: text.slice(0, 500)
+            details: cleanText.slice(0, 500)
           }, { status: 500 })
         }
       } else {
-        console.error('Nenhum JSON encontrado na resposta:', text.slice(0, 500))
+        console.error('Nenhum JSON encontrado na resposta:', cleanText.slice(0, 500))
         return NextResponse.json({
           error: 'Resposta da IA não contém JSON válido',
-          details: text.slice(0, 500)
+          details: cleanText.slice(0, 500)
         }, { status: 500 })
       }
     }
