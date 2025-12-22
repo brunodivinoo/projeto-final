@@ -132,12 +132,13 @@ export default function AdminPage() {
             errosConsecutivos = 0
           } else {
             const erro = await response.json()
+            const erroMsg = erro.details ? `${erro.error} - ${erro.details}` : erro.error
             if (tentativas < maxTentativas) {
-              setOrganizarLog(prev => [...prev, `⚠️ Lote ${loteNum} falhou (tentativa ${tentativas}/${maxTentativas}), aguardando...`])
-              // Esperar mais tempo se der erro (rate limit)
-              await new Promise(r => setTimeout(r, 5000 * tentativas))
+              setOrganizarLog(prev => [...prev, `⚠️ Lote ${loteNum} falhou (tentativa ${tentativas}/${maxTentativas}): ${erro.error}. Aguardando ${10 * tentativas}s...`])
+              // Esperar mais tempo se der erro (rate limit) - 10s, 20s, 30s
+              await new Promise(r => setTimeout(r, 10000 * tentativas))
             } else {
-              setOrganizarLog(prev => [...prev, `❌ Lote ${loteNum} falhou após ${maxTentativas} tentativas: ${erro.error || 'erro desconhecido'}`])
+              setOrganizarLog(prev => [...prev, `❌ Lote ${loteNum} falhou: ${erroMsg}`])
               errosConsecutivos++
             }
           }
@@ -159,9 +160,9 @@ export default function AdminPage() {
         errosConsecutivos = 0
       }
 
-      // Pausa entre lotes (2 segundos para evitar rate limit)
+      // Pausa entre lotes (4 segundos para evitar rate limit)
       if (i + 5 < questoesParaAnalisar.length) {
-        await new Promise(r => setTimeout(r, 2000))
+        await new Promise(r => setTimeout(r, 4000))
       }
     }
 

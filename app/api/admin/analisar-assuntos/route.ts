@@ -109,15 +109,34 @@ Retorne APENAS o JSON, sem markdown.`
     let resultado
     try {
       resultado = JSON.parse(text.trim())
-    } catch {
+    } catch (parseError) {
+      console.log('Tentando extrair JSON da resposta...')
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
-        resultado = JSON.parse(jsonMatch[0])
+        try {
+          resultado = JSON.parse(jsonMatch[0])
+        } catch (e) {
+          console.error('Falha ao parsear JSON extraído:', e)
+          return NextResponse.json({
+            error: 'Erro ao parsear resposta da IA',
+            details: text.slice(0, 500)
+          }, { status: 500 })
+        }
+      } else {
+        console.error('Nenhum JSON encontrado na resposta:', text.slice(0, 500))
+        return NextResponse.json({
+          error: 'Resposta da IA não contém JSON válido',
+          details: text.slice(0, 500)
+        }, { status: 500 })
       }
     }
 
     if (!resultado?.analises) {
-      return NextResponse.json({ error: 'Resposta inválida da IA' }, { status: 500 })
+      console.error('Estrutura inválida:', JSON.stringify(resultado).slice(0, 500))
+      return NextResponse.json({
+        error: 'Resposta da IA com estrutura inválida',
+        details: JSON.stringify(resultado).slice(0, 200)
+      }, { status: 500 })
     }
 
     // Enriquecer resultado com dados originais
@@ -137,6 +156,9 @@ Retorne APENAS o JSON, sem markdown.`
     return NextResponse.json({ analises })
   } catch (error) {
     console.error('Erro ao analisar assuntos:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    return NextResponse.json({
+      error: 'Erro interno',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 })
   }
 }
