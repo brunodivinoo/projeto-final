@@ -196,19 +196,31 @@ Retorne APENAS o JSON, sem markdown.`
       let disciplina = a.disciplinaSugerida || ''
       if (!disciplina && questaoOriginal) {
         // Fallback: tentar identificar pelo texto
-        const texto = (questaoOriginal.enunciado + ' ' + questaoOriginal.comentario).toLowerCase()
-        if (texto.includes('direito penal') || texto.includes('crime') || texto.includes('pena')) {
-          disciplina = 'Direito Penal'
-        } else if (texto.includes('direito constitucional') || texto.includes('constituição') || texto.includes('cf/88')) {
-          disciplina = 'Direito Constitucional'
-        } else if (texto.includes('direito civil') || texto.includes('código civil')) {
-          disciplina = 'Direito Civil'
-        } else if (texto.includes('direito administrativo') || texto.includes('administração pública')) {
-          disciplina = 'Direito Administrativo'
-        } else if (texto.includes('processo penal') || texto.includes('cpp') || texto.includes('citação') || texto.includes('intimação')) {
+        const texto = ((questaoOriginal.enunciado || '') + ' ' + (questaoOriginal.comentario || '')).toLowerCase()
+
+        // Ordem importa: mais específico primeiro
+        if (texto.includes('processo penal') || texto.includes('cpp') || texto.includes('citação por edital') || texto.includes('ação penal')) {
           disciplina = 'Direito Processual Penal'
-        } else if (texto.includes('processo civil') || texto.includes('cpc')) {
+        } else if (texto.includes('processo civil') || texto.includes('cpc') || texto.includes('petição inicial')) {
           disciplina = 'Direito Processual Civil'
+        } else if (texto.includes('direito penal') || texto.includes('crime') || texto.includes('pena') || texto.includes('delito') || texto.includes('condenado') || texto.includes('réu')) {
+          disciplina = 'Direito Penal'
+        } else if (texto.includes('direito constitucional') || texto.includes('constituição') || texto.includes('cf/88') || texto.includes('súmula vinculante')) {
+          disciplina = 'Direito Constitucional'
+        } else if (texto.includes('direito civil') || texto.includes('código civil') || texto.includes('contrato') || texto.includes('obrigação')) {
+          disciplina = 'Direito Civil'
+        } else if (texto.includes('direito administrativo') || texto.includes('administração pública') || texto.includes('servidor público') || texto.includes('licitação')) {
+          disciplina = 'Direito Administrativo'
+        } else if (texto.includes('direito tributário') || texto.includes('tributo') || texto.includes('imposto')) {
+          disciplina = 'Direito Tributário'
+        } else if (texto.includes('direito do trabalho') || texto.includes('clt') || texto.includes('trabalhista')) {
+          disciplina = 'Direito do Trabalho'
+        } else if (texto.includes('stf') || texto.includes('supremo tribunal federal')) {
+          // Se menciona STF mas não identificou outra, provavelmente é constitucional
+          disciplina = 'Direito Constitucional'
+        } else if (texto.includes('stj') || texto.includes('superior tribunal de justiça')) {
+          // STJ pode ser várias coisas, mas vamos para Civil como padrão
+          disciplina = 'Direito Civil'
         }
       }
 
