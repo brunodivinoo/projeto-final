@@ -53,12 +53,9 @@ ${assuntosPadrao.slice(0, 100).map(a => `- ${a.disciplina}: ${a.assunto}`).join(
 
 QUESTÕES PARA ANALISAR:
 ${questoes.map((q, i) => `
----QUESTÃO ${i + 1}---
-ID: ${q.id}
-Disciplina: ${q.disciplina}
-Assunto Atual: ${q.assunto}
-Enunciado: ${q.enunciado.slice(0, 500)}
-Comentário: ${(q.comentario || '').slice(0, 300)}
+[${i + 1}] ID: ${q.id}
+Disc: ${q.disciplina} | Assunto: ${q.assunto}
+Enunc: ${q.enunciado.slice(0, 300)}
 `).join('\n')}
 
 RESPONDA EM JSON:
@@ -80,7 +77,7 @@ Retorne APENAS o JSON, sem markdown.`
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 4096 }
+          generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
         })
       }
     )
