@@ -40,29 +40,40 @@ export async function POST(req: NextRequest) {
     // Montar prompt para análise
     const prompt = `Você é um especialista em concursos públicos brasileiros.
 
-Analise as questões abaixo e sugira o ASSUNTO correto para cada uma, baseado no enunciado.
+Analise as questões abaixo e sugira o ASSUNTO correto para cada uma, baseado no enunciado e na disciplina.
 
 REGRAS OBRIGATÓRIAS:
-1. O assunto deve ser um TEMA JURÍDICO genérico, como aparece em editais de concursos
-2. NUNCA use palavras como: "súmula", "STF", "STJ", "processada", "jurisprudência", "repercussão"
-3. Use assuntos como: "Princípios Constitucionais", "Direitos Fundamentais", "Competência", "Prescrição", "Responsabilidade Civil", "Atos Administrativos", "Crimes contra a Administração", etc.
-4. O assunto deve ter NO MÁXIMO 3-4 palavras
-5. Retorne APENAS o nome do assunto, sem incluir a disciplina
+1. O assunto deve ser um TEMA/TÓPICO que aparece em editais de concursos
+2. Considere a DISCIPLINA da questão para sugerir assuntos apropriados
+3. O assunto deve ter NO MÁXIMO 3-4 palavras
+4. Retorne APENAS o nome do assunto, sem incluir a disciplina
+5. NUNCA mantenha assuntos com palavras como: "súmula", "STF", "STJ", "processada", "jurisprudência", "repercussão", "para revisao", "geral"
 
-EXEMPLOS DE CORREÇÃO:
-- "sumulas stf processadas" sobre direitos fundamentais → "Direitos Fundamentais"
-- "jurisprudencia stj" sobre prescrição → "Prescrição"
-- "sumulas para revisao" sobre competência dos juizados → "Competência"
-- "repercussao geral" sobre tributário → "Tributos em Espécie"
+EXEMPLOS POR DISCIPLINA:
+- Direito Constitucional: "Direitos Fundamentais", "Organização do Estado", "Controle de Constitucionalidade"
+- Direito Administrativo: "Atos Administrativos", "Licitações", "Servidores Públicos"
+- Direito Penal: "Crimes contra a Pessoa", "Crimes contra o Patrimônio", "Teoria do Crime"
+- Direito Civil: "Contratos", "Responsabilidade Civil", "Direito das Obrigações"
+- Português: "Interpretação de Texto", "Concordância Verbal", "Regência", "Pontuação"
+- Matemática: "Porcentagem", "Razão e Proporção", "Equações", "Geometria"
+- Raciocínio Lógico: "Lógica Proposicional", "Sequências", "Análise Combinatória"
+- Informática: "Sistemas Operacionais", "Redes de Computadores", "Segurança da Informação"
+- Contabilidade: "Balanço Patrimonial", "DRE", "Análise de Balanços"
 
-Assuntos válidos no sistema (use preferencialmente):
+CORREÇÕES ESPERADAS:
+- "sumulas stf processadas" → use o tema real (ex: "Direitos Fundamentais")
+- "jurisprudencia stj" → use o tema real (ex: "Prescrição")
+- "sumulas para revisao" → use o tema real (ex: "Competência")
+- "repercussao geral" → use o tema real (ex: "Tributos em Espécie")
+
+Assuntos já existentes no sistema (use preferencialmente se aplicável):
 ${assuntosPadrao.slice(0, 50).map(a => `- ${a.assunto}`).join('\n')}
 
 QUESTÕES PARA ANALISAR:
 ${questoes.map((q, i) => `
 [${i + 1}] ID: ${q.id}
-Disc: ${q.disciplina} | Assunto: ${q.assunto}
-Enunc: ${q.enunciado.slice(0, 300)}
+Disciplina: ${q.disciplina} | Assunto atual: ${q.assunto}
+Enunciado: ${q.enunciado.slice(0, 300)}
 `).join('\n')}
 
 RESPONDA EM JSON:
