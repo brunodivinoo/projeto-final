@@ -193,35 +193,59 @@ Retorne APENAS o JSON, sem markdown.`
       const questaoOriginal = questoes.find(q => q.id === a.questaoId)
 
       // Se a IA não retornou disciplina, tentar extrair do enunciado/comentário
-      let disciplina = a.disciplinaSugerida || ''
-      if (!disciplina && questaoOriginal) {
-        // Fallback: tentar identificar pelo texto
-        const texto = ((questaoOriginal.enunciado || '') + ' ' + (questaoOriginal.comentario || '')).toLowerCase()
+      let disciplina = (a.disciplinaSugerida || '').trim()
+
+      // Função para detectar disciplina pelo texto
+      const detectarDisciplina = (texto: string): string => {
+        const t = texto.toLowerCase()
 
         // Ordem importa: mais específico primeiro
-        if (texto.includes('processo penal') || texto.includes('cpp') || texto.includes('citação por edital') || texto.includes('ação penal')) {
-          disciplina = 'Direito Processual Penal'
-        } else if (texto.includes('processo civil') || texto.includes('cpc') || texto.includes('petição inicial')) {
-          disciplina = 'Direito Processual Civil'
-        } else if (texto.includes('direito penal') || texto.includes('crime') || texto.includes('pena') || texto.includes('delito') || texto.includes('condenado') || texto.includes('réu')) {
-          disciplina = 'Direito Penal'
-        } else if (texto.includes('direito constitucional') || texto.includes('constituição') || texto.includes('cf/88') || texto.includes('súmula vinculante')) {
-          disciplina = 'Direito Constitucional'
-        } else if (texto.includes('direito civil') || texto.includes('código civil') || texto.includes('contrato') || texto.includes('obrigação')) {
-          disciplina = 'Direito Civil'
-        } else if (texto.includes('direito administrativo') || texto.includes('administração pública') || texto.includes('servidor público') || texto.includes('licitação')) {
-          disciplina = 'Direito Administrativo'
-        } else if (texto.includes('direito tributário') || texto.includes('tributo') || texto.includes('imposto')) {
-          disciplina = 'Direito Tributário'
-        } else if (texto.includes('direito do trabalho') || texto.includes('clt') || texto.includes('trabalhista')) {
-          disciplina = 'Direito do Trabalho'
-        } else if (texto.includes('stf') || texto.includes('supremo tribunal federal')) {
-          // Se menciona STF mas não identificou outra, provavelmente é constitucional
-          disciplina = 'Direito Constitucional'
-        } else if (texto.includes('stj') || texto.includes('superior tribunal de justiça')) {
-          // STJ pode ser várias coisas, mas vamos para Civil como padrão
-          disciplina = 'Direito Civil'
+        if (t.includes('processo penal') || t.includes('cpp') || t.includes('citação por edital') || t.includes('ação penal') || t.includes('inquérito policial')) {
+          return 'Direito Processual Penal'
         }
+        if (t.includes('processo civil') || t.includes('cpc') || t.includes('petição inicial') || t.includes('contestação')) {
+          return 'Direito Processual Civil'
+        }
+        if (t.includes('direito penal') || t.includes('crime') || t.includes('pena') || t.includes('delito') || t.includes('condenado') || t.includes('réu') || t.includes('código penal') || t.includes('tipicidade') || t.includes('dolo') || t.includes('culpa')) {
+          return 'Direito Penal'
+        }
+        if (t.includes('direito constitucional') || t.includes('constituição') || t.includes('cf/88') || t.includes('súmula vinculante') || t.includes('direitos fundamentais')) {
+          return 'Direito Constitucional'
+        }
+        if (t.includes('direito civil') || t.includes('código civil') || t.includes('contrato') || t.includes('obrigação') || t.includes('responsabilidade civil')) {
+          return 'Direito Civil'
+        }
+        if (t.includes('direito administrativo') || t.includes('administração pública') || t.includes('servidor público') || t.includes('licitação') || t.includes('ato administrativo')) {
+          return 'Direito Administrativo'
+        }
+        if (t.includes('direito tributário') || t.includes('tributo') || t.includes('imposto') || t.includes('icms') || t.includes('contribuinte')) {
+          return 'Direito Tributário'
+        }
+        if (t.includes('direito do trabalho') || t.includes('clt') || t.includes('trabalhista') || t.includes('empregado') || t.includes('empregador')) {
+          return 'Direito do Trabalho'
+        }
+        if (t.includes('português') || t.includes('concordância') || t.includes('regência') || t.includes('ortografia') || t.includes('gramática')) {
+          return 'Língua Portuguesa'
+        }
+        if (t.includes('raciocínio lógico') || t.includes('proposição') || t.includes('silogismo')) {
+          return 'Raciocínio Lógico'
+        }
+        if (t.includes('informática') || t.includes('excel') || t.includes('word') || t.includes('windows') || t.includes('linux')) {
+          return 'Informática'
+        }
+        if (t.includes('stf') || t.includes('supremo tribunal federal')) {
+          return 'Direito Constitucional'
+        }
+        if (t.includes('stj') || t.includes('superior tribunal de justiça')) {
+          return 'Direito Civil'
+        }
+        return ''
+      }
+
+      // Se disciplina está vazia, usar fallback
+      if (!disciplina && questaoOriginal) {
+        const texto = (questaoOriginal.enunciado || '') + ' ' + (questaoOriginal.comentario || '')
+        disciplina = detectarDisciplina(texto)
       }
 
       return {
