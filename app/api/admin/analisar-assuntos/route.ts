@@ -47,9 +47,10 @@ ESTRUTURA HIERÁRQUICA:
 - ASSUNTO: Tema genérico de edital, dentro da disciplina (ex: "Direitos Fundamentais", "Concordância Verbal")
 - SUBASSUNTO: Detalhamento específico, AQUI pode ter súmulas, jurisprudência, artigos específicos (ex: "Súmula Vinculante 11", "Art. 5º da CF", "Jurisprudência do STJ")
 
-REGRAS PARA DISCIPLINA:
-- Identifique a área correta baseado no conteúdo (Direito Constitucional, Direito Penal, Português, etc.)
-- Use nomes padronizados de editais
+REGRAS PARA DISCIPLINA (OBRIGATÓRIO):
+- SEMPRE identifique a disciplina correta baseado no conteúdo do enunciado e comentário
+- NUNCA deixe a disciplina vazia ou em branco
+- Use nomes padronizados de editais: "Direito Constitucional", "Direito Penal", "Direito Civil", "Direito Administrativo", "Direito Processual Penal", "Direito Processual Civil", "Língua Portuguesa", "Matemática", "Raciocínio Lógico", "Informática", etc.
 
 REGRAS PARA ASSUNTO:
 - Deve ser um TEMA GENÉRICO que aparece em editais de concursos

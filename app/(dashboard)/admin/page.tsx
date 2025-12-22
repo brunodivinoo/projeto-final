@@ -215,8 +215,8 @@ export default function AdminPage() {
         assunto: analise.assuntoSugerido
       }
 
-      // Atualizar disciplina se foi sugerida uma diferente
-      if (analise.disciplinaSugerida && analise.disciplinaSugerida !== analise.disciplinaAtual) {
+      // Atualizar disciplina se foi sugerida (mesmo se atual estiver vazia)
+      if (analise.disciplinaSugerida) {
         updateData.disciplina = analise.disciplinaSugerida
       }
 
@@ -629,12 +629,24 @@ export default function AdminPage() {
                           <span className="text-[#9dabb9]">Disciplina: </span>
                           {analise.disciplinaSugerida && analise.disciplinaSugerida !== analise.disciplinaAtual ? (
                             <>
-                              <span className="text-red-400 line-through">{analise.disciplinaAtual}</span>
+                              {analise.disciplinaAtual ? (
+                                <span className="text-red-400 line-through">{analise.disciplinaAtual}</span>
+                              ) : (
+                                <span className="text-red-400 italic">(vazia)</span>
+                              )}
+                              <span className="mx-1 text-[#9dabb9]">→</span>
+                              <span className="text-emerald-400">{analise.disciplinaSugerida}</span>
+                            </>
+                          ) : analise.disciplinaAtual ? (
+                            <span className="text-white">{analise.disciplinaAtual}</span>
+                          ) : analise.disciplinaSugerida ? (
+                            <>
+                              <span className="text-red-400 italic">(vazia)</span>
                               <span className="mx-1 text-[#9dabb9]">→</span>
                               <span className="text-emerald-400">{analise.disciplinaSugerida}</span>
                             </>
                           ) : (
-                            <span className="text-white">{analise.disciplinaAtual}</span>
+                            <span className="text-red-400 italic">(não identificada)</span>
                           )}
                         </p>
 
