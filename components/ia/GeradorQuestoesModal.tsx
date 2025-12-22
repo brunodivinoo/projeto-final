@@ -1253,7 +1253,7 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
                           className="w-full px-4 py-2 text-left text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#283039] flex items-center gap-2"
                         >
                           <span className="material-symbols-outlined text-amber-500 text-sm">gavel</span>
-                          {b.nome}
+                          {b.nome.toUpperCase()}
                           {bancasCustomizadas.includes(b.nome) && (
                             <span className="ml-auto text-xs text-[#9dabb9]">(sua)</span>
                           )}
@@ -1288,7 +1288,7 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
                         className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-sm"
                       >
                         <span className="material-symbols-outlined text-xs">gavel</span>
-                        {b}
+                        {b.toUpperCase()}
                         <button onClick={() => removerBanca(b)} className="hover:text-red-500">
                           <span className="material-symbols-outlined text-sm">close</span>
                         </button>
