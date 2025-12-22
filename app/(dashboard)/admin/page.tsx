@@ -101,33 +101,68 @@ export default function AdminPage() {
 
     setAnalisando(true)
     setOrganizarLog(prev => [...prev, `🤖 Analisando ${questoesParaAnalisar.length} questões com IA...`])
+    setOrganizarLog(prev => [...prev, `⏱️ Isso pode demorar alguns minutos devido aos limites da API...`])
 
     const analises: AssuntoAnalise[] = []
+    let errosConsecutivos = 0
 
     // Processar em lotes de 5
     for (let i = 0; i < questoesParaAnalisar.length; i += 5) {
       const lote = questoesParaAnalisar.slice(i, i + 5)
+      const loteNum = Math.floor(i/5) + 1
+      let sucesso = false
+      let tentativas = 0
+      const maxTentativas = 3
 
-      try {
-        const response = await fetch('/api/admin/analisar-assuntos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ questoes: lote })
-        })
+      while (!sucesso && tentativas < maxTentativas) {
+        tentativas++
 
-        if (response.ok) {
-          const resultado = await response.json()
-          analises.push(...resultado.analises)
-          setOrganizarLog(prev => [...prev, `✅ Lote ${Math.floor(i/5) + 1} analisado (${i + lote.length}/${questoesParaAnalisar.length})`])
-        } else {
-          setOrganizarLog(prev => [...prev, `❌ Erro no lote ${Math.floor(i/5) + 1}`])
+        try {
+          const response = await fetch('/api/admin/analisar-assuntos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ questoes: lote })
+          })
+
+          if (response.ok) {
+            const resultado = await response.json()
+            analises.push(...resultado.analises)
+            setOrganizarLog(prev => [...prev, `✅ Lote ${loteNum} analisado (${i + lote.length}/${questoesParaAnalisar.length})`])
+            sucesso = true
+            errosConsecutivos = 0
+          } else {
+            const erro = await response.json()
+            if (tentativas < maxTentativas) {
+              setOrganizarLog(prev => [...prev, `⚠️ Lote ${loteNum} falhou (tentativa ${tentativas}/${maxTentativas}), aguardando...`])
+              // Esperar mais tempo se der erro (rate limit)
+              await new Promise(r => setTimeout(r, 5000 * tentativas))
+            } else {
+              setOrganizarLog(prev => [...prev, `❌ Lote ${loteNum} falhou após ${maxTentativas} tentativas: ${erro.error || 'erro desconhecido'}`])
+              errosConsecutivos++
+            }
+          }
+        } catch (err) {
+          if (tentativas < maxTentativas) {
+            setOrganizarLog(prev => [...prev, `⚠️ Erro de rede no lote ${loteNum}, tentando novamente...`])
+            await new Promise(r => setTimeout(r, 3000))
+          } else {
+            setOrganizarLog(prev => [...prev, `❌ Erro no lote ${loteNum}: ${err}`])
+            errosConsecutivos++
+          }
         }
-      } catch (err) {
-        setOrganizarLog(prev => [...prev, `❌ Erro: ${err}`])
       }
 
-      // Pequena pausa entre lotes
-      await new Promise(r => setTimeout(r, 500))
+      // Se muitos erros consecutivos, pausar mais
+      if (errosConsecutivos >= 3) {
+        setOrganizarLog(prev => [...prev, `⏸️ Muitos erros consecutivos. Pausando 30s para evitar rate limit...`])
+        await new Promise(r => setTimeout(r, 30000))
+        errosConsecutivos = 0
+      }
+
+      // Pausa entre lotes (2 segundos para evitar rate limit)
+      if (i + 5 < questoesParaAnalisar.length) {
+        await new Promise(r => setTimeout(r, 2000))
+      }
     }
 
     setAnalisesAssuntos(analises)

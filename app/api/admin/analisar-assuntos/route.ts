@@ -86,11 +86,24 @@ Retorne APENAS o JSON, sem markdown.`
     )
 
     if (!response.ok) {
-      return NextResponse.json({ error: 'Erro na API Gemini' }, { status: 500 })
+      const errorText = await response.text()
+      console.error('Erro Gemini:', response.status, errorText)
+      return NextResponse.json({
+        error: `Erro na API Gemini: ${response.status}`,
+        details: errorText
+      }, { status: 500 })
     }
 
     const data = await response.json()
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+    if (!text) {
+      console.error('Resposta vazia da Gemini:', JSON.stringify(data))
+      return NextResponse.json({
+        error: 'Resposta vazia da IA',
+        details: data
+      }, { status: 500 })
+    }
 
     // Parse JSON
     let resultado
