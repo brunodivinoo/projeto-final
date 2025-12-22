@@ -40,16 +40,23 @@ export async function POST(req: NextRequest) {
     // Montar prompt para análise
     const prompt = `Você é um especialista em concursos públicos brasileiros.
 
-Analise as questões abaixo e sugira o ASSUNTO correto para cada uma, baseado no enunciado e comentário.
+Analise as questões abaixo e sugira o ASSUNTO correto para cada uma, baseado no enunciado.
 
-IMPORTANTE:
-- Use assuntos PADRONIZADOS que existem em editais de concursos
-- NÃO use números de súmulas como assunto (ex: "Súmula 123" é errado)
-- NÃO use termos técnicos muito específicos
-- Use nomes de assuntos genéricos e reconhecíveis
+REGRAS OBRIGATÓRIAS:
+1. O assunto deve ser um TEMA JURÍDICO genérico, como aparece em editais de concursos
+2. NUNCA use palavras como: "súmula", "STF", "STJ", "processada", "jurisprudência", "repercussão"
+3. Use assuntos como: "Princípios Constitucionais", "Direitos Fundamentais", "Competência", "Prescrição", "Responsabilidade Civil", "Atos Administrativos", "Crimes contra a Administração", etc.
+4. O assunto deve ter NO MÁXIMO 3-4 palavras
+5. Retorne APENAS o nome do assunto, sem incluir a disciplina
 
-Assuntos existentes no sistema (use preferencialmente estes):
-${assuntosPadrao.slice(0, 100).map(a => `- ${a.disciplina}: ${a.assunto}`).join('\n')}
+EXEMPLOS DE CORREÇÃO:
+- "sumulas stf processadas" sobre direitos fundamentais → "Direitos Fundamentais"
+- "jurisprudencia stj" sobre prescrição → "Prescrição"
+- "sumulas para revisao" sobre competência dos juizados → "Competência"
+- "repercussao geral" sobre tributário → "Tributos em Espécie"
+
+Assuntos válidos no sistema (use preferencialmente):
+${assuntosPadrao.slice(0, 50).map(a => `- ${a.assunto}`).join('\n')}
 
 QUESTÕES PARA ANALISAR:
 ${questoes.map((q, i) => `
