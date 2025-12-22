@@ -23,7 +23,9 @@ interface AssuntoAnalise {
   disciplinaAtual: string
   assuntoAtual: string
   subassuntoAtual: string
+  disciplinaSugerida: string
   assuntoSugerido: string
+  subassuntoSugerido: string
   enunciado: string
   selecionado: boolean
 }
@@ -208,15 +210,30 @@ export default function AdminPage() {
 
     let sucesso = 0
     for (const analise of selecionados) {
+      // Atualizar disciplina, assunto e subassunto
+      const updateData: Record<string, string> = {
+        assunto: analise.assuntoSugerido
+      }
+
+      // Atualizar disciplina se foi sugerida uma diferente
+      if (analise.disciplinaSugerida && analise.disciplinaSugerida !== analise.disciplinaAtual) {
+        updateData.disciplina = analise.disciplinaSugerida
+      }
+
+      // Atualizar subassunto se foi sugerido
+      if (analise.subassuntoSugerido) {
+        updateData.subassunto = analise.subassuntoSugerido
+      }
+
       const { error } = await supabase
         .from('questoes')
-        .update({ assunto: analise.assuntoSugerido })
+        .update(updateData)
         .eq('id', analise.questaoId)
 
       if (!error) sucesso++
     }
 
-    setOrganizarLog(prev => [...prev, `✅ ${sucesso} questões atualizadas!`])
+    setOrganizarLog(prev => [...prev, `✅ ${sucesso} questões atualizadas (disciplina, assunto e subassunto)!`])
 
     // Limpar selecionados
     setAnalisesAssuntos(prev => prev.filter(a => !a.selecionado))
@@ -607,13 +624,37 @@ export default function AdminPage() {
                         className="mt-1"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-[#9dabb9]">{analise.disciplinaAtual}</p>
+                        {/* Disciplina */}
+                        <p className="text-xs mb-1">
+                          <span className="text-[#9dabb9]">Disciplina: </span>
+                          {analise.disciplinaSugerida && analise.disciplinaSugerida !== analise.disciplinaAtual ? (
+                            <>
+                              <span className="text-red-400 line-through">{analise.disciplinaAtual}</span>
+                              <span className="mx-1 text-[#9dabb9]">→</span>
+                              <span className="text-emerald-400">{analise.disciplinaSugerida}</span>
+                            </>
+                          ) : (
+                            <span className="text-white">{analise.disciplinaAtual}</span>
+                          )}
+                        </p>
+
+                        {/* Assunto */}
                         <p className="text-sm">
+                          <span className="text-[#9dabb9]">Assunto: </span>
                           <span className="text-red-400 line-through">{analise.assuntoAtual}</span>
                           <span className="mx-2 text-[#9dabb9]">→</span>
                           <span className="text-emerald-400 font-medium">{analise.assuntoSugerido}</span>
                         </p>
-                        <p className="text-xs text-[#9dabb9] truncate mt-1">{analise.enunciado.slice(0, 100)}...</p>
+
+                        {/* Subassunto */}
+                        {analise.subassuntoSugerido && (
+                          <p className="text-xs mt-1">
+                            <span className="text-[#9dabb9]">Subassunto: </span>
+                            <span className="text-cyan-400">{analise.subassuntoSugerido}</span>
+                          </p>
+                        )}
+
+                        <p className="text-xs text-[#9dabb9] truncate mt-2">{analise.enunciado.slice(0, 100)}...</p>
                       </div>
                     </div>
                   </label>

@@ -40,38 +40,55 @@ export async function POST(req: NextRequest) {
     // Montar prompt para análise
     const prompt = `Você é um especialista em concursos públicos brasileiros.
 
-SUA TAREFA: Analisar o ENUNCIADO e o COMENTÁRIO/GABARITO de cada questão para identificar o ASSUNTO correto.
+SUA TAREFA: Analisar o ENUNCIADO e o COMENTÁRIO de cada questão para identificar a DISCIPLINA, ASSUNTO e SUBASSUNTO corretos.
 
-COMO ANALISAR:
-1. Leia o ENUNCIADO da questão para entender o tema abordado
-2. Leia o COMENTÁRIO para confirmar qual é o assunto específico tratado
-3. Identifique o tópico/tema principal que seria cobrado em um edital de concurso
-4. Sugira um assunto que represente o conteúdo real da questão
+ESTRUTURA HIERÁRQUICA:
+- DISCIPLINA: A matéria/área do conhecimento (ex: "Direito Constitucional", "Português", "Matemática")
+- ASSUNTO: Tema genérico de edital, dentro da disciplina (ex: "Direitos Fundamentais", "Concordância Verbal")
+- SUBASSUNTO: Detalhamento específico, AQUI pode ter súmulas, jurisprudência, artigos específicos (ex: "Súmula Vinculante 11", "Art. 5º da CF", "Jurisprudência do STJ")
 
-REGRAS PARA O ASSUNTO:
-- Deve ser um TEMA/TÓPICO que aparece em editais de concursos
-- Deve ter NO MÁXIMO 3-4 palavras
-- Retorne APENAS o nome do assunto, sem incluir a disciplina
-- NUNCA use palavras como: "súmula", "STF", "STJ", "processada", "jurisprudência", "repercussão", "para revisao", "geral"
+REGRAS PARA DISCIPLINA:
+- Identifique a área correta baseado no conteúdo (Direito Constitucional, Direito Penal, Português, etc.)
+- Use nomes padronizados de editais
 
-EXEMPLOS DE ASSUNTOS VÁLIDOS:
-- Direitos Fundamentais, Organização do Estado, Controle de Constitucionalidade
-- Atos Administrativos, Licitações, Servidores Públicos, Responsabilidade Civil
-- Crimes contra a Pessoa, Crimes contra o Patrimônio, Teoria do Crime
-- Contratos, Obrigações, Prescrição e Decadência
-- Interpretação de Texto, Concordância Verbal, Regência, Pontuação
-- Porcentagem, Razão e Proporção, Equações, Geometria
-- Lógica Proposicional, Sequências, Análise Combinatória
+REGRAS PARA ASSUNTO:
+- Deve ser um TEMA GENÉRICO que aparece em editais de concursos
+- NO MÁXIMO 3-4 palavras
+- NUNCA coloque súmula, STF, STJ, jurisprudência no ASSUNTO
+- Exemplos: "Direitos Fundamentais", "Crimes contra a Pessoa", "Atos Administrativos", "Interpretação de Texto"
 
-Assuntos já existentes no sistema (use preferencialmente se aplicável):
-${assuntosPadrao.slice(0, 50).map(a => `- ${a.assunto}`).join('\n')}
+REGRAS PARA SUBASSUNTO:
+- AQUI SIM pode ter detalhes específicos
+- Súmulas (ex: "Súmula Vinculante 11", "Súmula 473 STF")
+- Jurisprudência (ex: "Jurisprudência STJ sobre Prescrição")
+- Artigos específicos (ex: "Art. 37 da CF")
+- Ou deixe vazio se não houver detalhamento específico
+
+EXEMPLOS DE CLASSIFICAÇÃO CORRETA:
+1. Questão sobre direito à liberdade e Súmula Vinculante 11:
+   - Disciplina: "Direito Constitucional"
+   - Assunto: "Direitos Fundamentais"
+   - Subassunto: "Súmula Vinculante 11 - Uso de Algemas"
+
+2. Questão sobre prescrição com jurisprudência do STJ:
+   - Disciplina: "Direito Civil"
+   - Assunto: "Prescrição e Decadência"
+   - Subassunto: "Jurisprudência STJ"
+
+3. Questão de português sobre concordância:
+   - Disciplina: "Língua Portuguesa"
+   - Assunto: "Concordância Verbal"
+   - Subassunto: ""
+
+Disciplinas e assuntos existentes no sistema:
+${assuntosPadrao.slice(0, 50).map(a => `- ${a.disciplina}: ${a.assunto}`).join('\n')}
 
 QUESTÕES PARA ANALISAR:
 ${questoes.map((q, i) => `
 [${i + 1}] ID: ${q.id}
-Disciplina: ${q.disciplina} | Assunto atual (IGNORAR SE RUIM): ${q.assunto}
+Dados atuais (podem estar errados): Disc: ${q.disciplina} | Assunto: ${q.assunto} | Sub: ${q.subassunto || 'vazio'}
 ENUNCIADO: ${q.enunciado.slice(0, 400)}
-COMENTÁRIO: ${q.comentario ? q.comentario.slice(0, 300) : 'Não disponível'}
+COMENTÁRIO: ${q.comentario ? q.comentario.slice(0, 400) : 'Não disponível'}
 `).join('\n')}
 
 RESPONDA EM JSON:
@@ -79,7 +96,9 @@ RESPONDA EM JSON:
   "analises": [
     {
       "questaoId": "id da questão",
-      "assuntoSugerido": "nome do assunto identificado baseado no enunciado e comentário"
+      "disciplinaSugerida": "disciplina correta",
+      "assuntoSugerido": "assunto genérico de edital",
+      "subassuntoSugerido": "detalhamento específico ou vazio"
     }
   ]
 }
@@ -160,14 +179,21 @@ Retorne APENAS o JSON, sem markdown.`
     }
 
     // Enriquecer resultado com dados originais
-    const analises = resultado.analises.map((a: { questaoId: string; assuntoSugerido: string }) => {
+    const analises = resultado.analises.map((a: {
+      questaoId: string
+      disciplinaSugerida?: string
+      assuntoSugerido: string
+      subassuntoSugerido?: string
+    }) => {
       const questaoOriginal = questoes.find(q => q.id === a.questaoId)
       return {
         questaoId: a.questaoId,
         disciplinaAtual: questaoOriginal?.disciplina || '',
         assuntoAtual: questaoOriginal?.assunto || '',
         subassuntoAtual: questaoOriginal?.subassunto || '',
+        disciplinaSugerida: a.disciplinaSugerida || questaoOriginal?.disciplina || '',
         assuntoSugerido: a.assuntoSugerido,
+        subassuntoSugerido: a.subassuntoSugerido || '',
         enunciado: questaoOriginal?.enunciado || '',
         selecionado: false
       }
