@@ -60,6 +60,15 @@ export default function AdminPage() {
   const [filtroAssunto, setFiltroAssunto] = useState('')
   const [organizarLog, setOrganizarLog] = useState<string[]>([])
 
+  // Estado do processamento em background
+  const [bgProcesso, setBgProcesso] = useState<{
+    ativo: boolean
+    total: number
+    atual: number
+    sucessos: number
+    erros: number
+  }>({ ativo: false, total: 0, atual: 0, sucessos: 0, erros: 0 })
+
   // Estado de popular disciplinas
   const [disciplinasPopular, setDisciplinasPopular] = useState<DisciplinaPopular[]>([])
   const [buscandoDisciplinas, setBuscandoDisciplinas] = useState(false)
@@ -92,24 +101,42 @@ export default function AdminPage() {
     setOrganizarLog(prev => [...prev, `✅ ${data?.length || 0} questões encontradas com assuntos problemáticos`])
   }
 
-  // Analisar questões com IA
+  // Analisar questões com IA (em background, 1 a 1)
   const analisarQuestoesComIA = async () => {
     if (questoesParaAnalisar.length === 0) {
       setOrganizarLog(prev => [...prev, '⚠️ Nenhuma questão para analisar. Clique em "Buscar Questões" primeiro.'])
       return
     }
 
+    if (bgProcesso.ativo) {
+      setOrganizarLog(prev => [...prev, '⚠️ Já existe um processamento em andamento.'])
+      return
+    }
+
+    // Iniciar processamento em background
     setAnalisando(true)
-    setOrganizarLog(prev => [...prev, `🤖 Analisando ${questoesParaAnalisar.length} questões com IA...`])
-    setOrganizarLog(prev => [...prev, `⏱️ Isso pode demorar alguns minutos devido aos limites da API...`])
+    setBgProcesso({
+      ativo: true,
+      total: questoesParaAnalisar.length,
+      atual: 0,
+      sucessos: 0,
+      erros: 0
+    })
+    setOrganizarLog(prev => [...prev, `🤖 Iniciando análise de ${questoesParaAnalisar.length} questões em segundo plano...`])
 
+    // Processar em background (não bloqueia a UI)
+    processarQuestoesBackground()
+  }
+
+  // Função que processa em background
+  const processarQuestoesBackground = async () => {
     const analises: AssuntoAnalise[] = []
-    let errosConsecutivos = 0
+    let sucessos = 0
+    let erros = 0
 
-    // Processar em lotes de 5
-    for (let i = 0; i < questoesParaAnalisar.length; i += 5) {
-      const lote = questoesParaAnalisar.slice(i, i + 5)
-      const loteNum = Math.floor(i/5) + 1
+    // Processar 1 a 1
+    for (let i = 0; i < questoesParaAnalisar.length; i++) {
+      const questao = questoesParaAnalisar[i]
       let sucesso = false
       let tentativas = 0
       const maxTentativas = 3
@@ -121,54 +148,51 @@ export default function AdminPage() {
           const response = await fetch('/api/admin/analisar-assuntos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ questoes: lote })
+            body: JSON.stringify({ questoes: [questao] })
           })
 
           if (response.ok) {
             const resultado = await response.json()
-            analises.push(...resultado.analises)
-            setOrganizarLog(prev => [...prev, `✅ Lote ${loteNum} analisado (${i + lote.length}/${questoesParaAnalisar.length})`])
+            if (resultado.analises?.length > 0) {
+              analises.push(...resultado.analises)
+              setAnalisesAssuntos(prev => [...prev, ...resultado.analises])
+            }
             sucesso = true
-            errosConsecutivos = 0
+            sucessos++
           } else {
-            const erro = await response.json()
-            const erroMsg = erro.details ? `${erro.error} - ${erro.details}` : erro.error
             if (tentativas < maxTentativas) {
-              setOrganizarLog(prev => [...prev, `⚠️ Lote ${loteNum} falhou (tentativa ${tentativas}/${maxTentativas}): ${erro.error}. Aguardando ${10 * tentativas}s...`])
-              // Esperar mais tempo se der erro (rate limit) - 10s, 20s, 30s
-              await new Promise(r => setTimeout(r, 10000 * tentativas))
+              await new Promise(r => setTimeout(r, 5000 * tentativas))
             } else {
-              setOrganizarLog(prev => [...prev, `❌ Lote ${loteNum} falhou: ${erroMsg}`])
-              errosConsecutivos++
+              erros++
             }
           }
-        } catch (err) {
-          if (tentativas < maxTentativas) {
-            setOrganizarLog(prev => [...prev, `⚠️ Erro de rede no lote ${loteNum}, tentando novamente...`])
-            await new Promise(r => setTimeout(r, 3000))
+        } catch {
+          if (tentativas >= maxTentativas) {
+            erros++
           } else {
-            setOrganizarLog(prev => [...prev, `❌ Erro no lote ${loteNum}: ${err}`])
-            errosConsecutivos++
+            await new Promise(r => setTimeout(r, 3000))
           }
         }
       }
 
-      // Se muitos erros consecutivos, pausar mais
-      if (errosConsecutivos >= 3) {
-        setOrganizarLog(prev => [...prev, `⏸️ Muitos erros consecutivos. Pausando 30s para evitar rate limit...`])
-        await new Promise(r => setTimeout(r, 30000))
-        errosConsecutivos = 0
-      }
+      // Atualizar progresso
+      setBgProcesso(prev => ({
+        ...prev,
+        atual: i + 1,
+        sucessos,
+        erros
+      }))
 
-      // Pausa entre lotes (4 segundos para evitar rate limit)
-      if (i + 5 < questoesParaAnalisar.length) {
-        await new Promise(r => setTimeout(r, 4000))
+      // Pausa entre questões (2 segundos)
+      if (i < questoesParaAnalisar.length - 1) {
+        await new Promise(r => setTimeout(r, 2000))
       }
     }
 
-    setAnalisesAssuntos(analises)
+    // Finalizar
+    setBgProcesso(prev => ({ ...prev, ativo: false }))
     setAnalisando(false)
-    setOrganizarLog(prev => [...prev, `🎉 Análise completa! ${analises.length} sugestões geradas.`])
+    setOrganizarLog(prev => [...prev, `🎉 Análise completa! ${sucessos} sucessos, ${erros} erros.`])
   }
 
   // Aplicar correções selecionadas
@@ -696,6 +720,38 @@ export default function AdminPage() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notificação flutuante de processamento em background */}
+      {bgProcesso.ativo && (
+        <div className="fixed bottom-4 right-4 bg-[#1a1f25] border border-[#283039] rounded-lg shadow-xl p-4 min-w-[280px] z-50">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="material-symbols-outlined text-[#137fec] animate-spin">progress_activity</span>
+            <span className="text-sm font-medium text-white">Analisando questões...</span>
+          </div>
+
+          {/* Barra de progresso */}
+          <div className="w-full bg-[#283039] rounded-full h-2 mb-2">
+            <div
+              className="bg-[#137fec] h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(bgProcesso.atual / bgProcesso.total) * 100}%` }}
+            />
+          </div>
+
+          {/* Contadores */}
+          <div className="flex justify-between text-xs text-[#9dabb9]">
+            <span>{bgProcesso.atual} / {bgProcesso.total}</span>
+            <span className="flex gap-2">
+              <span className="text-green-400">✓ {bgProcesso.sucessos}</span>
+              {bgProcesso.erros > 0 && <span className="text-red-400">✗ {bgProcesso.erros}</span>}
+            </span>
+          </div>
+
+          {/* Estimativa de tempo */}
+          <div className="text-xs text-[#9dabb9] mt-1">
+            ~{Math.ceil((bgProcesso.total - bgProcesso.atual) * 2 / 60)} min restantes
           </div>
         </div>
       )}
