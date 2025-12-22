@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 // Email autorizado para acessar a página admin
 const ADMIN_EMAIL = 'brunodivinoa@gmail.com'
 
-type TabType = 'gerar' | 'organizar' | 'popular'
+type TabType = 'gerar' | 'organizar' | 'popular' | 'disciplinas'
 
 interface Questao {
   id: string
@@ -36,6 +36,17 @@ interface DisciplinaPopular {
     nome: string
     subassuntos: string[]
   }>
+}
+
+interface DisciplinaSugestao {
+  questaoId: string
+  assuntoAtual: string
+  subassuntoAtual: string
+  enunciado: string
+  disciplinaSugerida: string
+  confianca: 'alta' | 'media' | 'baixa'
+  motivo: string
+  selecionado: boolean
 }
 
 export default function AdminPage() {
@@ -76,6 +87,20 @@ export default function AdminPage() {
   const [buscandoDisciplinas, setBuscandoDisciplinas] = useState(false)
   const [popularLog, setPopularLog] = useState<string[]>([])
   const [concursoAlvo, setConcursoAlvo] = useState('')
+
+  // Estado de corrigir disciplinas (questões sem disciplina)
+  const [questoesSemDisciplina, setQuestoesSemDisciplina] = useState<Array<{id: string, enunciado: string, assunto: string, subassunto: string | null}>>([])
+  const [sugestoesDisciplina, setSugestoesDisciplina] = useState<DisciplinaSugestao[]>([])
+  const [buscandoSemDisciplina, setBuscandoSemDisciplina] = useState(false)
+  const [analisandoDisciplinas, setAnalisandoDisciplinas] = useState(false)
+  const [disciplinaLog, setDisciplinaLog] = useState<string[]>([])
+  const [bgProcessoDisciplina, setBgProcessoDisciplina] = useState<{
+    ativo: boolean
+    total: number
+    atual: number
+    sucessos: number
+    erros: number
+  }>({ ativo: false, total: 0, atual: 0, sucessos: 0, erros: 0 })
 
   // Verificar acesso
   useEffect(() => {
@@ -342,6 +367,166 @@ export default function AdminPage() {
     setAnalisesAssuntos(prev => prev.map(a => ({ ...a, selecionado: false })))
   }
 
+  // ========== FUNÇÕES PARA CORRIGIR DISCIPLINAS ==========
+
+  // Buscar questões sem disciplina
+  const buscarQuestoesSemDisciplina = async () => {
+    setBuscandoSemDisciplina(true)
+    setDisciplinaLog(prev => [...prev, '🔍 Buscando questões sem disciplina...'])
+
+    const { data, error } = await supabase
+      .from('questoes')
+      .select('id, enunciado, assunto, subassunto')
+      .or('disciplina.is.null,disciplina.eq.')
+      .limit(500)
+
+    if (error) {
+      setDisciplinaLog(prev => [...prev, `❌ Erro: ${error.message}`])
+      setBuscandoSemDisciplina(false)
+      return
+    }
+
+    setQuestoesSemDisciplina(data || [])
+    setDisciplinaLog(prev => [...prev, `✅ ${data?.length || 0} questões encontradas sem disciplina`])
+    setBuscandoSemDisciplina(false)
+  }
+
+  // Analisar questões sem disciplina com IA (em background, 1 a 1)
+  const analisarDisciplinasComIA = async () => {
+    if (questoesSemDisciplina.length === 0) {
+      setDisciplinaLog(prev => [...prev, '⚠️ Nenhuma questão para analisar. Clique em "Buscar Questões" primeiro.'])
+      return
+    }
+
+    if (bgProcessoDisciplina.ativo) {
+      setDisciplinaLog(prev => [...prev, '⚠️ Já existe um processamento em andamento.'])
+      return
+    }
+
+    // Iniciar processamento em background
+    setAnalisandoDisciplinas(true)
+    setBgProcessoDisciplina({
+      ativo: true,
+      total: questoesSemDisciplina.length,
+      atual: 0,
+      sucessos: 0,
+      erros: 0
+    })
+    setDisciplinaLog(prev => [...prev, `🤖 Iniciando análise de ${questoesSemDisciplina.length} questões em segundo plano...`])
+
+    // Processar em background
+    processarDisciplinasBackground()
+  }
+
+  // Função que processa disciplinas em background
+  const processarDisciplinasBackground = async () => {
+    let sucessos = 0
+    let erros = 0
+
+    // Processar 1 a 1
+    for (let i = 0; i < questoesSemDisciplina.length; i++) {
+      const questao = questoesSemDisciplina[i]
+      let sucesso = false
+      let tentativas = 0
+      const maxTentativas = 3
+
+      while (!sucesso && tentativas < maxTentativas) {
+        tentativas++
+
+        try {
+          const response = await fetch('/api/admin/corrigir-disciplinas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ questoes: [questao] })
+          })
+
+          if (response.ok) {
+            const resultado = await response.json()
+            if (resultado.sugestoes?.length > 0) {
+              setSugestoesDisciplina(prev => [...prev, ...resultado.sugestoes])
+            }
+            sucesso = true
+            sucessos++
+          } else {
+            if (tentativas < maxTentativas) {
+              await new Promise(r => setTimeout(r, 5000 * tentativas))
+            } else {
+              erros++
+            }
+          }
+        } catch {
+          if (tentativas >= maxTentativas) {
+            erros++
+          } else {
+            await new Promise(r => setTimeout(r, 3000))
+          }
+        }
+      }
+
+      // Atualizar progresso
+      setBgProcessoDisciplina(prev => ({
+        ...prev,
+        atual: i + 1,
+        sucessos,
+        erros
+      }))
+
+      // Pausa entre questões (2 segundos)
+      if (i < questoesSemDisciplina.length - 1) {
+        await new Promise(r => setTimeout(r, 2000))
+      }
+    }
+
+    // Finalizar
+    setBgProcessoDisciplina(prev => ({ ...prev, ativo: false }))
+    setAnalisandoDisciplinas(false)
+    setDisciplinaLog(prev => [...prev, `🎉 Análise completa! ${sucessos} sucessos, ${erros} erros.`])
+  }
+
+  // Aplicar correções de disciplinas selecionadas
+  const aplicarCorrecoesDisciplinas = async () => {
+    const selecionados = sugestoesDisciplina.filter(s => s.selecionado)
+
+    if (selecionados.length === 0) {
+      setDisciplinaLog(prev => [...prev, '⚠️ Nenhuma correção selecionada'])
+      return
+    }
+
+    setDisciplinaLog(prev => [...prev, `📝 Aplicando ${selecionados.length} correções de disciplina...`])
+
+    let sucesso = 0
+    for (const sugestao of selecionados) {
+      const { error } = await supabase
+        .from('questoes')
+        .update({ disciplina: sugestao.disciplinaSugerida })
+        .eq('id', sugestao.questaoId)
+
+      if (!error) sucesso++
+    }
+
+    setDisciplinaLog(prev => [...prev, `✅ ${sucesso} questões atualizadas com a disciplina correta!`])
+
+    // Limpar selecionados
+    setSugestoesDisciplina(prev => prev.filter(s => !s.selecionado))
+  }
+
+  // Toggle seleção de sugestão de disciplina
+  const toggleSugestaoDisciplina = (questaoId: string) => {
+    setSugestoesDisciplina(prev => prev.map(s =>
+      s.questaoId === questaoId ? { ...s, selecionado: !s.selecionado } : s
+    ))
+  }
+
+  // Selecionar todos disciplinas
+  const selecionarTodosDisciplinas = () => {
+    setSugestoesDisciplina(prev => prev.map(s => ({ ...s, selecionado: true })))
+  }
+
+  // Desselecionar todos disciplinas
+  const desselecionarTodosDisciplinas = () => {
+    setSugestoesDisciplina(prev => prev.map(s => ({ ...s, selecionado: false })))
+  }
+
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -401,6 +586,17 @@ export default function AdminPage() {
         >
           <span className="material-symbols-outlined text-sm mr-1">cloud_download</span>
           Popular Disciplinas
+        </button>
+        <button
+          onClick={() => setTab('disciplinas')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            tab === 'disciplinas'
+              ? 'border-[#137fec] text-[#137fec]'
+              : 'border-transparent text-[#9dabb9] hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          <span className="material-symbols-outlined text-sm mr-1">find_replace</span>
+          Corrigir Disciplinas
         </button>
       </div>
 
@@ -777,34 +973,203 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* Tab: Corrigir Disciplinas */}
+      {tab === 'disciplinas' && (
+        <div className="space-y-6">
+          {/* Controles */}
+          <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Corrigir Disciplinas Vazias</h2>
+            <p className="text-sm text-[#9dabb9] mb-4">
+              A IA vai analisar o enunciado, assunto e subassunto de cada questão sem disciplina para sugerir a disciplina correta.
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={buscarQuestoesSemDisciplina}
+                disabled={buscandoSemDisciplina}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg flex items-center gap-2 disabled:opacity-50"
+              >
+                {buscandoSemDisciplina ? (
+                  <>
+                    <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                    Buscando...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-sm">search</span>
+                    Buscar Questões sem Disciplina
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={analisarDisciplinasComIA}
+                disabled={analisandoDisciplinas || questoesSemDisciplina.length === 0}
+                className="px-4 py-2 bg-[#137fec] hover:bg-[#137fec]/90 text-white font-medium rounded-lg flex items-center gap-2 disabled:opacity-50"
+              >
+                {analisandoDisciplinas ? (
+                  <>
+                    <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                    Analisando...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-sm">psychology</span>
+                    Analisar com IA ({questoesSemDisciplina.length})
+                  </>
+                )}
+              </button>
+
+              {sugestoesDisciplina.length > 0 && (
+                <>
+                  <button
+                    onClick={selecionarTodosDisciplinas}
+                    className="px-4 py-2 bg-gray-200 dark:bg-[#283039] hover:bg-gray-300 dark:hover:bg-[#3a4550] text-gray-700 dark:text-gray-300 font-medium rounded-lg"
+                  >
+                    Selecionar Todos
+                  </button>
+                  <button
+                    onClick={desselecionarTodosDisciplinas}
+                    className="px-4 py-2 bg-gray-200 dark:bg-[#283039] hover:bg-gray-300 dark:hover:bg-[#3a4550] text-gray-700 dark:text-gray-300 font-medium rounded-lg"
+                  >
+                    Desselecionar
+                  </button>
+                  <button
+                    onClick={aplicarCorrecoesDisciplinas}
+                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-sm">check</span>
+                    Aplicar Selecionados ({sugestoesDisciplina.filter(s => s.selecionado).length})
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Log e Sugestões */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Log */}
+            <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+              <h3 className="text-md font-bold text-gray-900 dark:text-white mb-3">Log</h3>
+              <div className="bg-gray-900 rounded-lg p-4 h-[300px] overflow-y-auto font-mono text-sm">
+                {disciplinaLog.length === 0 ? (
+                  <p className="text-gray-500">Clique em &quot;Buscar Questões sem Disciplina&quot; para começar...</p>
+                ) : (
+                  disciplinaLog.map((log, i) => (
+                    <p key={i} className="text-green-400">{log}</p>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Sugestões */}
+            <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+              <h3 className="text-md font-bold text-gray-900 dark:text-white mb-3">
+                Sugestões de Disciplina ({sugestoesDisciplina.length})
+              </h3>
+              <div className="h-[300px] overflow-y-auto space-y-2">
+                {sugestoesDisciplina.length === 0 ? (
+                  <p className="text-[#9dabb9] text-sm">Nenhuma sugestão ainda. Execute a análise com IA.</p>
+                ) : (
+                  sugestoesDisciplina.map((sugestao) => (
+                    <label
+                      key={sugestao.questaoId}
+                      className={`block p-3 rounded-lg border cursor-pointer transition-colors ${
+                        sugestao.selecionado
+                          ? 'border-[#137fec] bg-[#137fec]/10'
+                          : 'border-gray-200 dark:border-[#283039] hover:bg-gray-50 dark:hover:bg-[#283039]'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={sugestao.selecionado}
+                          onChange={() => toggleSugestaoDisciplina(sugestao.questaoId)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 min-w-0">
+                          {/* Disciplina sugerida */}
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-emerald-400 font-medium">{sugestao.disciplinaSugerida}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              sugestao.confianca === 'alta' ? 'bg-green-500/20 text-green-400' :
+                              sugestao.confianca === 'media' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-red-500/20 text-red-400'
+                            }`}>
+                              {sugestao.confianca}
+                            </span>
+                          </div>
+
+                          {/* Assunto atual */}
+                          {sugestao.assuntoAtual && (
+                            <p className="text-xs text-[#9dabb9]">
+                              <span className="text-gray-500">Assunto: </span>
+                              {sugestao.assuntoAtual}
+                            </p>
+                          )}
+
+                          {/* Motivo */}
+                          <p className="text-xs text-cyan-400 mt-1">{sugestao.motivo}</p>
+
+                          {/* Enunciado truncado */}
+                          <p className="text-xs text-[#9dabb9] truncate mt-2">{sugestao.enunciado.slice(0, 100)}...</p>
+                        </div>
+                      </div>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Notificação flutuante de processamento em background */}
-      {bgProcesso.ativo && (
+      {(bgProcesso.ativo || bgProcessoDisciplina.ativo) && (
         <div className="fixed bottom-4 right-4 bg-[#1a1f25] border border-[#283039] rounded-lg shadow-xl p-4 min-w-[280px] z-50">
           <div className="flex items-center gap-3 mb-2">
             <span className="material-symbols-outlined text-[#137fec] animate-spin">progress_activity</span>
-            <span className="text-sm font-medium text-white">Analisando questões...</span>
+            <span className="text-sm font-medium text-white">
+              {bgProcesso.ativo ? 'Analisando assuntos...' : 'Identificando disciplinas...'}
+            </span>
           </div>
 
           {/* Barra de progresso */}
           <div className="w-full bg-[#283039] rounded-full h-2 mb-2">
             <div
               className="bg-[#137fec] h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(bgProcesso.atual / bgProcesso.total) * 100}%` }}
+              style={{
+                width: `${bgProcesso.ativo
+                  ? (bgProcesso.atual / bgProcesso.total) * 100
+                  : (bgProcessoDisciplina.atual / bgProcessoDisciplina.total) * 100}%`
+              }}
             />
           </div>
 
           {/* Contadores */}
           <div className="flex justify-between text-xs text-[#9dabb9]">
-            <span>{bgProcesso.atual} / {bgProcesso.total}</span>
+            <span>
+              {bgProcesso.ativo
+                ? `${bgProcesso.atual} / ${bgProcesso.total}`
+                : `${bgProcessoDisciplina.atual} / ${bgProcessoDisciplina.total}`}
+            </span>
             <span className="flex gap-2">
-              <span className="text-green-400">✓ {bgProcesso.sucessos}</span>
-              {bgProcesso.erros > 0 && <span className="text-red-400">✗ {bgProcesso.erros}</span>}
+              <span className="text-green-400">
+                ✓ {bgProcesso.ativo ? bgProcesso.sucessos : bgProcessoDisciplina.sucessos}
+              </span>
+              {(bgProcesso.ativo ? bgProcesso.erros : bgProcessoDisciplina.erros) > 0 && (
+                <span className="text-red-400">
+                  ✗ {bgProcesso.ativo ? bgProcesso.erros : bgProcessoDisciplina.erros}
+                </span>
+              )}
             </span>
           </div>
 
           {/* Estimativa de tempo */}
           <div className="text-xs text-[#9dabb9] mt-1">
-            ~{Math.ceil((bgProcesso.total - bgProcesso.atual) * 2 / 60)} min restantes
+            ~{Math.ceil(((bgProcesso.ativo
+              ? bgProcesso.total - bgProcesso.atual
+              : bgProcessoDisciplina.total - bgProcessoDisciplina.atual) * 2) / 60)} min restantes
           </div>
         </div>
       )}
