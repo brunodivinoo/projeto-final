@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -49,28 +49,95 @@ interface DisciplinaSugestao {
   selecionado: boolean
 }
 
+// Tipos para estrutura hierárquica
+interface Subassunto {
+  id: string
+  nome: string
+}
+
+interface Assunto {
+  id: string
+  nome: string
+  subassuntos: Subassunto[]
+}
+
+interface Disciplina {
+  id: string
+  nome: string
+  assuntos: Assunto[]
+}
+
+interface Banca {
+  nome: string
+  qtd_questoes: number
+}
+
+// Tipo para item selecionado na geração
+interface ItemSelecionado {
+  disciplina: string
+  assunto: string | null
+  subassunto: string | null
+  key: string // para identificar unicamente no React
+}
+
+// Tipo para item da fila
+interface FilaItem {
+  id: string
+  status: string
+  disciplina: string
+  assunto: string | null
+  subassunto: string | null
+  banca: string
+  modalidade: string
+  dificuldade: string
+  quantidade: number
+  geradas: number
+  erros: number
+  created_at: string
+}
+
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const [tab, setTab] = useState<TabType>('gerar')
 
-  // Estado de geração de questões
-  const [gerarConfig, setGerarConfig] = useState({
-    disciplina: '',
-    assunto: '',
-    banca: 'CESPE',
-    quantidade: 10,
-    modalidade: 'multipla_escolha' as 'multipla_escolha' | 'certo_errado' | 'mista',
-    dificuldade: 'media' as 'facil' | 'media' | 'dificil'
-  })
-  const [gerando, setGerando] = useState(false)
+  // ========== ESTADOS DA ABA GERAR (REFORMULADA) ==========
+  // Estrutura hierárquica carregada do banco
+  const [estrutura, setEstrutura] = useState<Disciplina[]>([])
+  const [bancasDisponiveis, setBancasDisponiveis] = useState<Banca[]>([])
+  const [carregandoEstrutura, setCarregandoEstrutura] = useState(false)
+
+  // Seleção atual no seletor em cascata
+  const [disciplinaSelecionada, setDisciplinaSelecionada] = useState<string>('')
+  const [assuntoSelecionado, setAssuntoSelecionado] = useState<string>('')
+  const [subassuntoSelecionado, setSubassuntoSelecionado] = useState<string>('')
+
+  // Itens selecionados para geração (múltiplos)
+  const [itensSelecionados, setItensSelecionados] = useState<ItemSelecionado[]>([])
+
+  // Configurações de geração
+  const [bancaSelecionada, setBancaSelecionada] = useState<string>('')
+  const [modalidadeSelecionada, setModalidadeSelecionada] = useState<'multipla_escolha' | 'certo_errado'>('certo_errado')
+  const [dificuldadeSelecionada, setDificuldadeSelecionada] = useState<'facil' | 'media' | 'dificil'>('media')
+  const [quantidadePorItem, setQuantidadePorItem] = useState<number>(50)
+
+  // Fila de geração
+  const [fila, setFila] = useState<FilaItem[]>([])
+  const [processandoFila, setProcessandoFila] = useState(false)
+  const geracaoAbortRef = useRef(false)
+
+  // Log de geração
   const [gerarLog, setGerarLog] = useState<string[]>([])
+
+  // Prompt atual (para visualização)
+  const [promptAtual, setPromptAtual] = useState<string>('')
+  const [mostrarPrompt, setMostrarPrompt] = useState(false)
+
 
   // Estado de organização de assuntos
   const [questoesParaAnalisar, setQuestoesParaAnalisar] = useState<Questao[]>([])
   const [analisesAssuntos, setAnalisesAssuntos] = useState<AssuntoAnalise[]>([])
   const [analisando, setAnalisando] = useState(false)
-  const [filtroAssunto, setFiltroAssunto] = useState('')
   const [organizarLog, setOrganizarLog] = useState<string[]>([])
 
   // Estado do processamento em background
@@ -108,6 +175,378 @@ export default function AdminPage() {
       router.push('/dashboard')
     }
   }, [user, authLoading, router])
+
+  // ========== FUNÇÕES DA ABA GERAR (REFORMULADA) ==========
+
+  // Carregar estrutura hierárquica e bancas
+  const carregarEstrutura = useCallback(async () => {
+    setCarregandoEstrutura(true)
+    try {
+      // Carregar estrutura e bancas em paralelo
+      const [estruturaRes, bancasRes] = await Promise.all([
+        fetch('/api/admin/filtros-completos?tipo=estrutura'),
+        fetch('/api/admin/filtros-completos?tipo=bancas')
+      ])
+
+      if (estruturaRes.ok) {
+        const { estrutura: est } = await estruturaRes.json()
+        setEstrutura(est || [])
+      }
+
+      if (bancasRes.ok) {
+        const { bancas } = await bancasRes.json()
+        setBancasDisponiveis(bancas || [])
+        // Setar primeira banca como padrão
+        if (bancas?.length > 0 && !bancaSelecionada) {
+          setBancaSelecionada(bancas[0].nome)
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao carregar estrutura:', err)
+      setGerarLog(prev => [...prev, `❌ Erro ao carregar estrutura: ${err}`])
+    }
+    setCarregandoEstrutura(false)
+  }, [bancaSelecionada])
+
+  // Carregar fila do usuário
+  const carregarFila = useCallback(async () => {
+    if (!user?.id) return
+
+    try {
+      const res = await fetch(`/api/admin/geracao-fila?user_id=${user.id}`)
+      if (res.ok) {
+        const { fila: filaData } = await res.json()
+        setFila(filaData || [])
+
+        // Se há fila pendente/processando, iniciar processamento
+        if (filaData?.length > 0 && !processandoFila) {
+          iniciarProcessamentoFila()
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao carregar fila:', err)
+    }
+  }, [user?.id, processandoFila])
+
+  // Carregar estrutura quando a tab gerar estiver ativa
+  useEffect(() => {
+    if (tab === 'gerar' && estrutura.length === 0 && !carregandoEstrutura) {
+      carregarEstrutura()
+    }
+  }, [tab, estrutura.length, carregandoEstrutura, carregarEstrutura])
+
+  // Carregar fila ao montar e periodicamente
+  useEffect(() => {
+    if (user?.id) {
+      carregarFila()
+    }
+  }, [user?.id, carregarFila])
+
+  // Obter assuntos da disciplina selecionada
+  const assuntosDaDisciplina = disciplinaSelecionada
+    ? estrutura.find(d => d.nome === disciplinaSelecionada)?.assuntos || []
+    : []
+
+  // Obter subassuntos do assunto selecionado
+  const subassuntosDoAssunto = assuntoSelecionado
+    ? assuntosDaDisciplina.find(a => a.nome === assuntoSelecionado)?.subassuntos || []
+    : []
+
+  // Adicionar item à seleção
+  const adicionarItem = () => {
+    if (!disciplinaSelecionada) return
+
+    const novoItem: ItemSelecionado = {
+      disciplina: disciplinaSelecionada,
+      assunto: assuntoSelecionado || null,
+      subassunto: subassuntoSelecionado || null,
+      key: `${disciplinaSelecionada}-${assuntoSelecionado || 'geral'}-${subassuntoSelecionado || 'geral'}-${Date.now()}`
+    }
+
+    // Verificar se já existe item idêntico
+    const jaExiste = itensSelecionados.some(
+      item => item.disciplina === novoItem.disciplina &&
+              item.assunto === novoItem.assunto &&
+              item.subassunto === novoItem.subassunto
+    )
+
+    if (jaExiste) {
+      setGerarLog(prev => [...prev, '⚠️ Este item já foi adicionado'])
+      return
+    }
+
+    setItensSelecionados(prev => [...prev, novoItem])
+    // Limpar seleção após adicionar
+    setSubassuntoSelecionado('')
+  }
+
+  // Remover item da seleção
+  const removerItem = (key: string) => {
+    setItensSelecionados(prev => prev.filter(item => item.key !== key))
+  }
+
+  // Adicionar todos os assuntos da disciplina
+  const adicionarTodosDaDisciplina = () => {
+    if (!disciplinaSelecionada) return
+
+    const disc = estrutura.find(d => d.nome === disciplinaSelecionada)
+    if (!disc) return
+
+    const novosItens: ItemSelecionado[] = []
+
+    if (disc.assuntos.length === 0) {
+      // Disciplina sem assuntos - adicionar apenas disciplina
+      novosItens.push({
+        disciplina: disc.nome,
+        assunto: null,
+        subassunto: null,
+        key: `${disc.nome}-geral-geral-${Date.now()}`
+      })
+    } else {
+      // Adicionar cada assunto
+      disc.assuntos.forEach(ass => {
+        if (ass.subassuntos.length === 0) {
+          novosItens.push({
+            disciplina: disc.nome,
+            assunto: ass.nome,
+            subassunto: null,
+            key: `${disc.nome}-${ass.nome}-geral-${Date.now()}-${Math.random()}`
+          })
+        } else {
+          // Adicionar cada subassunto
+          ass.subassuntos.forEach(sub => {
+            novosItens.push({
+              disciplina: disc.nome,
+              assunto: ass.nome,
+              subassunto: sub.nome,
+              key: `${disc.nome}-${ass.nome}-${sub.nome}-${Date.now()}-${Math.random()}`
+            })
+          })
+        }
+      })
+    }
+
+    // Filtrar itens que já existem
+    const itensFiltrados = novosItens.filter(novo =>
+      !itensSelecionados.some(
+        item => item.disciplina === novo.disciplina &&
+                item.assunto === novo.assunto &&
+                item.subassunto === novo.subassunto
+      )
+    )
+
+    setItensSelecionados(prev => [...prev, ...itensFiltrados])
+    setGerarLog(prev => [...prev, `✅ ${itensFiltrados.length} itens adicionados de ${disc.nome}`])
+  }
+
+  // Calcular total de questões a gerar
+  const totalQuestoes = itensSelecionados.length * quantidadePorItem
+
+  // Gerar prompt para visualização
+  const gerarPromptVisualizacao = () => {
+    const item = itensSelecionados[0]
+    if (!item) return ''
+
+    if (modalidadeSelecionada === 'certo_errado') {
+      return `Você é um especialista em elaborar questões de concursos públicos brasileiros.
+
+Crie APENAS 1 questão no estilo ${bancaSelecionada.toUpperCase()} (Certo ou Errado).
+
+CONFIGURAÇÃO:
+- Disciplina: ${item.disciplina}
+- Assunto: ${item.assunto || 'Geral'}
+${item.subassunto ? `- Subassunto/Tema específico: ${item.subassunto}` : ''}
+- Dificuldade: ${dificuldadeSelecionada}
+
+INSTRUÇÕES IMPORTANTES:
+1. A questão deve ser uma AFIRMAÇÃO que pode ser julgada como CERTA ou ERRADA
+2. Use linguagem técnica e formal de concursos
+3. Base-se em legislação, doutrina ou jurisprudência ATUALIZADAS
+4. O comentário deve explicar DETALHADAMENTE o porquê da resposta
+5. NÃO repita questões genéricas - seja ESPECÍFICO sobre o tema
+
+RESPONDA EM JSON:
+{
+  "enunciado": "afirmação completa para julgar",
+  "gabarito": "CERTO" ou "ERRADO",
+  "comentario": "explicação detalhada com fundamentação"
+}
+
+Retorne APENAS o JSON, sem markdown.`
+    } else {
+      return `Você é um especialista em elaborar questões de concursos públicos brasileiros.
+
+Crie APENAS 1 questão de múltipla escolha no estilo ${bancaSelecionada.toUpperCase()}.
+
+CONFIGURAÇÃO:
+- Disciplina: ${item.disciplina}
+- Assunto: ${item.assunto || 'Geral'}
+${item.subassunto ? `- Subassunto/Tema específico: ${item.subassunto}` : ''}
+- Dificuldade: ${dificuldadeSelecionada}
+- Modalidade: Múltipla Escolha (5 alternativas: A, B, C, D, E)
+
+INSTRUÇÕES IMPORTANTES:
+1. Crie um enunciado completo e contextualizado
+2. As 5 alternativas devem ser PLAUSÍVEIS, com apenas UMA correta
+3. Use linguagem técnica e formal de concursos
+4. Base-se em legislação, doutrina ou jurisprudência ATUALIZADAS
+5. O comentário deve explicar CADA alternativa (por que está certa/errada)
+6. NÃO repita questões genéricas - seja ESPECÍFICO sobre o tema
+
+RESPONDA EM JSON:
+{
+  "enunciado": "texto completo do enunciado com contexto",
+  "alternativa_a": "texto da alternativa A",
+  "alternativa_b": "texto da alternativa B",
+  "alternativa_c": "texto da alternativa C",
+  "alternativa_d": "texto da alternativa D",
+  "alternativa_e": "texto da alternativa E",
+  "gabarito": "A" (ou B, C, D, E),
+  "comentario": "explicação detalhada de cada alternativa"
+}
+
+Retorne APENAS o JSON, sem markdown.`
+    }
+  }
+
+  // Iniciar geração - adicionar itens à fila
+  const iniciarGeracao = async () => {
+    if (!user?.id || itensSelecionados.length === 0) return
+
+    setGerarLog(prev => [...prev, `🚀 Adicionando ${itensSelecionados.length} itens à fila (${totalQuestoes} questões total)...`])
+
+    const itensParaFila = itensSelecionados.map(item => ({
+      disciplina: item.disciplina,
+      assunto: item.assunto,
+      subassunto: item.subassunto,
+      banca: bancaSelecionada,
+      modalidade: modalidadeSelecionada,
+      dificuldade: dificuldadeSelecionada,
+      quantidade: quantidadePorItem
+    }))
+
+    try {
+      const res = await fetch('/api/admin/geracao-fila', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          itens: itensParaFila
+        })
+      })
+
+      if (res.ok) {
+        const { inseridos } = await res.json()
+        setGerarLog(prev => [...prev, `✅ ${inseridos} itens adicionados à fila!`])
+        setItensSelecionados([])
+        await carregarFila()
+        iniciarProcessamentoFila()
+      } else {
+        const { error } = await res.json()
+        setGerarLog(prev => [...prev, `❌ Erro: ${error}`])
+      }
+    } catch (err) {
+      setGerarLog(prev => [...prev, `❌ Erro: ${err}`])
+    }
+  }
+
+  // Iniciar processamento da fila
+  const iniciarProcessamentoFila = useCallback(async () => {
+    if (processandoFila || !user?.id) return
+
+    setProcessandoFila(true)
+    geracaoAbortRef.current = false
+    setGerarLog(prev => [...prev, '⚡ Iniciando processamento da fila...'])
+
+    // Processar questões uma a uma
+    const processarProximaQuestao = async () => {
+      if (geracaoAbortRef.current) {
+        setProcessandoFila(false)
+        setGerarLog(prev => [...prev, '⏹️ Geração cancelada pelo usuário'])
+        return
+      }
+
+      // Buscar fila atualizada
+      const res = await fetch(`/api/admin/geracao-fila?user_id=${user.id}`)
+      if (!res.ok) {
+        setProcessandoFila(false)
+        return
+      }
+
+      const { fila: filaAtual } = await res.json()
+      setFila(filaAtual || [])
+
+      // Encontrar próximo item a processar
+      const itemPendente = filaAtual?.find((f: FilaItem) =>
+        (f.status === 'pendente' || f.status === 'processando') && f.geradas < f.quantidade
+      )
+
+      if (!itemPendente) {
+        setProcessandoFila(false)
+        setGerarLog(prev => [...prev, '🎉 Fila concluída!'])
+        return
+      }
+
+      // Gerar uma questão
+      try {
+        const gerarRes = await fetch('/api/admin/gerar-questao-unica', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fila_id: itemPendente.id,
+            user_id: user.id
+          })
+        })
+
+        const resultado = await gerarRes.json()
+
+        if (resultado.sucesso) {
+          setGerarLog(prev => {
+            const newLog = [...prev, `✅ Questão ${resultado.geradas}/${resultado.total}: ${resultado.questao?.disciplina} - ${resultado.questao?.assunto || 'Geral'}`]
+            // Manter apenas últimos 100 logs
+            return newLog.slice(-100)
+          })
+        } else if (resultado.concluido) {
+          setGerarLog(prev => [...prev, `✓ Item concluído: ${itemPendente.disciplina}`])
+        } else if (resultado.cancelado) {
+          setGerarLog(prev => [...prev, `⏹️ Item cancelado`])
+        } else if (resultado.erro) {
+          setGerarLog(prev => [...prev, `⚠️ Erro (tentando novamente): ${resultado.message}`])
+        }
+
+        // Atualizar fila local
+        setFila(prev => prev.map(f =>
+          f.id === itemPendente.id
+            ? { ...f, geradas: resultado.geradas || f.geradas, status: resultado.concluido ? 'concluido' : f.status }
+            : f
+        ))
+      } catch (err) {
+        setGerarLog(prev => [...prev, `⚠️ Erro de rede, tentando novamente...`])
+      }
+
+      // Continuar processamento após delay
+      setTimeout(processarProximaQuestao, 1500)
+    }
+
+    processarProximaQuestao()
+  }, [processandoFila, user?.id])
+
+  // Cancelar geração
+  const cancelarGeracao = async () => {
+    if (!user?.id) return
+
+    geracaoAbortRef.current = true
+    setGerarLog(prev => [...prev, '⏹️ Cancelando geração...'])
+
+    try {
+      await fetch(`/api/admin/geracao-fila?user_id=${user.id}`, {
+        method: 'DELETE'
+      })
+      await carregarFila()
+    } catch (err) {
+      console.error('Erro ao cancelar:', err)
+    }
+  }
 
   // Carregar questões com assuntos problemáticos
   const carregarQuestoesProblematicas = async () => {
@@ -233,66 +672,37 @@ export default function AdminPage() {
 
     setOrganizarLog(prev => [...prev, `📝 Aplicando ${selecionados.length} correções...`])
 
-    let sucesso = 0
-    for (const analise of selecionados) {
-      // Atualizar disciplina, assunto e subassunto
-      const updateData: Record<string, string> = {
-        assunto: analise.assuntoSugerido
+    // Preparar correções para a API
+    const correcoes = selecionados.map(analise => ({
+      questaoId: analise.questaoId,
+      disciplina: analise.disciplinaSugerida || undefined,
+      assunto: analise.assuntoSugerido,
+      subassunto: analise.subassuntoSugerido || undefined
+    }))
+
+    try {
+      const response = await fetch('/api/admin/aplicar-correcoes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ correcoes })
+      })
+
+      const resultado = await response.json()
+
+      if (response.ok) {
+        setOrganizarLog(prev => [...prev, `✅ ${resultado.sucesso} questões atualizadas (disciplina, assunto e subassunto)!`])
+        if (resultado.erros > 0) {
+          setOrganizarLog(prev => [...prev, `⚠️ ${resultado.erros} erros ao atualizar`])
+        }
+      } else {
+        setOrganizarLog(prev => [...prev, `❌ Erro: ${resultado.error}`])
       }
-
-      // Atualizar disciplina se foi sugerida (mesmo se atual estiver vazia)
-      if (analise.disciplinaSugerida) {
-        updateData.disciplina = analise.disciplinaSugerida
-      }
-
-      // Atualizar subassunto se foi sugerido
-      if (analise.subassuntoSugerido) {
-        updateData.subassunto = analise.subassuntoSugerido
-      }
-
-      const { error } = await supabase
-        .from('questoes')
-        .update(updateData)
-        .eq('id', analise.questaoId)
-
-      if (!error) sucesso++
+    } catch (err) {
+      setOrganizarLog(prev => [...prev, `❌ Erro de rede: ${err instanceof Error ? err.message : 'Desconhecido'}`])
     }
-
-    setOrganizarLog(prev => [...prev, `✅ ${sucesso} questões atualizadas (disciplina, assunto e subassunto)!`])
 
     // Limpar selecionados
     setAnalisesAssuntos(prev => prev.filter(a => !a.selecionado))
-  }
-
-  // Gerar questões em massa
-  const gerarQuestoesEmMassa = async () => {
-    if (!gerarConfig.disciplina) {
-      setGerarLog(prev => [...prev, '⚠️ Selecione uma disciplina'])
-      return
-    }
-
-    setGerando(true)
-    setGerarLog(prev => [...prev, `🤖 Gerando ${gerarConfig.quantidade} questões de ${gerarConfig.disciplina}...`])
-
-    try {
-      const response = await fetch('/api/admin/gerar-questoes-massa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(gerarConfig)
-      })
-
-      if (response.ok) {
-        const resultado = await response.json()
-        setGerarLog(prev => [...prev, `✅ ${resultado.inseridas} questões geradas e inseridas!`])
-      } else {
-        const erro = await response.json()
-        setGerarLog(prev => [...prev, `❌ Erro: ${erro.error}`])
-      }
-    } catch (err) {
-      setGerarLog(prev => [...prev, `❌ Erro: ${err}`])
-    }
-
-    setGerando(false)
   }
 
   // Buscar disciplinas/assuntos de concursos
@@ -494,17 +904,32 @@ export default function AdminPage() {
 
     setDisciplinaLog(prev => [...prev, `📝 Aplicando ${selecionados.length} correções de disciplina...`])
 
-    let sucesso = 0
-    for (const sugestao of selecionados) {
-      const { error } = await supabase
-        .from('questoes')
-        .update({ disciplina: sugestao.disciplinaSugerida })
-        .eq('id', sugestao.questaoId)
+    // Preparar correções para a API
+    const correcoes = selecionados.map(sugestao => ({
+      questaoId: sugestao.questaoId,
+      disciplina: sugestao.disciplinaSugerida
+    }))
 
-      if (!error) sucesso++
+    try {
+      const response = await fetch('/api/admin/aplicar-correcoes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ correcoes })
+      })
+
+      const resultado = await response.json()
+
+      if (response.ok) {
+        setDisciplinaLog(prev => [...prev, `✅ ${resultado.sucesso} questões atualizadas com a disciplina correta!`])
+        if (resultado.erros > 0) {
+          setDisciplinaLog(prev => [...prev, `⚠️ ${resultado.erros} erros ao atualizar`])
+        }
+      } else {
+        setDisciplinaLog(prev => [...prev, `❌ Erro: ${resultado.error}`])
+      }
+    } catch (err) {
+      setDisciplinaLog(prev => [...prev, `❌ Erro de rede: ${err instanceof Error ? err.message : 'Desconhecido'}`])
     }
-
-    setDisciplinaLog(prev => [...prev, `✅ ${sucesso} questões atualizadas com a disciplina correta!`])
 
     // Limpar selecionados
     setSugestoesDisciplina(prev => prev.filter(s => !s.selecionado))
@@ -600,125 +1025,305 @@ export default function AdminPage() {
         </button>
       </div>
 
-      {/* Tab: Gerar Questões */}
+      {/* Tab: Gerar Questões (REFORMULADA) */}
       {tab === 'gerar' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Configuração */}
+        <div className="space-y-6">
+          {/* Seletor em Cascata */}
           <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Configuração</h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Disciplina</label>
-                <input
-                  type="text"
-                  value={gerarConfig.disciplina}
-                  onChange={(e) => setGerarConfig(prev => ({ ...prev, disciplina: e.target.value }))}
-                  placeholder="Ex: Direito Constitucional"
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assunto (opcional)</label>
-                <input
-                  type="text"
-                  value={gerarConfig.assunto}
-                  onChange={(e) => setGerarConfig(prev => ({ ...prev, assunto: e.target.value }))}
-                  placeholder="Ex: Princípios Fundamentais"
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Banca</label>
-                  <select
-                    value={gerarConfig.banca}
-                    onChange={(e) => setGerarConfig(prev => ({ ...prev, banca: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
-                  >
-                    <option value="CESPE">CESPE/CEBRASPE</option>
-                    <option value="FCC">FCC</option>
-                    <option value="FGV">FGV</option>
-                    <option value="VUNESP">VUNESP</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantidade</label>
-                  <input
-                    type="number"
-                    value={gerarConfig.quantidade}
-                    onChange={(e) => setGerarConfig(prev => ({ ...prev, quantidade: parseInt(e.target.value) || 10 }))}
-                    min={1}
-                    max={100}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Modalidade</label>
-                  <select
-                    value={gerarConfig.modalidade}
-                    onChange={(e) => setGerarConfig(prev => ({ ...prev, modalidade: e.target.value as typeof gerarConfig.modalidade }))}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
-                  >
-                    <option value="multipla_escolha">Múltipla Escolha</option>
-                    <option value="certo_errado">Certo/Errado</option>
-                    <option value="mista">Mista</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dificuldade</label>
-                  <select
-                    value={gerarConfig.dificuldade}
-                    onChange={(e) => setGerarConfig(prev => ({ ...prev, dificuldade: e.target.value as typeof gerarConfig.dificuldade }))}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
-                  >
-                    <option value="facil">Fácil</option>
-                    <option value="media">Média</option>
-                    <option value="dificil">Difícil</option>
-                  </select>
-                </div>
-              </div>
-
-              <button
-                onClick={gerarQuestoesEmMassa}
-                disabled={gerando}
-                className="w-full py-3 bg-[#137fec] hover:bg-[#137fec]/90 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {gerando ? (
-                  <>
-                    <span className="material-symbols-outlined animate-spin">progress_activity</span>
-                    Gerando...
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined">auto_awesome</span>
-                    Gerar Questões
-                  </>
-                )}
-              </button>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Selecionar Conteúdo</h2>
+              {carregandoEstrutura && (
+                <span className="material-symbols-outlined text-[#137fec] animate-spin">progress_activity</span>
+              )}
             </div>
-          </div>
 
-          {/* Log */}
-          <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Log de Execução</h2>
-            <div className="bg-gray-900 rounded-lg p-4 h-[400px] overflow-y-auto font-mono text-sm">
-              {gerarLog.length === 0 ? (
-                <p className="text-gray-500">Aguardando execução...</p>
-              ) : (
-                gerarLog.map((log, i) => (
-                  <p key={i} className="text-green-400">{log}</p>
-                ))
+            {/* Seletores em cascata */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              {/* Disciplina */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Disciplina
+                </label>
+                <select
+                  value={disciplinaSelecionada}
+                  onChange={(e) => {
+                    setDisciplinaSelecionada(e.target.value)
+                    setAssuntoSelecionado('')
+                    setSubassuntoSelecionado('')
+                  }}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
+                >
+                  <option value="">Selecione...</option>
+                  {estrutura.map(disc => (
+                    <option key={disc.id} value={disc.nome}>
+                      {disc.nome} ({disc.assuntos.length} assuntos)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Assunto */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Assunto {disciplinaSelecionada && `(${assuntosDaDisciplina.length})`}
+                </label>
+                <select
+                  value={assuntoSelecionado}
+                  onChange={(e) => {
+                    setAssuntoSelecionado(e.target.value)
+                    setSubassuntoSelecionado('')
+                  }}
+                  disabled={!disciplinaSelecionada}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white disabled:opacity-50"
+                >
+                  <option value="">Todos os assuntos</option>
+                  {assuntosDaDisciplina.map(ass => (
+                    <option key={ass.id} value={ass.nome}>
+                      {ass.nome} ({ass.subassuntos.length} sub.)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Subassunto */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Subassunto {assuntoSelecionado && `(${subassuntosDoAssunto.length})`}
+                </label>
+                <select
+                  value={subassuntoSelecionado}
+                  onChange={(e) => setSubassuntoSelecionado(e.target.value)}
+                  disabled={!assuntoSelecionado}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white disabled:opacity-50"
+                >
+                  <option value="">Todos os subassuntos</option>
+                  {subassuntosDoAssunto.map(sub => (
+                    <option key={sub.id} value={sub.nome}>
+                      {sub.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Botões de ação */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={adicionarItem}
+                disabled={!disciplinaSelecionada}
+                className="px-4 py-2 bg-[#137fec] hover:bg-[#137fec]/90 text-white font-medium rounded-lg disabled:opacity-50 flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">add</span>
+                Adicionar Item
+              </button>
+              <button
+                onClick={adicionarTodosDaDisciplina}
+                disabled={!disciplinaSelecionada}
+                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg disabled:opacity-50 flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">playlist_add</span>
+                Add Todos da Disciplina
+              </button>
+              {itensSelecionados.length > 0 && (
+                <button
+                  onClick={() => setItensSelecionados([])}
+                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">delete</span>
+                  Limpar Seleção
+                </button>
               )}
             </div>
           </div>
+
+          {/* Itens Selecionados */}
+          {itensSelecionados.length > 0 && (
+            <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                Itens Selecionados ({itensSelecionados.length})
+              </h2>
+              <div className="max-h-[200px] overflow-y-auto space-y-2">
+                {itensSelecionados.map(item => (
+                  <div
+                    key={item.key}
+                    className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-[#141A21] border border-gray-200 dark:border-[#283039]"
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-[#137fec] font-medium truncate">{item.disciplina}</span>
+                      {item.assunto && (
+                        <>
+                          <span className="text-[#9dabb9]">/</span>
+                          <span className="text-gray-700 dark:text-gray-300 truncate">{item.assunto}</span>
+                        </>
+                      )}
+                      {item.subassunto && (
+                        <>
+                          <span className="text-[#9dabb9]">/</span>
+                          <span className="text-gray-500 dark:text-gray-400 truncate text-sm">{item.subassunto}</span>
+                        </>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => removerItem(item.key)}
+                      className="text-red-400 hover:text-red-500 p-1"
+                    >
+                      <span className="material-symbols-outlined text-sm">close</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Configurações de Geração */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Configuração */}
+            <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Configuração de Geração</h2>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Banca</label>
+                    <select
+                      value={bancaSelecionada}
+                      onChange={(e) => setBancaSelecionada(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
+                    >
+                      {bancasDisponiveis.map(b => (
+                        <option key={b.nome} value={b.nome}>
+                          {b.nome} ({b.qtd_questoes} questões)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Qtd por Item</label>
+                    <input
+                      type="number"
+                      value={quantidadePorItem}
+                      onChange={(e) => setQuantidadePorItem(parseInt(e.target.value) || 10)}
+                      min={1}
+                      max={500}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Modalidade</label>
+                    <select
+                      value={modalidadeSelecionada}
+                      onChange={(e) => setModalidadeSelecionada(e.target.value as typeof modalidadeSelecionada)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
+                    >
+                      <option value="certo_errado">Certo/Errado</option>
+                      <option value="multipla_escolha">Múltipla Escolha</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dificuldade</label>
+                    <select
+                      value={dificuldadeSelecionada}
+                      onChange={(e) => setDificuldadeSelecionada(e.target.value as typeof dificuldadeSelecionada)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
+                    >
+                      <option value="facil">Fácil</option>
+                      <option value="media">Média</option>
+                      <option value="dificil">Difícil</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Preview do total */}
+                {itensSelecionados.length > 0 && (
+                  <div className="p-4 rounded-lg bg-[#137fec]/10 border border-[#137fec]/30">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-[#9dabb9]">Total a gerar:</p>
+                        <p className="text-2xl font-bold text-[#137fec]">
+                          {totalQuestoes.toLocaleString()} questões
+                        </p>
+                        <p className="text-xs text-[#9dabb9]">
+                          ({itensSelecionados.length} itens × {quantidadePorItem} questões)
+                        </p>
+                      </div>
+                      <span className="material-symbols-outlined text-4xl text-[#137fec]/50">quiz</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Botão Ver Prompt */}
+                <button
+                  onClick={() => {
+                    setPromptAtual(gerarPromptVisualizacao())
+                    setMostrarPrompt(true)
+                  }}
+                  disabled={itensSelecionados.length === 0}
+                  className="w-full py-2 bg-gray-200 dark:bg-[#283039] hover:bg-gray-300 dark:hover:bg-[#3a4550] text-gray-700 dark:text-gray-300 font-medium rounded-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">code</span>
+                  Ver Prompt que será usado
+                </button>
+
+                {/* Botão Iniciar Geração */}
+                <button
+                  onClick={iniciarGeracao}
+                  disabled={itensSelecionados.length === 0 || processandoFila}
+                  className="w-full py-3 bg-[#137fec] hover:bg-[#137fec]/90 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {processandoFila ? (
+                    <>
+                      <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                      Processando Fila...
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined">auto_awesome</span>
+                      Iniciar Geração ({totalQuestoes} questões)
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Log */}
+            <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Log de Execução</h2>
+              <div className="bg-gray-900 rounded-lg p-4 h-[350px] overflow-y-auto font-mono text-sm">
+                {gerarLog.length === 0 ? (
+                  <p className="text-gray-500">Aguardando execução...</p>
+                ) : (
+                  gerarLog.map((log, i) => (
+                    <p key={i} className="text-green-400">{log}</p>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Modal do Prompt */}
+          {mostrarPrompt && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6 max-w-3xl w-full max-h-[80vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Prompt de Geração</h3>
+                  <button
+                    onClick={() => setMostrarPrompt(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
+                </div>
+                <pre className="bg-gray-900 rounded-lg p-4 text-sm text-green-400 whitespace-pre-wrap font-mono overflow-x-auto">
+                  {promptAtual}
+                </pre>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1124,7 +1729,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Notificação flutuante de processamento em background */}
+      {/* Notificação flutuante de processamento em background (Organizar/Disciplinas) */}
       {(bgProcesso.ativo || bgProcessoDisciplina.ativo) && (
         <div className="fixed bottom-4 right-4 bg-[#1a1f25] border border-[#283039] rounded-lg shadow-xl p-4 min-w-[280px] z-50">
           <div className="flex items-center gap-3 mb-2">
@@ -1171,6 +1776,63 @@ export default function AdminPage() {
               ? bgProcesso.total - bgProcesso.atual
               : bgProcessoDisciplina.total - bgProcessoDisciplina.atual) * 2) / 60)} min restantes
           </div>
+        </div>
+      )}
+
+      {/* Notificação flutuante de geração de questões */}
+      {processandoFila && fila.length > 0 && (
+        <div className="fixed bottom-4 right-4 bg-[#1a1f25] border border-[#283039] rounded-lg shadow-xl p-4 min-w-[320px] z-50">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#137fec] animate-spin">auto_awesome</span>
+              <span className="text-sm font-medium text-white">Gerando Questões</span>
+            </div>
+            <button
+              onClick={cancelarGeracao}
+              className="text-red-400 hover:text-red-500 text-xs px-2 py-1 rounded hover:bg-red-500/10"
+            >
+              Cancelar
+            </button>
+          </div>
+
+          {/* Progresso geral */}
+          {(() => {
+            const totalGeradas = fila.reduce((acc, f) => acc + f.geradas, 0)
+            const totalQuestoesNaFila = fila.reduce((acc, f) => acc + f.quantidade, 0)
+            const totalErros = fila.reduce((acc, f) => acc + f.erros, 0)
+            const progresso = totalQuestoesNaFila > 0 ? (totalGeradas / totalQuestoesNaFila) * 100 : 0
+
+            return (
+              <>
+                <div className="w-full bg-[#283039] rounded-full h-2 mb-2">
+                  <div
+                    className="bg-[#137fec] h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${progresso}%` }}
+                  />
+                </div>
+
+                <div className="flex justify-between text-xs text-[#9dabb9] mb-2">
+                  <span>{totalGeradas} / {totalQuestoesNaFila} questões</span>
+                  <span className="flex gap-2">
+                    <span className="text-green-400">✓ {totalGeradas}</span>
+                    {totalErros > 0 && <span className="text-red-400">✗ {totalErros}</span>}
+                  </span>
+                </div>
+
+                {/* Item atual */}
+                {fila.filter(f => f.status === 'processando').slice(0, 1).map(item => (
+                  <div key={item.id} className="text-xs text-[#9dabb9] truncate">
+                    Atual: {item.disciplina} {item.assunto && `/ ${item.assunto}`}
+                  </div>
+                ))}
+
+                {/* Estimativa */}
+                <div className="text-xs text-[#9dabb9] mt-1">
+                  ~{Math.ceil(((totalQuestoesNaFila - totalGeradas) * 1.5) / 60)} min restantes
+                </div>
+              </>
+            )
+          })()}
         </div>
       )}
     </div>
