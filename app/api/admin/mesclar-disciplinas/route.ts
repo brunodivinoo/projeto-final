@@ -31,7 +31,13 @@ export async function GET() {
       .select('id, nome, qtd_questoes')
       .order('nome')
 
-    if (error) throw error
+    if (error) {
+      console.error('Erro ao buscar disciplinas:', error)
+      return NextResponse.json({
+        error: `Erro ao buscar disciplinas: ${error.message}`,
+        details: error
+      }, { status: 500 })
+    }
 
     if (!disciplinas || disciplinas.length < 2) {
       return NextResponse.json({ sugestoes: [], disciplinas: disciplinas || [] })
@@ -101,7 +107,12 @@ Retorne APENAS o JSON, sem markdown.`
     )
 
     if (!response.ok) {
-      return NextResponse.json({ error: 'Erro na API Gemini' }, { status: 500 })
+      const errorText = await response.text()
+      console.error('Erro na API Gemini:', response.status, errorText)
+      return NextResponse.json({
+        error: `Erro na API Gemini: ${response.status}`,
+        details: errorText
+      }, { status: 500 })
     }
 
     const data = await response.json()
@@ -151,7 +162,10 @@ Retorne APENAS o JSON, sem markdown.`
     })
   } catch (error) {
     console.error('Erro ao detectar duplicatas:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    return NextResponse.json({
+      error: 'Erro interno',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 })
   }
 }
 

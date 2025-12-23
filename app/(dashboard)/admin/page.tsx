@@ -1118,7 +1118,8 @@ Retorne APENAS o JSON, sem markdown.`
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Erro ao buscar sugestões')
+        const errorMsg = data.details ? `${data.error}: ${data.details}` : data.error
+        throw new Error(errorMsg || 'Erro ao buscar sugestões')
       }
 
       // Adicionar campo selecionada às sugestões
