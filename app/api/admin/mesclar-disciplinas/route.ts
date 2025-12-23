@@ -17,29 +17,50 @@ function normalizarNome(nome: string): string {
 }
 
 // Tipo de match para determinar confiança
-type TipoMatch = 'nocoes_de' | 'para_cargo' | 'mapeamento' | 'parte_especifica'
+type TipoMatch = 'nocoes_de' | 'para_cargo' | 'parte_geral_especial'
 
 interface MatchInfo {
   disciplina: DisciplinaComQtd
   tipo: TipoMatch
 }
 
-// Função para detectar duplicatas localmente
+// Disciplinas que NUNCA devem ser mescladas (são disciplinas distintas)
+const DISCIPLINAS_DISTINTAS = [
+  'militar',           // Direito Penal Militar != Direito Penal
+  'processual',        // Direito Processual != Direito (Civil/Penal)
+  'tributario',        // Direito Tributário != Direito Financeiro
+  'previdenciario',    // Direito Previdenciário != outros
+  'ambiental',         // Direito Ambiental != outros
+  'eleitoral',         // Direito Eleitoral != outros
+  'trabalho',          // Direito do Trabalho != outros
+  'empresarial',       // Direito Empresarial != outros
+  'consumidor',        // Direito do Consumidor != outros
+  'internacional',     // Direito Internacional != outros
+  'agrario',           // Direito Agrário != outros
+  'publica',           // Contabilidade Pública != Contabilidade Geral (são diferentes!)
+  'custos',            // Contabilidade de Custos != Contabilidade Geral
+]
+
+// Verificar se duas disciplinas são incompatíveis para mesclagem
+function saoIncompativeis(nome1: string, nome2: string): boolean {
+  const n1 = normalizarNome(nome1)
+  const n2 = normalizarNome(nome2)
+
+  // Se uma tem termo distintivo que a outra não tem, são incompatíveis
+  for (const termo of DISCIPLINAS_DISTINTAS) {
+    const n1Tem = n1.includes(termo)
+    const n2Tem = n2.includes(termo)
+    // Se uma tem e outra não, são disciplinas diferentes
+    if (n1Tem !== n2Tem) return true
+  }
+
+  return false
+}
+
+// Função para detectar duplicatas localmente - CONSERVADORA
 function detectarDuplicatasLocal(disciplinas: DisciplinaComQtd[]): SugestaoMesclagem[] {
   const sugestoes: SugestaoMesclagem[] = []
   const processados = new Set<string>()
-
-  // Mapeamentos conhecidos (alta confiança)
-  const mapeamentos: Record<string, string[]> = {
-    'raciocinio logico': ['raciocinio logico matematico', 'raciocinio logico-matematico', 'logica', 'matematica e raciocinio logico'],
-    'lingua portuguesa': ['portugues', 'gramatica'],
-    'informatica': ['nocoes de informatica', 'informatica basica'],
-    'direito constitucional': ['nocoes de direito constitucional'],
-    'direito administrativo': ['nocoes de direito administrativo'],
-    'direito penal': ['nocoes de direito penal', 'direito penal (parte geral)', 'direito penal (parte especial)', 'direito penal militar'],
-    'direito civil': ['nocoes de direito civil'],
-    'contabilidade': ['nocoes de contabilidade', 'contabilidade geral', 'contabilidade publica']
-  }
 
   for (const disc of disciplinas) {
     if (processados.has(disc.id)) continue
@@ -52,44 +73,49 @@ function detectarDuplicatasLocal(disciplinas: DisciplinaComQtd[]): SugestaoMescl
 
       const outraNorm = normalizarNome(outra.nome)
 
-      // 1. Verificar "Noções de X" vs "X" (ALTA confiança)
-      if (outraNorm.startsWith('nocoes de ') && outraNorm.replace('nocoes de ', '') === nomeNorm) {
-        matches.push({ disciplina: outra, tipo: 'nocoes_de' })
-        continue
-      }
-      if (nomeNorm.startsWith('nocoes de ') && nomeNorm.replace('nocoes de ', '') === outraNorm) {
-        matches.push({ disciplina: outra, tipo: 'nocoes_de' })
+      // PRIMEIRO: Verificar se são incompatíveis (NUNCA mesclar)
+      if (saoIncompativeis(disc.nome, outra.nome)) {
         continue
       }
 
+      // 1. Verificar "Noções de X" vs "X" (ALTA confiança)
+      // Ex: "Informática" e "Noções de Informática" = mesma coisa
+      if (outraNorm.startsWith('nocoes de ')) {
+        const semNocoes = outraNorm.replace('nocoes de ', '')
+        if (semNocoes === nomeNorm) {
+          matches.push({ disciplina: outra, tipo: 'nocoes_de' })
+          continue
+        }
+      }
+      if (nomeNorm.startsWith('nocoes de ')) {
+        const semNocoes = nomeNorm.replace('nocoes de ', '')
+        if (semNocoes === outraNorm) {
+          matches.push({ disciplina: outra, tipo: 'nocoes_de' })
+          continue
+        }
+      }
+
       // 2. Verificar "(para Cargo)" (ALTA confiança)
-      if (outraNorm.includes('(para ') || outraNorm.includes(' para ')) {
-        const semCargo = outraNorm.replace(/\s*\(para\s+[^)]+\)\s*/g, '').replace(/\s+para\s+\w+/g, '').trim()
-        if (semCargo === nomeNorm || nomeNorm.includes(semCargo)) {
+      // Ex: "Contabilidade" e "Noções de Contabilidade (para Delegado)" = mesma coisa
+      if (outraNorm.includes('(para ')) {
+        const semCargo = outraNorm.replace(/\s*\(para\s+[^)]+\)\s*/g, '').trim()
+        const semCargoSemNocoes = semCargo.replace(/^nocoes de\s+/, '')
+        if (semCargo === nomeNorm || semCargoSemNocoes === nomeNorm) {
           matches.push({ disciplina: outra, tipo: 'para_cargo' })
           continue
         }
       }
 
-      // 3. Verificar "Parte Geral" / "Parte Especial" (ALTA confiança)
-      if (outraNorm.includes('(parte ') || outraNorm.includes(' parte ')) {
+      // 3. Verificar "Parte Geral" / "Parte Especial" APENAS se for o MESMO ramo do direito
+      // Ex: "Direito Penal" e "Direito Penal (Parte Geral)" = mesma coisa
+      // MAS: "Direito Penal" e "Direito Penal Militar" = DIFERENTES (já filtrado acima)
+      if (outraNorm.includes('(parte geral)') || outraNorm.includes('(parte especial)')) {
         const semParte = outraNorm
           .replace(/\s*\(parte\s+(geral|especial)\)\s*/gi, '')
-          .replace(/\s+parte\s+(geral|especial)/gi, '')
           .trim()
         if (semParte === nomeNorm) {
-          matches.push({ disciplina: outra, tipo: 'parte_especifica' })
+          matches.push({ disciplina: outra, tipo: 'parte_geral_especial' })
           continue
-        }
-      }
-
-      // 4. Verificar mapeamentos conhecidos (MEDIA confiança - são sugestões baseadas em domínio)
-      for (const [base, variacoes] of Object.entries(mapeamentos)) {
-        if ((nomeNorm.includes(base) || variacoes.some(v => nomeNorm.includes(v))) &&
-            (outraNorm.includes(base) || variacoes.some(v => outraNorm.includes(v)))) {
-          if (!matches.find(m => m.disciplina.id === outra.id)) {
-            matches.push({ disciplina: outra, tipo: 'mapeamento' })
-          }
         }
       }
     }
@@ -100,13 +126,6 @@ function detectarDuplicatasLocal(disciplinas: DisciplinaComQtd[]): SugestaoMescl
       const principal = todas[0]
       const mesclar = todas.slice(1)
 
-      // Determinar confiança baseada nos tipos de match
-      // Alta: se TODOS os matches são de alta confiança (nocoes_de, para_cargo, parte_especifica)
-      // Media: se há algum match de mapeamento
-      const tiposAlta: TipoMatch[] = ['nocoes_de', 'para_cargo', 'parte_especifica']
-      const todosAltaConfianca = matches.every(m => tiposAlta.includes(m.tipo))
-      const confianca = todosAltaConfianca ? 'alta' : 'media'
-
       // Gerar motivo detalhado
       const motivos: string[] = []
       if (matches.some(m => m.tipo === 'nocoes_de')) {
@@ -115,18 +134,15 @@ function detectarDuplicatasLocal(disciplinas: DisciplinaComQtd[]): SugestaoMescl
       if (matches.some(m => m.tipo === 'para_cargo')) {
         motivos.push('Variação com cargo específico detectada')
       }
-      if (matches.some(m => m.tipo === 'parte_especifica')) {
+      if (matches.some(m => m.tipo === 'parte_geral_especial')) {
         motivos.push('Variação "Parte Geral/Especial" detectada')
-      }
-      if (matches.some(m => m.tipo === 'mapeamento')) {
-        motivos.push('Disciplinas relacionadas por mapeamento')
       }
 
       sugestoes.push({
         disciplinaPrincipal: principal,
         disciplinasParaMesclar: mesclar,
         motivo: motivos.join('; '),
-        confianca
+        confianca: 'alta' // Agora todas as sugestões são de alta confiança (conservadoras)
       })
 
       // Marcar como processados
