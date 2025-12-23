@@ -32,7 +32,8 @@
       "Bash(curl:*)",
       "Bash(node:*)",
       "Bash(del \"c:\\\\Users\\\\PC\\\\OneDrive\\\\Área de Trabalho\\\\Projeto Final\\\\check-questoes.js\")",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(del \"c:\\\\Users\\\\PC\\\\OneDrive\\\\Área de Trabalho\\\\Projeto Final\\\\temp-query.js\")"
     ]
   }
 }

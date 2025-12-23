@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 // Email autorizado para acessar a página admin
 const ADMIN_EMAIL = 'brunodivinoa@gmail.com'
 
-type TabType = 'gerar' | 'organizar' | 'popular' | 'disciplinas'
+type TabType = 'gerar' | 'ver_geradas' | 'organizar' | 'popular' | 'disciplinas'
 
 interface Questao {
   id: string
@@ -96,6 +96,26 @@ interface FilaItem {
   created_at: string
 }
 
+// Tipo para questão gerada por IA
+interface QuestaoGerada {
+  id: string
+  disciplina: string
+  assunto: string | null
+  subassunto: string | null
+  banca: string
+  modalidade: string
+  dificuldade: string
+  enunciado: string
+  alternativa_a: string | null
+  alternativa_b: string | null
+  alternativa_c: string | null
+  alternativa_d: string | null
+  alternativa_e: string | null
+  gabarito: string
+  comentario: string
+  created_at: string
+}
+
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
@@ -168,6 +188,20 @@ export default function AdminPage() {
     sucessos: number
     erros: number
   }>({ ativo: false, total: 0, atual: 0, sucessos: 0, erros: 0 })
+
+  // ========== ESTADOS DA ABA VER QUESTÕES GERADAS ==========
+  const [questoesGeradas, setQuestoesGeradas] = useState<QuestaoGerada[]>([])
+  const [carregandoGeradas, setCarregandoGeradas] = useState(false)
+  const [filtroGeradasDisciplina, setFiltroGeradasDisciplina] = useState('')
+  const [filtroGeradasBanca, setFiltroGeradasBanca] = useState('')
+  const [filtroGeradasModalidade, setFiltroGeradasModalidade] = useState('')
+  const [paginaGeradas, setPaginaGeradas] = useState(1)
+  const [totalGeradas, setTotalGeradas] = useState(0)
+  const [totalPaginasGeradas, setTotalPaginasGeradas] = useState(1)
+  const [disciplinasGeradasDisponiveis, setDisciplinasGeradasDisponiveis] = useState<string[]>([])
+  const [questoesSelecionadasParaDeletar, setQuestoesSelecionadasParaDeletar] = useState<string[]>([])
+  const [deletandoQuestoes, setDeletandoQuestoes] = useState(false)
+  const [questaoExpandida, setQuestaoExpandida] = useState<string | null>(null)
 
   // Verificar acesso
   useEffect(() => {
@@ -545,6 +579,104 @@ Retorne APENAS o JSON, sem markdown.`
       await carregarFila()
     } catch (err) {
       console.error('Erro ao cancelar:', err)
+    }
+  }
+
+  // ========== FUNÇÕES DA ABA VER QUESTÕES GERADAS ==========
+
+  // Carregar questões geradas por IA
+  const carregarQuestoesGeradas = useCallback(async () => {
+    setCarregandoGeradas(true)
+    try {
+      const params = new URLSearchParams({
+        page: paginaGeradas.toString(),
+        limit: '20'
+      })
+
+      if (filtroGeradasDisciplina) params.append('disciplina', filtroGeradasDisciplina)
+      if (filtroGeradasBanca) params.append('banca', filtroGeradasBanca)
+      if (filtroGeradasModalidade) params.append('modalidade', filtroGeradasModalidade)
+
+      const res = await fetch(`/api/admin/questoes-geradas?${params}`)
+      if (res.ok) {
+        const data = await res.json()
+        setQuestoesGeradas(data.questoes || [])
+        setTotalGeradas(data.total || 0)
+        setTotalPaginasGeradas(data.totalPages || 1)
+        setDisciplinasGeradasDisponiveis(data.filtrosDisponiveis?.disciplinas || [])
+      }
+    } catch (err) {
+      console.error('Erro ao carregar questões geradas:', err)
+    }
+    setCarregandoGeradas(false)
+  }, [paginaGeradas, filtroGeradasDisciplina, filtroGeradasBanca, filtroGeradasModalidade])
+
+  // Carregar questões quando a tab estiver ativa ou filtros mudarem
+  useEffect(() => {
+    if (tab === 'ver_geradas') {
+      carregarQuestoesGeradas()
+    }
+  }, [tab, carregarQuestoesGeradas])
+
+  // Toggle seleção de questão para deletar
+  const toggleSelecionarQuestao = (id: string) => {
+    setQuestoesSelecionadasParaDeletar(prev =>
+      prev.includes(id) ? prev.filter(qId => qId !== id) : [...prev, id]
+    )
+  }
+
+  // Selecionar/deselecionar todas as questões da página
+  const toggleSelecionarTodas = () => {
+    if (questoesSelecionadasParaDeletar.length === questoesGeradas.length) {
+      setQuestoesSelecionadasParaDeletar([])
+    } else {
+      setQuestoesSelecionadasParaDeletar(questoesGeradas.map(q => q.id))
+    }
+  }
+
+  // Deletar questões selecionadas
+  const deletarQuestoesSelecionadas = async () => {
+    if (questoesSelecionadasParaDeletar.length === 0) return
+
+    if (!confirm(`Tem certeza que deseja deletar ${questoesSelecionadasParaDeletar.length} questão(ões)?`)) {
+      return
+    }
+
+    setDeletandoQuestoes(true)
+    try {
+      const res = await fetch(`/api/admin/questoes-geradas?ids=${questoesSelecionadasParaDeletar.join(',')}`, {
+        method: 'DELETE'
+      })
+
+      if (res.ok) {
+        const { deletadas } = await res.json()
+        alert(`${deletadas} questão(ões) deletada(s) com sucesso!`)
+        setQuestoesSelecionadasParaDeletar([])
+        carregarQuestoesGeradas()
+      } else {
+        const { error } = await res.json()
+        alert(`Erro: ${error}`)
+      }
+    } catch (err) {
+      alert('Erro ao deletar questões')
+    }
+    setDeletandoQuestoes(false)
+  }
+
+  // Deletar uma questão específica
+  const deletarQuestao = async (id: string) => {
+    if (!confirm('Tem certeza que deseja deletar esta questão?')) return
+
+    try {
+      const res = await fetch(`/api/admin/questoes-geradas?id=${id}`, {
+        method: 'DELETE'
+      })
+
+      if (res.ok) {
+        carregarQuestoesGeradas()
+      }
+    } catch (err) {
+      alert('Erro ao deletar questão')
     }
   }
 
@@ -991,6 +1123,17 @@ Retorne APENAS o JSON, sem markdown.`
           Gerar Questões
         </button>
         <button
+          onClick={() => setTab('ver_geradas')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            tab === 'ver_geradas'
+              ? 'border-[#137fec] text-[#137fec]'
+              : 'border-transparent text-[#9dabb9] hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          <span className="material-symbols-outlined text-sm mr-1">visibility</span>
+          Ver Geradas ({totalGeradas})
+        </button>
+        <button
           onClick={() => setTab('organizar')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             tab === 'organizar'
@@ -1322,6 +1465,248 @@ Retorne APENAS o JSON, sem markdown.`
                   {promptAtual}
                 </pre>
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab: Ver Questões Geradas */}
+      {tab === 'ver_geradas' && (
+        <div className="space-y-6">
+          {/* Filtros */}
+          <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                Questões Geradas por IA ({totalGeradas})
+              </h2>
+              {carregandoGeradas && (
+                <span className="material-symbols-outlined text-[#137fec] animate-spin">progress_activity</span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              {/* Filtro Disciplina */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Disciplina</label>
+                <select
+                  value={filtroGeradasDisciplina}
+                  onChange={(e) => { setFiltroGeradasDisciplina(e.target.value); setPaginaGeradas(1) }}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
+                >
+                  <option value="">Todas</option>
+                  {disciplinasGeradasDisponiveis.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filtro Modalidade */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Modalidade</label>
+                <select
+                  value={filtroGeradasModalidade}
+                  onChange={(e) => { setFiltroGeradasModalidade(e.target.value); setPaginaGeradas(1) }}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
+                >
+                  <option value="">Todas</option>
+                  <option value="certo_errado">Certo/Errado</option>
+                  <option value="multipla_escolha_5">Múltipla Escolha</option>
+                </select>
+              </div>
+
+              {/* Filtro Banca */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Banca</label>
+                <input
+                  type="text"
+                  value={filtroGeradasBanca}
+                  onChange={(e) => { setFiltroGeradasBanca(e.target.value); setPaginaGeradas(1) }}
+                  placeholder="Ex: CESPE"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
+                />
+              </div>
+
+              {/* Botão Atualizar */}
+              <div className="flex items-end">
+                <button
+                  onClick={carregarQuestoesGeradas}
+                  className="px-4 py-2 bg-[#137fec] hover:bg-[#137fec]/90 text-white font-medium rounded-lg flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">refresh</span>
+                  Atualizar
+                </button>
+              </div>
+            </div>
+
+            {/* Ações em massa */}
+            {questoesGeradas.length > 0 && (
+              <div className="flex items-center gap-4 pt-4 border-t border-gray-200 dark:border-[#283039]">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={questoesSelecionadasParaDeletar.length === questoesGeradas.length && questoesGeradas.length > 0}
+                    onChange={toggleSelecionarTodas}
+                    className="w-4 h-4 rounded border-gray-300"
+                  />
+                  Selecionar todas da página
+                </label>
+
+                {questoesSelecionadasParaDeletar.length > 0 && (
+                  <button
+                    onClick={deletarQuestoesSelecionadas}
+                    disabled={deletandoQuestoes}
+                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {deletandoQuestoes ? (
+                      <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                    ) : (
+                      <span className="material-symbols-outlined text-sm">delete</span>
+                    )}
+                    Deletar Selecionadas ({questoesSelecionadasParaDeletar.length})
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Lista de Questões */}
+          <div className="space-y-4">
+            {questoesGeradas.length === 0 ? (
+              <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-12 text-center">
+                <span className="material-symbols-outlined text-6xl text-[#9dabb9] mb-4">quiz</span>
+                <p className="text-[#9dabb9]">Nenhuma questão gerada por IA encontrada</p>
+                <p className="text-sm text-[#9dabb9] mt-1">Use a aba &quot;Gerar Questões&quot; para criar novas questões</p>
+              </div>
+            ) : (
+              questoesGeradas.map((questao) => (
+                <div
+                  key={questao.id}
+                  className={`bg-white dark:bg-[#1C252E] rounded-xl border ${
+                    questoesSelecionadasParaDeletar.includes(questao.id)
+                      ? 'border-red-400 bg-red-50 dark:bg-red-900/10'
+                      : 'border-gray-200 dark:border-[#283039]'
+                  } p-4`}
+                >
+                  {/* Header da questão */}
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={questoesSelecionadasParaDeletar.includes(questao.id)}
+                      onChange={() => toggleSelecionarQuestao(questao.id)}
+                      className="w-4 h-4 rounded border-gray-300 mt-1"
+                    />
+
+                    <div className="flex-1 min-w-0">
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#137fec]/10 text-[#137fec]">
+                          {questao.disciplina}
+                        </span>
+                        {questao.assunto && (
+                          <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-[#283039] text-gray-700 dark:text-gray-300">
+                            {questao.assunto}
+                          </span>
+                        )}
+                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                          {questao.banca}
+                        </span>
+                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
+                          {questao.modalidade === 'certo_errado' ? 'C/E' : 'ME'}
+                        </span>
+                      </div>
+
+                      {/* Enunciado */}
+                      <p className={`text-gray-900 dark:text-white ${questaoExpandida === questao.id ? '' : 'line-clamp-2'}`}>
+                        {questao.enunciado}
+                      </p>
+
+                      {/* Conteúdo expandido */}
+                      {questaoExpandida === questao.id && (
+                        <div className="mt-4 space-y-4">
+                          {/* Alternativas (se múltipla escolha) */}
+                          {questao.alternativa_a && (
+                            <div className="space-y-2">
+                              <p className={`text-sm ${questao.gabarito === 'A' ? 'text-green-600 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                                A) {questao.alternativa_a}
+                              </p>
+                              <p className={`text-sm ${questao.gabarito === 'B' ? 'text-green-600 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                                B) {questao.alternativa_b}
+                              </p>
+                              <p className={`text-sm ${questao.gabarito === 'C' ? 'text-green-600 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                                C) {questao.alternativa_c}
+                              </p>
+                              <p className={`text-sm ${questao.gabarito === 'D' ? 'text-green-600 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                                D) {questao.alternativa_d}
+                              </p>
+                              <p className={`text-sm ${questao.gabarito === 'E' ? 'text-green-600 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                                E) {questao.alternativa_e}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Gabarito */}
+                          <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                            <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                              Gabarito: {questao.gabarito}
+                            </p>
+                          </div>
+
+                          {/* Comentário */}
+                          <div className="p-3 rounded-lg bg-gray-50 dark:bg-[#141A21]">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Comentário:</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{questao.comentario}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Ações */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setQuestaoExpandida(questaoExpandida === questao.id ? null : questao.id)}
+                        className="p-2 text-[#9dabb9] hover:text-[#137fec] hover:bg-gray-100 dark:hover:bg-[#283039] rounded-lg"
+                        title={questaoExpandida === questao.id ? 'Recolher' : 'Expandir'}
+                      >
+                        <span className="material-symbols-outlined text-sm">
+                          {questaoExpandida === questao.id ? 'expand_less' : 'expand_more'}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => deletarQuestao(questao.id)}
+                        className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                        title="Deletar questão"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Paginação */}
+          {totalPaginasGeradas > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => setPaginaGeradas(p => Math.max(1, p - 1))}
+                disabled={paginaGeradas === 1}
+                className="px-3 py-2 bg-gray-100 dark:bg-[#283039] text-gray-700 dark:text-gray-300 rounded-lg disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-sm">chevron_left</span>
+              </button>
+
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                Página {paginaGeradas} de {totalPaginasGeradas}
+              </span>
+
+              <button
+                onClick={() => setPaginaGeradas(p => Math.min(totalPaginasGeradas, p + 1))}
+                disabled={paginaGeradas === totalPaginasGeradas}
+                className="px-3 py-2 bg-gray-100 dark:bg-[#283039] text-gray-700 dark:text-gray-300 rounded-lg disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-sm">chevron_right</span>
+              </button>
             </div>
           )}
         </div>

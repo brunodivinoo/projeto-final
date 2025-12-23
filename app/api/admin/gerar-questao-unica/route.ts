@@ -57,65 +57,72 @@ export async function POST(req: NextRequest) {
         .eq('id', fila_id)
     }
 
-    // Montar prompt para UMA questão
+    // Montar prompt para UMA questão - PROMPTS DIDÁTICOS OTIMIZADOS
+    const bancaUpperCase = item.banca.toUpperCase()
+
+    // Estilo por banca
+    const estilosBanca: Record<string, string> = {
+      'CESPE': 'Assertivas longas (3-5 linhas), tecnicas, com pegadinhas sutis em palavras como "sempre", "nunca", "somente". Use negacoes e inversoes logicas.',
+      'CEBRASPE': 'Assertivas longas (3-5 linhas), tecnicas, com pegadinhas sutis em palavras como "sempre", "nunca", "somente". Use negacoes e inversoes logicas.',
+      'FGV': 'Questoes contextualizadas com situacoes praticas e casos concretos.',
+      'FCC': 'Assertivas mais diretas, focadas na letra da lei, menos interpretativas.',
+      'VUNESP': 'Assertivas claras e objetivas, nivel medio de complexidade.',
+      'ENEM': 'Questoes interdisciplinares, contextualizadas com situacoes do cotidiano.',
+      'INEP': 'Questoes interdisciplinares, contextualizadas com situacoes do cotidiano.'
+    }
+    const estiloBanca = estilosBanca[bancaUpperCase] || estilosBanca['CESPE']
+
     const prompt = item.modalidade === 'certo_errado'
-      ? `Você é um especialista em elaborar questões de concursos públicos brasileiros.
+      ? `Voce e um PROFESSOR ESPECIALISTA em concursos publicos brasileiros.
+Crie 1 questao CERTO/ERRADO no estilo ${bancaUpperCase} com comentario DIDATICO.
 
-Crie APENAS 1 questão no estilo ${item.banca.toUpperCase()} (Certo ou Errado).
+DISCIPLINA: ${item.disciplina}
+ASSUNTO: ${item.assunto || 'Geral'}${item.subassunto ? `\nTEMA ESPECIFICO: ${item.subassunto}` : ''}
+DIFICULDADE: ${item.dificuldade}
 
-CONFIGURAÇÃO:
-- Disciplina: ${item.disciplina}
-- Assunto: ${item.assunto || 'Geral'}
-${item.subassunto ? `- Subassunto/Tema específico: ${item.subassunto}` : ''}
-- Dificuldade: ${item.dificuldade}
+ESTILO DA BANCA ${bancaUpperCase}: ${estiloBanca}
 
-INSTRUÇÕES IMPORTANTES:
-1. A questão deve ser uma AFIRMAÇÃO que pode ser julgada como CERTA ou ERRADA
-2. Use linguagem técnica e formal de concursos
-3. Base-se em legislação, doutrina ou jurisprudência ATUALIZADAS
-4. O comentário deve explicar DETALHADAMENTE o porquê da resposta
-5. NÃO repita questões genéricas - seja ESPECÍFICO sobre o tema
-
-RESPONDA EM JSON:
-{
-  "enunciado": "afirmação completa para julgar",
-  "gabarito": "CERTO" ou "ERRADO",
-  "comentario": "explicação detalhada com fundamentação"
-}
-
-Retorne APENAS o JSON, sem markdown.`
-      : `Você é um especialista em elaborar questões de concursos públicos brasileiros.
-
-Crie APENAS 1 questão de múltipla escolha no estilo ${item.banca.toUpperCase()}.
-
-CONFIGURAÇÃO:
-- Disciplina: ${item.disciplina}
-- Assunto: ${item.assunto || 'Geral'}
-${item.subassunto ? `- Subassunto/Tema específico: ${item.subassunto}` : ''}
-- Dificuldade: ${item.dificuldade}
-- Modalidade: Múltipla Escolha (5 alternativas: A, B, C, D, E)
-
-INSTRUÇÕES IMPORTANTES:
-1. Crie um enunciado completo e contextualizado
-2. As 5 alternativas devem ser PLAUSÍVEIS, com apenas UMA correta
-3. Use linguagem técnica e formal de concursos
-4. Base-se em legislação, doutrina ou jurisprudência ATUALIZADAS
-5. O comentário deve explicar CADA alternativa (por que está certa/errada)
-6. NÃO repita questões genéricas - seja ESPECÍFICO sobre o tema
+ESTRUTURA DO COMENTARIO (como professor ensinando):
+1. Resposta direta: "A assertiva esta [CERTA/ERRADA]."
+2. Explicacao do conceito central
+3. Fundamentacao legal/doutrinaria/jurisprudencial
+4. Se ERRADO: "O erro esta em [X]. O correto seria..."
+5. Se CERTO: "A assertiva esta perfeita porque..."
+6. Contexto pratico ou dica estrategica (varie!)
 
 RESPONDA EM JSON:
-{
-  "enunciado": "texto completo do enunciado com contexto",
-  "alternativa_a": "texto da alternativa A",
-  "alternativa_b": "texto da alternativa B",
-  "alternativa_c": "texto da alternativa C",
-  "alternativa_d": "texto da alternativa D",
-  "alternativa_e": "texto da alternativa E",
-  "gabarito": "A" (ou B, C, D, E),
-  "comentario": "explicação detalhada de cada alternativa"
-}
+{"enunciado":"afirmacao para julgar (2-5 linhas)","gabarito":"CERTO ou ERRADO","comentario":"comentario didatico completo"}
 
-Retorne APENAS o JSON, sem markdown.`
+Apenas JSON, sem markdown.`
+      : `Voce e um PROFESSOR ESPECIALISTA em concursos publicos brasileiros.
+Crie 1 questao MULTIPLA ESCOLHA (A-E) no estilo ${bancaUpperCase} com comentario DIDATICO.
+
+DISCIPLINA: ${item.disciplina}
+ASSUNTO: ${item.assunto || 'Geral'}${item.subassunto ? `\nTEMA ESPECIFICO: ${item.subassunto}` : ''}
+DIFICULDADE: ${item.dificuldade}
+
+ESTILO DA BANCA ${bancaUpperCase}: ${estiloBanca}
+
+REGRAS:
+- 5 alternativas (A-E), apenas 1 correta
+- Distratores devem ser PLAUSIVEIS (erros comuns)
+- Varie a letra do gabarito
+
+ESTRUTURA DO COMENTARIO (como professor ensinando):
+1. "Gabarito: Letra X" + contextualizacao
+2. Conceito-chave e fundamentacao
+3. ANALISE DE CADA ALTERNATIVA:
+   "A) [CORRETA/INCORRETA] - Explicacao..."
+   "B) [CORRETA/INCORRETA] - Explicacao..."
+   "C) [CORRETA/INCORRETA] - Explicacao..."
+   "D) [CORRETA/INCORRETA] - Explicacao..."
+   "E) [CORRETA/INCORRETA] - Explicacao..."
+4. Dica estrategica ou macete (varie!)
+
+RESPONDA EM JSON:
+{"enunciado":"texto completo contextualizado","alternativa_a":"opcao A","alternativa_b":"opcao B","alternativa_c":"opcao C","alternativa_d":"opcao D","alternativa_e":"opcao E","gabarito":"A/B/C/D/E","comentario":"comentario didatico com analise de cada alternativa"}
+
+Apenas JSON, sem markdown.`
 
     // Chamar Gemini
     const response = await fetch(
@@ -184,7 +191,7 @@ Retorne APENAS o JSON, sem markdown.`
       disciplina: item.disciplina,
       assunto: item.assunto || null,
       subassunto: item.subassunto || null,
-      banca: item.banca.toLowerCase(),
+      banca: item.banca.toUpperCase(),
       ano: 2025,
       dificuldade: item.dificuldade,
       enunciado: questao.enunciado,
@@ -195,7 +202,7 @@ Retorne APENAS o JSON, sem markdown.`
       alternativa_e: questao.alternativa_e || null,
       gabarito: questao.gabarito,
       comentario: questao.comentario,
-      id_original: `admin-${user_id.slice(0, 8)}-${Date.now()}`
+      id_original: `ia-admin-${user_id.slice(0, 8)}-${Date.now()}`
     }
 
     const { error: insertError } = await supabase
