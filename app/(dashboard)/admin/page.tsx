@@ -2164,62 +2164,7 @@ Retorne APENAS o JSON, sem markdown.`
         </div>
       )}
 
-      {/* Notificação flutuante de geração de questões */}
-      {processandoFila && fila.length > 0 && (
-        <div className="fixed bottom-4 right-4 bg-[#1a1f25] border border-[#283039] rounded-lg shadow-xl p-4 min-w-[320px] z-50">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-[#137fec] animate-spin">auto_awesome</span>
-              <span className="text-sm font-medium text-white">Gerando Questões</span>
-            </div>
-            <button
-              onClick={cancelarGeracao}
-              className="text-red-400 hover:text-red-500 text-xs px-2 py-1 rounded hover:bg-red-500/10"
-            >
-              Cancelar
-            </button>
-          </div>
-
-          {/* Progresso geral */}
-          {(() => {
-            const totalGeradas = fila.reduce((acc, f) => acc + f.geradas, 0)
-            const totalQuestoesNaFila = fila.reduce((acc, f) => acc + f.quantidade, 0)
-            const totalErros = fila.reduce((acc, f) => acc + f.erros, 0)
-            const progresso = totalQuestoesNaFila > 0 ? (totalGeradas / totalQuestoesNaFila) * 100 : 0
-
-            return (
-              <>
-                <div className="w-full bg-[#283039] rounded-full h-2 mb-2">
-                  <div
-                    className="bg-[#137fec] h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${progresso}%` }}
-                  />
-                </div>
-
-                <div className="flex justify-between text-xs text-[#9dabb9] mb-2">
-                  <span>{totalGeradas} / {totalQuestoesNaFila} questões</span>
-                  <span className="flex gap-2">
-                    <span className="text-green-400">✓ {totalGeradas}</span>
-                    {totalErros > 0 && <span className="text-red-400">✗ {totalErros}</span>}
-                  </span>
-                </div>
-
-                {/* Item atual */}
-                {fila.filter(f => f.status === 'processando').slice(0, 1).map(item => (
-                  <div key={item.id} className="text-xs text-[#9dabb9] truncate">
-                    Atual: {item.disciplina} {item.assunto && `/ ${item.assunto}`}
-                  </div>
-                ))}
-
-                {/* Estimativa */}
-                <div className="text-xs text-[#9dabb9] mt-1">
-                  ~{Math.ceil(((totalQuestoesNaFila - totalGeradas) * 1.5) / 60)} min restantes
-                </div>
-              </>
-            )
-          })()}
-        </div>
-      )}
+      {/* Notificação flutuante de geração movida para GeracaoFilaGlobal no layout */}
     </div>
   )
 }

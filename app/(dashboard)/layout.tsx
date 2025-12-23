@@ -7,6 +7,7 @@ import { XPProvider } from '@/contexts/XPContext'
 import { LimitsProvider } from '@/contexts/LimitsContext'
 import { NotificationProvider } from '@/contexts/NotificationContext'
 import { GenerationToast } from '@/components/notifications'
+import GeracaoFilaGlobal from '@/components/admin/GeracaoFilaGlobal'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -22,6 +23,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <main className="lg:ml-64">{children}</main>
                   {/* Toast global para geracoes em background */}
                   <GenerationToast />
+                  {/* Componente global de geração de questões (admin) */}
+                  <GeracaoFilaGlobal />
                 </div>
               </LimitsProvider>
             </XPProvider>
