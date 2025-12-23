@@ -112,7 +112,7 @@ interface SugestaoMesclagem {
   confianca: 'alta' | 'media' | 'baixa'
 }
 
-// GET - Detectar disciplinas duplicadas/similares usando IA
+// GET - Detectar disciplinas duplicadas/similares (detecção local rápida)
 export async function GET() {
   try {
     // Buscar todas as disciplinas
@@ -133,137 +133,11 @@ export async function GET() {
       return NextResponse.json({ sugestoes: [], disciplinas: disciplinas || [] })
     }
 
-    // Se não tiver API key do Gemini, usar detecção local
-    if (!GEMINI_API_KEY) {
-      console.log('GEMINI_API_KEY não configurada, usando detecção local')
-      const sugestoesLocais = detectarDuplicatasLocal(disciplinas)
-      return NextResponse.json({
-        sugestoes: sugestoesLocais,
-        disciplinas,
-        totalDisciplinas: disciplinas.length,
-        metodo: 'local'
-      })
-    }
-
-    // Montar lista de disciplinas para a IA analisar
-    const listaDisciplinas = disciplinas.map(d => `- "${d.nome}" (${d.qtd_questoes} questões)`).join('\n')
-
-    const prompt = `Você é um especialista em organização de bancos de dados de concursos públicos.
-
-Analise a lista de disciplinas abaixo e identifique DUPLICATAS ou SIMILARES que devem ser MESCLADAS:
-
-${listaDisciplinas}
-
-REGRAS PARA IDENTIFICAR DUPLICATAS:
-1. Nomes diferentes para a mesma matéria:
-   - "Raciocínio Lógico e Matemática" = "Raciocínio Lógico-Matemático"
-   - "Noções de Direito Constitucional" = "Direito Constitucional"
-   - "Português" = "Língua Portuguesa"
-
-2. Variações com/sem acento ou hífen:
-   - "Lógico-Matemático" = "Logico Matematico"
-
-3. Variações com "Noções de":
-   - "Noções de X" deve ser mesclado com "X"
-
-4. NÃO mesclar disciplinas específicas de estado/região:
-   - "História de Goiás" é diferente de "História do Brasil"
-   - "Legislação Específica da PM-GO" deve ficar separada
-
-5. NÃO mesclar disciplinas realmente diferentes:
-   - "Direito Penal" é diferente de "Direito Civil"
-   - "Contabilidade Pública" pode ser diferente de "Contabilidade Geral"
-
-Para cada grupo de duplicatas, escolha a disciplina com MAIS questões como principal.
-
-RESPONDA EM JSON:
-{
-  "sugestoes": [
-    {
-      "principal": "Nome da disciplina principal (a que vai ficar)",
-      "mesclar": ["Nome duplicata 1", "Nome duplicata 2"],
-      "motivo": "Explicação curta do porquê são duplicatas",
-      "confianca": "alta" ou "media" ou "baixa"
-    }
-  ]
-}
-
-Se não houver duplicatas, retorne: {"sugestoes": []}
-
-IMPORTANTE: Seja CONSERVADOR. Na dúvida, NÃO sugira mesclagem.
-Retorne APENAS o JSON, sem markdown.`
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 4096
-          }
-        })
-      }
-    )
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Erro na API Gemini:', response.status, errorText, '- Usando fallback local')
-      // Fallback para detecção local quando Gemini falha
-      const sugestoesLocais = detectarDuplicatasLocal(disciplinas)
-      return NextResponse.json({
-        sugestoes: sugestoesLocais,
-        disciplinas,
-        totalDisciplinas: disciplinas.length,
-        metodo: 'local (fallback)',
-        aviso: 'API Gemini indisponível, usando detecção local'
-      })
-    }
-
-    const data = await response.json()
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-
-    // Parse JSON
-    let resultado: { sugestoes: Array<{ principal: string; mesclar: string[]; motivo: string; confianca: string }> }
-    try {
-      resultado = JSON.parse(text.trim())
-    } catch {
-      const jsonMatch = text.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        resultado = JSON.parse(jsonMatch[0])
-      } else {
-        return NextResponse.json({ sugestoes: [], disciplinas })
-      }
-    }
-
-    // Mapear sugestões para incluir IDs e quantidades
-    const sugestoesCompletas: SugestaoMesclagem[] = []
-
-    for (const sug of resultado.sugestoes || []) {
-      const principal = disciplinas.find(d =>
-        d.nome.toLowerCase() === sug.principal.toLowerCase()
-      )
-
-      if (!principal) continue
-
-      const paraMesclar = sug.mesclar
-        .map(nome => disciplinas.find(d => d.nome.toLowerCase() === nome.toLowerCase()))
-        .filter((d): d is DisciplinaComQtd => d !== undefined)
-
-      if (paraMesclar.length === 0) continue
-
-      sugestoesCompletas.push({
-        disciplinaPrincipal: principal,
-        disciplinasParaMesclar: paraMesclar,
-        motivo: sug.motivo,
-        confianca: (sug.confianca as 'alta' | 'media' | 'baixa') || 'media'
-      })
-    }
+    // Usar detecção local (rápida e confiável)
+    const sugestoesLocais = detectarDuplicatasLocal(disciplinas)
 
     return NextResponse.json({
-      sugestoes: sugestoesCompletas,
+      sugestoes: sugestoesLocais,
       disciplinas,
       totalDisciplinas: disciplinas.length
     })
