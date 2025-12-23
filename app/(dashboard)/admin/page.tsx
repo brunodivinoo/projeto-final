@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 // Email autorizado para acessar a página admin
 const ADMIN_EMAIL = 'brunodivinoa@gmail.com'
 
-type TabType = 'gerar' | 'ver_geradas' | 'organizar' | 'popular' | 'disciplinas'
+type TabType = 'gerar' | 'ver_geradas' | 'organizar' | 'popular' | 'disciplinas' | 'mesclar'
 
 interface Questao {
   id: string
@@ -70,6 +70,21 @@ interface Disciplina {
 interface Banca {
   nome: string
   qtd_questoes: number
+}
+
+// Tipos para mesclagem de disciplinas
+interface DisciplinaComQtd {
+  id: string
+  nome: string
+  qtd_questoes: number
+}
+
+interface SugestaoMesclagem {
+  disciplinaPrincipal: DisciplinaComQtd
+  disciplinasParaMesclar: DisciplinaComQtd[]
+  motivo: string
+  confianca: 'alta' | 'media' | 'baixa'
+  selecionada: boolean
 }
 
 // Tipo para item selecionado na geração
@@ -202,6 +217,13 @@ export default function AdminPage() {
   const [questoesSelecionadasParaDeletar, setQuestoesSelecionadasParaDeletar] = useState<string[]>([])
   const [deletandoQuestoes, setDeletandoQuestoes] = useState(false)
   const [questaoExpandida, setQuestaoExpandida] = useState<string | null>(null)
+
+  // ========== ESTADOS DA ABA MESCLAR DISCIPLINAS ==========
+  const [sugestoesMesclagem, setSugestoesMesclagem] = useState<SugestaoMesclagem[]>([])
+  const [carregandoSugestoes, setCarregandoSugestoes] = useState(false)
+  const [executandoMesclagem, setExecutandoMesclagem] = useState(false)
+  const [mesclagemLog, setMesclagemLog] = useState<string[]>([])
+  const [todasDisciplinas, setTodasDisciplinas] = useState<DisciplinaComQtd[]>([])
 
   // Verificar acesso
   useEffect(() => {
@@ -1084,6 +1106,131 @@ Retorne APENAS o JSON, sem markdown.`
     setSugestoesDisciplina(prev => prev.map(s => ({ ...s, selecionado: false })))
   }
 
+  // ========== FUNÇÕES DA ABA MESCLAR DISCIPLINAS ==========
+
+  // Buscar sugestões de mesclagem com IA
+  const buscarSugestoesMesclagem = async () => {
+    setCarregandoSugestoes(true)
+    setMesclagemLog(['🔍 Buscando disciplinas duplicadas/similares com IA...'])
+
+    try {
+      const res = await fetch('/api/admin/mesclar-disciplinas')
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro ao buscar sugestões')
+      }
+
+      // Adicionar campo selecionada às sugestões
+      const sugestoesComSelecao = (data.sugestoes || []).map((s: Omit<SugestaoMesclagem, 'selecionada'>) => ({
+        ...s,
+        selecionada: false
+      }))
+
+      setSugestoesMesclagem(sugestoesComSelecao)
+      setTodasDisciplinas(data.disciplinas || [])
+
+      if (sugestoesComSelecao.length === 0) {
+        setMesclagemLog(prev => [...prev, '✅ Nenhuma duplicata encontrada! Suas disciplinas estão organizadas.'])
+      } else {
+        setMesclagemLog(prev => [
+          ...prev,
+          `✅ Encontradas ${sugestoesComSelecao.length} sugestões de mesclagem`,
+          `📊 Total de ${data.totalDisciplinas} disciplinas no banco`
+        ])
+      }
+    } catch (err) {
+      setMesclagemLog(prev => [...prev, `❌ Erro: ${err}`])
+    }
+
+    setCarregandoSugestoes(false)
+  }
+
+  // Toggle seleção de uma sugestão
+  const toggleSugestaoMesclagem = (index: number) => {
+    setSugestoesMesclagem(prev => prev.map((s, i) =>
+      i === index ? { ...s, selecionada: !s.selecionada } : s
+    ))
+  }
+
+  // Selecionar todas sugestões de alta confiança
+  const selecionarAltaConfianca = () => {
+    setSugestoesMesclagem(prev => prev.map(s => ({
+      ...s,
+      selecionada: s.confianca === 'alta'
+    })))
+  }
+
+  // Executar mesclagem das sugestões selecionadas
+  const executarMesclagem = async () => {
+    const selecionadas = sugestoesMesclagem.filter(s => s.selecionada)
+
+    if (selecionadas.length === 0) {
+      setMesclagemLog(prev => [...prev, '⚠️ Selecione ao menos uma sugestão para mesclar'])
+      return
+    }
+
+    setExecutandoMesclagem(true)
+    setMesclagemLog(prev => [...prev, `🔄 Iniciando mesclagem de ${selecionadas.length} grupos...`])
+
+    let sucessos = 0
+    let erros = 0
+
+    for (const sugestao of selecionadas) {
+      try {
+        setMesclagemLog(prev => [...prev, `→ Mesclando para "${sugestao.disciplinaPrincipal.nome}"...`])
+
+        const res = await fetch('/api/admin/mesclar-disciplinas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            disciplinaPrincipalId: sugestao.disciplinaPrincipal.id,
+            disciplinasParaMesclarIds: sugestao.disciplinasParaMesclar.map(d => d.id)
+          })
+        })
+
+        const data = await res.json()
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Erro na mesclagem')
+        }
+
+        const r = data.resultados
+        setMesclagemLog(prev => [
+          ...prev,
+          `  ✅ ${r.questoesAtualizadas} questões atualizadas`,
+          `  ✅ ${r.assuntosMesclados} assuntos movidos`,
+          `  ✅ ${r.disciplinasRemovidas} disciplinas removidas`
+        ])
+
+        if (r.erros?.length > 0) {
+          setMesclagemLog(prev => [...prev, `  ⚠️ ${r.erros.length} erros menores`])
+        }
+
+        sucessos++
+      } catch (err) {
+        setMesclagemLog(prev => [...prev, `  ❌ Erro: ${err}`])
+        erros++
+      }
+    }
+
+    setMesclagemLog(prev => [
+      ...prev,
+      '',
+      `🏁 Mesclagem concluída: ${sucessos} grupos mesclados, ${erros} erros`
+    ])
+
+    // Remover sugestões que foram executadas
+    setSugestoesMesclagem(prev => prev.filter(s => !s.selecionada))
+
+    // Recarregar estrutura se estiver na aba gerar
+    if (estrutura.length > 0) {
+      carregarEstrutura()
+    }
+
+    setExecutandoMesclagem(false)
+  }
+
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -1165,6 +1312,17 @@ Retorne APENAS o JSON, sem markdown.`
         >
           <span className="material-symbols-outlined text-sm mr-1">find_replace</span>
           Corrigir Disciplinas
+        </button>
+        <button
+          onClick={() => setTab('mesclar')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            tab === 'mesclar'
+              ? 'border-[#137fec] text-[#137fec]'
+              : 'border-transparent text-[#9dabb9] hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          <span className="material-symbols-outlined text-sm mr-1">merge</span>
+          Mesclar Disciplinas
         </button>
       </div>
 
@@ -2111,6 +2269,189 @@ Retorne APENAS o JSON, sem markdown.`
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Tab: Mesclar Disciplinas */}
+      {tab === 'mesclar' && (
+        <div className="space-y-6">
+          {/* Controles */}
+          <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Mesclar Disciplinas Duplicadas</h2>
+            <p className="text-sm text-[#9dabb9] mb-4">
+              A IA analisa suas disciplinas e identifica duplicatas ou similares (ex: &quot;Raciocínio Lógico&quot; e &quot;Raciocínio Lógico-Matemático&quot;).
+              Você pode revisar as sugestões e aprovar apenas as que desejar mesclar.
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={buscarSugestoesMesclagem}
+                disabled={carregandoSugestoes}
+                className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-lg flex items-center gap-2 disabled:opacity-50"
+              >
+                {carregandoSugestoes ? (
+                  <>
+                    <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                    Analisando...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-sm">psychology</span>
+                    Detectar Duplicatas com IA
+                  </>
+                )}
+              </button>
+
+              {sugestoesMesclagem.length > 0 && (
+                <>
+                  <button
+                    onClick={selecionarAltaConfianca}
+                    className="px-4 py-2 bg-gray-200 dark:bg-[#283039] hover:bg-gray-300 dark:hover:bg-[#3a4550] text-gray-700 dark:text-gray-300 font-medium rounded-lg"
+                  >
+                    Selecionar Alta Confiança
+                  </button>
+                  <button
+                    onClick={() => setSugestoesMesclagem(prev => prev.map(s => ({ ...s, selecionada: false })))}
+                    className="px-4 py-2 bg-gray-200 dark:bg-[#283039] hover:bg-gray-300 dark:hover:bg-[#3a4550] text-gray-700 dark:text-gray-300 font-medium rounded-lg"
+                  >
+                    Desselecionar Todos
+                  </button>
+                  <button
+                    onClick={executarMesclagem}
+                    disabled={executandoMesclagem || sugestoesMesclagem.filter(s => s.selecionada).length === 0}
+                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {executandoMesclagem ? (
+                      <>
+                        <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                        Mesclando...
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-sm">merge</span>
+                        Mesclar Selecionadas ({sugestoesMesclagem.filter(s => s.selecionada).length})
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Log e Sugestões */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Log */}
+            <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+              <h3 className="text-md font-bold text-gray-900 dark:text-white mb-3">Log</h3>
+              <div className="bg-gray-900 rounded-lg p-4 h-[400px] overflow-y-auto font-mono text-sm">
+                {mesclagemLog.length === 0 ? (
+                  <p className="text-gray-500">Clique em &quot;Detectar Duplicatas com IA&quot; para começar...</p>
+                ) : (
+                  mesclagemLog.map((log, i) => (
+                    <p key={i} className={`${
+                      log.startsWith('❌') ? 'text-red-400' :
+                      log.startsWith('✅') ? 'text-green-400' :
+                      log.startsWith('⚠️') ? 'text-yellow-400' :
+                      log.startsWith('🔍') || log.startsWith('🔄') ? 'text-cyan-400' :
+                      log.startsWith('→') ? 'text-blue-400' :
+                      log.startsWith('🏁') ? 'text-emerald-400' :
+                      log.startsWith('📊') ? 'text-purple-400' :
+                      'text-gray-400'
+                    }`}>{log}</p>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Sugestões de Mesclagem */}
+            <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+              <h3 className="text-md font-bold text-gray-900 dark:text-white mb-3">
+                Sugestões de Mesclagem ({sugestoesMesclagem.length})
+              </h3>
+              <div className="h-[400px] overflow-y-auto space-y-3">
+                {sugestoesMesclagem.length === 0 ? (
+                  <p className="text-[#9dabb9] text-sm">Nenhuma sugestão ainda. Execute a análise com IA.</p>
+                ) : (
+                  sugestoesMesclagem.map((sugestao, index) => (
+                    <label
+                      key={index}
+                      className={`block p-4 rounded-lg border cursor-pointer transition-colors ${
+                        sugestao.selecionada
+                          ? 'border-purple-500 bg-purple-500/10'
+                          : 'border-gray-200 dark:border-[#283039] hover:bg-gray-50 dark:hover:bg-[#283039]'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={sugestao.selecionada}
+                          onChange={() => toggleSugestaoMesclagem(index)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 min-w-0">
+                          {/* Principal */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-emerald-400 font-bold text-sm">
+                              {sugestao.disciplinaPrincipal.nome}
+                            </span>
+                            <span className="text-xs text-[#9dabb9]">
+                              ({sugestao.disciplinaPrincipal.qtd_questoes} questões)
+                            </span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              sugestao.confianca === 'alta' ? 'bg-green-500/20 text-green-400' :
+                              sugestao.confianca === 'media' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-red-500/20 text-red-400'
+                            }`}>
+                              {sugestao.confianca}
+                            </span>
+                          </div>
+
+                          {/* Para mesclar */}
+                          <div className="text-xs text-[#9dabb9] mb-2">
+                            <span className="text-gray-500">Mesclar: </span>
+                            {sugestao.disciplinasParaMesclar.map((d, i) => (
+                              <span key={d.id}>
+                                <span className="text-red-400">{d.nome}</span>
+                                <span className="text-gray-600"> ({d.qtd_questoes})</span>
+                                {i < sugestao.disciplinasParaMesclar.length - 1 && ', '}
+                              </span>
+                            ))}
+                          </div>
+
+                          {/* Motivo */}
+                          <p className="text-xs text-cyan-400">{sugestao.motivo}</p>
+                        </div>
+                      </div>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Info sobre disciplinas */}
+          {todasDisciplinas.length > 0 && (
+            <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+              <h3 className="text-md font-bold text-gray-900 dark:text-white mb-3">
+                Todas as Disciplinas ({todasDisciplinas.length})
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {todasDisciplinas.slice(0, 50).map(d => (
+                  <span
+                    key={d.id}
+                    className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-[#283039] text-gray-700 dark:text-gray-300"
+                  >
+                    {d.nome} <span className="text-[#9dabb9]">({d.qtd_questoes})</span>
+                  </span>
+                ))}
+                {todasDisciplinas.length > 50 && (
+                  <span className="text-xs text-[#9dabb9]">
+                    +{todasDisciplinas.length - 50} mais...
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
