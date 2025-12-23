@@ -144,6 +144,8 @@ export default function AdminPage() {
 
   // Seleção atual no seletor em cascata
   const [disciplinaSelecionada, setDisciplinaSelecionada] = useState<string>('')
+  const [disciplinasSelecionadasMulti, setDisciplinasSelecionadasMulti] = useState<string[]>([])
+  const [modoMultiDisciplina, setModoMultiDisciplina] = useState(false)
   const [assuntoSelecionado, setAssuntoSelecionado] = useState<string>('')
   const [subassuntoSelecionado, setSubassuntoSelecionado] = useState<string>('')
 
@@ -393,6 +395,83 @@ export default function AdminPage() {
 
     setItensSelecionados(prev => [...prev, ...itensFiltrados])
     setGerarLog(prev => [...prev, `✅ ${itensFiltrados.length} itens adicionados de ${disc.nome}`])
+  }
+
+  // Toggle seleção de disciplina no modo multi
+  const toggleDisciplinaMulti = (nomeDisciplina: string) => {
+    setDisciplinasSelecionadasMulti(prev =>
+      prev.includes(nomeDisciplina)
+        ? prev.filter(d => d !== nomeDisciplina)
+        : [...prev, nomeDisciplina]
+    )
+  }
+
+  // Selecionar todas as disciplinas
+  const selecionarTodasDisciplinas = () => {
+    setDisciplinasSelecionadasMulti(estrutura.map(d => d.nome))
+  }
+
+  // Desselecionar todas as disciplinas
+  const desselecionarTodasDisciplinas = () => {
+    setDisciplinasSelecionadasMulti([])
+  }
+
+  // Adicionar itens das disciplinas selecionadas no modo multi
+  const adicionarDisciplinasMulti = () => {
+    if (disciplinasSelecionadasMulti.length === 0) return
+
+    const novosItens: ItemSelecionado[] = []
+
+    for (const nomeDisciplina of disciplinasSelecionadasMulti) {
+      const disc = estrutura.find(d => d.nome === nomeDisciplina)
+      if (!disc) continue
+
+      if (disc.assuntos.length === 0) {
+        // Disciplina sem assuntos - adicionar apenas disciplina
+        novosItens.push({
+          disciplina: disc.nome,
+          assunto: null,
+          subassunto: null,
+          key: `${disc.nome}-geral-geral-${Date.now()}-${Math.random()}`
+        })
+      } else {
+        // Adicionar cada assunto
+        disc.assuntos.forEach(ass => {
+          if (ass.subassuntos.length === 0) {
+            novosItens.push({
+              disciplina: disc.nome,
+              assunto: ass.nome,
+              subassunto: null,
+              key: `${disc.nome}-${ass.nome}-geral-${Date.now()}-${Math.random()}`
+            })
+          } else {
+            // Adicionar cada subassunto
+            ass.subassuntos.forEach(sub => {
+              novosItens.push({
+                disciplina: disc.nome,
+                assunto: ass.nome,
+                subassunto: sub.nome,
+                key: `${disc.nome}-${ass.nome}-${sub.nome}-${Date.now()}-${Math.random()}`
+              })
+            })
+          }
+        })
+      }
+    }
+
+    // Filtrar itens que já existem
+    const itensFiltrados = novosItens.filter(novo =>
+      !itensSelecionados.some(
+        item => item.disciplina === novo.disciplina &&
+                item.assunto === novo.assunto &&
+                item.subassunto === novo.subassunto
+      )
+    )
+
+    setItensSelecionados(prev => [...prev, ...itensFiltrados])
+    setGerarLog(prev => [...prev, `✅ ${itensFiltrados.length} itens adicionados de ${disciplinasSelecionadasMulti.length} disciplinas`])
+    setDisciplinasSelecionadasMulti([])
+    setModoMultiDisciplina(false)
   }
 
   // Calcular total de questões a gerar
@@ -1334,108 +1413,206 @@ Retorne APENAS o JSON, sem markdown.`
           <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">Selecionar Conteúdo</h2>
-              {carregandoEstrutura && (
-                <span className="material-symbols-outlined text-[#137fec] animate-spin">progress_activity</span>
-              )}
-            </div>
-
-            {/* Seletores em cascata */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              {/* Disciplina */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Disciplina
-                </label>
-                <select
-                  value={disciplinaSelecionada}
-                  onChange={(e) => {
-                    setDisciplinaSelecionada(e.target.value)
-                    setAssuntoSelecionado('')
-                    setSubassuntoSelecionado('')
-                  }}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
-                >
-                  <option value="">Selecione...</option>
-                  {estrutura.map(disc => (
-                    <option key={disc.id} value={disc.nome}>
-                      {disc.nome} ({disc.assuntos.length} assuntos)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Assunto */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Assunto {disciplinaSelecionada && `(${assuntosDaDisciplina.length})`}
-                </label>
-                <select
-                  value={assuntoSelecionado}
-                  onChange={(e) => {
-                    setAssuntoSelecionado(e.target.value)
-                    setSubassuntoSelecionado('')
-                  }}
-                  disabled={!disciplinaSelecionada}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white disabled:opacity-50"
-                >
-                  <option value="">Todos os assuntos</option>
-                  {assuntosDaDisciplina.map(ass => (
-                    <option key={ass.id} value={ass.nome}>
-                      {ass.nome} ({ass.subassuntos.length} sub.)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Subassunto */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Subassunto {assuntoSelecionado && `(${subassuntosDoAssunto.length})`}
-                </label>
-                <select
-                  value={subassuntoSelecionado}
-                  onChange={(e) => setSubassuntoSelecionado(e.target.value)}
-                  disabled={!assuntoSelecionado}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white disabled:opacity-50"
-                >
-                  <option value="">Todos os subassuntos</option>
-                  {subassuntosDoAssunto.map(sub => (
-                    <option key={sub.id} value={sub.nome}>
-                      {sub.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Botões de ação */}
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={adicionarItem}
-                disabled={!disciplinaSelecionada}
-                className="px-4 py-2 bg-[#137fec] hover:bg-[#137fec]/90 text-white font-medium rounded-lg disabled:opacity-50 flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-sm">add</span>
-                Adicionar Item
-              </button>
-              <button
-                onClick={adicionarTodosDaDisciplina}
-                disabled={!disciplinaSelecionada}
-                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg disabled:opacity-50 flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-sm">playlist_add</span>
-                Add Todos da Disciplina
-              </button>
-              {itensSelecionados.length > 0 && (
+              <div className="flex items-center gap-3">
+                {carregandoEstrutura && (
+                  <span className="material-symbols-outlined text-[#137fec] animate-spin">progress_activity</span>
+                )}
+                {/* Toggle modo multi */}
                 <button
-                  onClick={() => setItensSelecionados([])}
-                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg flex items-center gap-2"
+                  onClick={() => {
+                    setModoMultiDisciplina(!modoMultiDisciplina)
+                    setDisciplinasSelecionadasMulti([])
+                  }}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg flex items-center gap-1.5 transition-colors ${
+                    modoMultiDisciplina
+                      ? 'bg-purple-500 text-white'
+                      : 'bg-gray-200 dark:bg-[#283039] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-[#3a4550]'
+                  }`}
                 >
-                  <span className="material-symbols-outlined text-sm">delete</span>
-                  Limpar Seleção
+                  <span className="material-symbols-outlined text-sm">
+                    {modoMultiDisciplina ? 'checklist' : 'list'}
+                  </span>
+                  {modoMultiDisciplina ? 'Multi-Seleção' : 'Seleção Única'}
                 </button>
-              )}
+              </div>
             </div>
+
+            {/* Modo Multi-Seleção */}
+            {modoMultiDisciplina ? (
+              <div>
+                {/* Botões de ação multi */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <button
+                    onClick={selecionarTodasDisciplinas}
+                    className="px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-sm">select_all</span>
+                    Selecionar Todas ({estrutura.length})
+                  </button>
+                  <button
+                    onClick={desselecionarTodasDisciplinas}
+                    className="px-3 py-1.5 bg-gray-200 dark:bg-[#283039] hover:bg-gray-300 dark:hover:bg-[#3a4550] text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-sm">deselect</span>
+                    Limpar
+                  </button>
+                  {disciplinasSelecionadasMulti.length > 0 && (
+                    <button
+                      onClick={adicionarDisciplinasMulti}
+                      className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg flex items-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-sm">playlist_add</span>
+                      Adicionar {disciplinasSelecionadasMulti.length} Disciplinas
+                    </button>
+                  )}
+                </div>
+
+                {/* Grid de disciplinas com checkboxes */}
+                <div className="max-h-[300px] overflow-y-auto border border-gray-200 dark:border-[#283039] rounded-lg p-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {estrutura.map(disc => {
+                      const isSelected = disciplinasSelecionadasMulti.includes(disc.nome)
+                      const totalItens = disc.assuntos.reduce((acc, ass) =>
+                        acc + (ass.subassuntos.length || 1), 0) || 1
+                      return (
+                        <label
+                          key={disc.id}
+                          className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700'
+                              : 'bg-gray-50 dark:bg-[#141A21] border border-gray-200 dark:border-[#283039] hover:bg-gray-100 dark:hover:bg-[#1a2028]'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleDisciplinaMulti(disc.nome)}
+                            className="w-4 h-4 rounded border-gray-300 text-purple-500 focus:ring-purple-500"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-sm font-medium truncate block ${isSelected ? 'text-purple-700 dark:text-purple-300' : 'text-gray-900 dark:text-white'}`}>
+                              {disc.nome}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {disc.assuntos.length} assuntos, ~{totalItens} itens
+                            </span>
+                          </div>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {disciplinasSelecionadasMulti.length > 0 && (
+                  <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <p className="text-sm text-purple-700 dark:text-purple-300">
+                      <strong>{disciplinasSelecionadasMulti.length}</strong> disciplinas selecionadas.
+                      Clique em "Adicionar" para criar itens de geração para todos os assuntos e subassuntos.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Seletores em cascata (modo único) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  {/* Disciplina */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Disciplina
+                    </label>
+                    <select
+                      value={disciplinaSelecionada}
+                      onChange={(e) => {
+                        setDisciplinaSelecionada(e.target.value)
+                        setAssuntoSelecionado('')
+                        setSubassuntoSelecionado('')
+                      }}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white"
+                    >
+                      <option value="">Selecione...</option>
+                      {estrutura.map(disc => (
+                        <option key={disc.id} value={disc.nome}>
+                          {disc.nome} ({disc.assuntos.length} assuntos)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Assunto */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Assunto {disciplinaSelecionada && `(${assuntosDaDisciplina.length})`}
+                    </label>
+                    <select
+                      value={assuntoSelecionado}
+                      onChange={(e) => {
+                        setAssuntoSelecionado(e.target.value)
+                        setSubassuntoSelecionado('')
+                      }}
+                      disabled={!disciplinaSelecionada}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white disabled:opacity-50"
+                    >
+                      <option value="">Todos os assuntos</option>
+                      {assuntosDaDisciplina.map(ass => (
+                        <option key={ass.id} value={ass.nome}>
+                          {ass.nome} ({ass.subassuntos.length} sub.)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Subassunto */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Subassunto {assuntoSelecionado && `(${subassuntosDoAssunto.length})`}
+                    </label>
+                    <select
+                      value={subassuntoSelecionado}
+                      onChange={(e) => setSubassuntoSelecionado(e.target.value)}
+                      disabled={!assuntoSelecionado}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#283039] bg-gray-50 dark:bg-[#141A21] text-gray-900 dark:text-white disabled:opacity-50"
+                    >
+                      <option value="">Todos os subassuntos</option>
+                      {subassuntosDoAssunto.map(sub => (
+                        <option key={sub.id} value={sub.nome}>
+                          {sub.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Botões de ação */}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={adicionarItem}
+                    disabled={!disciplinaSelecionada}
+                    className="px-4 py-2 bg-[#137fec] hover:bg-[#137fec]/90 text-white font-medium rounded-lg disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-sm">add</span>
+                    Adicionar Item
+                  </button>
+                  <button
+                    onClick={adicionarTodosDaDisciplina}
+                    disabled={!disciplinaSelecionada}
+                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-sm">playlist_add</span>
+                    Add Todos da Disciplina
+                  </button>
+                  {itensSelecionados.length > 0 && (
+                    <button
+                      onClick={() => setItensSelecionados([])}
+                      className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-sm">delete</span>
+                      Limpar Seleção
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Itens Selecionados */}
