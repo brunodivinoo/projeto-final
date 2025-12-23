@@ -7,7 +7,97 @@ const supabase = createClient(
 )
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash-exp'
+
+// Função para normalizar nome (remover acentos, lowercase)
+function normalizarNome(nome: string): string {
+  return nome
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Função para detectar duplicatas localmente (fallback sem IA)
+function detectarDuplicatasLocal(disciplinas: DisciplinaComQtd[]): SugestaoMesclagem[] {
+  const sugestoes: SugestaoMesclagem[] = []
+  const processados = new Set<string>()
+
+  // Mapeamentos conhecidos
+  const mapeamentos: Record<string, string[]> = {
+    'raciocinio logico': ['raciocinio logico matematico', 'raciocinio logico-matematico', 'logica', 'matematica e raciocinio logico'],
+    'lingua portuguesa': ['portugues', 'gramatica'],
+    'informatica': ['nocoes de informatica', 'informatica basica'],
+    'direito constitucional': ['nocoes de direito constitucional'],
+    'direito administrativo': ['nocoes de direito administrativo'],
+    'direito penal': ['nocoes de direito penal'],
+    'direito civil': ['nocoes de direito civil'],
+    'contabilidade': ['nocoes de contabilidade', 'contabilidade geral']
+  }
+
+  for (const disc of disciplinas) {
+    if (processados.has(disc.id)) continue
+
+    const nomeNorm = normalizarNome(disc.nome)
+    const paraMesclar: DisciplinaComQtd[] = []
+
+    // Verificar variações com "Noções de" ou "para Cargo"
+    for (const outra of disciplinas) {
+      if (outra.id === disc.id || processados.has(outra.id)) continue
+
+      const outraNorm = normalizarNome(outra.nome)
+
+      // Verificar se uma é "Noções de X" da outra
+      if (outraNorm.startsWith('nocoes de ') && outraNorm.replace('nocoes de ', '') === nomeNorm) {
+        paraMesclar.push(outra)
+        continue
+      }
+      if (nomeNorm.startsWith('nocoes de ') && nomeNorm.replace('nocoes de ', '') === outraNorm) {
+        paraMesclar.push(outra)
+        continue
+      }
+
+      // Verificar se tem "(para Cargo)" - indicando ser específica de cargo
+      if (outraNorm.includes('(para ') || outraNorm.includes(' para ')) {
+        const semCargo = outraNorm.replace(/\s*\(para\s+[^)]+\)\s*/g, '').replace(/\s+para\s+\w+/g, '').trim()
+        if (semCargo === nomeNorm || nomeNorm.includes(semCargo)) {
+          paraMesclar.push(outra)
+          continue
+        }
+      }
+
+      // Verificar mapeamentos conhecidos
+      for (const [base, variacoes] of Object.entries(mapeamentos)) {
+        if ((nomeNorm.includes(base) || variacoes.some(v => nomeNorm.includes(v))) &&
+            (outraNorm.includes(base) || variacoes.some(v => outraNorm.includes(v)))) {
+          if (!paraMesclar.find(p => p.id === outra.id)) {
+            paraMesclar.push(outra)
+          }
+        }
+      }
+    }
+
+    if (paraMesclar.length > 0) {
+      // A principal é a que tem mais questões
+      const todas = [disc, ...paraMesclar].sort((a, b) => (b.qtd_questoes || 0) - (a.qtd_questoes || 0))
+      const principal = todas[0]
+      const mesclar = todas.slice(1)
+
+      sugestoes.push({
+        disciplinaPrincipal: principal,
+        disciplinasParaMesclar: mesclar,
+        motivo: 'Variações do mesmo nome detectadas automaticamente',
+        confianca: 'media'
+      })
+
+      // Marcar como processados
+      todas.forEach(d => processados.add(d.id))
+    }
+  }
+
+  return sugestoes
+}
 
 interface DisciplinaComQtd {
   id: string
@@ -41,6 +131,18 @@ export async function GET() {
 
     if (!disciplinas || disciplinas.length < 2) {
       return NextResponse.json({ sugestoes: [], disciplinas: disciplinas || [] })
+    }
+
+    // Se não tiver API key do Gemini, usar detecção local
+    if (!GEMINI_API_KEY) {
+      console.log('GEMINI_API_KEY não configurada, usando detecção local')
+      const sugestoesLocais = detectarDuplicatasLocal(disciplinas)
+      return NextResponse.json({
+        sugestoes: sugestoesLocais,
+        disciplinas,
+        totalDisciplinas: disciplinas.length,
+        metodo: 'local'
+      })
     }
 
     // Montar lista de disciplinas para a IA analisar
@@ -108,11 +210,16 @@ Retorne APENAS o JSON, sem markdown.`
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Erro na API Gemini:', response.status, errorText)
+      console.error('Erro na API Gemini:', response.status, errorText, '- Usando fallback local')
+      // Fallback para detecção local quando Gemini falha
+      const sugestoesLocais = detectarDuplicatasLocal(disciplinas)
       return NextResponse.json({
-        error: `Erro na API Gemini: ${response.status}`,
-        details: errorText
-      }, { status: 500 })
+        sugestoes: sugestoesLocais,
+        disciplinas,
+        totalDisciplinas: disciplinas.length,
+        metodo: 'local (fallback)',
+        aviso: 'API Gemini indisponível, usando detecção local'
+      })
     }
 
     const data = await response.json()
