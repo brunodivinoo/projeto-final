@@ -1507,7 +1507,7 @@ Retorne APENAS o JSON, sem markdown.`
                   <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
                     <p className="text-sm text-purple-700 dark:text-purple-300">
                       <strong>{disciplinasSelecionadasMulti.length}</strong> disciplinas selecionadas.
-                      Clique em "Adicionar" para criar itens de geração para todos os assuntos e subassuntos.
+                      Clique em &quot;Adicionar&quot; para criar itens de geração para todos os assuntos e subassuntos.
                     </p>
                   </div>
                 )}
