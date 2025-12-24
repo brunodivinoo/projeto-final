@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 // Email autorizado para acessar a página admin
 const ADMIN_EMAIL = 'brunodivinoa@gmail.com'
 
-type TabType = 'gerar' | 'ver_geradas' | 'organizar' | 'popular' | 'disciplinas' | 'mesclar'
+type TabType = 'gerar' | 'ver_geradas' | 'organizar' | 'popular' | 'disciplinas' | 'mesclar' | 'separar'
 
 interface Questao {
   id: string
@@ -226,6 +226,23 @@ export default function AdminPage() {
   const [executandoMesclagem, setExecutandoMesclagem] = useState(false)
   const [mesclagemLog, setMesclagemLog] = useState<string[]>([])
   const [todasDisciplinas, setTodasDisciplinas] = useState<DisciplinaComQtd[]>([])
+
+  // ========== ESTADOS DA ABA SEPARAR DISCIPLINAS ==========
+  const [separarDisciplinaOrigem, setSepararDisciplinaOrigem] = useState('')
+  const [separarSugestoes, setSepararSugestoes] = useState<{
+    novaDisciplina: string
+    quantidade: number
+    questoes: Array<{
+      id: string
+      assunto: string | null
+      enunciado: string
+      termoEncontrado: string
+    }>
+  }[]>([])
+  const [carregandoSeparacao, setCarregandoSeparacao] = useState(false)
+  const [executandoSeparacao, setExecutandoSeparacao] = useState(false)
+  const [separacaoLog, setSeparacaoLog] = useState<string[]>([])
+  const [criarDisciplinaManual, setCriarDisciplinaManual] = useState('')
 
   // Verificar acesso
   useEffect(() => {
@@ -1311,6 +1328,127 @@ Retorne APENAS o JSON, sem markdown.`
     setExecutandoMesclagem(false)
   }
 
+  // ========== FUNÇÕES DA ABA SEPARAR DISCIPLINAS ==========
+
+  // Buscar sugestões de separação
+  const buscarSugestoesSeparacao = async () => {
+    if (!separarDisciplinaOrigem) {
+      setSeparacaoLog(['⚠️ Selecione uma disciplina de origem'])
+      return
+    }
+
+    setCarregandoSeparacao(true)
+    setSeparacaoLog([`🔍 Analisando questões de "${separarDisciplinaOrigem}"...`])
+
+    try {
+      const res = await fetch(`/api/admin/separar-disciplinas?disciplina=${encodeURIComponent(separarDisciplinaOrigem)}`)
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro ao buscar sugestões')
+      }
+
+      setSepararSugestoes(data.sugestoes || [])
+
+      if (data.questoesParaSeparar === 0) {
+        setSeparacaoLog(prev => [
+          ...prev,
+          `✅ Analisadas ${data.totalQuestoes} questões`,
+          '📋 Nenhuma questão precisa ser separada'
+        ])
+      } else {
+        setSeparacaoLog(prev => [
+          ...prev,
+          `✅ Analisadas ${data.totalQuestoes} questões`,
+          `📋 ${data.questoesParaSeparar} questões podem ser separadas`,
+          ...data.sugestoes.map((s: { novaDisciplina: string; quantidade: number }) =>
+            `  → ${s.quantidade} questões para "${s.novaDisciplina}"`
+          )
+        ])
+      }
+    } catch (err) {
+      setSeparacaoLog(prev => [...prev, `❌ Erro: ${err}`])
+    }
+
+    setCarregandoSeparacao(false)
+  }
+
+  // Executar separação
+  const executarSeparacao = async (novaDisciplina: string) => {
+    setExecutandoSeparacao(true)
+    setSeparacaoLog(prev => [...prev, `🔄 Separando questões para "${novaDisciplina}"...`])
+
+    try {
+      const res = await fetch('/api/admin/separar-disciplinas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          disciplinaOrigem: separarDisciplinaOrigem,
+          novaDisciplina
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro ao separar')
+      }
+
+      const r = data.resultados
+      setSeparacaoLog(prev => [
+        ...prev,
+        r.disciplinaCriada ? `✅ Disciplina "${novaDisciplina}" criada` : `✅ Usando disciplina existente`,
+        `✅ ${r.questoesMovidas} questões movidas`
+      ])
+
+      // Remover sugestão executada
+      setSepararSugestoes(prev => prev.filter(s => s.novaDisciplina !== novaDisciplina))
+
+      // Recarregar estrutura
+      if (estrutura.length > 0) {
+        carregarEstrutura()
+      }
+    } catch (err) {
+      setSeparacaoLog(prev => [...prev, `❌ Erro: ${err}`])
+    }
+
+    setExecutandoSeparacao(false)
+  }
+
+  // Criar disciplina manualmente
+  const criarDisciplinaManualmente = async () => {
+    if (!criarDisciplinaManual.trim()) {
+      setSeparacaoLog(prev => [...prev, '⚠️ Digite o nome da disciplina'])
+      return
+    }
+
+    setSeparacaoLog(prev => [...prev, `🔄 Criando disciplina "${criarDisciplinaManual}"...`])
+
+    try {
+      const res = await fetch('/api/admin/separar-disciplinas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: criarDisciplinaManual.trim() })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro ao criar')
+      }
+
+      setSeparacaoLog(prev => [...prev, `✅ ${data.mensagem}`])
+      setCriarDisciplinaManual('')
+
+      // Recarregar estrutura
+      if (estrutura.length > 0) {
+        carregarEstrutura()
+      }
+    } catch (err) {
+      setSeparacaoLog(prev => [...prev, `❌ Erro: ${err}`])
+    }
+  }
+
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -1403,6 +1541,17 @@ Retorne APENAS o JSON, sem markdown.`
         >
           <span className="material-symbols-outlined text-sm mr-1">merge</span>
           Mesclar Disciplinas
+        </button>
+        <button
+          onClick={() => setTab('separar')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            tab === 'separar'
+              ? 'border-[#137fec] text-[#137fec]'
+              : 'border-transparent text-[#9dabb9] hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          <span className="material-symbols-outlined text-sm mr-1">call_split</span>
+          Separar Disciplinas
         </button>
       </div>
 
@@ -2627,6 +2776,156 @@ Retorne APENAS o JSON, sem markdown.`
                     +{todasDisciplinas.length - 50} mais...
                   </span>
                 )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab: Separar Disciplinas */}
+      {tab === 'separar' && (
+        <div className="space-y-6">
+          {/* Descrição */}
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined text-yellow-500">warning</span>
+              <div>
+                <h3 className="text-sm font-bold text-yellow-500 mb-1">Ferramenta de Correção</h3>
+                <p className="text-sm text-[#9dabb9]">
+                  Use esta ferramenta para separar questões que foram mescladas incorretamente.
+                  Por exemplo, separar &quot;Direito Penal Militar&quot; de &quot;Direito Penal&quot;.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Controles */}
+          <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Analisar Disciplina</h2>
+
+            <div className="flex gap-4 items-end">
+              {/* Seletor de disciplina origem */}
+              <div className="flex-1">
+                <label className="block text-sm text-[#9dabb9] mb-2">Disciplina de Origem</label>
+                <select
+                  value={separarDisciplinaOrigem}
+                  onChange={(e) => setSepararDisciplinaOrigem(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-[#283039] text-gray-900 dark:text-white border-0 focus:ring-2 focus:ring-[#137fec]"
+                >
+                  <option value="">Selecione a disciplina...</option>
+                  {estrutura.map((d) => (
+                    <option key={d.id} value={d.nome}>{d.nome}</option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                onClick={buscarSugestoesSeparacao}
+                disabled={carregandoSeparacao || !separarDisciplinaOrigem}
+                className="px-6 py-2.5 bg-[#137fec] text-white rounded-lg font-medium hover:bg-[#0f6fd3] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {carregandoSeparacao ? (
+                  <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                ) : (
+                  <span className="material-symbols-outlined text-sm">search</span>
+                )}
+                Analisar
+              </button>
+            </div>
+          </div>
+
+          {/* Sugestões de separação */}
+          {separarSugestoes.length > 0 && (
+            <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+              <h3 className="text-md font-bold text-gray-900 dark:text-white mb-4">
+                Questões para Separar ({separarSugestoes.reduce((acc, s) => acc + s.quantidade, 0)})
+              </h3>
+
+              <div className="space-y-4">
+                {separarSugestoes.map((sugestao) => (
+                  <div
+                    key={sugestao.novaDisciplina}
+                    className="bg-gray-50 dark:bg-[#283039] rounded-lg p-4"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <span className="text-white font-medium">{sugestao.novaDisciplina}</span>
+                        <span className="text-[#9dabb9] ml-2">({sugestao.quantidade} questões)</span>
+                      </div>
+                      <button
+                        onClick={() => executarSeparacao(sugestao.novaDisciplina)}
+                        disabled={executandoSeparacao}
+                        className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-sm">call_split</span>
+                        Separar
+                      </button>
+                    </div>
+
+                    {/* Exemplos de questões */}
+                    <div className="space-y-2">
+                      {sugestao.questoes.slice(0, 3).map((q) => (
+                        <div key={q.id} className="text-xs text-[#9dabb9] border-l-2 border-[#137fec] pl-2">
+                          <span className="text-cyan-400">[{q.termoEncontrado}]</span>{' '}
+                          {q.enunciado}
+                        </div>
+                      ))}
+                      {sugestao.questoes.length > 3 && (
+                        <p className="text-xs text-[#9dabb9]">
+                          +{sugestao.questoes.length - 3} questões mais...
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Criar disciplina manualmente */}
+          <div className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-6">
+            <h3 className="text-md font-bold text-gray-900 dark:text-white mb-4">
+              Criar Disciplina Manualmente
+            </h3>
+            <p className="text-sm text-[#9dabb9] mb-4">
+              Se a disciplina que você precisa não existe, crie-a aqui primeiro.
+            </p>
+
+            <div className="flex gap-4">
+              <input
+                type="text"
+                value={criarDisciplinaManual}
+                onChange={(e) => setCriarDisciplinaManual(e.target.value)}
+                placeholder="Ex: Direito Penal Militar"
+                className="flex-1 px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-[#283039] text-gray-900 dark:text-white border-0 focus:ring-2 focus:ring-[#137fec]"
+              />
+              <button
+                onClick={criarDisciplinaManualmente}
+                disabled={!criarDisciplinaManual.trim()}
+                className="px-6 py-2.5 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">add</span>
+                Criar
+              </button>
+            </div>
+          </div>
+
+          {/* Log de operações */}
+          {separacaoLog.length > 0 && (
+            <div className="bg-gray-900 rounded-xl p-4 font-mono text-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[#9dabb9]">Log de operações</span>
+                <button
+                  onClick={() => setSeparacaoLog([])}
+                  className="text-xs text-[#9dabb9] hover:text-white"
+                >
+                  Limpar
+                </button>
+              </div>
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {separacaoLog.map((log, i) => (
+                  <div key={i} className="text-gray-300">{log}</div>
+                ))}
               </div>
             </div>
           )}
