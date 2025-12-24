@@ -162,7 +162,7 @@ export function ChatIA() {
                   <button
                     key={i}
                     onClick={() => setInput(sugestao)}
-                    className="p-3 text-left text-sm bg-gray-50 dark:bg-[#141A21] rounded-lg border border-gray-200 dark:border-[#283039] hover:border-emerald-500/50 transition-colors"
+                    className="p-3 text-left text-sm bg-gray-50 dark:bg-[#141A21] text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-[#283039] hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                   >
                     {sugestao}
                   </button>
