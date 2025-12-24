@@ -114,8 +114,7 @@ export async function POST(req: NextRequest) {
         .from('chat_conversas')
         .insert({
           user_id,
-          titulo,
-          contexto: null
+          titulo
         })
         .select('id')
         .single()
