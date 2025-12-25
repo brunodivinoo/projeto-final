@@ -37,14 +37,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchingRef = useRef(false)
   const lastFetchedUserIdRef = useRef<string | null>(null)
 
-  const fetchProfile = async (userId: string, userEmail?: string, userName?: string) => {
-    // Evitar chamadas duplicadas para o mesmo usuario
-    if (fetchingRef.current && lastFetchedUserIdRef.current === userId) {
+  const fetchProfile = async (userId: string, userEmail?: string, userName?: string, forceRefresh = false) => {
+    // Evitar chamadas duplicadas simultâneas
+    if (fetchingRef.current) {
+      return
+    }
+
+    // Se não é refresh forçado e já buscou esse usuário antes com sucesso, pular
+    if (!forceRefresh && lastFetchedUserIdRef.current === userId) {
       return
     }
 
     fetchingRef.current = true
-    lastFetchedUserIdRef.current = userId
     setProfileLoading(true)
 
     try {
@@ -84,10 +88,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!insertError && newProfile) {
           setProfile(newProfile as Profile)
           setIsNewUser(true)
+          lastFetchedUserIdRef.current = userId // Marcar como sucesso
         }
       } else if (profileResult.data) {
         setProfile(profileResult.data as Profile)
         setIsNewUser(false)
+        lastFetchedUserIdRef.current = userId // Marcar como sucesso
       }
 
       // Processar stats (com tratamento de erro robusto)
@@ -128,8 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = async () => {
     if (user) {
-      lastFetchedUserIdRef.current = null // Forcar refresh
-      await fetchProfile(user.id, user.email, user.user_metadata?.nome)
+      await fetchProfile(user.id, user.email, user.user_metadata?.nome, true)
     }
   }
 
