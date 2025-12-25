@@ -59,37 +59,17 @@ export async function GET(request: NextRequest) {
       }
 
       case 'bancas': {
-        // Buscar bancas existentes nas questões (com contagem)
-        const bancasCount: Record<string, number> = {}
-        let offset = 0
-        const limit = 1000
-        let hasMore = true
+        // Buscar bancas da tabela bancas (muito mais eficiente)
+        const { data: bancasData, error: errBancas } = await supabase
+          .from('bancas')
+          .select('nome, qtd_questoes')
+          .order('nome')
 
-        while (hasMore) {
-          const { data, error } = await supabase
-            .from('questoes')
-            .select('banca')
-            .not('banca', 'is', null)
-            .range(offset, offset + limit - 1)
+        if (errBancas) throw errBancas
 
-          if (error || !data || data.length === 0) {
-            hasMore = false
-            break
-          }
-
-          data.forEach((q) => {
-            if (q.banca) {
-              const bancaNorm = q.banca.toUpperCase().trim()
-              bancasCount[bancaNorm] = (bancasCount[bancaNorm] || 0) + 1
-            }
-          })
-
-          offset += limit
-          hasMore = data.length === limit
-        }
-
-        const bancas = Object.entries(bancasCount)
-          .map(([nome, qtd]) => ({ nome, qtd_questoes: qtd }))
+        const bancas = (bancasData || [])
+          .filter(b => b.nome)
+          .map(b => ({ nome: b.nome, qtd_questoes: b.qtd_questoes || 0 }))
           .sort((a, b) => b.qtd_questoes - a.qtd_questoes)
 
         return NextResponse.json({ bancas })

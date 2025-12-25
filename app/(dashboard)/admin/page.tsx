@@ -292,16 +292,11 @@ export default function AdminPage() {
       if (res.ok) {
         const { fila: filaData } = await res.json()
         setFila(filaData || [])
-
-        // Se há fila pendente/processando, iniciar processamento
-        if (filaData?.length > 0 && !processandoFila) {
-          iniciarProcessamentoFila()
-        }
       }
     } catch (err) {
       console.error('Erro ao carregar fila:', err)
     }
-  }, [user?.id, processandoFila])
+  }, [user?.id])
 
   // Carregar estrutura quando a tab gerar estiver ativa
   useEffect(() => {
