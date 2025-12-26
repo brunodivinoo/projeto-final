@@ -185,6 +185,35 @@ export default function CentralIAPage() {
     }
   }
 
+  // Função para excluir resumo
+  const handleExcluirResumo = async (resumoId: string, e: React.MouseEvent) => {
+    e.stopPropagation() // Impedir que o clique abra o painel
+
+    if (!confirm('Tem certeza que deseja excluir este resumo? Esta ação não pode ser desfeita.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/ia/resumos?resumo_id=${resumoId}&user_id=${user?.id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) throw new Error('Erro ao excluir')
+
+      // Atualizar a lista local
+      carregarResumos()
+
+      // Fechar painel se o resumo excluído estava aberto
+      if (resumoSelecionado?.id === resumoId) {
+        setPainelResumoAberto(false)
+        setResumoSelecionado(null)
+      }
+    } catch (error) {
+      console.error('Erro ao excluir resumo:', error)
+      alert('Erro ao excluir resumo. Tente novamente.')
+    }
+  }
+
   // Formatar data relativa
   const formatarDataRelativa = (data: string) => {
     const d = new Date(data)
@@ -584,15 +613,26 @@ export default function CentralIAPage() {
                             </div>
                           </div>
                         </div>
-                        <span className="material-symbols-outlined text-[#9dabb9] hover:text-purple-500 transition-colors">
-                          open_in_new
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[#9dabb9] hover:text-purple-500 transition-colors">
+                            open_in_new
+                          </span>
+                          <button
+                            onClick={(e) => handleExcluirResumo(resumo.id, e)}
+                            className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors group"
+                            title="Excluir resumo"
+                          >
+                            <span className="material-symbols-outlined text-[#9dabb9] group-hover:text-red-500 transition-colors text-xl">
+                              delete
+                            </span>
+                          </button>
+                        </div>
                       </div>
                       <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-[#141A21]">
                         <p className="text-sm text-[#9dabb9] line-clamp-3">
                           {/* Limpar markdown e mostrar preview limpo */}
                           {resumo.resumo
-                            .replace(/[#*_`~>\-═│┌┐└┘├┤┬┴┼▸→•◆▶▼⚡💡📌🧠📝🎯⚖️📜❓✅⚠️🔗🏷️📖📋📚📗📘📙🔄]/g, '')
+                            .replace(/[#*_`~>\-═│┌┐└┘├┤┬┴┼▸→•◆▶▼⚡💡📌🧠📝🎯⚖️📜❓✅⚠️🔗🏷️📖📋📚📗📘📙🔄━───╔╗╚╝╠╣╦╩╬]/g, '')
                             .replace(/\n+/g, ' ')
                             .replace(/\s+/g, ' ')
                             .trim()
@@ -730,6 +770,18 @@ export default function CentralIAPage() {
         onClose={() => setPainelResumoAberto(false)}
         onCompartilhar={handleCompartilharResumo}
         onSalvar={handleSalvarResumo}
+        onExcluir={async (resumoId: string) => {
+          try {
+            const response = await fetch(`/api/ia/resumos?resumo_id=${resumoId}&user_id=${user?.id}`, {
+              method: 'DELETE'
+            })
+            if (!response.ok) throw new Error('Erro ao excluir')
+            carregarResumos()
+            return true
+          } catch {
+            return false
+          }
+        }}
       />
     </div>
   )

@@ -9,7 +9,8 @@ export default function ResumosGlobalPanel() {
     painelAberto,
     fecharPainel,
     compartilharResumo,
-    salvarResumo
+    salvarResumo,
+    excluirResumo
   } = useResumos()
 
   return (
@@ -19,6 +20,7 @@ export default function ResumosGlobalPanel() {
       onClose={fecharPainel}
       onCompartilhar={compartilharResumo}
       onSalvar={salvarResumo}
+      onExcluir={excluirResumo}
     />
   )
 }

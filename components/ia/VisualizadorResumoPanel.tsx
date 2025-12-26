@@ -21,6 +21,7 @@ interface VisualizadorResumoPanelProps {
   onClose: () => void
   onCompartilhar?: (resumoId: string) => Promise<string | null>
   onSalvar?: (resumoId: string, novoConteudo: string) => Promise<boolean>
+  onExcluir?: (resumoId: string) => Promise<boolean>
 }
 
 export default function VisualizadorResumoPanel({
@@ -28,12 +29,14 @@ export default function VisualizadorResumoPanel({
   isOpen,
   onClose,
   onCompartilhar,
-  onSalvar
+  onSalvar,
+  onExcluir
 }: VisualizadorResumoPanelProps) {
   const [copiado, setCopiado] = useState(false)
   const [compartilhando, setCompartilhando] = useState(false)
   const [linkCompartilhamento, setLinkCompartilhamento] = useState<string | null>(null)
   const [modoEdicao, setModoEdicao] = useState(false)
+  const [excluindo, setExcluindo] = useState(false)
   const [conteudoEditado, setConteudoEditado] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [salvou, setSalvou] = useState(false)
@@ -108,6 +111,27 @@ export default function VisualizadorResumoPanel({
     setModoEdicao(false)
   }
 
+  const handleExcluir = async () => {
+    if (!onExcluir) return
+
+    if (!confirm('Tem certeza que deseja excluir este resumo? Esta ação não pode ser desfeita.')) {
+      return
+    }
+
+    setExcluindo(true)
+    try {
+      const sucesso = await onExcluir(resumo.id)
+      if (sucesso) {
+        onClose()
+      }
+    } catch (err) {
+      console.error('Erro ao excluir:', err)
+      alert('Erro ao excluir resumo. Tente novamente.')
+    } finally {
+      setExcluindo(false)
+    }
+  }
+
   return (
     <>
       {/* Overlay */}
@@ -161,6 +185,21 @@ export default function VisualizadorResumoPanel({
                 <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
                   Editando
                 </span>
+              )}
+              {/* Botão de Excluir */}
+              {onExcluir && (
+                <button
+                  onClick={handleExcluir}
+                  disabled={excluindo}
+                  className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors group"
+                  title="Excluir resumo"
+                >
+                  {excluindo ? (
+                    <div className="w-5 h-5 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
+                  ) : (
+                    <span className="material-symbols-outlined text-gray-500 dark:text-[#9dabb9] group-hover:text-red-500 transition-colors">delete</span>
+                  )}
+                </button>
               )}
               <button
                 onClick={onClose}
@@ -231,34 +270,64 @@ export default function VisualizadorResumoPanel({
                       const isBlock = className?.includes('language-')
                       if (isBlock) {
                         return (
-                          <code className="block bg-gray-800 dark:bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+                          <code className="block bg-gray-800 dark:bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono whitespace-pre">
                             {children}
                           </code>
                         )
                       }
                       return (
-                        <code className="bg-gray-200 dark:bg-gray-700 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded text-sm font-mono">
+                        <code className="bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded text-sm font-mono">
                           {children}
                         </code>
                       )
                     },
+                    pre: ({children}) => (
+                      <pre className="bg-gray-800 dark:bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4 text-sm font-mono whitespace-pre">
+                        {children}
+                      </pre>
+                    ),
+                    del: ({children}) => (
+                      <del className="line-through text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-1 rounded">
+                        {children}
+                      </del>
+                    ),
                     hr: () => (
                       <hr className="my-6 border-gray-300 dark:border-gray-600" />
                     ),
+                    p: ({children}) => (
+                      <p className="text-gray-700 dark:text-gray-300 my-2 leading-relaxed">
+                        {children}
+                      </p>
+                    ),
                     table: ({children}) => (
-                      <div className="overflow-x-auto my-4">
-                        <table className="min-w-full border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                      <div className="overflow-x-auto my-4 rounded-lg border border-gray-300 dark:border-gray-600">
+                        <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
                           {children}
                         </table>
                       </div>
                     ),
+                    thead: ({children}) => (
+                      <thead className="bg-purple-100 dark:bg-purple-900/30">
+                        {children}
+                      </thead>
+                    ),
+                    tbody: ({children}) => (
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-[#1C252E]">
+                        {children}
+                      </tbody>
+                    ),
+                    tr: ({children}) => (
+                      <tr className="hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors">
+                        {children}
+                      </tr>
+                    ),
                     th: ({children}) => (
-                      <th className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-4 py-2 text-left font-semibold border-b border-gray-300 dark:border-gray-600">
+                      <th className="text-purple-700 dark:text-purple-300 px-4 py-3 text-left font-semibold text-sm">
                         {children}
                       </th>
                     ),
                     td: ({children}) => (
-                      <td className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300 text-sm">
                         {children}
                       </td>
                     ),

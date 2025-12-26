@@ -24,6 +24,7 @@ interface ResumosContextType {
   fecharPainel: () => void
   compartilharResumo: (resumoId: string) => Promise<string | null>
   salvarResumo: (resumoId: string, novoConteudo: string) => Promise<boolean>
+  excluirResumo: (resumoId: string) => Promise<boolean>
 }
 
 const ResumosContext = createContext<ResumosContextType | undefined>(undefined)
@@ -111,6 +112,32 @@ export function ResumosProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const excluirResumo = async (resumoId: string): Promise<boolean> => {
+    if (!user?.id) return false
+
+    try {
+      const response = await fetch(`/api/ia/resumos?resumo_id=${resumoId}&user_id=${user.id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) throw new Error('Erro ao excluir')
+
+      // Atualizar a lista local
+      setResumos(prev => prev.filter(r => r.id !== resumoId))
+
+      // Fechar painel se o resumo excluído estava aberto
+      if (resumoSelecionado?.id === resumoId) {
+        setPainelAberto(false)
+        setResumoSelecionado(null)
+      }
+
+      return true
+    } catch (error) {
+      console.error('Erro ao excluir resumo:', error)
+      return false
+    }
+  }
+
   return (
     <ResumosContext.Provider
       value={{
@@ -122,7 +149,8 @@ export function ResumosProvider({ children }: { children: ReactNode }) {
         abrirResumo,
         fecharPainel,
         compartilharResumo,
-        salvarResumo
+        salvarResumo,
+        excluirResumo
       }}
     >
       {children}

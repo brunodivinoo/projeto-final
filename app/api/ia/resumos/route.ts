@@ -108,307 +108,401 @@ export async function POST(req: NextRequest) {
       topicos: {
         instrucao: `Crie um resumo em TÓPICOS hierárquicos de NÍVEL PROFISSIONAL para concursos públicos.
 
-REGRAS DE ESTRUTURA:
-• Use exatamente a formatação visual do exemplo
-• Caixas com bordas ASCII para cada seção
-• Hierarquia com símbolos: ▸ (principal) → (sub) • (detalhe)
-• Seções OBRIGATÓRIAS: Pontos-Chave, Pegadinhas de Prova, Dicas de Memorização, Jurisprudência
-• Formato clean e espaçado para fácil leitura
-• Destaque termos importantes em **negrito**`,
-        exemplo: `═══════════════════════════════════════════════════════════════
-                         📚 [TÍTULO DO TEMA]
-═══════════════════════════════════════════════════════════════
+## ESTRUTURA VISUAL OBRIGATÓRIA
 
-┌─────────────────────────────────────────────────────────────┐
-│  📌 PONTOS-CHAVE                                            │
-└─────────────────────────────────────────────────────────────┘
+### Hierarquia de Informação
+- Use "━━━" para separar seções PRINCIPAIS (apenas 3-4 no documento)
+- Use "───" para separar subseções
+- Mantenha espaçamento consistente entre blocos
 
-  ▸ **Conceito Principal 1**
-    → Definição clara e objetiva do conceito
-    → Elementos constitutivos essenciais
-      • Primeiro elemento ou requisito
-      • Segundo elemento ou requisito
-      • Terceiro elemento ou requisito
-    → Natureza jurídica: [classificação]
+### Formatação de Texto (MARKDOWN)
+- Use **negrito** para: termos técnicos, nomes de leis, conceitos-chave, palavras que precisam de destaque
+- Use *itálico* para: citações, expressões latinas, ênfase suave
+- Use ~~tachado~~ para: indicar o que NÃO é correto (ex: "NÃO é ~~crime culposo~~, é crime doloso")
+- Use \`código\` para: artigos de lei, números, datas, prazos
 
-  ▸ **Conceito Principal 2**
-    → Explicação detalhada
-    → Diferenças para institutos similares
-      • Ponto distintivo 1
-      • Ponto distintivo 2
+### Ícones Contextuais (use com moderação, escolha os mais relevantes)
+📌 Conceito principal ou definição importante
+⚠️ Atenção/Cuidado - pegadinhas de prova
+💡 Dica de memorização ou macete
+⚖️ Jurisprudência (STF, STJ, súmulas)
+📋 Lista ou enumeração importante
+🎯 Ponto mais cobrado em provas
+✅ Correto / Permitido
+❌ Incorreto / Proibido
+🔗 Conexão entre conceitos
 
-  ▸ **Conceito Principal 3**
-    → Hipóteses de aplicação
-    → Consequências jurídicas
-      • Efeito 1
-      • Efeito 2
+### Caixas de Destaque
+Use caixas ASCII apenas para seções MUITO importantes:
+┌─────────────────────────────────┐
+│  TÍTULO DA CAIXA               │
+├─────────────────────────────────┤
+│  Conteúdo importante aqui      │
+└─────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────┐
-│  ⚠️ PEGADINHAS DE PROVA                                     │
-└─────────────────────────────────────────────────────────────┘
+### Seções OBRIGATÓRIAS
+1. Pontos-Chave (conceitos principais)
+2. Pegadinhas de Prova (erros comuns)
+3. Dicas de Memorização (mnemonicos, macetes)
+4. Jurisprudência Relevante (se aplicável)
 
-  ⚡ As bancas costumam trocar [X] por [Y] - CUIDADO!
-  ⚡ Não confundir [conceito A] com [conceito B]
-  ⚡ O prazo é de [X] dias, NÃO [Y] dias
+### Hierarquia de Tópicos
+▸ Tópico principal (nível 1)
+  → Subtópico (nível 2)
+    • Detalhe (nível 3)`,
+        exemplo: `# 📚 [TÍTULO DO TEMA]
 
-┌─────────────────────────────────────────────────────────────┐
-│  💡 DICAS DE MEMORIZAÇÃO                                    │
-└─────────────────────────────────────────────────────────────┘
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  🧠 Mnemônico: [SIGLA ou frase para memorizar]
-  📝 Macete: [associação para lembrar]
-  🎯 Ponto mais cobrado: [tema frequente em provas]
+## 📌 Pontos-Chave
 
-┌─────────────────────────────────────────────────────────────┐
-│  ⚖️ JURISPRUDÊNCIA RELEVANTE                                │
-└─────────────────────────────────────────────────────────────┘
+▸ **Conceito Principal 1**
+  → Definição clara e objetiva do conceito
+  → Elementos constitutivos: são \`3 requisitos\` essenciais
+    • Primeiro requisito obrigatório
+    • Segundo requisito obrigatório
+    • Terceiro requisito obrigatório
+  → *Natureza jurídica*: classificação técnica
 
-  📜 STF: [Súmula ou decisão importante]
-  📜 STJ: [Súmula ou entendimento consolidado]
-  📜 Tema: [Número do tema de repercussão geral se houver]`
+▸ **Conceito Principal 2**
+  → Explicação detalhada do instituto
+  → Diferenças para institutos similares:
+    • ✅ Instituto A: [característica]
+    • ❌ Instituto B: [diferença]
+
+───────────────────────────────────────────────────
+
+## ⚠️ Pegadinhas de Prova
+
+> ⚡ As bancas costumam trocar **X** por **Y** - CUIDADO!
+
+> ⚡ NÃO é ~~conceito errado~~, é **conceito correto**
+
+> ⚡ O prazo é de \`X dias\`, NÃO \`Y dias\`
+
+───────────────────────────────────────────────────
+
+## 💡 Dicas de Memorização
+
+🧠 **Mnemônico**: SIGLA para memorizar os elementos
+📝 **Macete**: Associação prática para lembrar
+🎯 **Mais cobrado**: Ponto que aparece frequentemente
+
+───────────────────────────────────────────────────
+
+## ⚖️ Jurisprudência
+
+┌─────────────────────────────────────────────────┐
+│  📜 **STF** - Súmula XXX                        │
+│  "Texto da súmula ou entendimento"              │
+├─────────────────────────────────────────────────┤
+│  📜 **STJ** - Súmula YYY                        │
+│  "Entendimento consolidado"                     │
+└─────────────────────────────────────────────────┘`
       },
       mapa_mental: {
-        instrucao: `Crie um MAPA MENTAL textual PROFISSIONAL com estrutura visual clara usando caracteres ASCII.
+        instrucao: `Crie um MAPA MENTAL textual PROFISSIONAL com estrutura visual clara.
 
-REGRAS DE ESTRUTURA:
-• Caixa central destacada com o tema principal
-• Ramificações visuais usando ─, │, ├, └, ┌, ┐
-• Máximo 4 ramos principais
-• Cada ramo com 3-5 sub-itens
-• Seção de CONEXÕES mostrando relações entre conceitos
-• Seção de PALAVRAS-CHAVE com hashtags
-• Use emojis para identificar categorias`,
-        exemplo: `═══════════════════════════════════════════════════════════════
-                         🧠 MAPA MENTAL
-═══════════════════════════════════════════════════════════════
+## ESTRUTURA VISUAL OBRIGATÓRIA
 
-                    ╔═══════════════════════╗
-                    ║    📌 TEMA CENTRAL    ║
-                    ║   [Nome do Conceito]  ║
-                    ╚═══════════╤═══════════╝
-                                │
-        ┌───────────────────────┼───────────────────────┐
-        │                       │                       │
-        ▼                       ▼                       ▼
-┌───────────────┐      ┌───────────────┐      ┌───────────────┐
-│  📗 ASPECTO 1 │      │  📘 ASPECTO 2 │      │  📙 ASPECTO 3 │
-│   [Título]    │      │   [Título]    │      │   [Título]    │
-└───────┬───────┘      └───────┬───────┘      └───────┬───────┘
-        │                      │                      │
-        ├── Item 1.1           ├── Item 2.1           ├── Item 3.1
-        │   └── detalhe        │   └── detalhe        │   └── detalhe
-        ├── Item 1.2           ├── Item 2.2           ├── Item 3.2
-        │   └── detalhe        │   └── detalhe        │   └── detalhe
-        ├── Item 1.3           ├── Item 2.3           ├── Item 3.3
-        └── Item 1.4           └── Item 2.4           └── Item 3.4
+### Hierarquia de Informação
+- Centro: Tema principal em destaque com caixa
+- Nível 1: 3-4 ramos principais (aspectos principais do tema)
+- Nível 2: 3-5 sub-itens por ramo
+- Nível 3: Detalhes específicos quando necessário
 
-┌─────────────────────────────────────────────────────────────┐
-│  🔗 CONEXÕES IMPORTANTES                                    │
-└─────────────────────────────────────────────────────────────┘
+### Formatação de Texto (MARKDOWN)
+- Use **negrito** para: conceitos principais, termos técnicos
+- Use *itálico* para: observações, notas explicativas
+- Use \`código\` para: artigos, números, datas
 
-  [Aspecto 1] ←─── relaciona-se com ───→ [Aspecto 2]
-  [Item 1.1] ←─── é pressuposto de ───→ [Item 2.1]
-  [Aspecto 3] ←─── depende de ───→ [Aspecto 1]
+### Estrutura de Ramificação
+Use caracteres ASCII para criar ramificações visuais:
+- ─ │ ├ └ ┌ ┐ para linhas e conexões
+- → para indicar direção/consequência
+- ▸ para listar itens
 
-┌─────────────────────────────────────────────────────────────┐
-│  🏷️ PALAVRAS-CHAVE                                          │
-└─────────────────────────────────────────────────────────────┘
+### Seções OBRIGATÓRIAS
+1. Mapa Visual Central (com ramificações)
+2. Conexões Importantes (relações entre conceitos)
+3. Palavras-Chave (hashtags para revisão rápida)
+4. Dica de Memorização (mnemônico ou associação)
 
-  #conceito1  #conceito2  #conceito3  #conceito4  #conceito5
+### Ícones por Categoria
+📗 Conceito/Definição
+📘 Características
+📙 Aplicação/Exemplos
+📕 Exceções/Cuidados
+🔗 Conexões entre temas`,
+        exemplo: `# 🧠 Mapa Mental: [TEMA]
 
-┌─────────────────────────────────────────────────────────────┐
-│  💡 PARA MEMORIZAR                                          │
-└─────────────────────────────────────────────────────────────┘
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  🎯 O mais importante: [ponto central]
-  ⚠️ Cuidado com: [pegadinha comum]`
+## 📌 Visão Geral
+
+\`\`\`
+                ╔════════════════════════╗
+                ║   📌 **TEMA CENTRAL**  ║
+                ║    [Nome do Conceito]  ║
+                ╚═══════════╤════════════╝
+                            │
+       ┌────────────────────┼────────────────────┐
+       │                    │                    │
+       ▼                    ▼                    ▼
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│ 📗 ASPECTO 1 │    │ 📘 ASPECTO 2 │    │ 📙 ASPECTO 3 │
+└──────┬───────┘    └──────┬───────┘    └──────┬───────┘
+       │                   │                   │
+       ├─ Item A           ├─ Item D           ├─ Item G
+       │  └→ detalhe       │  └→ detalhe       │  └→ detalhe
+       ├─ Item B           ├─ Item E           ├─ Item H
+       │  └→ detalhe       │  └→ detalhe       │  └→ detalhe
+       └─ Item C           └─ Item F           └─ Item I
+\`\`\`
+
+───────────────────────────────────────────────────
+
+## 🔗 Conexões Importantes
+
+> **Aspecto 1** ←──*relaciona-se com*──→ **Aspecto 2**
+
+> **Item A** ←──*é pressuposto de*──→ **Item D**
+
+> **Aspecto 3** ←──*depende de*──→ **Aspecto 1**
+
+───────────────────────────────────────────────────
+
+## 🏷️ Palavras-Chave
+
+\`#conceito1\` \`#conceito2\` \`#conceito3\` \`#conceito4\` \`#conceito5\`
+
+───────────────────────────────────────────────────
+
+## 💡 Para Memorizar
+
+🧠 **Mnemônico**: SIGLA ou frase para lembrar
+🎯 **Mais importante**: O ponto central do tema
+⚠️ **Cuidado**: Pegadinha comum em provas`
       },
       fichamento: {
-        instrucao: `Crie um FICHAMENTO ACADÊMICO PROFISSIONAL completo e estruturado para concursos.
+        instrucao: `Crie um FICHAMENTO ACADÊMICO PROFISSIONAL completo para concursos públicos.
 
-REGRAS DE ESTRUTURA:
-• Use caixas ASCII para delimitar cada seção
-• Seções OBRIGATÓRIAS: Referência, Palavras-Chave, Citações, Conceitos, Questões, Síntese
-• Citações devem ter análise e aplicação prática
-• Conceitos com definição técnica e exemplo
-• Questões no formato de prova (pergunta + resposta)
-• Síntese final objetiva`,
-        exemplo: `═══════════════════════════════════════════════════════════════
-                     📋 FICHAMENTO ACADÊMICO
-═══════════════════════════════════════════════════════════════
+## ESTRUTURA VISUAL OBRIGATÓRIA
 
-┌─────────────────────────────────────────────────────────────┐
-│  📖 REFERÊNCIA                                              │
-├─────────────────────────────────────────────────────────────┤
-│  Tema: [Nome completo do tema]                              │
-│  Área: [Disciplina] › [Assunto] › [Subassunto]              │
-│  Data de estudo: [Data]                                     │
-└─────────────────────────────────────────────────────────────┘
+### Formatação de Texto (MARKDOWN)
+- Use **negrito** para: termos-chave, conceitos importantes, palavras de destaque
+- Use *itálico* para: citações, expressões latinas, observações
+- Use \`código\` para: artigos de lei, números, datas, prazos
+- Use > (blockquote) para: citações literais do texto original
 
-┌─────────────────────────────────────────────────────────────┐
-│  🏷️ PALAVRAS-CHAVE                                          │
-├─────────────────────────────────────────────────────────────┤
-│  #termo1  #termo2  #termo3  #termo4  #termo5  #termo6       │
-└─────────────────────────────────────────────────────────────┘
+### Hierarquia de Informação
+- Use "━━━" para separar seções PRINCIPAIS
+- Use "───" para separar subseções
+- Mantenha espaçamento consistente
 
-┌─────────────────────────────────────────────────────────────┐
-│  📝 CITAÇÕES E ANÁLISES                                     │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  "[Citação literal importante do texto original]"           │
-│                                                             │
-│  ➤ Análise: Explicação do significado e relevância          │
-│    jurídica/técnica desta passagem.                         │
-│                                                             │
-│  ➤ Aplicação: Como este conceito costuma ser cobrado        │
-│    em provas de concurso público.                           │
-│                                                             │
-│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │
-│                                                             │
-│  "[Outra citação relevante do texto]"                       │
-│                                                             │
-│  ➤ Análise: Comentário crítico sobre o trecho.              │
-│                                                             │
-│  ➤ Conexão: Relação com outros temas ou institutos.         │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+### Seções OBRIGATÓRIAS
+1. **Referência** - Identificação do tema, área e data
+2. **Palavras-Chave** - Hashtags para revisão rápida
+3. **Citações e Análises** - Trechos importantes com comentários
+4. **Conceitos Fundamentais** - Definições técnicas com exemplos
+5. **Questões para Revisão** - Perguntas no estilo de prova
+6. **Síntese Final** - Resumo dos pontos essenciais
 
-┌─────────────────────────────────────────────────────────────┐
-│  📚 CONCEITOS FUNDAMENTAIS                                  │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ▸ **CONCEITO 1**                                           │
-│    Definição: [Explicação técnica clara e completa]         │
-│    Exemplo: [Caso prático ilustrativo]                      │
-│    Base legal: [Artigo/lei se aplicável]                    │
-│                                                             │
-│  ▸ **CONCEITO 2**                                           │
-│    Definição: [Explicação técnica clara e completa]         │
-│    Exemplo: [Caso prático ilustrativo]                      │
-│    Base legal: [Artigo/lei se aplicável]                    │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+### Estrutura de Conceitos
+▸ **CONCEITO**
+  → Definição: explicação técnica
+  → Exemplo: caso prático
+  → Base legal: artigo/lei
 
-┌─────────────────────────────────────────────────────────────┐
-│  ❓ QUESTÕES PARA REVISÃO                                   │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  1. [Pergunta no estilo de prova de concurso]               │
-│     R: [Resposta objetiva e fundamentada]                   │
-│                                                             │
-│  2. [Outra pergunta relevante]                              │
-│     R: [Resposta objetiva e fundamentada]                   │
-│                                                             │
-│  3. [Terceira pergunta importante]                          │
-│     R: [Resposta objetiva e fundamentada]                   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+### Ícones Contextuais
+📖 Referência/Fonte
+🏷️ Palavras-chave
+📝 Citações
+📚 Conceitos
+❓ Questões
+✅ Síntese`,
+        exemplo: `# 📋 Fichamento: [TEMA]
 
-┌─────────────────────────────────────────────────────────────┐
-│  ✅ SÍNTESE FINAL                                           │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  [Resumo de 3-5 linhas consolidando os pontos mais          │
-│  importantes do tema, destacando o que é essencial          │
-│  memorizar para a prova]                                    │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 📖 Referência
+
+| Campo | Valor |
+|-------|-------|
+| **Tema** | Nome completo do tema |
+| **Área** | Disciplina › Assunto › Subassunto |
+| **Data** | Data do estudo |
+
+───────────────────────────────────────────────────
+
+## 🏷️ Palavras-Chave
+
+\`#termo1\` \`#termo2\` \`#termo3\` \`#termo4\` \`#termo5\` \`#termo6\`
+
+───────────────────────────────────────────────────
+
+## 📝 Citações e Análises
+
+> *"Citação literal importante do texto original"*
+
+**Análise**: Explicação do significado e relevância jurídica/técnica desta passagem.
+
+**Aplicação em prova**: Como este conceito costuma ser cobrado em concursos.
+
+- - -
+
+> *"Outra citação relevante do texto"*
+
+**Análise**: Comentário crítico sobre o trecho.
+
+**Conexão**: Relação com outros temas ou institutos.
+
+───────────────────────────────────────────────────
+
+## 📚 Conceitos Fundamentais
+
+▸ **CONCEITO 1**
+  → *Definição*: Explicação técnica clara e completa
+  → *Exemplo*: Caso prático ilustrativo
+  → *Base legal*: \`Art. X, Lei Y\`
+
+▸ **CONCEITO 2**
+  → *Definição*: Explicação técnica clara e completa
+  → *Exemplo*: Caso prático ilustrativo
+  → *Base legal*: \`Art. Z, Lei W\`
+
+───────────────────────────────────────────────────
+
+## ❓ Questões para Revisão
+
+**1. Pergunta no estilo de prova de concurso?**
+> R: Resposta objetiva e fundamentada.
+
+**2. Outra pergunta relevante?**
+> R: Resposta objetiva e fundamentada.
+
+**3. Terceira pergunta importante?**
+> R: Resposta objetiva e fundamentada.
+
+───────────────────────────────────────────────────
+
+## ✅ Síntese Final
+
+┌─────────────────────────────────────────────────┐
+│ Resumo de 3-5 linhas consolidando os pontos     │
+│ mais importantes do tema, destacando o que é    │
+│ **essencial memorizar** para a prova.           │
+└─────────────────────────────────────────────────┘`
       },
       esquema: {
-        instrucao: `Crie um ESQUEMA VISUAL PROFISSIONAL usando tabelas, quadros comparativos e fluxogramas em ASCII.
+        instrucao: `Crie um ESQUEMA VISUAL PROFISSIONAL com tabelas comparativas e fluxogramas.
 
-REGRAS DE ESTRUTURA:
-• Use tabelas ASCII alinhadas para comparações
-• Inclua OBRIGATORIAMENTE: Quadro Comparativo e Fluxograma
-• Caixas bem definidas com bordas duplas ou simples
-• Setas e símbolos para indicar fluxos (→, ▶, ▼)
-• Seção de Regras/Fórmulas quando aplicável
-• Legenda explicativa no final
-• Formato ideal para memorização visual`,
-        exemplo: `╔═════════════════════════════════════════════════════════════╗
-║                    📊 ESQUEMA VISUAL                        ║
-║                    [Nome do Tema]                           ║
-╚═════════════════════════════════════════════════════════════╝
+## ESTRUTURA VISUAL OBRIGATÓRIA
 
-┌─────────────────────────────────────────────────────────────┐
-│  📋 QUADRO COMPARATIVO                                      │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌──────────────┬──────────────────┬──────────────────┐     │
-│  │   ASPECTO    │    INSTITUTO A   │    INSTITUTO B   │     │
-│  ├──────────────┼──────────────────┼──────────────────┤     │
-│  │ Conceito     │ [definição]      │ [definição]      │     │
-│  ├──────────────┼──────────────────┼──────────────────┤     │
-│  │ Natureza     │ [classificação]  │ [classificação]  │     │
-│  ├──────────────┼──────────────────┼──────────────────┤     │
-│  │ Requisitos   │ • item 1         │ • item 1         │     │
-│  │              │ • item 2         │ • item 2         │     │
-│  ├──────────────┼──────────────────┼──────────────────┤     │
-│  │ Efeitos      │ [consequências]  │ [consequências]  │     │
-│  ├──────────────┼──────────────────┼──────────────────┤     │
-│  │ Prazo        │ [tempo]          │ [tempo]          │     │
-│  ├──────────────┼──────────────────┼──────────────────┤     │
-│  │ Base Legal   │ Art. X, Lei Y    │ Art. Z, Lei W    │     │
-│  └──────────────┴──────────────────┴──────────────────┘     │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+### Formatação de Texto (MARKDOWN)
+- Use **negrito** para: títulos de colunas, conceitos-chave
+- Use *itálico* para: observações, notas
+- Use \`código\` para: artigos, números, prazos
+- Use tabelas markdown para comparações
 
-┌─────────────────────────────────────────────────────────────┐
-│  🔄 FLUXOGRAMA DO PROCESSO                                  │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│      ┌───────────┐                                          │
-│      │  INÍCIO   │                                          │
-│      └─────┬─────┘                                          │
-│            │                                                │
-│            ▼                                                │
-│      ┌───────────┐     SIM     ┌───────────────┐           │
-│      │ Requisito │────────────▶│   ETAPA 2     │           │
-│      │   OK?     │             │ [descrição]   │           │
-│      └─────┬─────┘             └───────┬───────┘           │
-│            │ NÃO                       │                    │
-│            ▼                           ▼                    │
-│      ┌───────────┐             ┌───────────────┐           │
-│      │ ARQUIVAR  │             │   ETAPA 3     │           │
-│      │  ou SANAR │             │ [descrição]   │           │
-│      └───────────┘             └───────┬───────┘           │
-│                                        │                    │
-│                                        ▼                    │
-│                                ┌───────────────┐           │
-│                                │   CONCLUSÃO   │           │
-│                                │  [resultado]  │           │
-│                                └───────────────┘           │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+### Elementos Visuais
+- Tabelas markdown para quadros comparativos
+- Blocos de código (\`\`\`) para fluxogramas ASCII
+- Caixas ASCII para regras importantes
+- Setas: → ▶ ▼ para indicar fluxos e consequências
 
-┌─────────────────────────────────────────────────────────────┐
-│  📝 REGRAS E EXCEÇÕES                                       │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │ REGRA GERAL: [descrição da regra principal]           │  │
-│  │ ▸ Fundamento: [base legal ou doutrinária]             │  │
-│  └───────────────────────────────────────────────────────┘  │
-│                                                             │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │ EXCEÇÃO 1: [caso em que a regra não se aplica]        │  │
-│  │ ▸ Hipótese: [quando ocorre]                           │  │
-│  └───────────────────────────────────────────────────────┘  │
-│                                                             │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │ EXCEÇÃO 2: [outro caso especial]                      │  │
-│  │ ▸ Hipótese: [quando ocorre]                           │  │
-│  └───────────────────────────────────────────────────────┘  │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+### Seções OBRIGATÓRIAS
+1. **Quadro Comparativo** - Tabela comparando institutos/conceitos
+2. **Fluxograma** - Processo/procedimento visual
+3. **Regras e Exceções** - Regra geral vs exceções
+4. **Legenda** - Símbolos utilizados
 
-┌─────────────────────────────────────────────────────────────┐
-│  🎯 LEGENDA                                                 │
-├─────────────────────────────────────────────────────────────┤
-│  ✅ = Aplicável      ❌ = Não aplicável    ⚠️ = Atenção     │
-│  📌 = Importante     💡 = Dica             ⚖️ = Súmula      │
-│  → = Gera/Produz     ← = Decorre de        ↔ = Relaciona   │
-└─────────────────────────────────────────────────────────────┘`
+### Estrutura de Comparação
+| Aspecto | Instituto A | Instituto B |
+|---------|-------------|-------------|
+| Conceito | X | Y |
+| Requisitos | A, B, C | D, E |
+
+### Ícones de Legenda
+✅ Aplicável / Correto
+❌ Não aplicável / Incorreto
+⚠️ Atenção / Cuidado
+📌 Importante
+💡 Dica
+⚖️ Jurisprudência`,
+        exemplo: `# 📊 Esquema Visual: [TEMA]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 📋 Quadro Comparativo
+
+| **Aspecto** | **Instituto A** | **Instituto B** |
+|-------------|-----------------|-----------------|
+| *Conceito* | Definição de A | Definição de B |
+| *Natureza* | Classificação | Classificação |
+| *Requisitos* | • Item 1 • Item 2 | • Item 1 • Item 2 |
+| *Efeitos* | Consequências | Consequências |
+| *Prazo* | \`X dias\` | \`Y dias\` |
+| *Base Legal* | \`Art. X, Lei Y\` | \`Art. Z, Lei W\` |
+
+───────────────────────────────────────────────────
+
+## 🔄 Fluxograma do Processo
+
+\`\`\`
+     ┌─────────────┐
+     │   INÍCIO    │
+     └──────┬──────┘
+            │
+            ▼
+     ┌─────────────┐      SIM      ┌─────────────┐
+     │  Requisito  │──────────────▶│   ETAPA 2   │
+     │    OK?      │               │ [descrição] │
+     └──────┬──────┘               └──────┬──────┘
+            │ NÃO                         │
+            ▼                             ▼
+     ┌─────────────┐               ┌─────────────┐
+     │  ARQUIVAR   │               │   ETAPA 3   │
+     │  ou SANAR   │               │ [descrição] │
+     └─────────────┘               └──────┬──────┘
+                                          │
+                                          ▼
+                                   ┌─────────────┐
+                                   │  CONCLUSÃO  │
+                                   │ [resultado] │
+                                   └─────────────┘
+\`\`\`
+
+───────────────────────────────────────────────────
+
+## 📝 Regras e Exceções
+
+┌─────────────────────────────────────────────────┐
+│ **REGRA GERAL**                                 │
+│ Descrição da regra principal aplicável          │
+│ → *Fundamento*: \`Art. X, Lei Y\`               │
+└─────────────────────────────────────────────────┘
+
+> ⚠️ **EXCEÇÃO 1**: Caso em que a regra não se aplica
+> → *Hipótese*: Quando ocorre esta situação
+
+> ⚠️ **EXCEÇÃO 2**: Outro caso especial
+> → *Hipótese*: Quando ocorre esta situação
+
+───────────────────────────────────────────────────
+
+## 🎯 Legenda
+
+| Símbolo | Significado |
+|---------|-------------|
+| ✅ | Aplicável / Correto |
+| ❌ | Não aplicável / Incorreto |
+| ⚠️ | Atenção / Cuidado |
+| 📌 | Importante |
+| 💡 | Dica |
+| ⚖️ | Súmula / Jurisprudência |
+| → | Gera / Produz |
+| ← | Decorre de |`
       }
     }
 
