@@ -223,6 +223,55 @@ Apenas JSON, sem markdown.`
       })
     }
 
+    // Atualizar qtd_questoes nas tabelas de referência (incrementar)
+    // 1. Disciplina - buscar ID e incrementar
+    const { data: discData } = await supabase
+      .from('disciplinas')
+      .select('id, qtd_questoes')
+      .eq('nome', item.disciplina)
+      .single()
+
+    if (discData) {
+      await supabase
+        .from('disciplinas')
+        .update({ qtd_questoes: (discData.qtd_questoes || 0) + 1 })
+        .eq('id', discData.id)
+
+      // 2. Assunto - buscar ID e incrementar
+      if (item.assunto) {
+        const { data: assData } = await supabase
+          .from('assuntos')
+          .select('id, qtd_questoes')
+          .eq('disciplina_id', discData.id)
+          .eq('nome', item.assunto)
+          .single()
+
+        if (assData) {
+          await supabase
+            .from('assuntos')
+            .update({ qtd_questoes: (assData.qtd_questoes || 0) + 1 })
+            .eq('id', assData.id)
+
+          // 3. Subassunto - buscar ID e incrementar
+          if (item.subassunto) {
+            const { data: subData } = await supabase
+              .from('subassuntos')
+              .select('id, qtd_questoes')
+              .eq('assunto_id', assData.id)
+              .eq('nome', item.subassunto)
+              .single()
+
+            if (subData) {
+              await supabase
+                .from('subassuntos')
+                .update({ qtd_questoes: (subData.qtd_questoes || 0) + 1 })
+                .eq('id', subData.id)
+            }
+          }
+        }
+      }
+    }
+
     // Atualizar contador de geradas
     const novasGeradas = item.geradas + 1
     const statusFinal = novasGeradas >= item.quantidade ? 'concluido' : 'processando'
