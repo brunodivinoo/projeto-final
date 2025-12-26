@@ -548,6 +548,9 @@ ${config.exemplo}
 
 GERE O RESUMO NO FORMATO ${formato?.toUpperCase() || 'TÓPICOS'}:`
 
+    // Medir tempo de geração
+    const startTime = Date.now()
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -563,15 +566,42 @@ GERE O RESUMO NO FORMATO ${formato?.toUpperCase() || 'TÓPICOS'}:`
       }
     )
 
+    const generationTime = Date.now() - startTime
+
     if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      console.error('[RESUMOS] Erro na API Gemini:', {
+        status: response.status,
+        error: errorData,
+        tempo: `${generationTime}ms`
+      })
       return NextResponse.json({ error: 'Erro ao gerar resumo' }, { status: 500 })
     }
 
     const data = await response.json()
+
+    // Log detalhado para validação
+    const finishReason = data.candidates?.[0]?.finishReason
+    const tokenCount = data.usageMetadata
     const conteudoResumo = data.candidates?.[0]?.content?.parts?.[0]?.text
 
+    console.log('[RESUMOS] Geração concluída:', {
+      finish_reason: finishReason,
+      tokens: tokenCount,
+      tempo_geracao: `${generationTime}ms`,
+      tamanho_conteudo: conteudoResumo?.length || 0,
+      formato: formato,
+      truncado: finishReason === 'MAX_TOKENS' ? '⚠️ SIM' : '✅ NÃO'
+    })
+
     if (!conteudoResumo) {
+      console.error('[RESUMOS] Conteúdo vazio:', { data })
       return NextResponse.json({ error: 'Não foi possível gerar o resumo' }, { status: 500 })
+    }
+
+    // Alerta se foi truncado
+    if (finishReason === 'MAX_TOKENS') {
+      console.warn('[RESUMOS] ⚠️ RESUMO TRUNCADO! Considere aumentar maxOutputTokens')
     }
 
     // Gerar título se não fornecido
