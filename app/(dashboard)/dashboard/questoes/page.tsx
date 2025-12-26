@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Header } from '@/components/layout/Header'
 import { QuestaoCard } from '@/components/questoes/QuestaoCard'
+import ResumosFloatingButton from '@/components/ia/ResumosFloatingButton'
 
 // Tipos
 interface Questao {
@@ -988,6 +989,9 @@ export default function QuestoesPage() {
 
       {/* Mobile: Navegação fixa */}
       {isMobile && buscaInicial && questoes.length > 0 && renderNavegacaoMobile()}
+
+      {/* Botão flutuante de resumos */}
+      <ResumosFloatingButton />
     </div>
   )
 }

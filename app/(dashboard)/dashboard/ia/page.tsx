@@ -159,6 +159,32 @@ export default function CentralIAPage() {
     }
   }
 
+  // Função para salvar edições do resumo
+  const handleSalvarResumo = async (resumoId: string, novoConteudo: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/ia/resumos/editar', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumo_id: resumoId, resumo: novoConteudo })
+      })
+
+      if (!response.ok) throw new Error('Erro ao salvar')
+
+      // Atualizar a lista local de resumos
+      carregarResumos()
+
+      // Atualizar o resumo selecionado
+      if (resumoSelecionado && resumoSelecionado.id === resumoId) {
+        setResumoSelecionado({ ...resumoSelecionado, resumo: novoConteudo })
+      }
+
+      return true
+    } catch (error) {
+      console.error('Erro ao salvar resumo:', error)
+      return false
+    }
+  }
+
   // Formatar data relativa
   const formatarDataRelativa = (data: string) => {
     const d = new Date(data)
@@ -562,10 +588,20 @@ export default function CentralIAPage() {
                           open_in_new
                         </span>
                       </div>
-                      <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-[#141A21] max-h-32 overflow-hidden">
-                        <p className="text-sm text-[#9dabb9] line-clamp-4 whitespace-pre-wrap">
-                          {resumo.resumo}
+                      <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-[#141A21]">
+                        <p className="text-sm text-[#9dabb9] line-clamp-3">
+                          {/* Limpar markdown e mostrar preview limpo */}
+                          {resumo.resumo
+                            .replace(/[#*_`~>\-═│┌┐└┘├┤┬┴┼▸→•◆▶▼⚡💡📌🧠📝🎯⚖️📜❓✅⚠️🔗🏷️📖📋📚📗📘📙🔄]/g, '')
+                            .replace(/\n+/g, ' ')
+                            .replace(/\s+/g, ' ')
+                            .trim()
+                            .substring(0, 180)}
+                          {resumo.resumo.length > 180 ? '...' : ''}
                         </p>
+                        <span className="text-xs text-purple-500 mt-2 inline-block">
+                          Clique para ver completo
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -693,6 +729,7 @@ export default function CentralIAPage() {
         isOpen={painelResumoAberto}
         onClose={() => setPainelResumoAberto(false)}
         onCompartilhar={handleCompartilharResumo}
+        onSalvar={handleSalvarResumo}
       />
     </div>
   )
