@@ -14,7 +14,7 @@ export interface Notification {
   icon?: string
 }
 
-export type GenerationTaskType = 'flashcards' | 'questoes_ia'
+export type GenerationTaskType = 'flashcards' | 'questoes_ia' | 'resumos_ia'
 
 export interface GenerationTask {
   id: string
@@ -30,6 +30,7 @@ export interface GenerationTask {
   result?: {
     flashcards?: number
     questoes?: number
+    resumoId?: string
     geracoesRestantes?: number
   }
 }
@@ -47,6 +48,7 @@ type NotificationContextType = {
   removeNotification: (id: string) => void
   startGeneration: (deckId: string, deckName: string, quantidade: number, params: GenerationParams) => Promise<GenerationTask>
   startQuestoesGeneration: (config: QuestoesGenerationConfig) => Promise<GenerationTask>
+  startResumosGeneration: (config: ResumosGenerationConfig) => Promise<GenerationTask>
   retryTask: (taskId: string) => Promise<void>
   dismissInterruptedTask: (taskId: string) => void
   clearCompletedTasks: () => void
@@ -71,6 +73,15 @@ export interface QuestoesGenerationConfig {
   quantidade: number
 }
 
+export interface ResumosGenerationConfig {
+  user_id: string
+  texto: string
+  titulo: string
+  disciplina?: string
+  assunto?: string
+  formato: 'topicos' | 'mapa_mental' | 'fichamento' | 'esquema'
+}
+
 const NotificationContext = createContext<NotificationContextType>({
   notifications: [],
   unreadCount: 0,
@@ -84,6 +95,7 @@ const NotificationContext = createContext<NotificationContextType>({
   removeNotification: () => {},
   startGeneration: async () => ({ id: '', taskType: 'flashcards', status: 'pending', deckName: '', quantidade: 0, startedAt: new Date() }),
   startQuestoesGeneration: async () => ({ id: '', taskType: 'questoes_ia', status: 'pending', deckName: '', quantidade: 0, startedAt: new Date() }),
+  startResumosGeneration: async () => ({ id: '', taskType: 'resumos_ia', status: 'pending', deckName: '', quantidade: 0, startedAt: new Date() }),
   retryTask: async () => {},
   dismissInterruptedTask: () => {},
   clearCompletedTasks: () => {},
@@ -356,6 +368,109 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, [addNotification])
 
+  // Geração de Resumos IA (novo)
+  const startResumosGeneration = useCallback(async (
+    config: ResumosGenerationConfig
+  ): Promise<GenerationTask> => {
+    const taskId = `resumo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const formatoNomes: Record<string, string> = {
+      topicos: 'Tópicos',
+      mapa_mental: 'Mapa Mental',
+      fichamento: 'Fichamento',
+      esquema: 'Esquema'
+    }
+
+    const newTask: GenerationTask = {
+      id: taskId,
+      taskType: 'resumos_ia',
+      status: 'generating',
+      deckName: config.titulo || 'Resumo',
+      quantidade: 1,
+      progress: 'Iniciando geração...',
+      startedAt: new Date(),
+      config,
+    }
+
+    setGenerationTasks(prev => [newTask, ...prev])
+
+    addNotification({
+      type: 'generation',
+      title: 'Gerando Resumo',
+      message: `Criando resumo "${config.titulo}" (${formatoNomes[config.formato]})`,
+      icon: 'description',
+      link: '/dashboard/ia',
+    })
+
+    setGenerationTasks(prev => prev.map(t =>
+      t.id === taskId ? { ...t, progress: 'Consultando IA...' } : t
+    ))
+
+    try {
+      const response = await fetch('/api/ia/resumos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: config.user_id,
+          texto: config.texto,
+          titulo: config.titulo,
+          disciplina: config.disciplina,
+          assunto: config.assunto,
+          formato: config.formato,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao gerar resumo')
+      }
+
+      const completedTask: GenerationTask = {
+        ...newTask,
+        status: 'completed',
+        completedAt: new Date(),
+        progress: undefined,
+        result: {
+          resumoId: data.resumo?.id,
+        },
+      }
+
+      setGenerationTasks(prev => prev.map(t => t.id === taskId ? completedTask : t))
+
+      addNotification({
+        type: 'success',
+        title: 'Resumo Gerado!',
+        message: `"${config.titulo}" criado com sucesso`,
+        icon: 'check_circle',
+        link: `/dashboard/ia?resumo=${data.resumo?.id}`,
+      })
+
+      return completedTask
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+
+      const errorTask: GenerationTask = {
+        ...newTask,
+        status: 'error',
+        completedAt: new Date(),
+        progress: undefined,
+        error: errorMessage,
+      }
+
+      setGenerationTasks(prev => prev.map(t => t.id === taskId ? errorTask : t))
+
+      addNotification({
+        type: 'error',
+        title: 'Erro na Geração',
+        message: errorMessage,
+        icon: 'error',
+        link: '/dashboard/ia',
+      })
+
+      return errorTask
+    }
+  }, [addNotification])
+
   // Retomar tarefa interrompida
   const retryTask = useCallback(async (taskId: string) => {
     const task = generationTasks.find(t => t.id === taskId)
@@ -369,8 +484,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     } else if (task.taskType === 'flashcards') {
       const cfg = task.config as { deckId: string; deckName: string; quantidade: number; params: GenerationParams }
       await startGeneration(cfg.deckId, cfg.deckName, cfg.quantidade, cfg.params)
+    } else if (task.taskType === 'resumos_ia') {
+      await startResumosGeneration(task.config as ResumosGenerationConfig)
     }
-  }, [generationTasks, startQuestoesGeneration, startGeneration])
+  }, [generationTasks, startQuestoesGeneration, startGeneration, startResumosGeneration])
 
   const unreadCount = notifications.filter(n => !n.read).length
   const hasActiveGeneration = generationTasks.some(t => t.status === 'generating' || t.status === 'pending')
@@ -391,6 +508,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         removeNotification,
         startGeneration,
         startQuestoesGeneration,
+        startResumosGeneration,
         retryTask,
         dismissInterruptedTask,
         clearCompletedTasks,

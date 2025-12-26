@@ -1,8 +1,240 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+
+// Componente da Barra de Ferramentas de Edição
+interface ToolbarProps {
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>
+  conteudo: string
+  setConteudo: (value: string) => void
+  historico: string[]
+  setHistorico: (value: string[]) => void
+  historicoIndex: number
+  setHistoricoIndex: (value: number) => void
+}
+
+function EditorToolbar({
+  textareaRef,
+  conteudo,
+  setConteudo,
+  historico,
+  setHistorico,
+  historicoIndex,
+  setHistoricoIndex
+}: ToolbarProps) {
+  // Função para inserir formatação no texto
+  const insertFormat = (prefix: string, suffix: string = prefix) => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selectedText = conteudo.substring(start, end)
+
+    const newText = conteudo.substring(0, start) + prefix + selectedText + suffix + conteudo.substring(end)
+
+    // Salvar no histórico
+    const novoHistorico = historico.slice(0, historicoIndex + 1)
+    novoHistorico.push(newText)
+    setHistorico(novoHistorico)
+    setHistoricoIndex(novoHistorico.length - 1)
+
+    setConteudo(newText)
+
+    // Reposicionar cursor
+    setTimeout(() => {
+      textarea.focus()
+      if (selectedText) {
+        textarea.setSelectionRange(start + prefix.length, end + prefix.length)
+      } else {
+        textarea.setSelectionRange(start + prefix.length, start + prefix.length)
+      }
+    }, 0)
+  }
+
+  // Função para inserir heading
+  const insertHeading = (level: number) => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selectedText = conteudo.substring(start, end)
+
+    // Encontrar início da linha
+    let lineStart = start
+    while (lineStart > 0 && conteudo[lineStart - 1] !== '\n') {
+      lineStart--
+    }
+
+    const prefix = '#'.repeat(level) + ' '
+    const lineContent = selectedText || 'Título'
+    const newText = conteudo.substring(0, lineStart) + prefix + lineContent + conteudo.substring(end)
+
+    // Salvar no histórico
+    const novoHistorico = historico.slice(0, historicoIndex + 1)
+    novoHistorico.push(newText)
+    setHistorico(novoHistorico)
+    setHistoricoIndex(novoHistorico.length - 1)
+
+    setConteudo(newText)
+
+    setTimeout(() => {
+      textarea.focus()
+      const newCursorPos = lineStart + prefix.length + lineContent.length
+      textarea.setSelectionRange(newCursorPos, newCursorPos)
+    }, 0)
+  }
+
+  // Desfazer
+  const handleUndo = () => {
+    if (historicoIndex > 0) {
+      setHistoricoIndex(historicoIndex - 1)
+      setConteudo(historico[historicoIndex - 1])
+    }
+  }
+
+  // Refazer
+  const handleRedo = () => {
+    if (historicoIndex < historico.length - 1) {
+      setHistoricoIndex(historicoIndex + 1)
+      setConteudo(historico[historicoIndex + 1])
+    }
+  }
+
+  // Botão da toolbar
+  const ToolbarButton = ({
+    icon,
+    label,
+    onClick,
+    disabled = false,
+    active = false
+  }: {
+    icon: string
+    label: string
+    onClick: () => void
+    disabled?: boolean
+    active?: boolean
+  }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      className={`p-1.5 rounded hover:bg-gray-200 dark:hover:bg-[#333d4a] transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
+        active ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' : 'text-gray-600 dark:text-gray-400'
+      }`}
+    >
+      <span className="material-symbols-outlined text-lg">{icon}</span>
+    </button>
+  )
+
+  // Separador
+  const Separator = () => (
+    <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
+  )
+
+  return (
+    <div className="flex flex-wrap items-center gap-0.5 p-2 bg-gray-100 dark:bg-[#1a2330] border border-gray-200 dark:border-[#283039] rounded-t-xl">
+      {/* Desfazer / Refazer */}
+      <ToolbarButton
+        icon="undo"
+        label="Desfazer (Ctrl+Z)"
+        onClick={handleUndo}
+        disabled={historicoIndex <= 0}
+      />
+      <ToolbarButton
+        icon="redo"
+        label="Refazer (Ctrl+Y)"
+        onClick={handleRedo}
+        disabled={historicoIndex >= historico.length - 1}
+      />
+
+      <Separator />
+
+      {/* Headings */}
+      <div className="relative group">
+        <button
+          type="button"
+          className="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-[#333d4a] text-gray-600 dark:text-gray-400 text-sm font-medium"
+        >
+          <span className="material-symbols-outlined text-lg">title</span>
+          <span className="hidden sm:inline text-xs">Título</span>
+          <span className="material-symbols-outlined text-sm">expand_more</span>
+        </button>
+        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[120px]">
+          <button onClick={() => insertHeading(1)} className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-[#283039] text-lg font-bold">Título 1</button>
+          <button onClick={() => insertHeading(2)} className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-[#283039] text-base font-bold">Título 2</button>
+          <button onClick={() => insertHeading(3)} className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-[#283039] text-sm font-semibold">Título 3</button>
+          <button onClick={() => insertHeading(4)} className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-[#283039] text-sm">Subtítulo</button>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Formatação de texto */}
+      <ToolbarButton
+        icon="format_bold"
+        label="Negrito (Ctrl+B)"
+        onClick={() => insertFormat('**')}
+      />
+      <ToolbarButton
+        icon="format_italic"
+        label="Itálico (Ctrl+I)"
+        onClick={() => insertFormat('*')}
+      />
+      <ToolbarButton
+        icon="strikethrough_s"
+        label="Tachado"
+        onClick={() => insertFormat('~~')}
+      />
+      <ToolbarButton
+        icon="code"
+        label="Código"
+        onClick={() => insertFormat('`')}
+      />
+
+      <Separator />
+
+      {/* Marca texto (highlight) */}
+      <ToolbarButton
+        icon="ink_highlighter"
+        label="Marca-texto"
+        onClick={() => insertFormat('==', '==')}
+      />
+
+      <Separator />
+
+      {/* Listas e citações */}
+      <ToolbarButton
+        icon="format_list_bulleted"
+        label="Lista"
+        onClick={() => insertFormat('\n- ', '')}
+      />
+      <ToolbarButton
+        icon="format_quote"
+        label="Citação"
+        onClick={() => insertFormat('\n> ', '')}
+      />
+
+      <Separator />
+
+      {/* Links e mais */}
+      <ToolbarButton
+        icon="link"
+        label="Link"
+        onClick={() => insertFormat('[', '](url)')}
+      />
+      <ToolbarButton
+        icon="horizontal_rule"
+        label="Linha horizontal"
+        onClick={() => insertFormat('\n\n---\n\n', '')}
+      />
+    </div>
+  )
+}
 
 interface ResumoIA {
   id: string
@@ -41,14 +273,91 @@ export default function VisualizadorResumoPanel({
   const [salvando, setSalvando] = useState(false)
   const [salvou, setSalvou] = useState(false)
 
+  // Estados para histórico de edição (undo/redo)
+  const [historico, setHistorico] = useState<string[]>([])
+  const [historicoIndex, setHistoricoIndex] = useState(-1)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
   // Sincronizar conteúdo quando resumo muda
   useEffect(() => {
     if (resumo) {
       setConteudoEditado(resumo.resumo)
       setModoEdicao(false)
       setLinkCompartilhamento(null)
+      // Inicializar histórico
+      setHistorico([resumo.resumo])
+      setHistoricoIndex(0)
     }
   }, [resumo])
+
+  // Handler para mudanças no textarea (salvar no histórico)
+  const handleConteudoChange = useCallback((novoConteudo: string) => {
+    setConteudoEditado(novoConteudo)
+
+    // Debounce para salvar no histórico
+    const novoHistorico = historico.slice(0, historicoIndex + 1)
+    novoHistorico.push(novoConteudo)
+    // Limitar histórico a 50 itens
+    if (novoHistorico.length > 50) {
+      novoHistorico.shift()
+    }
+    setHistorico(novoHistorico)
+    setHistoricoIndex(novoHistorico.length - 1)
+  }, [historico, historicoIndex])
+
+  // Atalhos de teclado
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!modoEdicao) return
+
+      // Ctrl+Z - Desfazer
+      if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        if (historicoIndex > 0) {
+          setHistoricoIndex(historicoIndex - 1)
+          setConteudoEditado(historico[historicoIndex - 1])
+        }
+      }
+
+      // Ctrl+Y ou Ctrl+Shift+Z - Refazer
+      if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'z')) {
+        e.preventDefault()
+        if (historicoIndex < historico.length - 1) {
+          setHistoricoIndex(historicoIndex + 1)
+          setConteudoEditado(historico[historicoIndex + 1])
+        }
+      }
+
+      // Ctrl+B - Negrito
+      if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault()
+        const textarea = textareaRef.current
+        if (textarea) {
+          const start = textarea.selectionStart
+          const end = textarea.selectionEnd
+          const selectedText = conteudoEditado.substring(start, end)
+          const newText = conteudoEditado.substring(0, start) + '**' + selectedText + '**' + conteudoEditado.substring(end)
+          handleConteudoChange(newText)
+        }
+      }
+
+      // Ctrl+I - Itálico
+      if (e.ctrlKey && e.key === 'i') {
+        e.preventDefault()
+        const textarea = textareaRef.current
+        if (textarea) {
+          const start = textarea.selectionStart
+          const end = textarea.selectionEnd
+          const selectedText = conteudoEditado.substring(start, end)
+          const newText = conteudoEditado.substring(0, start) + '*' + selectedText + '*' + conteudoEditado.substring(end)
+          handleConteudoChange(newText)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [modoEdicao, historicoIndex, historico, conteudoEditado, handleConteudoChange])
 
   if (!resumo) return null
 
@@ -215,17 +524,24 @@ export default function VisualizadorResumoPanel({
         {/* Content - padding responsivo */}
         <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
           {modoEdicao ? (
-            /* Modo Edição */
+            /* Modo Edição com Toolbar */
             <div className="h-full flex flex-col">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-gray-500 dark:text-[#9dabb9]">
-                  Use **texto** para negrito, *texto* para itálico, # para títulos
-                </span>
-              </div>
+              {/* Barra de Ferramentas */}
+              <EditorToolbar
+                textareaRef={textareaRef}
+                conteudo={conteudoEditado}
+                setConteudo={handleConteudoChange}
+                historico={historico}
+                setHistorico={setHistorico}
+                historicoIndex={historicoIndex}
+                setHistoricoIndex={setHistoricoIndex}
+              />
+              {/* Textarea de edição */}
               <textarea
+                ref={textareaRef}
                 value={conteudoEditado}
-                onChange={(e) => setConteudoEditado(e.target.value)}
-                className="flex-1 w-full p-4 bg-gray-50 dark:bg-[#141A21] border border-gray-200 dark:border-[#283039] rounded-xl font-mono text-sm text-gray-800 dark:text-gray-200 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                onChange={(e) => handleConteudoChange(e.target.value)}
+                className="flex-1 w-full p-4 bg-gray-50 dark:bg-[#141A21] border border-gray-200 dark:border-[#283039] border-t-0 rounded-b-xl font-mono text-sm text-gray-800 dark:text-gray-200 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 placeholder="Digite o conteúdo do resumo..."
               />
             </div>

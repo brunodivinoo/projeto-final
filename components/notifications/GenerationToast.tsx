@@ -29,21 +29,43 @@ export function GenerationToast() {
   const errorTasks = recentTasks.filter(t => t.status === 'error')
 
   const getTaskIcon = (task: GenerationTask) => {
-    return task.taskType === 'questoes_ia' ? 'quiz' : 'style'
+    if (task.taskType === 'questoes_ia') return 'quiz'
+    if (task.taskType === 'resumos_ia') return 'description'
+    return 'style'
   }
 
   const getTaskTitle = (task: GenerationTask, status: 'active' | 'completed' | 'error') => {
-    const type = task.taskType === 'questoes_ia' ? 'Questoes' : 'Flashcards'
+    const typeNames: Record<string, string> = {
+      questoes_ia: 'Questões',
+      resumos_ia: 'Resumo',
+      flashcards: 'Flashcards'
+    }
+    const type = typeNames[task.taskType] || 'Conteúdo'
     if (status === 'active') return `Gerando ${type}`
-    if (status === 'completed') return `${type} Gerados!`
-    return 'Erro na Geracao'
+    if (status === 'completed') return `${type} ${task.taskType === 'resumos_ia' ? 'Gerado' : 'Gerados'}!`
+    return 'Erro na Geração'
   }
 
   const getTaskResult = (task: GenerationTask) => {
     if (task.taskType === 'questoes_ia') {
-      return `${task.result?.questoes || task.quantidade} questoes`
+      return `${task.result?.questoes || task.quantidade} questões`
+    }
+    if (task.taskType === 'resumos_ia') {
+      return 'Resumo completo'
     }
     return `${task.result?.flashcards || task.quantidade} cards`
+  }
+
+  const getTaskDescription = (task: GenerationTask) => {
+    if (task.taskType === 'resumos_ia') return '1 resumo'
+    if (task.taskType === 'questoes_ia') return `${task.quantidade} questões`
+    return `${task.quantidade} flashcards`
+  }
+
+  const getTaskColors = (task: GenerationTask) => {
+    if (task.taskType === 'questoes_ia') return { gradient: 'from-blue-500/10 to-cyan-500/10', bg: 'bg-blue-500/20', text: 'text-blue-500', bar: 'from-blue-500 to-cyan-500' }
+    if (task.taskType === 'resumos_ia') return { gradient: 'from-purple-500/10 to-pink-500/10', bg: 'bg-purple-500/20', text: 'text-purple-500', bar: 'from-purple-500 to-pink-500' }
+    return { gradient: 'from-purple-500/10 to-blue-500/10', bg: 'bg-purple-500/20', text: 'text-purple-500', bar: 'from-purple-500 to-blue-500' }
   }
 
   if (recentTasks.length === 0 && interruptedTasks.length === 0) return null
@@ -81,7 +103,7 @@ export function GenerationToast() {
                     {task.deckName}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {task.quantidade} {task.taskType === 'questoes_ia' ? 'questoes' : 'flashcards'}
+                    {getTaskDescription(task)}
                   </p>
                 </div>
               </div>
@@ -111,84 +133,71 @@ export function GenerationToast() {
       )}
 
       {/* Toast de geracao ativa */}
-      {activeTask && (
-        <div className={`bg-white dark:bg-[#1c252e] rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-300 ${minimized ? 'w-auto' : 'w-80'}`}>
-          {/* Header */}
-          <div className={`flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-700 ${
-            activeTask.taskType === 'questoes_ia'
-              ? 'bg-gradient-to-r from-blue-500/10 to-cyan-500/10'
-              : 'bg-gradient-to-r from-purple-500/10 to-blue-500/10'
-          }`}>
-            <div className="flex items-center gap-2">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center animate-pulse ${
-                activeTask.taskType === 'questoes_ia' ? 'bg-blue-500/20' : 'bg-purple-500/20'
-              }`}>
-                <span className={`material-symbols-outlined text-sm ${
-                  activeTask.taskType === 'questoes_ia' ? 'text-blue-500' : 'text-purple-500'
-                }`}>{getTaskIcon(activeTask)}</span>
+      {activeTask && (() => {
+        const colors = getTaskColors(activeTask)
+        return (
+          <div className={`bg-white dark:bg-[#1c252e] rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-300 ${minimized ? 'w-auto' : 'w-80'}`}>
+            {/* Header */}
+            <div className={`flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r ${colors.gradient}`}>
+              <div className="flex items-center gap-2">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center animate-pulse ${colors.bg}`}>
+                  <span className={`material-symbols-outlined text-sm ${colors.text}`}>{getTaskIcon(activeTask)}</span>
+                </div>
+                {!minimized && (
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">
+                    {getTaskTitle(activeTask, 'active')}
+                  </span>
+                )}
               </div>
-              {!minimized && (
-                <span className="text-sm font-medium text-slate-900 dark:text-white">
-                  {getTaskTitle(activeTask, 'active')}
+              <button
+                onClick={() => setMinimized(!minimized)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1"
+              >
+                <span className="material-symbols-outlined text-lg">
+                  {minimized ? 'expand_less' : 'expand_more'}
                 </span>
-              )}
+              </button>
             </div>
-            <button
-              onClick={() => setMinimized(!minimized)}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1"
-            >
-              <span className="material-symbols-outlined text-lg">
-                {minimized ? 'expand_less' : 'expand_more'}
-              </span>
-            </button>
-          </div>
 
-          {/* Content */}
-          {!minimized && (
-            <div className="p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                  activeTask.taskType === 'questoes_ia' ? 'bg-blue-500/20' : 'bg-purple-500/20'
-                }`}>
-                  <span className={`material-symbols-outlined ${
-                    activeTask.taskType === 'questoes_ia' ? 'text-blue-500' : 'text-purple-500'
-                  }`}>{getTaskIcon(activeTask)}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                    {activeTask.deckName}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {activeTask.quantidade} {activeTask.taskType === 'questoes_ia' ? 'questoes' : 'flashcards'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Progress */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full animate-pulse w-2/3 ${
-                      activeTask.taskType === 'questoes_ia'
-                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500'
-                        : 'bg-gradient-to-r from-purple-500 to-blue-500'
-                    }`} />
+            {/* Content */}
+            {!minimized && (
+              <div className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors.bg}`}>
+                    <span className={`material-symbols-outlined ${colors.text}`}>{getTaskIcon(activeTask)}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                      {activeTask.deckName}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {getTaskDescription(activeTask)}
+                    </p>
                   </div>
                 </div>
-                <p className="text-xs text-slate-500 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                  {activeTask.progress || 'Processando...'}
+
+                {/* Progress */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full animate-pulse w-2/3 bg-gradient-to-r ${colors.bar}`} />
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                    {activeTask.progress || 'Processando...'}
+                  </p>
+                </div>
+
+                {/* Info */}
+                <p className="text-xs text-slate-400 mt-3">
+                  Você pode navegar normalmente. Avisaremos quando terminar.
                 </p>
               </div>
-
-              {/* Info */}
-              <p className="text-xs text-slate-400 mt-3">
-                Voce pode navegar normalmente. Avisaremos quando terminar.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )
+      })()}
 
       {/* Toasts de conclusao */}
       {completedTasks.map(task => (
