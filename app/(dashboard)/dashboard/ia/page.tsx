@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Header } from '@/components/layout/Header'
 import { useCheckLimit, TipoRecurso } from '@/hooks/useCheckLimit'
 import { useLimits } from '@/hooks/useLimits'
+import { useAuth } from '@/contexts/AuthContext'
 import { LimitBlockedModal } from '@/components/limits'
 import {
   GeradorQuestoesModal,
@@ -37,6 +38,7 @@ export default function CentralIAPage() {
   const [painelResumoAberto, setPainelResumoAberto] = useState(false)
   const { checkLimit, loading: checkingLimit } = useCheckLimit()
   const { isPro } = useLimits()
+  const { user } = useAuth()
 
   // Hook de questões
   const {
