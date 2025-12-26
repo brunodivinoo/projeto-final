@@ -11,6 +11,7 @@ import {
   GeradorResumosModal,
   AnalisePdfModal
 } from '@/components/ia'
+import VisualizadorResumoPanel from '@/components/ia/VisualizadorResumoPanel'
 import { useQuestoesIA } from '@/hooks/useQuestoesIA'
 import { useResumosIA } from '@/hooks/useResumosIA'
 import { usePdfIA } from '@/hooks/usePdfIA'
@@ -23,6 +24,17 @@ export default function CentralIAPage() {
   const [showGeradorModal, setShowGeradorModal] = useState(false)
   const [showResumosModal, setShowResumosModal] = useState(false)
   const [showPdfModal, setShowPdfModal] = useState(false)
+  const [resumoSelecionado, setResumoSelecionado] = useState<{
+    id: string
+    user_id: string
+    titulo: string
+    resumo: string
+    disciplina: string | null
+    assunto: string | null
+    created_at: string
+    compartilhado?: boolean
+  } | null>(null)
+  const [painelResumoAberto, setPainelResumoAberto] = useState(false)
   const { checkLimit, loading: checkingLimit } = useCheckLimit()
   const { isPro } = useLimits()
 
@@ -114,6 +126,37 @@ export default function CentralIAPage() {
   const handlePdfAnalisado = () => {
     carregarPdfs()
     refreshQuestoes()
+  }
+
+  // Função para visualizar um resumo
+  const handleVisualizarResumo = (resumo: typeof resumoSelecionado) => {
+    setResumoSelecionado(resumo)
+    setPainelResumoAberto(true)
+  }
+
+  // Função para compartilhar um resumo
+  const handleCompartilharResumo = async (resumoId: string): Promise<string | null> => {
+    try {
+      const response = await fetch('/api/ia/resumos/compartilhar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumo_id: resumoId })
+      })
+
+      if (!response.ok) throw new Error('Erro ao compartilhar')
+
+      const data = await response.json()
+
+      // Atualizar o resumo selecionado com o status de compartilhado
+      if (resumoSelecionado && resumoSelecionado.id === resumoId) {
+        setResumoSelecionado({ ...resumoSelecionado, compartilhado: true })
+      }
+
+      return data.link
+    } catch (error) {
+      console.error('Erro ao compartilhar resumo:', error)
+      return null
+    }
   }
 
   // Formatar data relativa
@@ -488,6 +531,7 @@ export default function CentralIAPage() {
                   {resumos.map((resumo) => (
                     <div
                       key={resumo.id}
+                      onClick={() => handleVisualizarResumo(resumo)}
                       className="bg-white dark:bg-[#1C252E] rounded-xl border border-gray-200 dark:border-[#283039] p-4 hover:border-purple-500/50 transition-all cursor-pointer"
                     >
                       <div className="flex items-start justify-between gap-4">
@@ -514,6 +558,9 @@ export default function CentralIAPage() {
                             </div>
                           </div>
                         </div>
+                        <span className="material-symbols-outlined text-[#9dabb9] hover:text-purple-500 transition-colors">
+                          open_in_new
+                        </span>
                       </div>
                       <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-[#141A21] max-h-32 overflow-hidden">
                         <p className="text-sm text-[#9dabb9] line-clamp-4 whitespace-pre-wrap">
@@ -639,6 +686,13 @@ export default function CentralIAPage() {
         isOpen={showPdfModal}
         onClose={() => setShowPdfModal(false)}
         onSuccess={handlePdfAnalisado}
+      />
+
+      <VisualizadorResumoPanel
+        resumo={resumoSelecionado}
+        isOpen={painelResumoAberto}
+        onClose={() => setPainelResumoAberto(false)}
+        onCompartilhar={handleCompartilharResumo}
       />
     </div>
   )
