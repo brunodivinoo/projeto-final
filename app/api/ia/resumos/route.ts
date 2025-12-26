@@ -632,7 +632,7 @@ Retorne APENAS o título, sem aspas ou explicações.`
       }
     }
 
-    // Salvar resumo
+    // Salvar resumo com métricas
     const { data: resumo, error: errInsert } = await supabase
       .from('resumos_ia')
       .insert({
@@ -641,7 +641,11 @@ Retorne APENAS o título, sem aspas ou explicações.`
         resumo: conteudoResumo,
         conteudo_original: texto.substring(0, 10000),
         disciplina: disciplina || null,
-        assunto: assunto || null
+        assunto: assunto || null,
+        formato: formato || 'topicos',
+        tokens_usados: tokenCount?.totalTokenCount || null,
+        finish_reason: finishReason || null,
+        tempo_geracao_ms: generationTime || null
       })
       .select()
       .single()

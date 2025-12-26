@@ -546,112 +546,173 @@ export default function VisualizadorResumoPanel({
               />
             </div>
           ) : (
-            /* Modo Visualização com Markdown */
-            <div className="bg-gray-50 dark:bg-[#141A21] rounded-xl p-6 border border-gray-200 dark:border-[#283039]">
-              <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-purple-600 dark:prose-headings:text-purple-400 prose-strong:text-gray-900 dark:prose-strong:text-white prose-code:bg-gray-200 dark:prose-code:bg-gray-700 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-800 dark:prose-pre:bg-gray-900">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    // Customizar renderização de elementos
-                    h1: ({children}) => (
-                      <h1 className="text-2xl font-bold text-purple-600 dark:text-purple-400 border-b border-purple-200 dark:border-purple-800 pb-2 mb-4">{children}</h1>
-                    ),
-                    h2: ({children}) => (
-                      <h2 className="text-xl font-bold text-purple-600 dark:text-purple-400 mt-6 mb-3">{children}</h2>
-                    ),
-                    h3: ({children}) => (
-                      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mt-4 mb-2">{children}</h3>
-                    ),
-                    strong: ({children}) => (
-                      <strong className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/30 px-1 rounded">{children}</strong>
-                    ),
-                    em: ({children}) => (
-                      <em className="italic text-purple-600 dark:text-purple-400">{children}</em>
-                    ),
-                    ul: ({children}) => (
-                      <ul className="list-none space-y-1 my-2">{children}</ul>
-                    ),
-                    li: ({children}) => (
-                      <li className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
-                        <span className="text-purple-500 mt-1">▸</span>
-                        <span>{children}</span>
-                      </li>
-                    ),
-                    blockquote: ({children}) => (
-                      <blockquote className="border-l-4 border-purple-500 pl-4 py-2 my-4 bg-purple-50 dark:bg-purple-900/20 rounded-r-lg italic text-gray-700 dark:text-gray-300">
-                        {children}
-                      </blockquote>
-                    ),
-                    code: ({children, className}) => {
-                      const isBlock = className?.includes('language-')
-                      if (isBlock) {
+            /* Modo Visualização com Markdown e ASCII Art */
+            <div className="bg-gray-50 dark:bg-[#141A21] rounded-xl p-4 md:p-6 border border-gray-200 dark:border-[#283039]">
+              {/* Verificar se tem caracteres ASCII art */}
+              {/[═─┌┐└┘├┤┬┴┼│]/u.test(conteudoEditado) ? (
+                /* Renderização especial para resumos com ASCII art */
+                <div
+                  className="font-mono text-sm leading-relaxed whitespace-pre-wrap text-gray-800 dark:text-gray-200 overflow-x-auto"
+                  style={{
+                    fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace",
+                    tabSize: 2
+                  }}
+                >
+                  {conteudoEditado.split('\n').map((linha, idx) => {
+                    // Detectar tipo de linha para estilização
+                    const isHeader = /^[═━]+$/.test(linha) || linha.includes('═══')
+                    const isSeparator = /^[─┄]+$/.test(linha) || linha.includes('───') || linha.includes('━━━')
+                    const isBoxTop = linha.includes('┌─') || linha.includes('╔═')
+                    const isBoxBottom = linha.includes('└─') || linha.includes('╚═')
+                    const isBoxMiddle = linha.includes('├─') || linha.includes('╠═')
+                    const isBoxSide = linha.startsWith('│') || linha.startsWith('║')
+                    const isTitleLine = /^#+\s/.test(linha.trim())
+                    const isEmoji = /^[📌💡🎯⚠️✅❌⚖️📋🧠📝📚📖🔗✨🏷️❓💾🔄⚡]/.test(linha.trim())
+                    const hasBold = /\*\*[^*]+\*\*/.test(linha)
+
+                    let className = 'block'
+                    let content = linha
+
+                    // Aplicar estilos baseado no tipo de linha
+                    if (isHeader || (linha.trim().toUpperCase() === linha.trim() && linha.trim().length > 10 && !linha.includes('│'))) {
+                      className += ' text-purple-600 dark:text-purple-400 font-bold'
+                    } else if (isSeparator) {
+                      className += ' text-purple-400 dark:text-purple-600 opacity-60'
+                    } else if (isBoxTop || isBoxBottom || isBoxMiddle) {
+                      className += ' text-purple-500 dark:text-purple-400'
+                    } else if (isBoxSide) {
+                      className += ' text-purple-500 dark:text-purple-400'
+                    } else if (isTitleLine) {
+                      className += ' text-lg font-bold text-purple-600 dark:text-purple-400 mt-4 mb-2'
+                      content = linha.replace(/^#+\s/, '')
+                    } else if (isEmoji) {
+                      className += ' mt-4 font-semibold text-gray-900 dark:text-white'
+                    }
+
+                    // Renderizar negrito inline
+                    if (hasBold) {
+                      const parts = content.split(/(\*\*[^*]+\*\*)/)
+                      return (
+                        <span key={idx} className={className}>
+                          {parts.map((part, pIdx) => {
+                            if (part.startsWith('**') && part.endsWith('**')) {
+                              return (
+                                <strong key={pIdx} className="font-bold text-gray-900 dark:text-white bg-yellow-100/50 dark:bg-yellow-900/30 px-0.5 rounded">
+                                  {part.slice(2, -2)}
+                                </strong>
+                              )
+                            }
+                            return <span key={pIdx}>{part}</span>
+                          })}
+                          {'\n'}
+                        </span>
+                      )
+                    }
+
+                    return <span key={idx} className={className}>{content}{'\n'}</span>
+                  })}
+                </div>
+              ) : (
+                /* Renderização Markdown padrão */
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-purple-600 dark:prose-headings:text-purple-400 prose-strong:text-gray-900 dark:prose-strong:text-white">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      h1: ({children}) => (
+                        <h1 className="text-2xl font-bold text-purple-600 dark:text-purple-400 border-b border-purple-200 dark:border-purple-800 pb-2 mb-4">{children}</h1>
+                      ),
+                      h2: ({children}) => (
+                        <h2 className="text-xl font-bold text-purple-600 dark:text-purple-400 mt-6 mb-3">{children}</h2>
+                      ),
+                      h3: ({children}) => (
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mt-4 mb-2">{children}</h3>
+                      ),
+                      strong: ({children}) => (
+                        <strong className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/30 px-1 rounded">{children}</strong>
+                      ),
+                      em: ({children}) => (
+                        <em className="italic text-purple-600 dark:text-purple-400">{children}</em>
+                      ),
+                      ul: ({children}) => (
+                        <ul className="list-none space-y-1 my-2">{children}</ul>
+                      ),
+                      li: ({children}) => (
+                        <li className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
+                          <span className="text-purple-500 mt-1">▸</span>
+                          <span>{children}</span>
+                        </li>
+                      ),
+                      blockquote: ({children}) => (
+                        <blockquote className="border-l-4 border-purple-500 pl-4 py-2 my-4 bg-purple-50 dark:bg-purple-900/20 rounded-r-lg italic text-gray-700 dark:text-gray-300">
+                          {children}
+                        </blockquote>
+                      ),
+                      code: ({children, className}) => {
+                        const isBlock = className?.includes('language-')
+                        if (isBlock) {
+                          return (
+                            <code className="block bg-gray-800 dark:bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono whitespace-pre">
+                              {children}
+                            </code>
+                          )
+                        }
                         return (
-                          <code className="block bg-gray-800 dark:bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono whitespace-pre">
+                          <code className="bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded text-sm font-mono">
                             {children}
                           </code>
                         )
-                      }
-                      return (
-                        <code className="bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded text-sm font-mono">
+                      },
+                      pre: ({children}) => (
+                        <pre className="bg-gray-800 dark:bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4 text-sm font-mono whitespace-pre">
                           {children}
-                        </code>
-                      )
-                    },
-                    pre: ({children}) => (
-                      <pre className="bg-gray-800 dark:bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4 text-sm font-mono whitespace-pre">
-                        {children}
-                      </pre>
-                    ),
-                    del: ({children}) => (
-                      <del className="line-through text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-1 rounded">
-                        {children}
-                      </del>
-                    ),
-                    hr: () => (
-                      <hr className="my-6 border-gray-300 dark:border-gray-600" />
-                    ),
-                    p: ({children}) => (
-                      <p className="text-gray-700 dark:text-gray-300 my-2 leading-relaxed">
-                        {children}
-                      </p>
-                    ),
-                    table: ({children}) => (
-                      <div className="overflow-x-auto my-4 rounded-lg border border-gray-300 dark:border-gray-600">
-                        <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
+                        </pre>
+                      ),
+                      hr: () => (
+                        <hr className="my-6 border-gray-300 dark:border-gray-600" />
+                      ),
+                      p: ({children}) => (
+                        <p className="text-gray-700 dark:text-gray-300 my-2 leading-relaxed">
                           {children}
-                        </table>
-                      </div>
-                    ),
-                    thead: ({children}) => (
-                      <thead className="bg-purple-100 dark:bg-purple-900/30">
-                        {children}
-                      </thead>
-                    ),
-                    tbody: ({children}) => (
-                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-[#1C252E]">
-                        {children}
-                      </tbody>
-                    ),
-                    tr: ({children}) => (
-                      <tr className="hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors">
-                        {children}
-                      </tr>
-                    ),
-                    th: ({children}) => (
-                      <th className="text-purple-700 dark:text-purple-300 px-4 py-3 text-left font-semibold text-sm">
-                        {children}
-                      </th>
-                    ),
-                    td: ({children}) => (
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300 text-sm">
-                        {children}
-                      </td>
-                    ),
-                  }}
-                >
-                  {conteudoEditado}
-                </ReactMarkdown>
-              </div>
+                        </p>
+                      ),
+                      table: ({children}) => (
+                        <div className="overflow-x-auto my-4 rounded-lg border border-gray-300 dark:border-gray-600">
+                          <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
+                            {children}
+                          </table>
+                        </div>
+                      ),
+                      thead: ({children}) => (
+                        <thead className="bg-purple-100 dark:bg-purple-900/30">
+                          {children}
+                        </thead>
+                      ),
+                      tbody: ({children}) => (
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-[#1C252E]">
+                          {children}
+                        </tbody>
+                      ),
+                      tr: ({children}) => (
+                        <tr className="hover:bg-gray-50 dark:hover:bg-[#283039] transition-colors">
+                          {children}
+                        </tr>
+                      ),
+                      th: ({children}) => (
+                        <th className="text-purple-700 dark:text-purple-300 px-4 py-3 text-left font-semibold text-sm">
+                          {children}
+                        </th>
+                      ),
+                      td: ({children}) => (
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300 text-sm">
+                          {children}
+                        </td>
+                      ),
+                    }}
+                  >
+                    {conteudoEditado}
+                  </ReactMarkdown>
+                </div>
+              )}
             </div>
           )}
         </div>
