@@ -8,7 +8,7 @@ import TextAlign from '@tiptap/extension-text-align'
 import Placeholder from '@tiptap/extension-placeholder'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 
 interface TiptapEditorProps {
   content: string
@@ -30,12 +30,12 @@ const TEXT_COLORS = [
 
 // Cores disponíveis para marca-texto
 const HIGHLIGHT_COLORS = [
-  { name: 'Amarelo', color: '#fef08a', darkColor: 'rgba(234, 179, 8, 0.3)' },
-  { name: 'Verde', color: '#bbf7d0', darkColor: 'rgba(34, 197, 94, 0.3)' },
-  { name: 'Azul', color: '#bfdbfe', darkColor: 'rgba(59, 130, 246, 0.3)' },
-  { name: 'Rosa', color: '#fbcfe8', darkColor: 'rgba(236, 72, 153, 0.3)' },
-  { name: 'Roxo', color: '#e9d5ff', darkColor: 'rgba(168, 85, 247, 0.3)' },
-  { name: 'Laranja', color: '#fed7aa', darkColor: 'rgba(249, 115, 22, 0.3)' },
+  { name: 'Amarelo', color: '#fef08a' },
+  { name: 'Verde', color: '#bbf7d0' },
+  { name: 'Azul', color: '#bfdbfe' },
+  { name: 'Rosa', color: '#fbcfe8' },
+  { name: 'Roxo', color: '#e9d5ff' },
+  { name: 'Laranja', color: '#fed7aa' },
 ]
 
 // Emojis mais usados para resumos
@@ -95,22 +95,22 @@ function ToolbarButton({
 
 // Separador vertical
 function Separator() {
-  return <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-0.5" />
+  return <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-0.5 hidden sm:block" />
 }
 
-// Dropdown de cores
+// Dropdown de cores - CORRIGIDO
 function ColorDropdown({
   colors,
   onSelect,
   isHighlight = false,
-  activeColor,
-  title
+  title,
+  editor
 }: {
   colors: typeof TEXT_COLORS | typeof HIGHLIGHT_COLORS
   onSelect: (color: string) => void
   isHighlight?: boolean
-  activeColor?: string
   title: string
+  editor: ReturnType<typeof useEditor>
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -125,6 +125,18 @@ function ColorDropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const handleSelect = useCallback((color: string) => {
+    onSelect(color)
+    setIsOpen(false)
+  }, [onSelect])
+
+  // Verificar se há cor ativa
+  const isActive = editor && (
+    isHighlight
+      ? editor.isActive('highlight')
+      : editor.isActive('textStyle')
+  )
+
   return (
     <div ref={ref} className="relative">
       <button
@@ -132,8 +144,8 @@ function ColorDropdown({
         onClick={() => setIsOpen(!isOpen)}
         title={title}
         className={`p-1.5 sm:p-2 rounded-lg transition-all flex items-center gap-0.5 ${
-          activeColor
-            ? 'bg-purple-100 dark:bg-purple-900/40'
+          isActive
+            ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400'
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#283039]'
         }`}
       >
@@ -146,18 +158,25 @@ function ColorDropdown({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-[#1a2330] border border-gray-200 dark:border-[#283039] rounded-lg shadow-lg p-2 z-50 min-w-[140px]">
-          <div className="grid grid-cols-4 gap-1">
+        <div
+          className="fixed bg-white dark:bg-[#1a2330] border border-gray-200 dark:border-[#283039] rounded-lg shadow-xl p-3 min-w-[160px]"
+          style={{
+            zIndex: 9999,
+            top: ref.current ? ref.current.getBoundingClientRect().bottom + 4 : 0,
+            left: ref.current ? ref.current.getBoundingClientRect().left : 0,
+          }}
+        >
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            {isHighlight ? 'Cor do destaque' : 'Cor do texto'}
+          </p>
+          <div className="grid grid-cols-4 gap-2">
             {colors.map((c) => (
               <button
                 key={c.color}
                 type="button"
-                onClick={() => {
-                  onSelect(c.color)
-                  setIsOpen(false)
-                }}
+                onClick={() => handleSelect(c.color)}
                 title={c.name}
-                className="w-7 h-7 rounded-md border border-gray-200 dark:border-gray-600 hover:scale-110 transition-transform"
+                className="w-8 h-8 rounded-lg border-2 border-gray-200 dark:border-gray-600 hover:scale-110 hover:border-purple-500 transition-all shadow-sm"
                 style={{ backgroundColor: c.color }}
               />
             ))}
@@ -165,11 +184,8 @@ function ColorDropdown({
           {/* Botão para remover */}
           <button
             type="button"
-            onClick={() => {
-              onSelect('')
-              setIsOpen(false)
-            }}
-            className="w-full mt-2 px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-[#283039] rounded"
+            onClick={() => handleSelect('')}
+            className="w-full mt-3 px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#283039] rounded-lg border border-gray-200 dark:border-gray-600"
           >
             Remover {isHighlight ? 'destaque' : 'cor'}
           </button>
@@ -179,7 +195,7 @@ function ColorDropdown({
   )
 }
 
-// Dropdown de emojis
+// Dropdown de emojis - CORRIGIDO
 function EmojiDropdown({ onSelect }: { onSelect: (emoji: string) => void }) {
   const [isOpen, setIsOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -207,8 +223,15 @@ function EmojiDropdown({ onSelect }: { onSelect: (emoji: string) => void }) {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-[#1a2330] border border-gray-200 dark:border-[#283039] rounded-lg shadow-lg p-2 z-50 w-[220px]">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 px-1">Emojis para resumos</p>
+        <div
+          className="fixed bg-white dark:bg-[#1a2330] border border-gray-200 dark:border-[#283039] rounded-lg shadow-xl p-3 w-[240px]"
+          style={{
+            zIndex: 9999,
+            top: ref.current ? ref.current.getBoundingClientRect().bottom + 4 : 0,
+            left: ref.current ? Math.min(ref.current.getBoundingClientRect().left, window.innerWidth - 250) : 0,
+          }}
+        >
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">Emojis para resumos</p>
           <div className="grid grid-cols-5 gap-1">
             {EMOJIS.map((e) => (
               <button
@@ -219,7 +242,7 @@ function EmojiDropdown({ onSelect }: { onSelect: (emoji: string) => void }) {
                   setIsOpen(false)
                 }}
                 title={e.name}
-                className="w-9 h-9 flex items-center justify-center text-xl hover:bg-gray-100 dark:hover:bg-[#283039] rounded-lg transition-colors"
+                className="w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 dark:hover:bg-[#283039] rounded-lg transition-colors"
               >
                 {e.emoji}
               </button>
@@ -231,7 +254,7 @@ function EmojiDropdown({ onSelect }: { onSelect: (emoji: string) => void }) {
   )
 }
 
-// Toolbar do editor
+// Toolbar do editor - CORRIGIDA
 function EditorToolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
   if (!editor) return null
 
@@ -256,9 +279,8 @@ function EditorToolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 p-2 bg-gray-50 dark:bg-[#1a2330] border border-gray-200 dark:border-[#283039] rounded-t-xl overflow-x-auto">
-      {/* Linha 1: Desfazer, Títulos, Formatação básica */}
-      <div className="flex items-center gap-0.5 flex-wrap">
+    <div className="relative bg-gray-50 dark:bg-[#1a2330] border border-gray-200 dark:border-[#283039] rounded-t-xl p-2">
+      <div className="flex flex-wrap items-center gap-0.5">
         {/* Desfazer / Refazer */}
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
@@ -339,6 +361,7 @@ function EditorToolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
           colors={TEXT_COLORS}
           onSelect={handleTextColor}
           title="Cor do texto"
+          editor={editor}
         />
 
         {/* Marca-texto com cores */}
@@ -347,6 +370,7 @@ function EditorToolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
           onSelect={handleHighlight}
           isHighlight
           title="Marca-texto"
+          editor={editor}
         />
 
         <Separator />
@@ -543,10 +567,7 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
         }
       }),
       Highlight.configure({
-        multicolor: true,
-        HTMLAttributes: {
-          class: 'tiptap-highlight'
-        }
+        multicolor: true
       }),
       Underline,
       TextStyle,
@@ -583,7 +604,7 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
   }, [content, editor])
 
   return (
-    <div className="border border-gray-200 dark:border-[#283039] rounded-xl overflow-hidden bg-white dark:bg-[#141A21]">
+    <div className="border border-gray-200 dark:border-[#283039] rounded-xl bg-white dark:bg-[#141A21]">
       <EditorToolbar editor={editor} />
       <div className="border-t border-gray-200 dark:border-[#283039]">
         <EditorContent
@@ -651,8 +672,7 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           color: #9ca3af;
         }
 
-        .tiptap-editor .ProseMirror mark,
-        .tiptap-editor .ProseMirror .tiptap-highlight {
+        .tiptap-editor .ProseMirror mark {
           padding: 0 0.25rem;
           border-radius: 0.25rem;
         }
