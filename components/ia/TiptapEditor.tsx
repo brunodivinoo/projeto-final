@@ -210,17 +210,22 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
     setShowHighlight(false)
   }
 
-  // Classe para botões ativos
+  // Classe para botões ativos - tamanhos responsivos
   const btnClass = (isActive: boolean) =>
-    `p-1.5 sm:p-2 rounded transition-colors ${
+    `p-1 sm:p-1.5 md:p-2 rounded transition-colors touch-manipulation ${
       isActive
         ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600'
         : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
     }`
 
+  // Separador responsivo - escondido em telas muito pequenas
+  const Separator = () => (
+    <div className="hidden xs:block w-px h-4 sm:h-5 bg-gray-300 dark:bg-gray-600 mx-0.5 sm:mx-1" />
+  )
+
   return (
-    <div className="bg-gray-50 dark:bg-[#1a2330] border-b border-gray-200 dark:border-gray-700 p-2 rounded-t-xl">
-      <div className="flex flex-wrap items-center gap-1">
+    <div className="sticky top-0 z-40 bg-gray-50 dark:bg-[#1a2330] border-b border-gray-200 dark:border-gray-700 p-1.5 sm:p-2 rounded-t-xl shadow-sm">
+      <div className="flex flex-wrap items-center gap-0.5 sm:gap-1">
         {/* Desfazer/Refazer */}
         <button
           type="button"
@@ -229,7 +234,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           className={btnClass(false)}
           title="Desfazer"
         >
-          <span className="material-symbols-outlined text-lg">undo</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">undo</span>
         </button>
         <button
           type="button"
@@ -238,10 +243,10 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           className={btnClass(false)}
           title="Refazer"
         >
-          <span className="material-symbols-outlined text-lg">redo</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">redo</span>
         </button>
 
-        <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
+        <Separator />
 
         {/* Títulos */}
         <button
@@ -269,7 +274,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           <span className="font-bold text-xs">H3</span>
         </button>
 
-        <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
+        <Separator />
 
         {/* Formatação básica */}
         <button
@@ -278,7 +283,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           className={btnClass(editor.isActive('bold'))}
           title="Negrito"
         >
-          <span className="material-symbols-outlined text-lg">format_bold</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">format_bold</span>
         </button>
         <button
           type="button"
@@ -286,7 +291,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           className={btnClass(editor.isActive('italic'))}
           title="Itálico"
         >
-          <span className="material-symbols-outlined text-lg">format_italic</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">format_italic</span>
         </button>
         <button
           type="button"
@@ -294,7 +299,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           className={btnClass(editor.isActive('underline'))}
           title="Sublinhado"
         >
-          <span className="material-symbols-outlined text-lg">format_underlined</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">format_underlined</span>
         </button>
         <button
           type="button"
@@ -302,10 +307,10 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           className={btnClass(editor.isActive('strike'))}
           title="Tachado"
         >
-          <span className="material-symbols-outlined text-lg">strikethrough_s</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">strikethrough_s</span>
         </button>
 
-        <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
+        <Separator />
 
         {/* Cor do texto */}
         <div ref={textColorRef} className="relative">
@@ -315,7 +320,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
             className={btnClass(false)}
             title="Cor do texto"
           >
-            <span className="material-symbols-outlined text-lg">format_color_text</span>
+            <span className="material-symbols-outlined text-base sm:text-lg">format_color_text</span>
           </button>
           {showTextColor && (
             <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-2 z-50 w-36">
@@ -350,7 +355,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
             className={btnClass(editor.isActive('highlight'))}
             title="Marca-texto"
           >
-            <span className="material-symbols-outlined text-lg">ink_highlighter</span>
+            <span className="material-symbols-outlined text-base sm:text-lg">ink_highlighter</span>
           </button>
           {showHighlight && (
             <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-2 z-50 w-36">
@@ -377,7 +382,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           )}
         </div>
 
-        <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
+        <Separator />
 
         {/* Emojis */}
         <div ref={emojiRef} className="relative">
@@ -387,7 +392,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
             className={btnClass(false)}
             title="Emojis"
           >
-            <span className="text-lg">😀</span>
+            <span className="text-base sm:text-lg">😀</span>
           </button>
           {showEmojis && (
             <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-2 z-50 w-52">
@@ -407,7 +412,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           )}
         </div>
 
-        <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
+        <Separator />
 
         {/* Listas */}
         <button
@@ -416,7 +421,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           className={btnClass(editor.isActive('bulletList'))}
           title="Lista"
         >
-          <span className="material-symbols-outlined text-lg">format_list_bulleted</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">format_list_bulleted</span>
         </button>
         <button
           type="button"
@@ -424,10 +429,10 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           className={btnClass(editor.isActive('orderedList'))}
           title="Lista numerada"
         >
-          <span className="material-symbols-outlined text-lg">format_list_numbered</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">format_list_numbered</span>
         </button>
 
-        <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
+        <Separator />
 
         {/* Citação e código */}
         <button
@@ -436,7 +441,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           className={btnClass(editor.isActive('blockquote'))}
           title="Citação"
         >
-          <span className="material-symbols-outlined text-lg">format_quote</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">format_quote</span>
         </button>
         <button
           type="button"
@@ -444,10 +449,10 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           className={btnClass(editor.isActive('code'))}
           title="Código"
         >
-          <span className="material-symbols-outlined text-lg">code</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">code</span>
         </button>
 
-        <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
+        <Separator />
 
         {/* Linha e limpar */}
         <button
@@ -456,7 +461,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           className={btnClass(false)}
           title="Linha"
         >
-          <span className="material-symbols-outlined text-lg">horizontal_rule</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">horizontal_rule</span>
         </button>
         <button
           type="button"
@@ -464,7 +469,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           className={btnClass(false)}
           title="Limpar formatação"
         >
-          <span className="material-symbols-outlined text-lg">format_clear</span>
+          <span className="material-symbols-outlined text-base sm:text-lg">format_clear</span>
         </button>
       </div>
     </div>
@@ -573,8 +578,10 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
   }, [content, editor])
 
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-[#141A21]">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-[#141A21] relative">
+      {/* Toolbar sticky - fica fixa no topo ao rolar */}
       <EditorToolbar editor={editor} />
+      {/* Conteúdo do editor */}
       <EditorContent editor={editor} className="tiptap-editor" />
 
       <style jsx global>{`
