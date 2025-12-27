@@ -170,14 +170,18 @@ export default function VisualizadorResumoPanel({
   const [salvando, setSalvando] = useState(false)
   const [salvou, setSalvou] = useState(false)
 
-  // Sincronizar conteúdo quando resumo muda
+  // Sincronizar conteúdo quando resumo muda (incluindo o conteúdo interno)
   useEffect(() => {
     if (resumo) {
       setConteudoEditado(resumo.resumo)
-      setModoEdicao(false)
       setLinkCompartilhamento(null)
     }
-  }, [resumo])
+  }, [resumo?.id, resumo?.resumo])
+
+  // Reset modo edição quando o resumo muda
+  useEffect(() => {
+    setModoEdicao(false)
+  }, [resumo?.id])
 
   if (!resumo) return null
 

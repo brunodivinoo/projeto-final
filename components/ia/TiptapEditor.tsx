@@ -6,13 +6,61 @@ import Highlight from '@tiptap/extension-highlight'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import Placeholder from '@tiptap/extension-placeholder'
-import { useEffect } from 'react'
+import { TextStyle } from '@tiptap/extension-text-style'
+import { Color } from '@tiptap/extension-color'
+import { useEffect, useState, useRef } from 'react'
 
 interface TiptapEditorProps {
   content: string
   onChange: (content: string) => void
   placeholder?: string
 }
+
+// Cores disponíveis para texto
+const TEXT_COLORS = [
+  { name: 'Preto', color: '#000000' },
+  { name: 'Roxo', color: '#9333ea' },
+  { name: 'Azul', color: '#2563eb' },
+  { name: 'Verde', color: '#16a34a' },
+  { name: 'Vermelho', color: '#dc2626' },
+  { name: 'Laranja', color: '#ea580c' },
+  { name: 'Rosa', color: '#db2777' },
+  { name: 'Ciano', color: '#0891b2' },
+]
+
+// Cores disponíveis para marca-texto
+const HIGHLIGHT_COLORS = [
+  { name: 'Amarelo', color: '#fef08a', darkColor: 'rgba(234, 179, 8, 0.3)' },
+  { name: 'Verde', color: '#bbf7d0', darkColor: 'rgba(34, 197, 94, 0.3)' },
+  { name: 'Azul', color: '#bfdbfe', darkColor: 'rgba(59, 130, 246, 0.3)' },
+  { name: 'Rosa', color: '#fbcfe8', darkColor: 'rgba(236, 72, 153, 0.3)' },
+  { name: 'Roxo', color: '#e9d5ff', darkColor: 'rgba(168, 85, 247, 0.3)' },
+  { name: 'Laranja', color: '#fed7aa', darkColor: 'rgba(249, 115, 22, 0.3)' },
+]
+
+// Emojis mais usados para resumos
+const EMOJIS = [
+  { emoji: '📌', name: 'Importante' },
+  { emoji: '⚠️', name: 'Atenção' },
+  { emoji: '💡', name: 'Dica' },
+  { emoji: '⚖️', name: 'Jurisprudência' },
+  { emoji: '📚', name: 'Conceito' },
+  { emoji: '🎯', name: 'Objetivo' },
+  { emoji: '✅', name: 'Correto' },
+  { emoji: '❌', name: 'Incorreto' },
+  { emoji: '📝', name: 'Nota' },
+  { emoji: '🔗', name: 'Link' },
+  { emoji: '📖', name: 'Referência' },
+  { emoji: '🧠', name: 'Memorizar' },
+  { emoji: '⚡', name: 'Rápido' },
+  { emoji: '🏷️', name: 'Tag' },
+  { emoji: '📋', name: 'Lista' },
+  { emoji: '❓', name: 'Pergunta' },
+  { emoji: '📗', name: 'Livro Verde' },
+  { emoji: '📘', name: 'Livro Azul' },
+  { emoji: '📙', name: 'Livro Laranja' },
+  { emoji: '📕', name: 'Livro Vermelho' },
+]
 
 // Botão da toolbar
 function ToolbarButton({
@@ -34,7 +82,7 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`p-2 rounded-lg transition-all ${
+      className={`p-1.5 sm:p-2 rounded-lg transition-all ${
         isActive
           ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400'
           : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#283039]'
@@ -47,174 +95,317 @@ function ToolbarButton({
 
 // Separador vertical
 function Separator() {
-  return <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
+  return <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-0.5" />
+}
+
+// Dropdown de cores
+function ColorDropdown({
+  colors,
+  onSelect,
+  isHighlight = false,
+  activeColor,
+  title
+}: {
+  colors: typeof TEXT_COLORS | typeof HIGHLIGHT_COLORS
+  onSelect: (color: string) => void
+  isHighlight?: boolean
+  activeColor?: string
+  title: string
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        title={title}
+        className={`p-1.5 sm:p-2 rounded-lg transition-all flex items-center gap-0.5 ${
+          activeColor
+            ? 'bg-purple-100 dark:bg-purple-900/40'
+            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#283039]'
+        }`}
+      >
+        {isHighlight ? (
+          <span className="material-symbols-outlined text-lg sm:text-xl">ink_highlighter</span>
+        ) : (
+          <span className="material-symbols-outlined text-lg sm:text-xl">format_color_text</span>
+        )}
+        <span className="material-symbols-outlined text-xs">arrow_drop_down</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-[#1a2330] border border-gray-200 dark:border-[#283039] rounded-lg shadow-lg p-2 z-50 min-w-[140px]">
+          <div className="grid grid-cols-4 gap-1">
+            {colors.map((c) => (
+              <button
+                key={c.color}
+                type="button"
+                onClick={() => {
+                  onSelect(c.color)
+                  setIsOpen(false)
+                }}
+                title={c.name}
+                className="w-7 h-7 rounded-md border border-gray-200 dark:border-gray-600 hover:scale-110 transition-transform"
+                style={{ backgroundColor: c.color }}
+              />
+            ))}
+          </div>
+          {/* Botão para remover */}
+          <button
+            type="button"
+            onClick={() => {
+              onSelect('')
+              setIsOpen(false)
+            }}
+            className="w-full mt-2 px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-[#283039] rounded"
+          >
+            Remover {isHighlight ? 'destaque' : 'cor'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Dropdown de emojis
+function EmojiDropdown({ onSelect }: { onSelect: (emoji: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        title="Inserir emoji"
+        className="p-1.5 sm:p-2 rounded-lg transition-all text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#283039] flex items-center gap-0.5"
+      >
+        <span className="text-lg sm:text-xl">😀</span>
+        <span className="material-symbols-outlined text-xs">arrow_drop_down</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-[#1a2330] border border-gray-200 dark:border-[#283039] rounded-lg shadow-lg p-2 z-50 w-[220px]">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 px-1">Emojis para resumos</p>
+          <div className="grid grid-cols-5 gap-1">
+            {EMOJIS.map((e) => (
+              <button
+                key={e.emoji}
+                type="button"
+                onClick={() => {
+                  onSelect(e.emoji)
+                  setIsOpen(false)
+                }}
+                title={e.name}
+                className="w-9 h-9 flex items-center justify-center text-xl hover:bg-gray-100 dark:hover:bg-[#283039] rounded-lg transition-colors"
+              >
+                {e.emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 // Toolbar do editor
 function EditorToolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
   if (!editor) return null
 
+  const handleHighlight = (color: string) => {
+    if (color) {
+      editor.chain().focus().setHighlight({ color }).run()
+    } else {
+      editor.chain().focus().unsetHighlight().run()
+    }
+  }
+
+  const handleTextColor = (color: string) => {
+    if (color) {
+      editor.chain().focus().setColor(color).run()
+    } else {
+      editor.chain().focus().unsetColor().run()
+    }
+  }
+
+  const handleEmoji = (emoji: string) => {
+    editor.chain().focus().insertContent(emoji).run()
+  }
+
   return (
-    <div className="flex flex-wrap items-center gap-1 p-2 bg-gray-50 dark:bg-[#1a2330] border border-gray-200 dark:border-[#283039] rounded-t-xl">
-      {/* Desfazer / Refazer */}
-      <ToolbarButton
-        onClick={() => editor.chain().focus().undo().run()}
-        disabled={!editor.can().undo()}
-        title="Desfazer (Ctrl+Z)"
-      >
-        <span className="material-symbols-outlined text-xl">undo</span>
-      </ToolbarButton>
-      <ToolbarButton
-        onClick={() => editor.chain().focus().redo().run()}
-        disabled={!editor.can().redo()}
-        title="Refazer (Ctrl+Y)"
-      >
-        <span className="material-symbols-outlined text-xl">redo</span>
-      </ToolbarButton>
+    <div className="flex flex-wrap items-center gap-0.5 p-2 bg-gray-50 dark:bg-[#1a2330] border border-gray-200 dark:border-[#283039] rounded-t-xl overflow-x-auto">
+      {/* Linha 1: Desfazer, Títulos, Formatação básica */}
+      <div className="flex items-center gap-0.5 flex-wrap">
+        {/* Desfazer / Refazer */}
+        <ToolbarButton
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+          title="Desfazer (Ctrl+Z)"
+        >
+          <span className="material-symbols-outlined text-lg sm:text-xl">undo</span>
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+          title="Refazer (Ctrl+Y)"
+        >
+          <span className="material-symbols-outlined text-lg sm:text-xl">redo</span>
+        </ToolbarButton>
 
-      <Separator />
-
-      {/* Títulos */}
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        isActive={editor.isActive('heading', { level: 1 })}
-        title="Título Grande"
-      >
-        <span className="font-bold text-lg">H1</span>
-      </ToolbarButton>
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        isActive={editor.isActive('heading', { level: 2 })}
-        title="Título Médio"
-      >
-        <span className="font-bold text-base">H2</span>
-      </ToolbarButton>
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        isActive={editor.isActive('heading', { level: 3 })}
-        title="Subtítulo"
-      >
-        <span className="font-bold text-sm">H3</span>
-      </ToolbarButton>
-
-      <Separator />
-
-      {/* Formatação de texto */}
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        isActive={editor.isActive('bold')}
-        title="Negrito (Ctrl+B)"
-      >
-        <span className="material-symbols-outlined text-xl">format_bold</span>
-      </ToolbarButton>
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        isActive={editor.isActive('italic')}
-        title="Itálico (Ctrl+I)"
-      >
-        <span className="material-symbols-outlined text-xl">format_italic</span>
-      </ToolbarButton>
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-        isActive={editor.isActive('underline')}
-        title="Sublinhado (Ctrl+U)"
-      >
-        <span className="material-symbols-outlined text-xl">format_underlined</span>
-      </ToolbarButton>
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleStrike().run()}
-        isActive={editor.isActive('strike')}
-        title="Tachado"
-      >
-        <span className="material-symbols-outlined text-xl">strikethrough_s</span>
-      </ToolbarButton>
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleHighlight().run()}
-        isActive={editor.isActive('highlight')}
-        title="Marca-texto"
-      >
-        <span className="material-symbols-outlined text-xl">ink_highlighter</span>
-      </ToolbarButton>
-
-      <Separator />
-
-      {/* Listas */}
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        isActive={editor.isActive('bulletList')}
-        title="Lista com marcadores"
-      >
-        <span className="material-symbols-outlined text-xl">format_list_bulleted</span>
-      </ToolbarButton>
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        isActive={editor.isActive('orderedList')}
-        title="Lista numerada"
-      >
-        <span className="material-symbols-outlined text-xl">format_list_numbered</span>
-      </ToolbarButton>
-
-      <Separator />
-
-      {/* Citação e Código */}
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        isActive={editor.isActive('blockquote')}
-        title="Citação"
-      >
-        <span className="material-symbols-outlined text-xl">format_quote</span>
-      </ToolbarButton>
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleCode().run()}
-        isActive={editor.isActive('code')}
-        title="Código"
-      >
-        <span className="material-symbols-outlined text-xl">code</span>
-      </ToolbarButton>
-
-      <Separator />
-
-      {/* Linha horizontal */}
-      <ToolbarButton
-        onClick={() => editor.chain().focus().setHorizontalRule().run()}
-        title="Linha horizontal"
-      >
-        <span className="material-symbols-outlined text-xl">horizontal_rule</span>
-      </ToolbarButton>
-
-      {/* Alinhamento - visível apenas em telas maiores */}
-      <div className="hidden md:flex items-center">
         <Separator />
-        <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          isActive={editor.isActive({ textAlign: 'left' })}
-          title="Alinhar à esquerda"
-        >
-          <span className="material-symbols-outlined text-xl">format_align_left</span>
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          isActive={editor.isActive({ textAlign: 'center' })}
-          title="Centralizar"
-        >
-          <span className="material-symbols-outlined text-xl">format_align_center</span>
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign('right').run()}
-          isActive={editor.isActive({ textAlign: 'right' })}
-          title="Alinhar à direita"
-        >
-          <span className="material-symbols-outlined text-xl">format_align_right</span>
-        </ToolbarButton>
-      </div>
 
-      {/* Limpar formatação */}
-      <div className="ml-auto">
+        {/* Títulos */}
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          isActive={editor.isActive('heading', { level: 1 })}
+          title="Título Grande"
+        >
+          <span className="font-bold text-sm sm:text-base">H1</span>
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          isActive={editor.isActive('heading', { level: 2 })}
+          title="Título Médio"
+        >
+          <span className="font-bold text-sm">H2</span>
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          isActive={editor.isActive('heading', { level: 3 })}
+          title="Subtítulo"
+        >
+          <span className="font-bold text-xs">H3</span>
+        </ToolbarButton>
+
+        <Separator />
+
+        {/* Formatação de texto */}
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          isActive={editor.isActive('bold')}
+          title="Negrito (Ctrl+B)"
+        >
+          <span className="material-symbols-outlined text-lg sm:text-xl">format_bold</span>
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          isActive={editor.isActive('italic')}
+          title="Itálico (Ctrl+I)"
+        >
+          <span className="material-symbols-outlined text-lg sm:text-xl">format_italic</span>
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          isActive={editor.isActive('underline')}
+          title="Sublinhado (Ctrl+U)"
+        >
+          <span className="material-symbols-outlined text-lg sm:text-xl">format_underlined</span>
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          isActive={editor.isActive('strike')}
+          title="Tachado"
+        >
+          <span className="material-symbols-outlined text-lg sm:text-xl">strikethrough_s</span>
+        </ToolbarButton>
+
+        <Separator />
+
+        {/* Cores de texto */}
+        <ColorDropdown
+          colors={TEXT_COLORS}
+          onSelect={handleTextColor}
+          title="Cor do texto"
+        />
+
+        {/* Marca-texto com cores */}
+        <ColorDropdown
+          colors={HIGHLIGHT_COLORS}
+          onSelect={handleHighlight}
+          isHighlight
+          title="Marca-texto"
+        />
+
+        <Separator />
+
+        {/* Emojis */}
+        <EmojiDropdown onSelect={handleEmoji} />
+
+        <Separator />
+
+        {/* Listas */}
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          isActive={editor.isActive('bulletList')}
+          title="Lista com marcadores"
+        >
+          <span className="material-symbols-outlined text-lg sm:text-xl">format_list_bulleted</span>
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          isActive={editor.isActive('orderedList')}
+          title="Lista numerada"
+        >
+          <span className="material-symbols-outlined text-lg sm:text-xl">format_list_numbered</span>
+        </ToolbarButton>
+
+        <Separator />
+
+        {/* Citação e Código */}
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          isActive={editor.isActive('blockquote')}
+          title="Citação"
+        >
+          <span className="material-symbols-outlined text-lg sm:text-xl">format_quote</span>
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleCode().run()}
+          isActive={editor.isActive('code')}
+          title="Código"
+        >
+          <span className="material-symbols-outlined text-lg sm:text-xl">code</span>
+        </ToolbarButton>
+
+        <Separator />
+
+        {/* Linha horizontal */}
+        <ToolbarButton
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+          title="Linha horizontal"
+        >
+          <span className="material-symbols-outlined text-lg sm:text-xl">horizontal_rule</span>
+        </ToolbarButton>
+
+        {/* Limpar formatação */}
         <ToolbarButton
           onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
           title="Limpar formatação"
         >
-          <span className="material-symbols-outlined text-xl">format_clear</span>
+          <span className="material-symbols-outlined text-lg sm:text-xl">format_clear</span>
         </ToolbarButton>
       </div>
     </div>
@@ -271,7 +462,7 @@ function markdownToHtml(markdown: string): string {
   return processed.join('')
 }
 
-// Converter HTML para Markdown
+// Converter HTML para Markdown - VERSÃO MELHORADA
 function htmlToMarkdown(html: string): string {
   let markdown = html
 
@@ -289,8 +480,13 @@ function htmlToMarkdown(html: string): string {
   // Underline (não tem em markdown padrão, usar HTML)
   markdown = markdown.replace(/<u>(.*?)<\/u>/gi, '<u>$1</u>')
 
-  // Highlight
-  markdown = markdown.replace(/<mark>(.*?)<\/mark>/gi, '==$1==')
+  // Highlight - preservar com cores
+  markdown = markdown.replace(/<mark[^>]*style="[^"]*background-color:\s*([^;"]+)[^"]*"[^>]*>(.*?)<\/mark>/gi, '==$2==')
+  markdown = markdown.replace(/<mark[^>]*data-color="([^"]+)"[^>]*>(.*?)<\/mark>/gi, '==$2==')
+  markdown = markdown.replace(/<mark[^>]*>(.*?)<\/mark>/gi, '==$1==')
+
+  // Text color - preservar
+  markdown = markdown.replace(/<span[^>]*style="[^"]*color:\s*([^;"]+)[^"]*"[^>]*>(.*?)<\/span>/gi, '$2')
 
   // Strikethrough
   markdown = markdown.replace(/<s>(.*?)<\/s>/gi, '~~$1~~')
@@ -320,6 +516,9 @@ function htmlToMarkdown(html: string): string {
   // Quebras de linha
   markdown = markdown.replace(/<br\s*\/?>/gi, '\n')
 
+  // Remover spans vazios
+  markdown = markdown.replace(/<span[^>]*>(.*?)<\/span>/gi, '$1')
+
   // Remover tags restantes
   markdown = markdown.replace(/<[^>]+>/g, '')
 
@@ -344,11 +543,14 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
         }
       }),
       Highlight.configure({
+        multicolor: true,
         HTMLAttributes: {
-          class: 'bg-yellow-200 dark:bg-yellow-800/50 px-1 rounded'
+          class: 'tiptap-highlight'
         }
       }),
       Underline,
+      TextStyle,
+      Color,
       TextAlign.configure({
         types: ['heading', 'paragraph']
       }),
@@ -449,8 +651,8 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           color: #9ca3af;
         }
 
-        .tiptap-editor .ProseMirror mark {
-          background-color: #fef08a;
+        .tiptap-editor .ProseMirror mark,
+        .tiptap-editor .ProseMirror .tiptap-highlight {
           padding: 0 0.25rem;
           border-radius: 0.25rem;
         }
@@ -529,10 +731,6 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
         .dark .tiptap-editor .ProseMirror blockquote {
           background-color: rgba(147, 51, 234, 0.1);
           color: #9ca3af;
-        }
-
-        .dark .tiptap-editor .ProseMirror mark {
-          background-color: rgba(234, 179, 8, 0.3);
         }
 
         .dark .tiptap-editor .ProseMirror hr {

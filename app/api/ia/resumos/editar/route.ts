@@ -8,9 +8,17 @@ const supabase = createClient(
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { resumo_id, resumo } = await request.json()
+    const body = await request.json()
+    const { resumo_id, resumo } = body
+
+    console.log('[EDITAR RESUMO] Iniciando edição:', {
+      resumo_id,
+      tamanho_conteudo: resumo?.length || 0,
+      preview: resumo?.substring(0, 100) + '...'
+    })
 
     if (!resumo_id || !resumo) {
+      console.log('[EDITAR RESUMO] Parâmetros inválidos:', { resumo_id, temResumo: !!resumo })
       return NextResponse.json({ error: 'resumo_id e resumo são obrigatórios' }, { status: 400 })
     }
 
@@ -23,9 +31,15 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Erro ao atualizar resumo:', error)
+      console.error('[EDITAR RESUMO] Erro ao atualizar:', error)
       return NextResponse.json({ error: 'Erro ao atualizar resumo' }, { status: 500 })
     }
+
+    console.log('[EDITAR RESUMO] Sucesso:', {
+      id: data.id,
+      titulo: data.titulo,
+      tamanho_salvo: data.resumo?.length || 0
+    })
 
     return NextResponse.json({
       success: true,
@@ -34,7 +48,7 @@ export async function PATCH(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erro ao editar resumo:', error)
+    console.error('[EDITAR RESUMO] Erro interno:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
