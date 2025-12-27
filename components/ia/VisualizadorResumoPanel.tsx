@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 
-// Importar o editor de forma dinâmica para evitar problemas de SSR
-const MDEditor = dynamic(
-  () => import('@uiw/react-md-editor').then((mod) => mod.default),
-  { ssr: false }
+// Importar o editor Tiptap de forma dinâmica para evitar problemas de SSR
+const TiptapEditor = dynamic(
+  () => import('./TiptapEditor'),
+  { ssr: false, loading: () => <div className="h-[400px] bg-gray-100 dark:bg-[#141A21] rounded-xl animate-pulse" /> }
 )
 
 interface ResumoIA {
@@ -35,14 +35,13 @@ function processarTextoVisual(texto: string): React.ReactNode[] {
   const elementos: React.ReactNode[] = []
 
   linhas.forEach((linha, idx) => {
-    // Processar a linha
     let processada = linha
 
     // Detectar tipos de linha
     const isHeader1 = linha.startsWith('# ')
     const isHeader2 = linha.startsWith('## ')
     const isHeader3 = linha.startsWith('### ')
-    const isSeparator = /^[─━═_]{3,}$/.test(linha.trim()) || linha.trim().match(/^[-_=]{10,}$/)
+    const isSeparator = /^[─━═_-]{3,}$/.test(linha.trim())
     const isEmptyLine = linha.trim() === ''
 
     // Remover marcadores de header
@@ -56,7 +55,7 @@ function processarTextoVisual(texto: string): React.ReactNode[] {
       const remaining = text
       let keyCounter = 0
 
-      // Processar negrito primeiro (mais comum)
+      // Processar negrito
       const boldRegex = /\*\*([^*]+)\*\*/g
       let lastIndex = 0
       let match
@@ -70,8 +69,8 @@ function processarTextoVisual(texto: string): React.ReactNode[] {
       }
 
       if (lastIndex < remaining.length) {
-        // Processar highlight ==texto==
         const restante = remaining.substring(lastIndex)
+        // Processar highlight ==texto==
         const highlightRegex = /==([^=]+)==/g
         let hlLastIndex = 0
         let hlMatch
@@ -120,7 +119,6 @@ function processarTextoVisual(texto: string): React.ReactNode[] {
         </h3>
       )
     } else if (linha.trim().startsWith('- ') || linha.trim().startsWith('• ') || linha.trim().startsWith('▸ ')) {
-      // Lista
       const conteudoLista = linha.trim().replace(/^[-•▸]\s*/, '')
       elementos.push(
         <div key={idx} className="flex items-start gap-2 my-1 ml-4">
@@ -129,7 +127,6 @@ function processarTextoVisual(texto: string): React.ReactNode[] {
         </div>
       )
     } else if (linha.trim().startsWith('> ')) {
-      // Citação
       const conteudoCitacao = linha.trim().substring(2)
       elementos.push(
         <blockquote key={idx} className="border-l-4 border-purple-500 pl-4 py-2 my-3 bg-purple-50 dark:bg-purple-900/20 rounded-r-lg italic text-gray-700 dark:text-gray-300">
@@ -137,7 +134,6 @@ function processarTextoVisual(texto: string): React.ReactNode[] {
         </blockquote>
       )
     } else if (linha.trim().startsWith('→ ') || linha.trim().startsWith('➔ ')) {
-      // Seta/item
       const conteudoSeta = linha.trim().replace(/^[→➔]\s*/, '')
       elementos.push(
         <div key={idx} className="flex items-start gap-2 my-1 ml-2">
@@ -145,22 +141,7 @@ function processarTextoVisual(texto: string): React.ReactNode[] {
           <span className="text-gray-700 dark:text-gray-300">{renderInline(conteudoSeta)}</span>
         </div>
       )
-    } else if (linha.includes('|') && linha.trim().startsWith('|')) {
-      // Linha de tabela/caixa - manter como está com fonte mono
-      elementos.push(
-        <div key={idx} className="font-mono text-sm text-purple-500 dark:text-purple-400 whitespace-pre">
-          {linha}
-        </div>
-      )
-    } else if (/^[┌┐└┘├┤┬┴┼│║╔╗╚╝╠╣╦╩╬═─]/.test(linha.trim())) {
-      // Box drawing characters
-      elementos.push(
-        <div key={idx} className="font-mono text-sm text-purple-500 dark:text-purple-400 whitespace-pre">
-          {linha}
-        </div>
-      )
     } else {
-      // Parágrafo normal
       elementos.push(
         <p key={idx} className="text-gray-700 dark:text-gray-300 my-1 leading-relaxed">
           {renderInline(processada)}
@@ -363,19 +344,12 @@ export default function VisualizadorResumoPanel({
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
           {modoEdicao ? (
-            /* Modo Edição com Editor WYSIWYG */
-            <div className="h-full" data-color-mode="light">
-              <MDEditor
-                value={conteudoEditado}
-                onChange={(val) => setConteudoEditado(val || '')}
-                height="100%"
-                preview="live"
-                hideToolbar={false}
-                enableScroll={true}
-                visibleDragbar={false}
-                className="!bg-gray-50 dark:!bg-[#141A21] !border-gray-200 dark:!border-[#283039] rounded-xl overflow-hidden"
-              />
-            </div>
+            /* Modo Edição com Editor Tiptap */
+            <TiptapEditor
+              content={conteudoEditado}
+              onChange={setConteudoEditado}
+              placeholder="Digite o conteúdo do resumo..."
+            />
           ) : (
             /* Modo Visualização */
             <div className="bg-gray-50 dark:bg-[#141A21] rounded-xl p-4 md:p-6 border border-gray-200 dark:border-[#283039]">

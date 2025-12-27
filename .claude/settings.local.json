@@ -33,7 +33,9 @@
       "Bash(node:*)",
       "Bash(del \"c:\\\\Users\\\\PC\\\\OneDrive\\\\Área de Trabalho\\\\Projeto Final\\\\check-questoes.js\")",
       "Bash(wc:*)",
-      "Bash(del \"c:\\\\Users\\\\PC\\\\OneDrive\\\\Área de Trabalho\\\\Projeto Final\\\\temp-query.js\")"
+      "Bash(del \"c:\\\\Users\\\\PC\\\\OneDrive\\\\Área de Trabalho\\\\Projeto Final\\\\temp-query.js\")",
+      "Bash(npm uninstall:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }
