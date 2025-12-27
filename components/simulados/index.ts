@@ -1,0 +1,5 @@
+export { CriarSimuladoModal } from './CriarSimuladoModal'
+export { ListaSimulados } from './ListaSimulados'
+export { ExecutarSimulado } from './ExecutarSimulado'
+export { ResultadoSimulado } from './ResultadoSimulado'
+export { EstatisticasSimulados } from './EstatisticasSimulados'
