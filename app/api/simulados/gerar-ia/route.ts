@@ -398,7 +398,8 @@ export async function POST(request: NextRequest) {
         quantidade_questoes: questoesGeradas.length,
         tempo_limite_minutos: config.tempo_limite_minutos || null,
         dificuldades: config.dificuldades,
-        status: 'pendente'
+        status: 'pendente',
+        gerado_por_ia: true
       })
       .select()
       .single()

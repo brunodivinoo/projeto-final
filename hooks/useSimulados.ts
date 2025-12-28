@@ -26,6 +26,7 @@ export interface Simulado {
   created_at: string
   iniciado_em?: string
   finalizado_em?: string
+  gerado_por_ia?: boolean
   simulado_disciplinas?: { disciplina_nome: string }[]
   simulado_assuntos?: { assunto_nome: string }[]
   simulado_questoes?: SimuladoQuestao[]
