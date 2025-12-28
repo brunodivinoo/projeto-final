@@ -20,7 +20,7 @@ type TabType = 'gerar-ia' | 'sugestoes' | 'comparar' | 'evolucao' | 'analise'
 type PeriodoEvolucao = '7d' | '30d' | '90d' | '6m' | '1a' | 'all'
 
 export function SimuladosAvancadoPRO({ onSimuladoCriado, onClose }: Props) {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const {
     loading,
     gerarSimuladoIA,
@@ -33,6 +33,7 @@ export function SimuladosAvancadoPRO({ onSimuladoCriado, onClose }: Props) {
 
   const [activeTab, setActiveTab] = useState<TabType>('gerar-ia')
   const [isPro, setIsPro] = useState(false)
+  const [verificandoPro, setVerificandoPro] = useState(true)
 
   // Estado para geração com IA
   const [configIA, setConfigIA] = useState<ConfigGeracaoIA>({
@@ -65,9 +66,13 @@ export function SimuladosAvancadoPRO({ onSimuladoCriado, onClose }: Props) {
 
   // Verificar se é PRO
   useEffect(() => {
+    // Esperar auth carregar
+    if (authLoading) return
+
     // Em produção, verificar plano do usuário
     setIsPro(true) // Para desenvolvimento
-  }, [user])
+    setVerificandoPro(false)
+  }, [user, authLoading])
 
   // Carregar dados ao mudar de tab
   useEffect(() => {
@@ -199,6 +204,21 @@ export function SimuladosAvancadoPRO({ onSimuladoCriado, onClose }: Props) {
     'Informática',
     'Legislação Específica'
   ]
+
+  // Mostra loading enquanto verifica
+  if (authLoading || verificandoPro) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-8 flex items-center justify-center">
+        <div className="text-center">
+          <svg className="w-8 h-8 animate-spin mx-auto text-purple-500 mb-4" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          <p className="text-gray-500 dark:text-gray-400">Carregando recursos avançados...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!isPro) {
     return (

@@ -1,6 +1,7 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSimulados, Simulado } from '@/hooks/useSimulados'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface Props {
   onSelectSimulado: (simulado: Simulado) => void
@@ -10,28 +11,40 @@ interface Props {
 }
 
 export function ListaSimulados({ onSelectSimulado, onIniciarSimulado, onExcluirSimulado, refreshTrigger }: Props) {
-  const { listarSimulados, excluirSimulado, loading } = useSimulados()
+  const { user, loading: authLoading } = useAuth()
+  const { listarSimulados, excluirSimulado } = useSimulados()
   const [simulados, setSimulados] = useState<Simulado[]>([])
   const [filtroStatus, setFiltroStatus] = useState<string>('')
   const [pagina, setPagina] = useState(1)
   const [total, setTotal] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const porPagina = 10
 
-  useEffect(() => {
-    carregarSimulados()
-  }, [filtroStatus, pagina, refreshTrigger])
+  const carregarSimulados = useCallback(async () => {
+    if (!user) return
 
-  const carregarSimulados = async () => {
-    const { simulados: data, total: totalSimulados } = await listarSimulados(
-      filtroStatus || undefined,
-      pagina,
-      porPagina
-    )
-    setSimulados(data)
-    setTotal(totalSimulados)
-  }
+    setLoading(true)
+    try {
+      const { simulados: data, total: totalSimulados } = await listarSimulados(
+        filtroStatus || undefined,
+        pagina,
+        porPagina
+      )
+      setSimulados(data)
+      setTotal(totalSimulados)
+    } finally {
+      setLoading(false)
+    }
+  }, [user, filtroStatus, pagina, listarSimulados])
+
+  useEffect(() => {
+    // Só carrega quando auth terminar e user existir
+    if (!authLoading && user) {
+      carregarSimulados()
+    }
+  }, [authLoading, user, filtroStatus, pagina, refreshTrigger, carregarSimulados])
 
   const handleExcluir = async (id: string) => {
     const sucesso = await excluirSimulado(id)
@@ -107,7 +120,7 @@ export function ListaSimulados({ onSelectSimulado, onIniciarSimulado, onExcluirS
 
       {/* Lista */}
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
-        {loading ? (
+        {authLoading || loading ? (
           <div className="p-8 text-center">
             <svg className="w-8 h-8 animate-spin mx-auto text-blue-500" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />

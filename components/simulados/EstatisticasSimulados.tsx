@@ -1,25 +1,41 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSimulados, Estatisticas } from '@/hooks/useSimulados'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface Props {
   onCreateSimulado?: () => void
 }
 
 export function EstatisticasSimulados({ onCreateSimulado }: Props) {
-  const { buscarEstatisticas, loading } = useSimulados()
+  const { user, loading: authLoading } = useAuth()
+  const { buscarEstatisticas } = useSimulados()
   const [estatisticas, setEstatisticas] = useState<Estatisticas | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [carregado, setCarregado] = useState(false)
+
+  const carregarEstatisticas = useCallback(async () => {
+    if (!user || carregado) return
+
+    setLoading(true)
+    try {
+      const data = await buscarEstatisticas()
+      setEstatisticas(data)
+      setCarregado(true)
+    } finally {
+      setLoading(false)
+    }
+  }, [user, carregado, buscarEstatisticas])
 
   useEffect(() => {
-    carregarEstatisticas()
-  }, [])
+    // Só carrega quando auth terminar e user existir
+    if (!authLoading && user && !carregado) {
+      carregarEstatisticas()
+    }
+  }, [authLoading, user, carregado, carregarEstatisticas])
 
-  const carregarEstatisticas = async () => {
-    const data = await buscarEstatisticas()
-    setEstatisticas(data)
-  }
-
-  if (loading) {
+  // Mostra loading enquanto auth está carregando ou dados estão sendo buscados
+  if (authLoading || loading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="animate-pulse space-y-4">
@@ -32,6 +48,11 @@ export function EstatisticasSimulados({ onCreateSimulado }: Props) {
         </div>
       </div>
     )
+  }
+
+  // Se não tem user após auth carregar, não mostra nada
+  if (!user) {
+    return null
   }
 
   if (!estatisticas) {
