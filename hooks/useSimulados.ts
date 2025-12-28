@@ -127,6 +127,177 @@ export interface Sugestao {
   prioridade: number
 }
 
+// Tipos Fase 4 - Avançado (PRO)
+
+export interface ConfigGeracaoIA {
+  titulo: string
+  descricao?: string
+  modalidade: 'certo_errado' | 'multipla_escolha' | 'mista'
+  quantidade_questoes: number
+  tempo_limite_minutos?: number
+  dificuldades: string[]
+  disciplinas: Array<{ nome: string; peso: number }>
+  assuntos?: Array<{ nome: string; disciplina: string; peso: number }>
+  subassuntos?: Array<{ nome: string; assunto: string; disciplina: string; peso: number }>
+  bancas: string[]
+  foco_pontos_fracos?: boolean
+  baseado_em_erros?: boolean
+}
+
+export interface SugestaoIA {
+  tipo: 'foco_estudo' | 'simulado_recomendado' | 'revisao' | 'dica' | 'alerta'
+  titulo: string
+  descricao: string
+  prioridade: 'alta' | 'media' | 'baixa'
+  acao_sugerida?: {
+    tipo: 'criar_simulado' | 'revisar' | 'estudar' | 'praticar'
+    config?: Record<string, unknown>
+  }
+  disciplinas_relacionadas?: string[]
+  assuntos_relacionados?: string[]
+}
+
+export interface AnaliseIA {
+  sugestoes: SugestaoIA[]
+  analise: {
+    total_simulados: number
+    media_geral: number
+    tendencia: 'melhorando' | 'piorando' | 'estavel'
+    pontos_fracos: Array<{ nome: string; percentual: number; erros: number }>
+    pontos_fortes: Array<{ nome: string; percentual: number }>
+    tempo_medio_por_questao: number
+  }
+}
+
+export interface ComparacaoSimulado {
+  id: string
+  titulo: string
+  data: string
+  pontuacao: number
+  acertos: number
+  erros: number
+  total_questoes: number
+  tempo_gasto_segundos: number
+  tempo_medio_por_questao: number
+  desempenho_por_disciplina: Array<{
+    disciplina: string
+    acertos: number
+    erros: number
+    total: number
+    percentual: number
+  }>
+  desempenho_por_dificuldade: Array<{
+    dificuldade: string
+    acertos: number
+    erros: number
+    total: number
+    percentual: number
+  }>
+}
+
+export interface ResultadoComparacao {
+  simulados: ComparacaoSimulado[]
+  analise_comparativa: {
+    melhor_simulado: string
+    pior_simulado: string
+    evolucao_percentual: number
+    disciplinas_melhoraram: string[]
+    disciplinas_pioraram: string[]
+    tempo_evolucao: number
+    consistencia: 'alta' | 'media' | 'baixa'
+    insights: string[]
+  }
+}
+
+export interface PontoEvolucao {
+  data: string
+  data_formatada: string
+  simulado_id: string
+  titulo: string
+  pontuacao: number
+  acertos: number
+  erros: number
+  total_questoes: number
+  tempo_gasto_minutos: number
+  tempo_por_questao_segundos: number
+}
+
+export interface EvolucaoPorDisciplina {
+  disciplina: string
+  pontos: Array<{
+    data: string
+    percentual: number
+    acertos: number
+    total: number
+  }>
+  tendencia: 'melhorando' | 'piorando' | 'estavel'
+  variacao_total: number
+}
+
+export interface DadosEvolucao {
+  evolucao_geral: PontoEvolucao[]
+  evolucao_por_disciplina: EvolucaoPorDisciplina[]
+  estatisticas_periodo: Array<{
+    periodo: string
+    total_simulados: number
+    total_questoes: number
+    media_pontuacao: number
+    melhor_pontuacao: number
+    pior_pontuacao: number
+    tempo_total_minutos: number
+  }>
+  media_movel: Array<{ data: string; media: number }>
+  resumo: {
+    total_simulados: number
+    media_geral: number
+    tendencia: 'melhorando' | 'piorando' | 'estavel'
+    melhor_disciplina: { disciplina: string; media: number } | null
+    pior_disciplina: { disciplina: string; media: number } | null
+    periodo_analisado: string
+  }
+}
+
+export interface PontoForteOuFraco {
+  area: string
+  tipo: 'disciplina' | 'assunto' | 'subassunto'
+  percentual_acerto: number
+  total_questoes: number
+  acertos: number
+  erros: number
+  tendencia: 'melhorando' | 'piorando' | 'estavel'
+  ultima_aparicao: string
+  recomendacao: string
+}
+
+export interface AnaliseDetalhada {
+  pontos_fortes: PontoForteOuFraco[]
+  pontos_fracos: PontoForteOuFraco[]
+  areas_neutras: PontoForteOuFraco[]
+  analise_por_dificuldade: Array<{
+    dificuldade: string
+    percentual: number
+    total: number
+    acertos: number
+    erros: number
+  }>
+  analise_por_tempo: {
+    tempo_medio_acertos: number
+    tempo_medio_erros: number
+    questoes_rapidas_corretas: number
+    questoes_lentas_corretas: number
+    insight: string
+  }
+  padroes_identificados: string[]
+  plano_estudo_sugerido: Array<{
+    prioridade: number
+    area: string
+    acao: string
+    tempo_sugerido: string
+    recursos: string[]
+  }>
+  resumo_ia?: string
+}
+
 export interface RespostaResultado {
   esta_correta: boolean
   resposta_usuario: string
@@ -475,9 +646,223 @@ export function useSimulados() {
     }
   }, [user])
 
+  // ========================================
+  // FASE 4 - FUNÇÕES AVANÇADAS (PRO)
+  // ========================================
+
+  // 4.1 - Gerar simulado com IA
+  const gerarSimuladoIA = useCallback(async (
+    config: ConfigGeracaoIA
+  ): Promise<{ simulado: Simulado; estatisticas: Record<string, unknown> } | null> => {
+    if (!user) {
+      setError('Usuário não autenticado')
+      return null
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/simulados/gerar-ia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          config
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.upgrade_required) {
+          throw new Error('Recurso exclusivo para usuários PRO')
+        }
+        throw new Error(data.error || 'Erro ao gerar simulado com IA')
+      }
+
+      setLoading(false)
+      return {
+        simulado: data.simulado,
+        estatisticas: data.estatisticas
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao gerar simulado com IA'
+      setError(message)
+      setLoading(false)
+      return null
+    }
+  }, [user])
+
+  // 4.2 - Buscar sugestões da IA
+  const buscarSugestoesIA = useCallback(async (): Promise<AnaliseIA | null> => {
+    if (!user) {
+      return null
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const params = new URLSearchParams({ user_id: user.id })
+      const response = await fetch(`/api/simulados/sugestoes-ia?${params}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.upgrade_required) {
+          throw new Error('Recurso exclusivo para usuários PRO')
+        }
+        throw new Error(data.error || 'Erro ao buscar sugestões')
+      }
+
+      setLoading(false)
+      return data
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao buscar sugestões'
+      setError(message)
+      setLoading(false)
+      return null
+    }
+  }, [user])
+
+  // Marcar sugestão como visualizada
+  const marcarSugestaoVisualizada = useCallback(async (
+    sugestaoId: string,
+    acao?: 'visualizada' | 'aplicada'
+  ): Promise<boolean> => {
+    if (!user) {
+      return false
+    }
+
+    try {
+      const response = await fetch('/api/simulados/sugestoes-ia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          sugestao_id: sugestaoId,
+          acao: acao || 'visualizada'
+        })
+      })
+
+      return response.ok
+    } catch {
+      return false
+    }
+  }, [user])
+
+  // 4.3 - Comparar simulados
+  const compararSimulados = useCallback(async (
+    ids?: string[]
+  ): Promise<ResultadoComparacao | null> => {
+    if (!user) {
+      return null
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const params = new URLSearchParams({ user_id: user.id })
+      if (ids && ids.length > 0) {
+        params.append('ids', ids.join(','))
+      }
+
+      const response = await fetch(`/api/simulados/comparar?${params}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.upgrade_required) {
+          throw new Error('Recurso exclusivo para usuários PRO')
+        }
+        throw new Error(data.error || 'Erro ao comparar simulados')
+      }
+
+      setLoading(false)
+      return data
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao comparar simulados'
+      setError(message)
+      setLoading(false)
+      return null
+    }
+  }, [user])
+
+  // 4.4 - Buscar dados de evolução
+  const buscarEvolucao = useCallback(async (
+    periodo: '7d' | '30d' | '90d' | '6m' | '1a' | 'all' = '30d'
+  ): Promise<DadosEvolucao | null> => {
+    if (!user) {
+      return null
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const params = new URLSearchParams({
+        user_id: user.id,
+        periodo
+      })
+
+      const response = await fetch(`/api/simulados/evolucao?${params}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao buscar evolução')
+      }
+
+      setLoading(false)
+      return data
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao buscar evolução'
+      setError(message)
+      setLoading(false)
+      return null
+    }
+  }, [user])
+
+  // 4.5 - Buscar análise detalhada de pontos fortes/fracos
+  const buscarAnaliseDetalhada = useCallback(async (
+    incluirIA: boolean = true
+  ): Promise<AnaliseDetalhada | null> => {
+    if (!user) {
+      return null
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const params = new URLSearchParams({
+        user_id: user.id,
+        incluir_ia: incluirIA.toString()
+      })
+
+      const response = await fetch(`/api/simulados/analise-detalhada?${params}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.upgrade_required) {
+          throw new Error('Recurso exclusivo para usuários PRO')
+        }
+        throw new Error(data.error || 'Erro ao buscar análise')
+      }
+
+      setLoading(false)
+      return data
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao buscar análise'
+      setError(message)
+      setLoading(false)
+      return null
+    }
+  }, [user])
+
   return {
     loading,
     error,
+    // Funções básicas
     listarSimulados,
     criarSimulado,
     obterSimulado,
@@ -487,6 +872,13 @@ export function useSimulados() {
     finalizarSimulado,
     excluirSimulado,
     buscarFiltros,
-    buscarEstatisticas
+    buscarEstatisticas,
+    // Funções Fase 4 (PRO)
+    gerarSimuladoIA,
+    buscarSugestoesIA,
+    marcarSugestaoVisualizada,
+    compararSimulados,
+    buscarEvolucao,
+    buscarAnaliseDetalhada
   }
 }

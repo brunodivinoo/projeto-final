@@ -8,6 +8,7 @@ import { ListaSimulados } from '@/components/simulados/ListaSimulados'
 import { ExecutarSimulado } from '@/components/simulados/ExecutarSimulado'
 import { ResultadoSimulado } from '@/components/simulados/ResultadoSimulado'
 import { EstatisticasSimulados } from '@/components/simulados/EstatisticasSimulados'
+import { SimuladosAvancadoPRO } from '@/components/simulados/SimuladosAvancadoPRO'
 
 type ViewMode = 'lista' | 'executar' | 'resultado'
 
@@ -20,7 +21,7 @@ export default function SimuladosPage() {
   const [simuladoAtual, setSimuladoAtual] = useState<Simulado | null>(null)
   const [estatisticasAtual, setEstatisticasAtual] = useState<Record<string, unknown> | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
-  const [activeTab, setActiveTab] = useState<'simulados' | 'estatisticas'>('simulados')
+  const [activeTab, setActiveTab] = useState<'simulados' | 'estatisticas' | 'avancado'>('simulados')
 
   // Handler para criar simulado
   const handleCriarSimulado = (simuladoId: string) => {
@@ -120,10 +121,10 @@ export default function SimuladosPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
           <button
             onClick={() => setActiveTab('simulados')}
-            className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 -mb-px ${
+            className={`flex-shrink-0 px-4 py-2 font-medium text-sm transition-colors border-b-2 -mb-px ${
               activeTab === 'simulados'
                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
@@ -133,7 +134,7 @@ export default function SimuladosPage() {
           </button>
           <button
             onClick={() => setActiveTab('estatisticas')}
-            className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 -mb-px ${
+            className={`flex-shrink-0 px-4 py-2 font-medium text-sm transition-colors border-b-2 -mb-px ${
               activeTab === 'estatisticas'
                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
@@ -141,10 +142,21 @@ export default function SimuladosPage() {
           >
             Estatísticas
           </button>
+          <button
+            onClick={() => setActiveTab('avancado')}
+            className={`flex-shrink-0 px-4 py-2 font-medium text-sm transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
+              activeTab === 'avancado'
+                ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <span className="text-xs bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-1.5 py-0.5 rounded font-bold">PRO</span>
+            Avançado
+          </button>
         </div>
 
         {/* Conteúdo */}
-        {activeTab === 'simulados' ? (
+        {activeTab === 'simulados' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Lista de simulados (2/3) */}
             <div className="lg:col-span-2">
@@ -161,8 +173,19 @@ export default function SimuladosPage() {
               <EstatisticasSimulados onCreateSimulado={() => setShowCriarModal(true)} />
             </div>
           </div>
-        ) : (
+        )}
+
+        {activeTab === 'estatisticas' && (
           <EstatisticasSimulados onCreateSimulado={() => setShowCriarModal(true)} />
+        )}
+
+        {activeTab === 'avancado' && (
+          <SimuladosAvancadoPRO
+            onSimuladoCriado={(simulado) => {
+              setRefreshTrigger(prev => prev + 1)
+              handleIniciarSimulado(simulado.id)
+            }}
+          />
         )}
       </div>
 
