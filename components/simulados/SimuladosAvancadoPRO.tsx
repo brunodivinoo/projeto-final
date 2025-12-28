@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   useSimulados,
-  ConfigGeracaoIA,
   AnaliseIA,
   ResultadoComparacao,
   DadosEvolucao,
@@ -10,6 +9,7 @@ import {
   Simulado
 } from '@/hooks/useSimulados'
 import { useAuth } from '@/contexts/AuthContext'
+import { GeracaoAvancadaIA } from './GeracaoAvancadaIA'
 
 interface Props {
   onSimuladoCriado?: (simulado: Simulado) => void
@@ -23,7 +23,6 @@ export function SimuladosAvancadoPRO({ onSimuladoCriado, onClose }: Props) {
   const { user, loading: authLoading } = useAuth()
   const {
     loading,
-    gerarSimuladoIA,
     buscarSugestoesIA,
     compararSimulados,
     buscarEvolucao,
@@ -34,19 +33,6 @@ export function SimuladosAvancadoPRO({ onSimuladoCriado, onClose }: Props) {
   const [activeTab, setActiveTab] = useState<TabType>('gerar-ia')
   const [isPro, setIsPro] = useState(false)
   const [verificandoPro, setVerificandoPro] = useState(true)
-
-  // Estado para geração com IA
-  const [configIA, setConfigIA] = useState<ConfigGeracaoIA>({
-    titulo: '',
-    modalidade: 'multipla_escolha',
-    quantidade_questoes: 15,
-    tempo_limite_minutos: 30,
-    dificuldades: ['media'],
-    disciplinas: [],
-    bancas: ['CESPE/CEBRASPE'],
-    foco_pontos_fracos: true
-  })
-  const [gerando, setGerando] = useState(false)
 
   // Estado para sugestões
   const [sugestoesData, setSugestoesData] = useState<AnaliseIA | null>(null)
@@ -130,57 +116,6 @@ export function SimuladosAvancadoPRO({ onSimuladoCriado, onClose }: Props) {
     }
   }, [periodoEvolucao, activeTab, isPro, carregarEvolucao])
 
-  const handleGerarSimulado = async () => {
-    if (configIA.disciplinas.length === 0) {
-      alert('Selecione pelo menos uma disciplina')
-      return
-    }
-
-    setGerando(true)
-    const resultado = await gerarSimuladoIA({
-      ...configIA,
-      titulo: configIA.titulo || `Simulado IA - ${new Date().toLocaleDateString('pt-BR')}`
-    })
-
-    if (resultado) {
-      onSimuladoCriado?.(resultado.simulado)
-    }
-    setGerando(false)
-  }
-
-  const toggleDisciplina = (nome: string) => {
-    setConfigIA(prev => {
-      const existe = prev.disciplinas.find(d => d.nome === nome)
-      if (existe) {
-        return {
-          ...prev,
-          disciplinas: prev.disciplinas.filter(d => d.nome !== nome)
-        }
-      } else {
-        return {
-          ...prev,
-          disciplinas: [...prev.disciplinas, { nome, peso: 1 }]
-        }
-      }
-    })
-  }
-
-  const toggleDificuldade = (dif: string) => {
-    setConfigIA(prev => {
-      if (prev.dificuldades.includes(dif)) {
-        return {
-          ...prev,
-          dificuldades: prev.dificuldades.filter(d => d !== dif)
-        }
-      } else {
-        return {
-          ...prev,
-          dificuldades: [...prev.dificuldades, dif]
-        }
-      }
-    })
-  }
-
   const toggleSimuladoComparacao = (id: string) => {
     setSimuladosParaComparar(prev => {
       if (prev.includes(id)) {
@@ -192,18 +127,6 @@ export function SimuladosAvancadoPRO({ onSimuladoCriado, onClose }: Props) {
       return [...prev, id]
     })
   }
-
-  // Disciplinas comuns para seleção rápida
-  const disciplinasComuns = [
-    'Direito Constitucional',
-    'Direito Administrativo',
-    'Língua Portuguesa',
-    'Raciocínio Lógico',
-    'Direito Penal',
-    'Direito Civil',
-    'Informática',
-    'Legislação Específica'
-  ]
 
   // Mostra loading enquanto verifica
   if (authLoading || verificandoPro) {
@@ -297,188 +220,23 @@ export function SimuladosAvancadoPRO({ onSimuladoCriado, onClose }: Props) {
       <div className="p-6">
         {/* Tab: Gerar com IA */}
         {activeTab === 'gerar-ia' && (
-          <div className="space-y-6">
-            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">🤖</span>
-                <div>
-                  <h3 className="font-medium text-purple-900 dark:text-purple-100">
-                    Geração Inteligente com IA
-                  </h3>
-                  <p className="text-sm text-purple-700 dark:text-purple-300">
-                    A IA gera questões personalizadas focando nos seus pontos fracos para otimizar seus estudos.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Configurações */}
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Título */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Título do Simulado (opcional)
-                </label>
-                <input
-                  type="text"
-                  value={configIA.titulo}
-                  onChange={e => setConfigIA(prev => ({ ...prev, titulo: e.target.value }))}
-                  placeholder="Ex: Simulado focado em Direito Constitucional"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-
-              {/* Disciplinas */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Disciplinas *
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {disciplinasComuns.map(disc => (
-                    <button
-                      key={disc}
-                      onClick={() => toggleDisciplina(disc)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                        configIA.disciplinas.find(d => d.nome === disc)
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      {disc}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Quantidade */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Quantidade de Questões
-                </label>
-                <select
-                  value={configIA.quantidade_questoes}
-                  onChange={e => setConfigIA(prev => ({ ...prev, quantidade_questoes: Number(e.target.value) }))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  {[5, 10, 15, 20, 25, 30].map(n => (
-                    <option key={n} value={n}>{n} questões</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Tempo */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Tempo Limite
-                </label>
-                <select
-                  value={configIA.tempo_limite_minutos || 0}
-                  onChange={e => setConfigIA(prev => ({ ...prev, tempo_limite_minutos: Number(e.target.value) || undefined }))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  <option value={0}>Sem limite</option>
-                  <option value={15}>15 minutos</option>
-                  <option value={30}>30 minutos</option>
-                  <option value={45}>45 minutos</option>
-                  <option value={60}>1 hora</option>
-                  <option value={90}>1h 30min</option>
-                  <option value={120}>2 horas</option>
-                </select>
-              </div>
-
-              {/* Modalidade */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Modalidade
-                </label>
-                <select
-                  value={configIA.modalidade}
-                  onChange={e => setConfigIA(prev => ({ ...prev, modalidade: e.target.value as ConfigGeracaoIA['modalidade'] }))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  <option value="multipla_escolha">Múltipla Escolha</option>
-                  <option value="certo_errado">Certo ou Errado</option>
-                  <option value="mista">Mista</option>
-                </select>
-              </div>
-
-              {/* Dificuldade */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Dificuldade
-                </label>
-                <div className="flex gap-2">
-                  {[
-                    { value: 'facil', label: 'Fácil', color: 'green' },
-                    { value: 'media', label: 'Média', color: 'yellow' },
-                    { value: 'dificil', label: 'Difícil', color: 'red' }
-                  ].map(dif => (
-                    <button
-                      key={dif.value}
-                      onClick={() => toggleDificuldade(dif.value)}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                        configIA.dificuldades.includes(dif.value)
-                          ? dif.color === 'green' ? 'bg-green-600 text-white' :
-                            dif.color === 'yellow' ? 'bg-yellow-500 text-white' :
-                            'bg-red-600 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                      }`}
-                    >
-                      {dif.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Opções avançadas */}
-              <div className="md:col-span-2 flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={configIA.foco_pontos_fracos}
-                    onChange={e => setConfigIA(prev => ({ ...prev, foco_pontos_fracos: e.target.checked }))}
-                    className="w-4 h-4 text-purple-600 rounded"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    Focar em pontos fracos
-                  </span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={configIA.baseado_em_erros}
-                    onChange={e => setConfigIA(prev => ({ ...prev, baseado_em_erros: e.target.checked }))}
-                    className="w-4 h-4 text-purple-600 rounded"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    Baseado nos meus erros
-                  </span>
-                </label>
-              </div>
-            </div>
-
-            {/* Botão Gerar */}
-            <button
-              onClick={handleGerarSimulado}
-              disabled={gerando || configIA.disciplinas.length === 0}
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-            >
-              {gerando ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Gerando questões...
-                </>
-              ) : (
-                <>
-                  <span>🤖</span>
-                  Gerar Simulado com IA
-                </>
-              )}
-            </button>
-          </div>
+          <GeracaoAvancadaIA
+            onSimuladoCriado={(simuladoId) => {
+              // Notificar que simulado foi criado (em geração)
+              onSimuladoCriado?.({
+                id: simuladoId,
+                user_id: user?.id || '',
+                titulo: 'Simulado IA em geração',
+                fonte: 'ia',
+                status: 'gerando',
+                quantidade_questoes: 0,
+                questoes_respondidas: 0,
+                modalidade: 'multipla_escolha',
+                created_at: new Date().toISOString(),
+                gerado_por_ia: true
+              })
+            }}
+          />
         )}
 
         {/* Tab: Sugestões */}
@@ -560,18 +318,10 @@ export function SimuladosAvancadoPRO({ onSimuladoCriado, onClose }: Props) {
                         </div>
                         {sugestao.acao_sugerida?.tipo === 'criar_simulado' && (
                           <button
-                            onClick={() => {
-                              if (sugestao.disciplinas_relacionadas) {
-                                setConfigIA(prev => ({
-                                  ...prev,
-                                  disciplinas: sugestao.disciplinas_relacionadas!.map(d => ({ nome: d, peso: 1 }))
-                                }))
-                                setActiveTab('gerar-ia')
-                              }
-                            }}
+                            onClick={() => setActiveTab('gerar-ia')}
                             className="px-3 py-1 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
                           >
-                            Aplicar
+                            Criar Simulado
                           </button>
                         )}
                       </div>

@@ -17,7 +17,7 @@ export interface Simulado {
   cargo?: string
   instituicao?: string
   ano?: number
-  status: 'pendente' | 'em_andamento' | 'finalizado'
+  status: 'pendente' | 'em_andamento' | 'finalizado' | 'gerando'
   questoes_respondidas: number
   acertos?: number
   erros?: number
@@ -297,6 +297,71 @@ export interface AnaliseDetalhada {
     recursos: string[]
   }>
   resumo_ia?: string
+}
+
+// Tipos para Pesquisa de Concurso e Geração Avançada
+export interface AssuntoEstrutura {
+  nome: string
+  peso: number
+  subassuntos: string[]
+  selecionado?: boolean
+}
+
+export interface DisciplinaEstrutura {
+  disciplina: string
+  peso_estimado: number
+  importancia: 'alta' | 'media' | 'baixa'
+  assuntos: AssuntoEstrutura[]
+  selecionada?: boolean
+}
+
+export interface ResultadoPesquisaConcurso {
+  concurso: {
+    nome: string
+    orgao: string
+    banca_provavel: string
+    ultima_prova: string
+    link_edital?: string
+  }
+  analise_tendencias: string
+  estrutura: DisciplinaEstrutura[]
+  fonte?: string
+  fontes_consultadas?: Array<{ url?: string; titulo?: string }>
+}
+
+export interface ItemFilaGeracao {
+  disciplina: string
+  assunto?: string
+  subassunto?: string
+  banca: string
+  modalidade: string
+  dificuldade: string
+}
+
+export interface ProgressoGeracao {
+  simulado_id: string
+  simulado_titulo?: string
+  simulado_status?: string
+  total: number
+  geradas: number
+  erros: number
+  pendentes: number
+  concluido: boolean
+  item_atual?: {
+    disciplina: string
+    assunto?: string
+    ordem: number
+  }
+}
+
+export interface ConfigGeracaoAvancada {
+  titulo: string
+  descricao?: string
+  quantidade_questoes: number
+  tempo_limite_minutos?: number
+  modalidade: 'certo_errado' | 'multipla_escolha' | 'mista'
+  dificuldades: string[]
+  itens: ItemFilaGeracao[]
 }
 
 export interface RespostaResultado {
@@ -860,6 +925,200 @@ export function useSimulados() {
     }
   }, [user])
 
+  // ========================================
+  // GERAÇÃO AVANÇADA COM PESQUISA DE CONCURSO
+  // ========================================
+
+  // Pesquisar concurso com Web Search + Gemini
+  const pesquisarConcurso = useCallback(async (
+    query: string
+  ): Promise<ResultadoPesquisaConcurso | null> => {
+    if (!user) {
+      setError('Usuário não autenticado')
+      return null
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/simulados/pesquisar-concurso', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          query
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.upgrade_required) {
+          throw new Error('Recurso exclusivo para usuários PRO')
+        }
+        throw new Error(data.error || 'Erro ao pesquisar concurso')
+      }
+
+      setLoading(false)
+      return {
+        ...data.resultado,
+        fonte: data.fonte,
+        fontes_consultadas: data.fontes_consultadas
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao pesquisar concurso'
+      setError(message)
+      setLoading(false)
+      return null
+    }
+  }, [user])
+
+  // Iniciar geração avançada (cria simulado e popula fila)
+  const iniciarGeracaoAvancada = useCallback(async (
+    config: ConfigGeracaoAvancada
+  ): Promise<{ simulado_id: string; total: number } | null> => {
+    if (!user) {
+      setError('Usuário não autenticado')
+      return null
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/simulados/fila-ia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          ...config
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.upgrade_required) {
+          throw new Error('Recurso exclusivo para usuários PRO')
+        }
+        throw new Error(data.error || 'Erro ao iniciar geração')
+      }
+
+      setLoading(false)
+      return {
+        simulado_id: data.simulado.id,
+        total: data.fila.total
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao iniciar geração'
+      setError(message)
+      setLoading(false)
+      return null
+    }
+  }, [user])
+
+  // Gerar uma questão da fila
+  const gerarProximaQuestao = useCallback(async (
+    simuladoId: string
+  ): Promise<ProgressoGeracao | null> => {
+    if (!user) {
+      return null
+    }
+
+    try {
+      const response = await fetch('/api/simulados/gerar-questao-ia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          simulado_id: simuladoId
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao gerar questão')
+      }
+
+      return {
+        simulado_id: simuladoId,
+        total: data.total || 0,
+        geradas: data.geradas || 0,
+        erros: data.erros || 0,
+        pendentes: data.pendentes || 0,
+        concluido: data.concluido || false,
+        item_atual: data.item_atual
+      }
+    } catch (err) {
+      console.error('Erro ao gerar questão:', err)
+      return null
+    }
+  }, [user])
+
+  // Buscar progresso da geração
+  const buscarProgressoGeracao = useCallback(async (
+    simuladoId?: string
+  ): Promise<ProgressoGeracao | { simulados_pendentes: Array<{ id: string; titulo: string; total: number; geradas: number; percentual: number }> } | null> => {
+    if (!user) {
+      return null
+    }
+
+    try {
+      const params = new URLSearchParams({ user_id: user.id })
+      if (simuladoId) {
+        params.append('simulado_id', simuladoId)
+      }
+
+      const response = await fetch(`/api/simulados/fila-ia?${params}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao buscar progresso')
+      }
+
+      return data
+    } catch (err) {
+      console.error('Erro ao buscar progresso:', err)
+      return null
+    }
+  }, [user])
+
+  // Cancelar geração
+  const cancelarGeracao = useCallback(async (
+    simuladoId: string
+  ): Promise<{ success: boolean; questoes_mantidas: number } | null> => {
+    if (!user) {
+      return null
+    }
+
+    try {
+      const response = await fetch('/api/simulados/fila-ia', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          simulado_id: simuladoId
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao cancelar geração')
+      }
+
+      return {
+        success: data.success,
+        questoes_mantidas: data.questoes_mantidas || 0
+      }
+    } catch (err) {
+      console.error('Erro ao cancelar geração:', err)
+      return null
+    }
+  }, [user])
+
   return {
     loading,
     error,
@@ -880,6 +1139,12 @@ export function useSimulados() {
     marcarSugestaoVisualizada,
     compararSimulados,
     buscarEvolucao,
-    buscarAnaliseDetalhada
+    buscarAnaliseDetalhada,
+    // Funções Geração Avançada
+    pesquisarConcurso,
+    iniciarGeracaoAvancada,
+    gerarProximaQuestao,
+    buscarProgressoGeracao,
+    cancelarGeracao
   }
 }
