@@ -70,29 +70,80 @@ export async function POST(request: NextRequest) {
     console.log(`[PESQUISAR CONCURSO] Pesquisando: "${query}"`)
 
     // Passo 1: Usar Gemini com Google Search grounding para buscar informações atualizadas
-    const promptPesquisa = `Você é um especialista em concursos públicos brasileiros.
+    const promptPesquisa = `Você é o maior especialista em concursos públicos brasileiros com 30 anos de experiência.
 
-TAREFA: Pesquise informações ATUALIZADAS sobre o seguinte concurso/cargo/instituição:
+TAREFA CRÍTICA: Pesquise informações COMPLETAS e DETALHADAS sobre:
 "${query}"
 
-INSTRUÇÕES:
-1. Identifique o concurso ou cargo mais provável que o usuário está buscando
-2. Busque informações sobre editais recentes (últimos 3 anos)
-3. Identifique as disciplinas cobradas oficialmente
-4. Liste os assuntos e subassuntos de cada disciplina
-5. Identifique a banca organizadora mais provável
-6. Analise tendências dos últimos concursos
+=== INSTRUÇÕES DETALHADAS ===
 
-FORMATO DE RESPOSTA (JSON estrito):
+1. IDENTIFICAÇÃO DO CONCURSO:
+   - Identifique EXATAMENTE qual concurso/cargo/vestibular o usuário quer
+   - Se for cargo específico (ex: "Auditor Fiscal"), liste o concurso correto
+   - Se for instituição (ex: "Polícia Federal"), liste o cargo mais buscado
+
+2. DISCIPLINAS - SEJA COMPLETO:
+   - Liste TODAS as disciplinas cobradas no edital (mínimo 8-15 disciplinas para concursos federais)
+   - Para cada disciplina, liste TODOS os assuntos importantes (mínimo 5-10 por disciplina)
+   - Para cada assunto, liste os principais subassuntos (3-8 por assunto)
+
+   DISCIPLINAS TÍPICAS DE CONCURSOS (inclua as aplicáveis):
+   - Conhecimentos Básicos: Língua Portuguesa, Raciocínio Lógico, Informática, Atualidades, Inglês
+   - Direitos: Constitucional, Administrativo, Penal, Processual Penal, Civil, Tributário, Previdenciário
+   - Exatas: Matemática Financeira, Estatística, Contabilidade, Economia, AFO
+   - Específicas: Legislação Específica, Regimento Interno, Ética no Serviço Público
+   - Outras: Administração Pública, Auditoria, Gestão de Pessoas
+
+3. ASSUNTOS POR DISCIPLINA - EXEMPLOS DO NÍVEL DE DETALHE ESPERADO:
+
+   LÍNGUA PORTUGUESA deve incluir:
+   - Interpretação de texto (inferência, tipologia textual, gêneros textuais, figuras de linguagem)
+   - Gramática (morfologia, sintaxe, concordância, regência, crase, pontuação)
+   - Redação Oficial (estrutura, linguagem, tipos de documentos)
+   - Semântica (sinônimos, antônimos, polissemia, homonímia)
+   - Coesão e Coerência textual
+
+   DIREITO CONSTITUCIONAL deve incluir:
+   - Princípios Fundamentais
+   - Direitos e Garantias Fundamentais (direitos individuais, sociais, políticos)
+   - Organização do Estado (União, Estados, Municípios, DF)
+   - Organização dos Poderes (Executivo, Legislativo, Judiciário)
+   - Controle de Constitucionalidade
+   - Administração Pública (princípios, servidores)
+   - Ordem Econômica e Financeira
+   - Ordem Social
+   - Defesa do Estado e das Instituições Democráticas
+
+   DIREITO ADMINISTRATIVO deve incluir:
+   - Princípios da Administração Pública
+   - Organização Administrativa (direta, indireta, autarquias, fundações)
+   - Atos Administrativos (elementos, atributos, classificação, extinção)
+   - Poderes Administrativos (vinculado, discricionário, hierárquico, disciplinar, regulamentar, de polícia)
+   - Licitações e Contratos (Lei 14.133/2021)
+   - Serviços Públicos
+   - Servidores Públicos (regime jurídico, direitos, deveres)
+   - Responsabilidade Civil do Estado
+   - Controle da Administração
+   - Improbidade Administrativa
+   - Processo Administrativo
+
+4. ANÁLISE DE TENDÊNCIAS:
+   - Mencione os últimos 3 editais/concursos realizados
+   - Aponte os assuntos mais cobrados
+   - Indique mudanças recentes na legislação que podem cair
+   - Dê dicas estratégicas de estudo
+   - Mencione o perfil das provas da banca (cespe: certo/errado, fcc: múltipla escolha, etc)
+
+=== FORMATO DE RESPOSTA (JSON) ===
 {
   "concurso": {
-    "nome": "Nome completo do concurso ou cargo",
-    "orgao": "Órgão ou instituição responsável",
-    "banca_provavel": "Nome da banca organizadora mais provável",
-    "ultima_prova": "Ano da última prova realizada ou previsão",
-    "link_edital": "URL do edital se encontrado (ou null)"
+    "nome": "Nome COMPLETO do concurso/cargo",
+    "orgao": "Órgão ou instituição",
+    "banca_provavel": "Nome da banca organizadora",
+    "ultima_prova": "Ano da última prova ou previsão",
+    "link_edital": "URL do edital (ou null)"
   },
-  "analise_tendencias": "Texto descritivo com análise de tendências, assuntos mais cobrados, dicas de estudo baseadas nos últimos concursos (2-4 parágrafos)",
+  "analise_tendencias": "Análise DETALHADA com 3-5 parágrafos: histórico dos últimos concursos, assuntos mais cobrados pela banca, mudanças legislativas recentes, dicas de estudo, perfil da prova",
   "estrutura": [
     {
       "disciplina": "Nome da Disciplina",
@@ -102,23 +153,28 @@ FORMATO DE RESPOSTA (JSON estrito):
         {
           "nome": "Nome do Assunto",
           "peso": 7,
-          "subassuntos": ["Subassunto 1", "Subassunto 2", "Subassunto 3"]
+          "subassuntos": ["Sub1", "Sub2", "Sub3", "Sub4", "Sub5"]
+        },
+        {
+          "nome": "Outro Assunto",
+          "peso": 6,
+          "subassuntos": ["Sub1", "Sub2", "Sub3"]
         }
       ]
     }
   ]
 }
 
-REGRAS:
-- peso_estimado e peso devem ser números de 1 a 10
-- importancia deve ser "alta", "media" ou "baixa"
-- Inclua TODAS as disciplinas relevantes para o concurso
-- Cada disciplina deve ter pelo menos 3 assuntos
-- Cada assunto deve ter pelo menos 2 subassuntos
-- A análise deve ser detalhada e útil para o estudante
-- Se não encontrar informações específicas, faça estimativas baseadas em concursos similares
+=== REGRAS OBRIGATÓRIAS ===
+- MÍNIMO 10 disciplinas para concursos federais, 8 para estaduais, 6 para municipais
+- MÍNIMO 5 assuntos por disciplina
+- MÍNIMO 3 subassuntos por assunto
+- peso_estimado e peso: números de 1 a 10 baseados na importância real
+- importancia: "alta" (disciplinas eliminatórias/maior peso), "media" (cobradas), "baixa" (complementares)
+- Análise de tendências DEVE ter pelo menos 500 caracteres
+- Inclua legislação atualizada (Lei 14.133/2021, reforma administrativa, etc)
 
-Retorne APENAS o JSON, sem markdown ou explicações adicionais.`
+Retorne APENAS o JSON, sem markdown ou explicações.`
 
     // Chamar Gemini com grounding (Google Search)
     const response = await fetch(
@@ -129,8 +185,8 @@ Retorne APENAS o JSON, sem markdown ou explicações adicionais.`
         body: JSON.stringify({
           contents: [{ parts: [{ text: promptPesquisa }] }],
           generationConfig: {
-            temperature: 0.3, // Mais determinístico para dados factuais
-            maxOutputTokens: 8192
+            temperature: 0.4,
+            maxOutputTokens: 16384 // Aumentado para respostas mais completas
           },
           // Habilitar Google Search grounding quando disponível
           tools: [{
@@ -153,8 +209,8 @@ Retorne APENAS o JSON, sem markdown ou explicações adicionais.`
           body: JSON.stringify({
             contents: [{ parts: [{ text: promptPesquisa }] }],
             generationConfig: {
-              temperature: 0.3,
-              maxOutputTokens: 8192
+              temperature: 0.4,
+              maxOutputTokens: 16384
             }
           })
         }
