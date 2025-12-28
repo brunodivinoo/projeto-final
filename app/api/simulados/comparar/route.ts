@@ -138,11 +138,13 @@ export async function GET(request: NextRequest) {
       const porDisciplina = new Map<string, { acertos: number; erros: number; total: number }>()
       const porDificuldade = new Map<string, { acertos: number; erros: number; total: number }>()
 
-      questoes.forEach((q: { esta_correta?: boolean; tempo_resposta_segundos?: number; questao?: { disciplina?: string; dificuldade?: string } }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      questoes.forEach((q: any) => {
         if (q.esta_correta === null || q.esta_correta === undefined) return
 
-        const disciplina = q.questao?.disciplina || 'Sem disciplina'
-        const dificuldade = q.questao?.dificuldade || 'media'
+        const questaoData = Array.isArray(q.questao) ? q.questao[0] : q.questao
+        const disciplina = questaoData?.disciplina || 'Sem disciplina'
+        const dificuldade = questaoData?.dificuldade || 'media'
 
         // Por disciplina
         if (!porDisciplina.has(disciplina)) {
@@ -164,9 +166,11 @@ export async function GET(request: NextRequest) {
       })
 
       // Calcular tempo médio
+      /* eslint-disable @typescript-eslint/no-explicit-any */
       const temposValidos = questoes
-        .filter((q: { tempo_resposta_segundos?: number }) => q.tempo_resposta_segundos)
-        .map((q: { tempo_resposta_segundos?: number }) => q.tempo_resposta_segundos!)
+        .filter((q: any) => q.tempo_resposta_segundos)
+        .map((q: any) => q.tempo_resposta_segundos!)
+      /* eslint-enable @typescript-eslint/no-explicit-any */
 
       const tempoMedioPorQuestao = temposValidos.length > 0
         ? temposValidos.reduce((a, b) => a + b, 0) / temposValidos.length

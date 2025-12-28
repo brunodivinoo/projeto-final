@@ -157,10 +157,12 @@ export async function GET(request: NextRequest) {
         // Agrupar por disciplina
         const porDisciplina = new Map<string, { acertos: number; total: number }>()
 
-        questoes.forEach((q: { esta_correta?: boolean; questao?: { disciplina?: string } }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        questoes.forEach((q: any) => {
           if (q.esta_correta === null || q.esta_correta === undefined) return
 
-          const disciplina = q.questao?.disciplina || 'Sem disciplina'
+          const questaoData = Array.isArray(q.questao) ? q.questao[0] : q.questao
+          const disciplina = questaoData?.disciplina || 'Sem disciplina'
 
           if (!porDisciplina.has(disciplina)) {
             porDisciplina.set(disciplina, { acertos: 0, total: 0 })

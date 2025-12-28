@@ -78,8 +78,8 @@ export async function GET(request: NextRequest) {
       }, { status: 403 })
     }
 
-    // Buscar todos os dados de desempenho
-    const { data: desempenho } = await supabase
+    // Buscar todos os dados de desempenho (para possível uso futuro)
+    await supabase
       .from('simulado_desempenho')
       .select('*')
       .eq('user_id', user_id)
@@ -349,6 +349,7 @@ function calcularTendencia(
   respostas: any[],
   disciplina: string
 ): 'melhorando' | 'piorando' | 'estavel' {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const respostasDisc = respostas.filter((r: any) => {
     const q = Array.isArray(r.questao) ? r.questao[0] : r.questao
     return q?.disciplina === disciplina
@@ -374,6 +375,7 @@ function calcularTendenciaAssunto(
   respostas: any[],
   assunto: string
 ): 'melhorando' | 'piorando' | 'estavel' {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const respostasAss = respostas.filter((r: any) => {
     const q = Array.isArray(r.questao) ? r.questao[0] : r.questao
     return q?.assunto === assunto
@@ -396,7 +398,7 @@ function gerarRecomendacao(
   area: string,
   percentual: number,
   tendencia: 'melhorando' | 'piorando' | 'estavel',
-  tipo: 'disciplina' | 'assunto'
+  _tipo: 'disciplina' | 'assunto'
 ): string {
   if (percentual >= 80) {
     return `Continue praticando ${area} para manter a excelência. Considere desafios mais difíceis.`
@@ -509,7 +511,7 @@ function gerarPlanoEstudo(
   pontosFracos
     .filter(p => p.tendencia !== 'piorando')
     .slice(0, 3)
-    .forEach((p, i) => {
+    .forEach((p) => {
       plano.push({
         prioridade: plano.length + 1,
         area: p.area,
