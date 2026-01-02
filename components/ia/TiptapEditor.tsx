@@ -479,25 +479,76 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
 // Converter Markdown para HTML
 function markdownToHtml(markdown: string): string {
   let html = markdown
+
+  // Processar blocos de código ``` primeiro (preservar conteúdo)
+  html = html.replace(/```[\s\S]*?```/g, (match) => {
+    const content = match.slice(3, -3).trim()
+    return `<pre class="code-block"><code>${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`
+  })
+
+  // Processar tabelas markdown
+  const tableRegex = /(\|[^\n]+\|\n)+/g
+  html = html.replace(tableRegex, (match) => {
+    const lines = match.trim().split('\n')
+    if (lines.length < 2) return match
+
+    const headerCells = lines[0].split('|').filter(c => c.trim()).map(c => c.trim())
+    const bodyCells = lines.slice(2).map(line =>
+      line.split('|').filter(c => c.trim()).map(c => c.trim())
+    )
+
+    let table = '<table class="markdown-table">'
+    table += '<thead><tr>'
+    headerCells.forEach(cell => {
+      table += `<th>${cell}</th>`
+    })
+    table += '</tr></thead>'
+    table += '<tbody>'
+    bodyCells.forEach(row => {
+      table += '<tr>'
+      row.forEach(cell => {
+        table += `<td>${cell}</td>`
+      })
+      table += '</tr>'
+    })
+    table += '</tbody></table>'
+    return table
+  })
+
+  // Headers
   html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>')
   html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>')
   html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>')
+
+  // Formatação inline
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
   html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>')
   html = html.replace(/==([^=]+)==/g, '<mark>$1</mark>')
   html = html.replace(/~~([^~]+)~~/g, '<s>$1</s>')
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
+
+  // Citações
   html = html.replace(/^> (.*$)/gm, '<blockquote><p>$1</p></blockquote>')
+
+  // Linhas horizontais
   html = html.replace(/^[-_─━═]{3,}$/gm, '<hr>')
+
+  // Listas
   html = html.replace(/^[•▸-] (.*$)/gm, '<li>$1</li>')
   html = html.replace(/^→ (.*$)/gm, '<li>$1</li>')
+  html = html.replace(/^\d+\. (.*$)/gm, '<li>$1</li>')
   html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`)
 
+  // Processar linhas restantes
   const lines = html.split('\n')
   const processed = lines.map(line => {
     const trimmed = line.trim()
     if (!trimmed) return '<p><br></p>'
     if (trimmed.startsWith('<')) return line
+    // Preservar linhas com caracteres ASCII de caixa
+    if (/[┌┐└┘├┤│─━╔╗╚╝╠╣║═╭╮╰╯▸▼▲►◄]/.test(trimmed)) {
+      return `<pre class="ascii-line">${line}</pre>`
+    }
     return `<p>${line}</p>`
   })
   return processed.join('')
@@ -506,9 +557,49 @@ function markdownToHtml(markdown: string): string {
 // Converter HTML para Markdown
 function htmlToMarkdown(html: string): string {
   let md = html
+
+  // Processar blocos de código primeiro
+  md = md.replace(/<pre[^>]*class="code-block"[^>]*><code>([\s\S]*?)<\/code><\/pre>/gi, (_, content) => {
+    return '```\n' + content.replace(/&lt;/g, '<').replace(/&gt;/g, '>') + '\n```\n'
+  })
+  md = md.replace(/<pre[^>]*><code>([\s\S]*?)<\/code><\/pre>/gi, (_, content) => {
+    return '```\n' + content.replace(/&lt;/g, '<').replace(/&gt;/g, '>') + '\n```\n'
+  })
+
+  // Processar linhas ASCII preservadas
+  md = md.replace(/<pre[^>]*class="ascii-line"[^>]*>(.*?)<\/pre>/gi, '$1\n')
+
+  // Processar tabelas
+  md = md.replace(/<table[^>]*class="markdown-table"[^>]*>([\s\S]*?)<\/table>/gi, (_, content) => {
+    const headerMatch = content.match(/<thead>([\s\S]*?)<\/thead>/i)
+    const bodyMatch = content.match(/<tbody>([\s\S]*?)<\/tbody>/i)
+
+    if (!headerMatch) return content
+
+    const headers = headerMatch[1].match(/<th[^>]*>(.*?)<\/th>/gi) || []
+    const headerTexts = headers.map((h: string) => h.replace(/<\/?th[^>]*>/gi, '').trim())
+
+    let table = '| ' + headerTexts.join(' | ') + ' |\n'
+    table += '|' + headerTexts.map(() => '---').join('|') + '|\n'
+
+    if (bodyMatch) {
+      const rows = bodyMatch[1].match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || []
+      rows.forEach((row: string) => {
+        const cells = row.match(/<td[^>]*>(.*?)<\/td>/gi) || []
+        const cellTexts = cells.map((c: string) => c.replace(/<\/?td[^>]*>/gi, '').trim())
+        table += '| ' + cellTexts.join(' | ') + ' |\n'
+      })
+    }
+
+    return table
+  })
+
+  // Headers
   md = md.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n')
   md = md.replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n')
   md = md.replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n')
+
+  // Formatação inline
   md = md.replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
   md = md.replace(/<b>(.*?)<\/b>/gi, '**$1**')
   md = md.replace(/<em>(.*?)<\/em>/gi, '*$1*')
@@ -518,24 +609,41 @@ function htmlToMarkdown(html: string): string {
   md = md.replace(/<s>(.*?)<\/s>/gi, '~~$1~~')
   md = md.replace(/<del>(.*?)<\/del>/gi, '~~$1~~')
   md = md.replace(/<code>(.*?)<\/code>/gi, '`$1`')
+
+  // Citações
   md = md.replace(/<blockquote[^>]*><p>(.*?)<\/p><\/blockquote>/gi, '> $1\n')
   md = md.replace(/<blockquote[^>]*>(.*?)<\/blockquote>/gi, '> $1\n')
+
+  // Linhas horizontais
   md = md.replace(/<hr\s*\/?>/gi, '\n---\n')
+
+  // Listas
   md = md.replace(/<ul[^>]*>/gi, '')
   md = md.replace(/<\/ul>/gi, '')
   md = md.replace(/<ol[^>]*>/gi, '')
   md = md.replace(/<\/ol>/gi, '')
   md = md.replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
+
+  // Parágrafos e quebras
   md = md.replace(/<p[^>]*><br\s*\/?><\/p>/gi, '\n')
   md = md.replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n')
   md = md.replace(/<br\s*\/?>/gi, '\n')
+  md = md.replace(/<div[^>]*>(.*?)<\/div>/gi, '$1\n')
   md = md.replace(/<span[^>]*>(.*?)<\/span>/gi, '$1')
+
+  // Limpar tags restantes
   md = md.replace(/<[^>]+>/g, '')
+
+  // Decode HTML entities
   md = md.replace(/&nbsp;/g, ' ')
   md = md.replace(/&amp;/g, '&')
   md = md.replace(/&lt;/g, '<')
   md = md.replace(/&gt;/g, '>')
+  md = md.replace(/&quot;/g, '"')
+
+  // Limpar múltiplas quebras de linha
   md = md.replace(/\n{3,}/g, '\n\n')
+
   return md.trim()
 }
 
@@ -646,9 +754,65 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           pointer-events: none;
           height: 0;
         }
+        /* Blocos de código */
+        .tiptap-editor .ProseMirror pre.code-block {
+          background: #1f2937;
+          border-radius: 0.5rem;
+          padding: 1rem;
+          margin: 1rem 0;
+          overflow-x: auto;
+        }
+        .tiptap-editor .ProseMirror pre.code-block code {
+          background: transparent;
+          color: #f3f4f6;
+          padding: 0;
+          font-family: 'Fira Code', 'Consolas', monospace;
+          font-size: 0.875rem;
+          white-space: pre;
+        }
+        /* Linhas ASCII */
+        .tiptap-editor .ProseMirror pre.ascii-line {
+          background: transparent;
+          padding: 0;
+          margin: 0;
+          font-family: 'Fira Code', 'Consolas', monospace;
+          font-size: 0.875rem;
+          white-space: pre;
+          line-height: 1.2;
+        }
+        /* Tabelas Markdown */
+        .tiptap-editor .ProseMirror table.markdown-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1rem 0;
+          border: 1px solid #e5e7eb;
+          border-radius: 0.5rem;
+          overflow: hidden;
+        }
+        .tiptap-editor .ProseMirror table.markdown-table th {
+          background: #f3e8ff;
+          padding: 0.5rem 0.75rem;
+          text-align: left;
+          font-weight: 600;
+          color: #7c3aed;
+          border: 1px solid #e5e7eb;
+        }
+        .tiptap-editor .ProseMirror table.markdown-table td {
+          padding: 0.5rem 0.75rem;
+          border: 1px solid #e5e7eb;
+        }
+        .tiptap-editor .ProseMirror table.markdown-table tr:nth-child(even) {
+          background: #f9fafb;
+        }
         .dark .tiptap-editor .ProseMirror code { background: #374151; color: #f3f4f6; }
         .dark .tiptap-editor .ProseMirror blockquote { background: rgba(147, 51, 234, 0.1); }
         .dark .tiptap-editor .ProseMirror hr { border-top-color: #374151; }
+        .dark .tiptap-editor .ProseMirror pre.code-block { background: #0f172a; }
+        .dark .tiptap-editor .ProseMirror pre.ascii-line { color: #d1d5db; }
+        .dark .tiptap-editor .ProseMirror table.markdown-table { border-color: #374151; }
+        .dark .tiptap-editor .ProseMirror table.markdown-table th { background: rgba(147, 51, 234, 0.2); color: #c4b5fd; border-color: #374151; }
+        .dark .tiptap-editor .ProseMirror table.markdown-table td { border-color: #374151; }
+        .dark .tiptap-editor .ProseMirror table.markdown-table tr:nth-child(even) { background: rgba(255, 255, 255, 0.03); }
       `}</style>
     </div>
   )

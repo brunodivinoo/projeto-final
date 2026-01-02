@@ -31,122 +31,225 @@ interface VisualizadorResumoPanelProps {
 
 // Função para processar o texto e renderizar visualmente
 function processarTextoVisual(texto: string): React.ReactNode[] {
-  const linhas = texto.split('\n')
   const elementos: React.ReactNode[] = []
+  let elementKey = 0
 
-  linhas.forEach((linha, idx) => {
-    let processada = linha
+  // Processar formatação inline (negrito, itálico, código, tachado, highlight)
+  const renderInline = (text: string): React.ReactNode[] => {
+    const parts: React.ReactNode[] = []
+    let keyCounter = 0
 
-    // Detectar tipos de linha
-    const isHeader1 = linha.startsWith('# ')
-    const isHeader2 = linha.startsWith('## ')
-    const isHeader3 = linha.startsWith('### ')
-    const isSeparator = /^[─━═_-]{3,}$/.test(linha.trim())
-    const isEmptyLine = linha.trim() === ''
+    // Regex para todas as formatações inline
+    const inlineRegex = /(\*\*([^*]+)\*\*)|(\*([^*]+)\*)|(`([^`]+)`)|(\~\~([^~]+)\~\~)|(==([^=]+)==)/g
+    let lastIndex = 0
+    let match
 
-    // Remover marcadores de header
-    if (isHeader1) processada = linha.substring(2)
-    if (isHeader2) processada = linha.substring(3)
-    if (isHeader3) processada = linha.substring(4)
-
-    // Processar formatação inline
-    const renderInline = (text: string): React.ReactNode[] => {
-      const parts: React.ReactNode[] = []
-      const remaining = text
-      let keyCounter = 0
-
-      // Processar negrito
-      const boldRegex = /\*\*([^*]+)\*\*/g
-      let lastIndex = 0
-      let match
-
-      while ((match = boldRegex.exec(remaining)) !== null) {
-        if (match.index > lastIndex) {
-          parts.push(<span key={`t-${keyCounter++}`}>{remaining.substring(lastIndex, match.index)}</span>)
-        }
-        parts.push(<strong key={`b-${keyCounter++}`} className="font-bold text-gray-900 dark:text-white">{match[1]}</strong>)
-        lastIndex = match.index + match[0].length
+    while ((match = inlineRegex.exec(text)) !== null) {
+      // Adiciona texto antes do match
+      if (match.index > lastIndex) {
+        parts.push(<span key={`t-${keyCounter++}`}>{text.substring(lastIndex, match.index)}</span>)
       }
 
-      if (lastIndex < remaining.length) {
-        const restante = remaining.substring(lastIndex)
-        // Processar highlight ==texto==
-        const highlightRegex = /==([^=]+)==/g
-        let hlLastIndex = 0
-        let hlMatch
-
-        while ((hlMatch = highlightRegex.exec(restante)) !== null) {
-          if (hlMatch.index > hlLastIndex) {
-            parts.push(<span key={`t-${keyCounter++}`}>{restante.substring(hlLastIndex, hlMatch.index)}</span>)
-          }
-          parts.push(<mark key={`m-${keyCounter++}`} className="bg-yellow-200 dark:bg-yellow-800/50 px-1 rounded">{hlMatch[1]}</mark>)
-          hlLastIndex = hlMatch.index + hlMatch[0].length
-        }
-
-        if (hlLastIndex < restante.length) {
-          parts.push(<span key={`t-${keyCounter++}`}>{restante.substring(hlLastIndex)}</span>)
-        } else if (hlLastIndex === 0 && lastIndex === 0) {
-          parts.push(<span key={`t-${keyCounter++}`}>{remaining}</span>)
-        }
+      if (match[1]) {
+        // Negrito **texto**
+        parts.push(<strong key={`b-${keyCounter++}`} className="font-bold text-gray-900 dark:text-white">{match[2]}</strong>)
+      } else if (match[3]) {
+        // Itálico *texto*
+        parts.push(<em key={`i-${keyCounter++}`} className="italic text-gray-700 dark:text-gray-300">{match[4]}</em>)
+      } else if (match[5]) {
+        // Código `texto`
+        parts.push(<code key={`c-${keyCounter++}`} className="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono text-purple-600 dark:text-purple-400">{match[6]}</code>)
+      } else if (match[7]) {
+        // Tachado ~~texto~~
+        parts.push(<del key={`d-${keyCounter++}`} className="line-through text-gray-500 dark:text-gray-500">{match[8]}</del>)
+      } else if (match[9]) {
+        // Highlight ==texto==
+        parts.push(<mark key={`m-${keyCounter++}`} className="bg-yellow-200 dark:bg-yellow-800/50 px-1 rounded">{match[10]}</mark>)
       }
 
-      return parts.length > 0 ? parts : [<span key="raw">{text}</span>]
+      lastIndex = match.index + match[0].length
     }
 
-    // Renderizar baseado no tipo de linha
-    if (isEmptyLine) {
-      elementos.push(<div key={idx} className="h-3" />)
-    } else if (isSeparator) {
+    // Adiciona texto restante
+    if (lastIndex < text.length) {
+      parts.push(<span key={`t-${keyCounter++}`}>{text.substring(lastIndex)}</span>)
+    }
+
+    return parts.length > 0 ? parts : [<span key="raw">{text}</span>]
+  }
+
+  // Dividir em blocos (código, tabelas, texto normal)
+  const blocos: { tipo: 'codigo' | 'tabela' | 'texto'; conteudo: string }[] = []
+  const linhas = texto.split('\n')
+  let i = 0
+
+  while (i < linhas.length) {
+    const linha = linhas[i]
+
+    // Detectar bloco de código ```
+    if (linha.trim().startsWith('```')) {
+      const blocoLinhas: string[] = []
+      i++ // pular a linha de abertura
+      while (i < linhas.length && !linhas[i].trim().startsWith('```')) {
+        blocoLinhas.push(linhas[i])
+        i++
+      }
+      blocos.push({ tipo: 'codigo', conteudo: blocoLinhas.join('\n') })
+      i++ // pular a linha de fechamento
+      continue
+    }
+
+    // Detectar tabela markdown (linha começa com |)
+    if (linha.trim().startsWith('|') && linha.trim().endsWith('|')) {
+      const tabelaLinhas: string[] = [linha]
+      i++
+      while (i < linhas.length && linhas[i].trim().startsWith('|') && linhas[i].trim().endsWith('|')) {
+        tabelaLinhas.push(linhas[i])
+        i++
+      }
+      blocos.push({ tipo: 'tabela', conteudo: tabelaLinhas.join('\n') })
+      continue
+    }
+
+    // Texto normal
+    blocos.push({ tipo: 'texto', conteudo: linha })
+    i++
+  }
+
+  // Renderizar cada bloco
+  blocos.forEach((bloco, blocoIdx) => {
+    if (bloco.tipo === 'codigo') {
+      // Bloco de código - usado para fluxogramas e mapas mentais
       elementos.push(
-        <hr key={idx} className="my-4 border-purple-300 dark:border-purple-700" />
-      )
-    } else if (isHeader1) {
-      elementos.push(
-        <h1 key={idx} className="text-xl font-bold text-purple-600 dark:text-purple-400 mt-6 mb-3 pb-2 border-b border-purple-200 dark:border-purple-800">
-          {renderInline(processada)}
-        </h1>
-      )
-    } else if (isHeader2) {
-      elementos.push(
-        <h2 key={idx} className="text-lg font-bold text-purple-600 dark:text-purple-400 mt-5 mb-2">
-          {renderInline(processada)}
-        </h2>
-      )
-    } else if (isHeader3) {
-      elementos.push(
-        <h3 key={idx} className="text-base font-semibold text-purple-500 dark:text-purple-400 mt-4 mb-2">
-          {renderInline(processada)}
-        </h3>
-      )
-    } else if (linha.trim().startsWith('- ') || linha.trim().startsWith('• ') || linha.trim().startsWith('▸ ')) {
-      const conteudoLista = linha.trim().replace(/^[-•▸]\s*/, '')
-      elementos.push(
-        <div key={idx} className="flex items-start gap-2 my-1 ml-4">
-          <span className="text-purple-500 mt-0.5">▸</span>
-          <span className="text-gray-700 dark:text-gray-300">{renderInline(conteudoLista)}</span>
+        <div key={`code-${blocoIdx}`} className="my-4 bg-gray-900 dark:bg-gray-950 rounded-xl p-4 overflow-x-auto">
+          <pre className="text-gray-100 font-mono text-sm whitespace-pre leading-relaxed">
+            {bloco.conteudo}
+          </pre>
         </div>
       )
-    } else if (linha.trim().startsWith('> ')) {
-      const conteudoCitacao = linha.trim().substring(2)
-      elementos.push(
-        <blockquote key={idx} className="border-l-4 border-purple-500 pl-4 py-2 my-3 bg-purple-50 dark:bg-purple-900/20 rounded-r-lg italic text-gray-700 dark:text-gray-300">
-          {renderInline(conteudoCitacao)}
-        </blockquote>
+    } else if (bloco.tipo === 'tabela') {
+      // Tabela markdown
+      const linhasTabela = bloco.conteudo.split('\n')
+      const cabecalho = linhasTabela[0]?.split('|').filter(c => c.trim()).map(c => c.trim()) || []
+      const corpo = linhasTabela.slice(2).map(linha =>
+        linha.split('|').filter(c => c.trim()).map(c => c.trim())
       )
-    } else if (linha.trim().startsWith('→ ') || linha.trim().startsWith('➔ ')) {
-      const conteudoSeta = linha.trim().replace(/^[→➔]\s*/, '')
+
       elementos.push(
-        <div key={idx} className="flex items-start gap-2 my-1 ml-2">
-          <span className="text-purple-500">→</span>
-          <span className="text-gray-700 dark:text-gray-300">{renderInline(conteudoSeta)}</span>
+        <div key={`table-${blocoIdx}`} className="my-4 overflow-x-auto">
+          <table className="w-full border-collapse border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+            <thead>
+              <tr className="bg-purple-100 dark:bg-purple-900/40">
+                {cabecalho.map((col, colIdx) => (
+                  <th key={colIdx} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-semibold text-purple-700 dark:text-purple-300">
+                    {renderInline(col)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {corpo.map((linha, linhaIdx) => (
+                <tr key={linhaIdx} className={linhaIdx % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}>
+                  {linha.map((cel, celIdx) => (
+                    <td key={celIdx} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
+                      {renderInline(cel)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )
     } else {
-      elementos.push(
-        <p key={idx} className="text-gray-700 dark:text-gray-300 my-1 leading-relaxed">
-          {renderInline(processada)}
-        </p>
-      )
+      // Texto normal - processar linha por linha
+      const linha = bloco.conteudo
+      const trimmed = linha.trim()
+
+      // Detectar tipos de linha
+      const isHeader1 = linha.startsWith('# ')
+      const isHeader2 = linha.startsWith('## ')
+      const isHeader3 = linha.startsWith('### ')
+      const isSeparator = /^[─━═_-]{3,}$/.test(trimmed)
+      const isEmptyLine = trimmed === ''
+      const isAsciiBox = /^[┌┐└┘├┤│─━╔╗╚╝╠╣║═╭╮╰╯]+/.test(trimmed) || /[┌┐└┘├┤│─━╔╗╚╝╠╣║═╭╮╰╯]+$/.test(trimmed)
+
+      let processada = linha
+      if (isHeader1) processada = linha.substring(2)
+      if (isHeader2) processada = linha.substring(3)
+      if (isHeader3) processada = linha.substring(4)
+
+      if (isEmptyLine) {
+        elementos.push(<div key={`empty-${elementKey++}`} className="h-3" />)
+      } else if (isSeparator) {
+        elementos.push(
+          <hr key={`sep-${elementKey++}`} className="my-4 border-purple-300 dark:border-purple-700" />
+        )
+      } else if (isAsciiBox) {
+        // Linhas com caracteres ASCII de caixa - renderizar como monospace
+        elementos.push(
+          <div key={`ascii-${elementKey++}`} className="font-mono text-sm text-gray-700 dark:text-gray-300 whitespace-pre leading-tight">
+            {linha}
+          </div>
+        )
+      } else if (isHeader1) {
+        elementos.push(
+          <h1 key={`h1-${elementKey++}`} className="text-xl font-bold text-purple-600 dark:text-purple-400 mt-6 mb-3 pb-2 border-b border-purple-200 dark:border-purple-800">
+            {renderInline(processada)}
+          </h1>
+        )
+      } else if (isHeader2) {
+        elementos.push(
+          <h2 key={`h2-${elementKey++}`} className="text-lg font-bold text-purple-600 dark:text-purple-400 mt-5 mb-2">
+            {renderInline(processada)}
+          </h2>
+        )
+      } else if (isHeader3) {
+        elementos.push(
+          <h3 key={`h3-${elementKey++}`} className="text-base font-semibold text-purple-500 dark:text-purple-400 mt-4 mb-2">
+            {renderInline(processada)}
+          </h3>
+        )
+      } else if (trimmed.startsWith('- ') || trimmed.startsWith('• ') || trimmed.startsWith('▸ ')) {
+        const conteudoLista = trimmed.replace(/^[-•▸]\s*/, '')
+        elementos.push(
+          <div key={`list-${elementKey++}`} className="flex items-start gap-2 my-1 ml-4">
+            <span className="text-purple-500 mt-0.5">▸</span>
+            <span className="text-gray-700 dark:text-gray-300">{renderInline(conteudoLista)}</span>
+          </div>
+        )
+      } else if (trimmed.startsWith('> ')) {
+        const conteudoCitacao = trimmed.substring(2)
+        elementos.push(
+          <blockquote key={`quote-${elementKey++}`} className="border-l-4 border-purple-500 pl-4 py-2 my-3 bg-purple-50 dark:bg-purple-900/20 rounded-r-lg text-gray-700 dark:text-gray-300">
+            {renderInline(conteudoCitacao)}
+          </blockquote>
+        )
+      } else if (trimmed.startsWith('→ ') || trimmed.startsWith('➔ ')) {
+        const conteudoSeta = trimmed.replace(/^[→➔]\s*/, '')
+        elementos.push(
+          <div key={`arrow-${elementKey++}`} className="flex items-start gap-2 my-1 ml-6">
+            <span className="text-purple-500">→</span>
+            <span className="text-gray-700 dark:text-gray-300">{renderInline(conteudoSeta)}</span>
+          </div>
+        )
+      } else if (trimmed.match(/^\d+\.\s/)) {
+        // Lista numerada
+        const conteudoNum = trimmed.replace(/^\d+\.\s*/, '')
+        const numero = trimmed.match(/^(\d+)\./)?.[1]
+        elementos.push(
+          <div key={`num-${elementKey++}`} className="flex items-start gap-2 my-1 ml-4">
+            <span className="text-purple-600 dark:text-purple-400 font-semibold min-w-[1.5rem]">{numero}.</span>
+            <span className="text-gray-700 dark:text-gray-300">{renderInline(conteudoNum)}</span>
+          </div>
+        )
+      } else {
+        elementos.push(
+          <p key={`p-${elementKey++}`} className="text-gray-700 dark:text-gray-300 my-1 leading-relaxed">
+            {renderInline(processada)}
+          </p>
+        )
+      }
     }
   })
 
