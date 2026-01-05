@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSimulados, Simulado } from '@/hooks/useSimulados'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -19,6 +19,8 @@ export function ListaSimulados({ onSelectSimulado, onIniciarSimulado, onExcluirS
   const [total, setTotal] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [configsExpandido, setConfigsExpandido] = useState<string | null>(null)
+  const configRef = useRef<HTMLDivElement>(null)
 
   const porPagina = 10
 
@@ -45,6 +47,84 @@ export function ListaSimulados({ onSelectSimulado, onIniciarSimulado, onExcluirS
       carregarSimulados()
     }
   }, [authLoading, user, filtroStatus, pagina, refreshTrigger, carregarSimulados])
+
+  // Fechar popover de configs ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (configRef.current && !configRef.current.contains(event.target as Node)) {
+        setConfigsExpandido(null)
+      }
+    }
+    if (configsExpandido) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [configsExpandido])
+
+  // Função para verificar se simulado tem configurações avançadas
+  const temConfigsAvancadas = (simulado: Simulado) => {
+    if (!simulado.gerado_por_ia) return false
+    const opcoes = simulado.opcoes_avancadas
+    if (!opcoes) return false
+    return opcoes.distratos || opcoes.incluirJurisprudencia || opcoes.incluirSumulas ||
+           opcoes.incluirSumulasVinculantes || opcoes.incluirDoutrina
+  }
+
+  // Renderizar checklist de configurações
+  const renderConfigsChecklist = (simulado: Simulado) => {
+    const opcoes = simulado.opcoes_avancadas || {}
+    const items: { label: string; ativo: boolean; descricao?: string }[] = []
+
+    // Modalidade
+    items.push({
+      label: simulado.modalidade === 'multipla_escolha' ? 'Múltipla Escolha' : 'Certo/Errado',
+      ativo: true,
+      descricao: 'Modalidade selecionada'
+    })
+
+    // Quantidade
+    items.push({
+      label: `${simulado.quantidade_questoes} questões`,
+      ativo: true,
+      descricao: 'Quantidade solicitada'
+    })
+
+    // Dificuldades
+    if (simulado.dificuldades && simulado.dificuldades.length > 0) {
+      items.push({
+        label: simulado.dificuldades.map(d =>
+          d === 'facil' ? 'Fácil' : d === 'media' ? 'Média' : 'Difícil'
+        ).join(', '),
+        ativo: true,
+        descricao: 'Dificuldades'
+      })
+    }
+
+    // Opções avançadas de IA
+    if (simulado.gerado_por_ia) {
+      if (opcoes.incluirJurisprudencia) {
+        items.push({ label: 'Jurisprudência', ativo: true })
+      }
+      if (opcoes.incluirSumulas) {
+        items.push({ label: 'Súmulas', ativo: true })
+      }
+      if (opcoes.incluirSumulasVinculantes) {
+        items.push({ label: 'Súmulas Vinculantes', ativo: true })
+      }
+      if (opcoes.incluirDoutrina) {
+        items.push({ label: 'Doutrina', ativo: true })
+      }
+      if (opcoes.distratos) {
+        items.push({
+          label: 'Distratos configurados',
+          ativo: true,
+          descricao: opcoes.distratos.substring(0, 50) + (opcoes.distratos.length > 50 ? '...' : '')
+        })
+      }
+    }
+
+    return items
+  }
 
   const handleExcluir = async (id: string) => {
     const sucesso = await excluirSimulado(id)
@@ -162,6 +242,92 @@ export function ListaSimulados({ onSelectSimulado, onIniciarSimulado, onExcluirS
                         IA
                       </span>
                     )}
+                    {/* Botão de configurações - discreto */}
+                    <div className="relative" ref={configsExpandido === simulado.id ? configRef : null}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setConfigsExpandido(configsExpandido === simulado.id ? null : simulado.id)
+                        }}
+                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full transition-all ${
+                          configsExpandido === simulado.id
+                            ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                        title="Ver configurações do simulado"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span className="hidden sm:inline">Config</span>
+                      </button>
+
+                      {/* Popover de configurações */}
+                      {configsExpandido === simulado.id && (
+                        <div className="absolute z-50 mt-2 left-0 sm:left-auto sm:right-0 w-72 sm:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                            <h4 className="font-medium text-gray-800 dark:text-white text-sm flex items-center gap-2">
+                              <svg className="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                              </svg>
+                              Configurações
+                            </h4>
+                            <button
+                              onClick={() => setConfigsExpandido(null)}
+                              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                          <div className="p-3 max-h-64 overflow-y-auto">
+                            <ul className="space-y-2">
+                              {renderConfigsChecklist(simulado).map((item, idx) => (
+                                <li key={idx} className="flex items-start gap-2">
+                                  <div className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${
+                                    item.ativo
+                                      ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
+                                  }`}>
+                                    {item.ativo ? (
+                                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    ) : (
+                                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`text-sm ${item.ativo ? 'text-gray-800 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
+                                      {item.label}
+                                    </p>
+                                    {item.descricao && (
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        {item.descricao}
+                                      </p>
+                                    )}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                            {temConfigsAvancadas(simulado) && (
+                              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <p className="text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                  </svg>
+                                  Opções avançadas de IA configuradas
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
                     <span>{simulado.quantidade_questoes} questões</span>

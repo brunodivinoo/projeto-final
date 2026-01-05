@@ -27,6 +27,13 @@ export interface Simulado {
   iniciado_em?: string
   finalizado_em?: string
   gerado_por_ia?: boolean
+  opcoes_avancadas?: {
+    distratos?: string
+    incluirJurisprudencia?: boolean
+    incluirSumulas?: boolean
+    incluirSumulasVinculantes?: boolean
+    incluirDoutrina?: boolean
+  }
   simulado_disciplinas?: { disciplina_nome: string }[]
   simulado_assuntos?: { assunto_nome: string }[]
   simulado_questoes?: SimuladoQuestao[]
