@@ -65,6 +65,150 @@ const DISCIPLINAS_COMUNS = [
   'Redação Oficial'
 ]
 
+// Assuntos comuns por disciplina para sugestões rápidas
+const ASSUNTOS_POR_DISCIPLINA: Record<string, string[]> = {
+  'Língua Portuguesa': [
+    'Interpretação de Texto',
+    'Gramática',
+    'Morfologia',
+    'Sintaxe',
+    'Semântica',
+    'Pontuação',
+    'Concordância Verbal e Nominal',
+    'Regência Verbal e Nominal',
+    'Crase',
+    'Colocação Pronominal',
+    'Redação Oficial',
+    'Tipologia Textual'
+  ],
+  'Raciocínio Lógico': [
+    'Proposições e Conectivos',
+    'Tabelas-Verdade',
+    'Equivalências Lógicas',
+    'Negação de Proposições',
+    'Diagramas Lógicos',
+    'Sequências Lógicas',
+    'Análise Combinatória',
+    'Probabilidade',
+    'Conjuntos'
+  ],
+  'Informática': [
+    'Hardware',
+    'Software',
+    'Sistemas Operacionais',
+    'Microsoft Office',
+    'LibreOffice',
+    'Internet e Navegadores',
+    'Segurança da Informação',
+    'Redes de Computadores',
+    'Banco de Dados',
+    'Cloud Computing'
+  ],
+  'Direito Constitucional': [
+    'Princípios Fundamentais',
+    'Direitos e Garantias Fundamentais',
+    'Direitos Sociais',
+    'Nacionalidade',
+    'Direitos Políticos',
+    'Organização do Estado',
+    'Organização dos Poderes',
+    'Poder Legislativo',
+    'Poder Executivo',
+    'Poder Judiciário',
+    'Controle de Constitucionalidade',
+    'Administração Pública'
+  ],
+  'Direito Administrativo': [
+    'Princípios da Administração Pública',
+    'Poderes da Administração',
+    'Atos Administrativos',
+    'Licitações',
+    'Contratos Administrativos',
+    'Serviços Públicos',
+    'Servidores Públicos',
+    'Responsabilidade Civil do Estado',
+    'Processo Administrativo',
+    'Improbidade Administrativa',
+    'Bens Públicos'
+  ],
+  'Direito Penal': [
+    'Princípios do Direito Penal',
+    'Aplicação da Lei Penal',
+    'Teoria do Crime',
+    'Tipicidade',
+    'Ilicitude',
+    'Culpabilidade',
+    'Concurso de Pessoas',
+    'Crimes contra a Pessoa',
+    'Crimes contra o Patrimônio',
+    'Crimes contra a Administração Pública'
+  ],
+  'Direito Processual Penal': [
+    'Princípios Processuais',
+    'Inquérito Policial',
+    'Ação Penal',
+    'Jurisdição e Competência',
+    'Prisão e Liberdade Provisória',
+    'Provas',
+    'Procedimentos',
+    'Recursos'
+  ],
+  'Direito Civil': [
+    'Lei de Introdução às Normas',
+    'Pessoas Naturais',
+    'Pessoas Jurídicas',
+    'Bens',
+    'Fatos Jurídicos',
+    'Negócio Jurídico',
+    'Prescrição e Decadência',
+    'Obrigações',
+    'Contratos',
+    'Responsabilidade Civil',
+    'Direito das Coisas',
+    'Família',
+    'Sucessões'
+  ],
+  'Direito Tributário': [
+    'Sistema Tributário Nacional',
+    'Competência Tributária',
+    'Limitações ao Poder de Tributar',
+    'Impostos',
+    'Taxas e Contribuições',
+    'Obrigação Tributária',
+    'Crédito Tributário',
+    'Administração Tributária'
+  ],
+  'Contabilidade Geral': [
+    'Patrimônio',
+    'Escrituração Contábil',
+    'Demonstrações Contábeis',
+    'Balanço Patrimonial',
+    'DRE',
+    'DMPL',
+    'DFC',
+    'Análise das Demonstrações'
+  ],
+  'AFO (Administração Financeira e Orçamentária)': [
+    'Orçamento Público',
+    'PPA, LDO e LOA',
+    'Princípios Orçamentários',
+    'Receita Pública',
+    'Despesa Pública',
+    'Créditos Adicionais',
+    'LRF',
+    'Ciclo Orçamentário'
+  ],
+  'Administração Pública': [
+    'Evolução da Administração Pública',
+    'Modelos de Gestão Pública',
+    'Governança Pública',
+    'Gestão por Resultados',
+    'Gestão de Processos',
+    'Gestão de Projetos',
+    'Planejamento Estratégico'
+  ]
+}
+
 export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
   const { user } = useAuth()
   const { loading, pesquisarConcurso, iniciarGeracaoAvancada } = useSimulados()
@@ -89,6 +233,7 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
   const [novaDisciplina, setNovaDisciplina] = useState('')
   const [novoAssunto, setNovoAssunto] = useState('')
   const [novosSubassuntos, setNovosSubassuntos] = useState('')
+  const [feedbackAdd, setFeedbackAdd] = useState<string | null>(null)
 
   // Preferências salvas
   const [preferencias, setPreferencias] = useState<PreferenciasSalvas[]>([])
@@ -243,61 +388,107 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
     })
   }
 
-  // Adicionar nova disciplina
-  const adicionarDisciplina = (nome: string) => {
+  // Adicionar nova disciplina (pode receber múltiplas separadas por vírgula)
+  const adicionarDisciplina = (nome: string, manterPainelAberto = true) => {
     if (!nome.trim()) return
 
-    const jaExiste = disciplinasSelecionadas.some(
-      d => d.disciplina.toLowerCase() === nome.toLowerCase()
-    )
-    if (jaExiste) {
-      setErro('Esta disciplina já existe na lista')
-      return
-    }
+    // Suporte para múltiplas disciplinas separadas por vírgula
+    const nomes = nome.split(',').map(n => n.trim()).filter(n => n.length > 0)
+    let adicionadas = 0
 
-    const novaDisciplinaObj: DisciplinaComSelecao = {
-      disciplina: nome,
-      peso_estimado: 5,
-      importancia: 'media',
-      selecionada: true,
-      assuntos: []
-    }
+    nomes.forEach(nomeDisc => {
+      const jaExiste = disciplinasSelecionadas.some(
+        d => d.disciplina.toLowerCase() === nomeDisc.toLowerCase()
+      )
+      if (jaExiste) return
 
-    setDisciplinasSelecionadas(prev => [...prev, novaDisciplinaObj])
+      const novaDisciplinaObj: DisciplinaComSelecao = {
+        disciplina: nomeDisc,
+        peso_estimado: 5,
+        importancia: 'media',
+        selecionada: true,
+        assuntos: []
+      }
+
+      setDisciplinasSelecionadas(prev => [...prev, novaDisciplinaObj])
+      adicionadas++
+    })
+
     setNovaDisciplina('')
-    setShowAddDisciplina(false)
     setErro(null)
+
+    // Feedback visual
+    if (adicionadas > 0) {
+      setFeedbackAdd(`${adicionadas} disciplina${adicionadas > 1 ? 's' : ''} adicionada${adicionadas > 1 ? 's' : ''}!`)
+      setTimeout(() => setFeedbackAdd(null), 2000)
+    } else if (nomes.length > 0) {
+      setErro('Disciplina(s) já existe(m) na lista')
+    }
+
+    // NÃO fecha o painel - permite adicionar mais
+    if (!manterPainelAberto) {
+      setShowAddDisciplina(false)
+    }
   }
 
-  // Adicionar assunto a uma disciplina
-  const adicionarAssunto = (discIndex: number) => {
-    if (!novoAssunto.trim()) return
+  // Adicionar assunto a uma disciplina (suporta múltiplos separados por vírgula)
+  const adicionarAssunto = (discIndex: number, nomeAssunto?: string, manterAberto = true) => {
+    const assuntoParaAdicionar = nomeAssunto || novoAssunto
+    if (!assuntoParaAdicionar.trim()) return
+
+    // Suporte para múltiplos assuntos separados por vírgula
+    const nomes = assuntoParaAdicionar.split(',').map(n => n.trim()).filter(n => n.length > 0)
 
     const subassuntosList = novosSubassuntos
       .split(',')
       .map(s => s.trim())
       .filter(s => s.length > 0)
 
+    let adicionados = 0
+
     setDisciplinasSelecionadas(prev => {
       const novas = [...prev]
+      const assuntosExistentes = new Set(
+        novas[discIndex].assuntos.map(a => a.nome.toLowerCase())
+      )
+
+      const novosAssuntos = nomes
+        .filter(nome => !assuntosExistentes.has(nome.toLowerCase()))
+        .map(nome => ({
+          nome,
+          peso: 5,
+          subassuntos: subassuntosList,
+          selecionado: true
+        }))
+
+      adicionados = novosAssuntos.length
+
       novas[discIndex] = {
         ...novas[discIndex],
-        assuntos: [
-          ...novas[discIndex].assuntos,
-          {
-            nome: novoAssunto,
-            peso: 5,
-            subassuntos: subassuntosList,
-            selecionado: true
-          }
-        ]
+        assuntos: [...novas[discIndex].assuntos, ...novosAssuntos]
       }
       return novas
     })
 
-    setNovoAssunto('')
-    setNovosSubassuntos('')
-    setShowAddAssunto(null)
+    // Limpar campos apenas se veio do input manual
+    if (!nomeAssunto) {
+      setNovoAssunto('')
+      setNovosSubassuntos('')
+    }
+
+    // Feedback visual
+    if (adicionados > 0) {
+      setFeedbackAdd(`${adicionados} assunto${adicionados > 1 ? 's' : ''} adicionado${adicionados > 1 ? 's' : ''}!`)
+      setTimeout(() => setFeedbackAdd(null), 2000)
+
+      // Expandir a disciplina para mostrar os assuntos adicionados
+      setExpandidas(prev => new Set([...prev, disciplinasSelecionadas[discIndex]?.disciplina]))
+    }
+
+    // NÃO fecha o painel por padrão - permite adicionar mais
+    if (!manterAberto) {
+      setShowAddAssunto(null)
+    }
   }
 
   // Remover disciplina
@@ -633,49 +824,76 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
             {/* Modal de adicionar disciplina */}
             {showAddDisciplina && (
               <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border-b border-gray-200 dark:border-[#283039]">
-                <h5 className="font-medium text-gray-800 dark:text-white mb-3">Adicionar Disciplinas</h5>
+                <div className="flex items-center justify-between mb-3">
+                  <h5 className="font-medium text-gray-800 dark:text-white flex items-center gap-2">
+                    <span className="material-symbols-outlined text-purple-500">add_circle</span>
+                    Adicionar Disciplinas
+                  </h5>
+                  {feedbackAdd && (
+                    <span className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1 animate-pulse">
+                      <span className="material-symbols-outlined text-base">check_circle</span>
+                      {feedbackAdd}
+                    </span>
+                  )}
+                </div>
 
-                {/* Adição rápida */}
+                {/* Adição rápida - grid organizado */}
                 <div className="mb-4">
-                  <p className="text-sm text-gray-600 dark:text-[#9dabb9] mb-2">Clique para adicionar:</p>
-                  <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                  <p className="text-sm text-gray-600 dark:text-[#9dabb9] mb-2">
+                    Clique para adicionar (pode adicionar várias de uma vez):
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
                     {DISCIPLINAS_COMUNS.filter(
                       d => !disciplinasSelecionadas.some(ds => ds.disciplina.toLowerCase() === d.toLowerCase())
                     ).map(disc => (
                       <button
                         key={disc}
                         onClick={() => adicionarDisciplina(disc)}
-                        className="px-3 py-1.5 text-sm bg-white dark:bg-[#283039] hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-gray-300 dark:border-[#3a4552] text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+                        className="px-3 py-2 text-sm bg-white dark:bg-[#283039] hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-gray-300 dark:border-[#3a4552] hover:border-purple-400 dark:hover:border-purple-500 text-gray-700 dark:text-gray-300 rounded-lg transition-all text-left truncate flex items-center gap-1"
                       >
-                        + {disc}
+                        <span className="material-symbols-outlined text-purple-400 text-sm">add</span>
+                        <span className="truncate">{disc}</span>
                       </button>
                     ))}
                   </div>
+                  {DISCIPLINAS_COMUNS.filter(
+                    d => !disciplinasSelecionadas.some(ds => ds.disciplina.toLowerCase() === d.toLowerCase())
+                  ).length === 0 && (
+                    <p className="text-sm text-gray-400 dark:text-gray-500 italic text-center py-2">
+                      Todas as disciplinas comuns já foram adicionadas
+                    </p>
+                  )}
                 </div>
 
                 {/* Adição personalizada */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={novaDisciplina}
-                    onChange={(e) => setNovaDisciplina(e.target.value)}
-                    placeholder="Ou digite uma disciplina personalizada..."
-                    className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-[#283039] rounded-lg bg-white dark:bg-[#141A21] text-gray-800 dark:text-white"
-                    onKeyDown={(e) => e.key === 'Enter' && adicionarDisciplina(novaDisciplina)}
-                  />
-                  <button
-                    onClick={() => adicionarDisciplina(novaDisciplina)}
-                    disabled={!novaDisciplina.trim()}
-                    className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg"
-                  >
-                    Adicionar
-                  </button>
-                  <button
-                    onClick={() => setShowAddDisciplina(false)}
-                    className="px-4 py-2 text-sm bg-gray-200 dark:bg-[#283039] hover:bg-gray-300 dark:hover:bg-[#3a4552] text-gray-700 dark:text-gray-300 rounded-lg"
-                  >
-                    Fechar
-                  </button>
+                <div className="border-t border-purple-200 dark:border-purple-800 pt-3">
+                  <p className="text-sm text-gray-600 dark:text-[#9dabb9] mb-2">
+                    Ou digite disciplinas personalizadas (separe por vírgula para adicionar várias):
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={novaDisciplina}
+                      onChange={(e) => setNovaDisciplina(e.target.value)}
+                      placeholder="Ex: Direito Eleitoral, Direito Empresarial..."
+                      className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-[#283039] rounded-lg bg-white dark:bg-[#141A21] text-gray-800 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      onKeyDown={(e) => e.key === 'Enter' && adicionarDisciplina(novaDisciplina)}
+                    />
+                    <button
+                      onClick={() => adicionarDisciplina(novaDisciplina)}
+                      disabled={!novaDisciplina.trim()}
+                      className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg transition-colors flex items-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-sm">add</span>
+                      Adicionar
+                    </button>
+                    <button
+                      onClick={() => setShowAddDisciplina(false)}
+                      className="px-4 py-2 text-sm bg-gray-200 dark:bg-[#283039] hover:bg-gray-300 dark:hover:bg-[#3a4552] text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+                    >
+                      Fechar
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -767,35 +985,82 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
 
                   {/* Form adicionar assunto */}
                   {showAddAssunto === discIndex && (
-                    <div className="mt-3 ml-8 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                      <div className="space-y-2">
+                    <div className="mt-3 ml-8 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                      <div className="flex items-center justify-between mb-3">
+                        <h6 className="font-medium text-gray-800 dark:text-white text-sm flex items-center gap-1">
+                          <span className="material-symbols-outlined text-purple-500 text-base">topic</span>
+                          Adicionar Assuntos em {disc.disciplina}
+                        </h6>
+                        {feedbackAdd && (
+                          <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">check_circle</span>
+                            {feedbackAdd}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Sugestões de assuntos comuns */}
+                      {ASSUNTOS_POR_DISCIPLINA[disc.disciplina] && (
+                        <div className="mb-3">
+                          <p className="text-xs text-gray-500 dark:text-[#9dabb9] mb-2">
+                            Sugestões para {disc.disciplina}:
+                          </p>
+                          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                            {ASSUNTOS_POR_DISCIPLINA[disc.disciplina]
+                              .filter(a => !disc.assuntos.some(as => as.nome.toLowerCase() === a.toLowerCase()))
+                              .map(assunto => (
+                                <button
+                                  key={assunto}
+                                  onClick={() => adicionarAssunto(discIndex, assunto)}
+                                  className="px-2 py-1 text-xs bg-white dark:bg-[#283039] hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-gray-300 dark:border-[#3a4552] hover:border-purple-400 text-gray-600 dark:text-gray-300 rounded transition-colors flex items-center gap-0.5"
+                                >
+                                  <span className="material-symbols-outlined text-purple-400 text-xs">add</span>
+                                  {assunto}
+                                </button>
+                              ))}
+                            {ASSUNTOS_POR_DISCIPLINA[disc.disciplina]
+                              .filter(a => !disc.assuntos.some(as => as.nome.toLowerCase() === a.toLowerCase()))
+                              .length === 0 && (
+                              <span className="text-xs text-gray-400 italic">Todos os assuntos sugeridos já foram adicionados</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Campo para adicionar assunto personalizado */}
+                      <div className="space-y-2 border-t border-purple-200 dark:border-purple-700 pt-3">
+                        <p className="text-xs text-gray-500 dark:text-[#9dabb9]">
+                          Ou digite assuntos personalizados (separe por vírgula):
+                        </p>
                         <input
                           type="text"
                           value={novoAssunto}
                           onChange={(e) => setNovoAssunto(e.target.value)}
-                          placeholder="Nome do assunto"
-                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-[#283039] rounded-lg bg-white dark:bg-[#141A21] text-gray-800 dark:text-white"
+                          placeholder="Ex: Assunto 1, Assunto 2, Assunto 3..."
+                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-[#283039] rounded-lg bg-white dark:bg-[#141A21] text-gray-800 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          onKeyDown={(e) => e.key === 'Enter' && adicionarAssunto(discIndex)}
                         />
                         <input
                           type="text"
                           value={novosSubassuntos}
                           onChange={(e) => setNovosSubassuntos(e.target.value)}
-                          placeholder="Subassuntos (separados por vírgula)"
-                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-[#283039] rounded-lg bg-white dark:bg-[#141A21] text-gray-800 dark:text-white"
+                          placeholder="Subassuntos opcionais (separados por vírgula)"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-[#283039] rounded-lg bg-white dark:bg-[#141A21] text-gray-800 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         />
                         <div className="flex gap-2">
                           <button
                             onClick={() => adicionarAssunto(discIndex)}
                             disabled={!novoAssunto.trim()}
-                            className="px-3 py-1.5 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg"
+                            className="px-3 py-1.5 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg transition-colors flex items-center gap-1"
                           >
+                            <span className="material-symbols-outlined text-sm">add</span>
                             Adicionar
                           </button>
                           <button
                             onClick={() => setShowAddAssunto(null)}
-                            className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-[#283039] text-gray-700 dark:text-gray-300 rounded-lg"
+                            className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-[#283039] hover:bg-gray-300 dark:hover:bg-[#3a4552] text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
                           >
-                            Cancelar
+                            Fechar
                           </button>
                         </div>
                       </div>
