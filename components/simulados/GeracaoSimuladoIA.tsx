@@ -705,29 +705,29 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
               Qual concurso ou cargo você está estudando?
             </h3>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
                 value={queryPesquisa}
                 onChange={(e) => setQueryPesquisa(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handlePesquisar()}
-                placeholder="Ex: Auditor Fiscal da Receita Federal, Analista TRT, ENEM..."
-                className="flex-1 px-4 py-3 border border-gray-300 dark:border-[#283039] rounded-xl bg-white dark:bg-[#141A21] text-gray-800 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                placeholder="Ex: Auditor Fiscal da Receita Federal, Analista TRT..."
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-[#283039] rounded-xl bg-white dark:bg-[#141A21] text-gray-800 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-base"
               />
               <button
                 onClick={handlePesquisar}
                 disabled={loading || !limiteInfo?.canUse}
-                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-medium rounded-xl transition-colors flex items-center gap-2"
+                className="w-full sm:w-auto px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
                     <span className="material-symbols-outlined animate-spin">progress_activity</span>
-                    Pesquisando...
+                    <span className="sm:inline">Pesquisando...</span>
                   </>
                 ) : (
                   <>
                     <span className="material-symbols-outlined">search</span>
-                    Pesquisar
+                    <span>Pesquisar</span>
                   </>
                 )}
               </button>
@@ -866,7 +866,7 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
                   <p className="text-sm text-gray-600 dark:text-[#9dabb9] mb-2">
                     Clique para adicionar (pode adicionar várias de uma vez):
                   </p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
                     {DISCIPLINAS_COMUNS.filter(
                       d => !disciplinasSelecionadas.some(ds => ds.disciplina.toLowerCase() === d.toLowerCase())
                     ).map(disc => (
@@ -1204,7 +1204,7 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
               </div>
 
               {/* Quantidade e Modalidade */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                     Quantidade de Questões
@@ -1212,7 +1212,7 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
                   <select
                     value={quantidade}
                     onChange={(e) => setQuantidade(Number(e.target.value))}
-                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-[#283039] rounded-xl bg-white dark:bg-[#141A21] text-gray-800 dark:text-white appearance-none cursor-pointer"
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-[#283039] rounded-xl bg-white dark:bg-[#141A21] text-gray-800 dark:text-white appearance-none cursor-pointer text-base"
                   >
                     {[5, 10, 15, 20, 25, 30, 40, 50, 75, 100].map(n => (
                       <option key={n} value={n}>{n} questões</option>
@@ -1226,7 +1226,7 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
                   <select
                     value={modalidade}
                     onChange={(e) => setModalidade(e.target.value as typeof modalidade)}
-                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-[#283039] rounded-xl bg-white dark:bg-[#141A21] text-gray-800 dark:text-white appearance-none cursor-pointer"
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-[#283039] rounded-xl bg-white dark:bg-[#141A21] text-gray-800 dark:text-white appearance-none cursor-pointer text-base"
                   >
                     <option value="multipla_escolha">Múltipla Escolha</option>
                     <option value="certo_errado">Certo ou Errado</option>
@@ -1290,7 +1290,7 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Dificuldade
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   {[
                     { value: 'facil', label: 'Fácil', color: 'green' },
                     { value: 'media', label: 'Média', color: 'yellow' },
@@ -1299,7 +1299,7 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
                     <button
                       key={dif.value}
                       onClick={() => toggleDificuldade(dif.value)}
-                      className={`flex-1 px-4 py-2.5 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
+                      className={`flex-1 px-4 py-3 sm:py-2.5 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
                         dificuldades.includes(dif.value)
                           ? dif.color === 'green' ? 'bg-green-500 text-white' :
                             dif.color === 'yellow' ? 'bg-yellow-500 text-white' :
@@ -1350,22 +1350,22 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
                 <span className="material-symbols-outlined">summarize</span>
                 Resumo do Simulado
               </h5>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                 <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
-                  <span className="material-symbols-outlined text-base">school</span>
-                  {disciplinasSelecionadas.filter(d => d.selecionada).length} disciplinas
+                  <span className="material-symbols-outlined text-base flex-shrink-0">school</span>
+                  <span className="truncate">{disciplinasSelecionadas.filter(d => d.selecionada).length} disc.</span>
                 </div>
                 <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
-                  <span className="material-symbols-outlined text-base">topic</span>
-                  {disciplinasSelecionadas.filter(d => d.selecionada).reduce((acc, d) => acc + d.assuntos.filter(a => a.selecionado).length, 0)} assuntos
+                  <span className="material-symbols-outlined text-base flex-shrink-0">topic</span>
+                  <span className="truncate">{disciplinasSelecionadas.filter(d => d.selecionada).reduce((acc, d) => acc + d.assuntos.filter(a => a.selecionado).length, 0)} assuntos</span>
                 </div>
                 <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
-                  <span className="material-symbols-outlined text-base">quiz</span>
-                  {quantidade} questões
+                  <span className="material-symbols-outlined text-base flex-shrink-0">quiz</span>
+                  <span className="truncate">{quantidade} questões</span>
                 </div>
                 <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
-                  <span className="material-symbols-outlined text-base">schedule</span>
-                  ~{Math.ceil(quantidade * 2 / 60)} min para gerar
+                  <span className="material-symbols-outlined text-base flex-shrink-0">schedule</span>
+                  <span className="truncate">~{Math.ceil(quantidade * 2 / 60)} min</span>
                 </div>
               </div>
             </div>

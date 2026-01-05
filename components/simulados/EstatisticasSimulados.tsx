@@ -64,9 +64,9 @@ export function EstatisticasSimulados({ onCreateSimulado }: Props) {
   return (
     <div className="space-y-6">
       {/* Uso Mensal */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Limite Mensal</h3>
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-4 sm:p-6 text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <h3 className="text-base sm:text-lg font-semibold">Limite Mensal</h3>
           <span className="text-sm opacity-80">
             {uso_mensal.simulados_realizados}/{uso_mensal.limite} simulados
           </span>
@@ -86,34 +86,34 @@ export function EstatisticasSimulados({ onCreateSimulado }: Props) {
       </div>
 
       {/* Resumo Geral */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-3 sm:mb-4">
           Resumo Geral
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 bg-gray-50 dark:bg-gray-750 rounded-lg">
-            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+          <div className="text-center p-3 sm:p-4 bg-gray-50 dark:bg-gray-750 rounded-lg">
+            <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
               {resumo.total_simulados}
             </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Simulados</div>
+            <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Simulados</div>
           </div>
-          <div className="text-center p-4 bg-gray-50 dark:bg-gray-750 rounded-lg">
-            <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+          <div className="text-center p-3 sm:p-4 bg-gray-50 dark:bg-gray-750 rounded-lg">
+            <div className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
               {resumo.total_acertos}
             </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Acertos</div>
+            <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Acertos</div>
           </div>
-          <div className="text-center p-4 bg-gray-50 dark:bg-gray-750 rounded-lg">
-            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+          <div className="text-center p-3 sm:p-4 bg-gray-50 dark:bg-gray-750 rounded-lg">
+            <div className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">
               {resumo.media_geral.toFixed(1)}%
             </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Média Geral</div>
+            <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Média</div>
           </div>
-          <div className="text-center p-4 bg-gray-50 dark:bg-gray-750 rounded-lg">
-            <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+          <div className="text-center p-3 sm:p-4 bg-gray-50 dark:bg-gray-750 rounded-lg">
+            <div className="text-2xl sm:text-3xl font-bold text-orange-600 dark:text-orange-400 truncate">
               {resumo.tempo_total_formatado}
             </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">Tempo Total</div>
+            <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Tempo</div>
           </div>
         </div>
       </div>

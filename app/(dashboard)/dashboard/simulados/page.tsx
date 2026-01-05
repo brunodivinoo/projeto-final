@@ -96,20 +96,20 @@ export default function SimuladosPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-[#0F1419]">
         <Header title="Criar Simulado" />
 
-        <div className="max-w-5xl mx-auto px-4 py-6 md:py-8">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
           {/* Header com voltar */}
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
             <button
               onClick={handleVoltar}
-              className="size-10 flex items-center justify-center rounded-xl bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-[#3a4552] transition-all"
+              className="size-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-white dark:bg-[#1C252E] border border-gray-200 dark:border-[#283039] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-[#3a4552] transition-all"
             >
               <span className="material-symbols-outlined">arrow_back</span>
             </button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
                 Criar Novo Simulado
               </h1>
-              <p className="text-sm text-gray-500 dark:text-[#9dabb9]">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-[#9dabb9] truncate">
                 Pesquise seu concurso e gere questões com IA
               </p>
             </div>
@@ -130,20 +130,20 @@ export default function SimuladosPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-[#0F1419]">
       <Header title="Simulados" />
 
-      <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
         {/* Header com título e botão */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
               Simulados com IA
             </h1>
-            <p className="text-gray-500 dark:text-[#9dabb9] mt-1">
-              Pratique com simulados personalizados gerados por inteligência artificial
+            <p className="text-sm sm:text-base text-gray-500 dark:text-[#9dabb9] mt-1 line-clamp-2">
+              Pratique com simulados personalizados gerados por IA
             </p>
           </div>
           <button
             onClick={handleCriarSimulado}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-purple-500/25"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 sm:px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-purple-500/25"
           >
             <span className="material-symbols-outlined">add</span>
             Novo Simulado
