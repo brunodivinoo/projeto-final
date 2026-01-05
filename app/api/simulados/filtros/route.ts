@@ -6,192 +6,165 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Cache simples em memória para reduzir queries repetidas
+let cacheModalidades: { data: { nome: string; label: string; questoes: number }[]; timestamp: number } | null = null
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutos
+
 // GET - Obter filtros disponíveis para simulados
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const modalidade = searchParams.get('modalidade')
-    const disciplinaSelecionada = searchParams.get('disciplina')
-    const assuntoSelecionado = searchParams.get('assunto')
+    const disciplinasSelecionadas = searchParams.get('disciplinas')?.split(',').filter(Boolean) || []
 
-    // Buscar todas as disciplinas com contagem de questões
-    let disciplinasQuery = supabase
-      .from('questoes')
-      .select('disciplina')
+    // Buscar modalidades (sem filtro, para mostrar contagem total de cada tipo)
+    // Usar cache se disponível
+    let modalidades: { nome: string; label: string; questoes: number }[]
 
-    if (modalidade) {
-      disciplinasQuery = disciplinasQuery.eq('modalidade', modalidade)
+    if (cacheModalidades && (Date.now() - cacheModalidades.timestamp) < CACHE_TTL) {
+      modalidades = cacheModalidades.data
+    } else {
+      const { data: modalidadesData } = await supabase
+        .from('questoes')
+        .select('modalidade')
+
+      const modalidadesCount = new Map<string, number>()
+      modalidadesData?.forEach(q => {
+        if (q.modalidade) {
+          modalidadesCount.set(q.modalidade, (modalidadesCount.get(q.modalidade) || 0) + 1)
+        }
+      })
+
+      modalidades = [
+        { nome: 'certo_errado', label: 'Certo ou Errado', questoes: modalidadesCount.get('certo_errado') || 0 },
+        { nome: 'multipla_escolha', label: 'Múltipla Escolha', questoes: modalidadesCount.get('multipla_escolha') || 0 }
+      ]
+
+      cacheModalidades = { data: modalidades, timestamp: Date.now() }
     }
 
-    const { data: questoesDisciplinas } = await disciplinasQuery
+    // Buscar todas as questões com disciplina, assunto e filtrar por modalidade
+    let questoesQuery = supabase
+      .from('questoes')
+      .select('disciplina, assunto')
 
-    // Contar questões por disciplina
-    const disciplinasCount = new Map<string, number>()
-    questoesDisciplinas?.forEach(q => {
+    if (modalidade) {
+      questoesQuery = questoesQuery.eq('modalidade', modalidade)
+    }
+
+    const { data: questoesData } = await questoesQuery
+
+    // Estrutura hierárquica: disciplina -> assuntos
+    const hierarquia = new Map<string, { total: number; assuntos: Map<string, number> }>()
+
+    questoesData?.forEach(q => {
       if (q.disciplina) {
-        disciplinasCount.set(q.disciplina, (disciplinasCount.get(q.disciplina) || 0) + 1)
+        if (!hierarquia.has(q.disciplina)) {
+          hierarquia.set(q.disciplina, { total: 0, assuntos: new Map() })
+        }
+        const disc = hierarquia.get(q.disciplina)!
+        disc.total++
+
+        if (q.assunto) {
+          disc.assuntos.set(q.assunto, (disc.assuntos.get(q.assunto) || 0) + 1)
+        }
       }
     })
 
-    const disciplinas = Array.from(disciplinasCount.entries())
-      .map(([nome, count]) => ({ nome, questoes: count }))
+    // Converter para formato de resposta
+    const disciplinas = Array.from(hierarquia.entries())
+      .map(([nome, data]) => ({
+        nome,
+        questoes: data.total,
+        assuntos: Array.from(data.assuntos.entries())
+          .map(([assuntoNome, count]) => ({ nome: assuntoNome, questoes: count }))
+          .sort((a, b) => b.questoes - a.questoes)
+      }))
       .sort((a, b) => b.questoes - a.questoes)
 
-    // Buscar assuntos (filtrado por disciplina se selecionada)
-    let assuntosQuery = supabase
-      .from('questoes')
-      .select('assunto, disciplina')
+    // Assuntos flat (para compatibilidade) - filtrado por disciplinas selecionadas
+    const assuntos: { nome: string; questoes: number; disciplina: string }[] = []
 
-    if (modalidade) {
-      assuntosQuery = assuntosQuery.eq('modalidade', modalidade)
+    if (disciplinasSelecionadas.length > 0) {
+      disciplinasSelecionadas.forEach(disc => {
+        const discData = hierarquia.get(disc)
+        if (discData) {
+          discData.assuntos.forEach((count, assuntoNome) => {
+            assuntos.push({ nome: assuntoNome, questoes: count, disciplina: disc })
+          })
+        }
+      })
+      assuntos.sort((a, b) => b.questoes - a.questoes)
     }
 
-    if (disciplinaSelecionada) {
-      assuntosQuery = assuntosQuery.eq('disciplina', disciplinaSelecionada)
-    }
+    // Buscar bancas, anos e dificuldades em paralelo
+    const [bancasResult, anosResult, dificuldadesResult] = await Promise.all([
+      supabase
+        .from('questoes')
+        .select('banca')
+        .not('banca', 'is', null)
+        .then(({ data }) => {
+          const bancasCount = new Map<string, number>()
+          data?.forEach(q => {
+            if (q.banca) {
+              bancasCount.set(q.banca, (bancasCount.get(q.banca) || 0) + 1)
+            }
+          })
+          return Array.from(bancasCount.entries())
+            .map(([nome, count]) => ({ nome, questoes: count }))
+            .filter(b => b.nome && b.nome.trim() !== '')
+            .sort((a, b) => b.questoes - a.questoes)
+        }),
 
-    const { data: questoesAssuntos } = await assuntosQuery
+      supabase
+        .from('questoes')
+        .select('ano')
+        .not('ano', 'is', null)
+        .then(({ data }) => {
+          const anosCount = new Map<number, number>()
+          data?.forEach(q => {
+            if (q.ano) {
+              anosCount.set(q.ano, (anosCount.get(q.ano) || 0) + 1)
+            }
+          })
+          return Array.from(anosCount.entries())
+            .map(([ano, count]) => ({ ano, questoes: count }))
+            .sort((a, b) => b.ano - a.ano)
+        }),
 
-    // Contar questões por assunto
-    const assuntosCount = new Map<string, number>()
-    questoesAssuntos?.forEach(q => {
-      if (q.assunto) {
-        assuntosCount.set(q.assunto, (assuntosCount.get(q.assunto) || 0) + 1)
-      }
-    })
+      supabase
+        .from('questoes')
+        .select('dificuldade')
+        .not('dificuldade', 'is', null)
+        .then(({ data }) => {
+          const dificuldadesCount = new Map<string, number>()
+          data?.forEach(q => {
+            if (q.dificuldade) {
+              dificuldadesCount.set(q.dificuldade, (dificuldadesCount.get(q.dificuldade) || 0) + 1)
+            }
+          })
+          return [
+            { nome: 'facil', label: 'Fácil', questoes: dificuldadesCount.get('facil') || 0 },
+            { nome: 'medio', label: 'Médio', questoes: dificuldadesCount.get('medio') || 0 },
+            { nome: 'dificil', label: 'Difícil', questoes: dificuldadesCount.get('dificil') || 0 }
+          ]
+        })
+    ])
 
-    const assuntos = Array.from(assuntosCount.entries())
-      .map(([nome, count]) => ({ nome, questoes: count }))
-      .sort((a, b) => b.questoes - a.questoes)
-
-    // Buscar subassuntos (filtrado por assunto se selecionado)
-    let subassuntosQuery = supabase
-      .from('questoes')
-      .select('subassunto, assunto, disciplina')
-
-    if (modalidade) {
-      subassuntosQuery = subassuntosQuery.eq('modalidade', modalidade)
-    }
-
-    if (disciplinaSelecionada) {
-      subassuntosQuery = subassuntosQuery.eq('disciplina', disciplinaSelecionada)
-    }
-
-    if (assuntoSelecionado) {
-      subassuntosQuery = subassuntosQuery.eq('assunto', assuntoSelecionado)
-    }
-
-    const { data: questoesSubassuntos } = await subassuntosQuery
-
-    // Contar questões por subassunto
-    const subassuntosCount = new Map<string, number>()
-    questoesSubassuntos?.forEach(q => {
-      if (q.subassunto) {
-        subassuntosCount.set(q.subassunto, (subassuntosCount.get(q.subassunto) || 0) + 1)
-      }
-    })
-
-    const subassuntos = Array.from(subassuntosCount.entries())
-      .map(([nome, count]) => ({ nome, questoes: count }))
-      .sort((a, b) => b.questoes - a.questoes)
-
-    // Buscar bancas disponíveis
-    const { data: bancasData } = await supabase
-      .from('questoes')
-      .select('banca')
-      .not('banca', 'is', null)
-
-    const bancasCount = new Map<string, number>()
-    bancasData?.forEach(q => {
-      if (q.banca) {
-        bancasCount.set(q.banca, (bancasCount.get(q.banca) || 0) + 1)
-      }
-    })
-
-    const bancas = Array.from(bancasCount.entries())
-      .map(([nome, count]) => ({ nome, questoes: count }))
-      .filter(b => b.nome && b.nome.trim() !== '')
-      .sort((a, b) => b.questoes - a.questoes)
-
-    // Buscar anos disponíveis
-    const { data: anosData } = await supabase
-      .from('questoes')
-      .select('ano')
-      .not('ano', 'is', null)
-
-    const anosCount = new Map<number, number>()
-    anosData?.forEach(q => {
-      if (q.ano) {
-        anosCount.set(q.ano, (anosCount.get(q.ano) || 0) + 1)
-      }
-    })
-
-    const anos = Array.from(anosCount.entries())
-      .map(([ano, count]) => ({ ano, questoes: count }))
-      .sort((a, b) => b.ano - a.ano)
-
-    // Dificuldades disponíveis
-    const { data: dificuldadesData } = await supabase
-      .from('questoes')
-      .select('dificuldade')
-      .not('dificuldade', 'is', null)
-
-    const dificuldadesCount = new Map<string, number>()
-    dificuldadesData?.forEach(q => {
-      if (q.dificuldade) {
-        dificuldadesCount.set(q.dificuldade, (dificuldadesCount.get(q.dificuldade) || 0) + 1)
-      }
-    })
-
-    const dificuldades = [
-      { nome: 'facil', label: 'Fácil', questoes: dificuldadesCount.get('facil') || 0 },
-      { nome: 'medio', label: 'Médio', questoes: dificuldadesCount.get('medio') || 0 },
-      { nome: 'dificil', label: 'Difícil', questoes: dificuldadesCount.get('dificil') || 0 }
-    ]
-
-    // Modalidades disponíveis
-    const { data: modalidadesData } = await supabase
-      .from('questoes')
-      .select('modalidade')
-
-    const modalidadesCount = new Map<string, number>()
-    modalidadesData?.forEach(q => {
-      if (q.modalidade) {
-        modalidadesCount.set(q.modalidade, (modalidadesCount.get(q.modalidade) || 0) + 1)
-      }
-    })
-
-    const modalidades = [
-      { nome: 'certo_errado', label: 'Certo ou Errado', questoes: modalidadesCount.get('certo_errado') || 0 },
-      { nome: 'multipla_escolha', label: 'Múltipla Escolha', questoes: modalidadesCount.get('multipla_escolha') || 0 }
-    ]
-
-    // Contar total de questões disponíveis com os filtros atuais
-    let totalQuery = supabase
-      .from('questoes')
-      .select('*', { count: 'exact', head: true })
-
-    if (modalidade) {
-      totalQuery = totalQuery.eq('modalidade', modalidade)
-    }
-    if (disciplinaSelecionada) {
-      totalQuery = totalQuery.eq('disciplina', disciplinaSelecionada)
-    }
-    if (assuntoSelecionado) {
-      totalQuery = totalQuery.eq('assunto', assuntoSelecionado)
-    }
-
-    const { count: totalQuestoes } = await totalQuery
+    // Calcular total disponível com a modalidade selecionada
+    const totalQuestoes = modalidade
+      ? modalidades.find(m => m.nome === modalidade)?.questoes || 0
+      : modalidades.reduce((sum, m) => sum + m.questoes, 0)
 
     return NextResponse.json({
       disciplinas,
       assuntos,
-      subassuntos,
-      bancas,
-      anos,
-      dificuldades,
+      subassuntos: [], // Deprecated, mantido para compatibilidade
+      bancas: bancasResult,
+      anos: anosResult,
+      dificuldades: dificuldadesResult,
       modalidades,
-      total_questoes_disponiveis: totalQuestoes || 0
+      total_questoes_disponiveis: totalQuestoes
     })
   } catch (error) {
     console.error('[FILTROS SIMULADOS] Erro interno:', error)
