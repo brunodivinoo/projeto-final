@@ -560,7 +560,7 @@ GERE O RESUMO NO FORMATO ${formato?.toUpperCase() || 'TÓPICOS'}:`
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.5,
-            maxOutputTokens: 8192
+            maxOutputTokens: 16384
           }
         })
       }
