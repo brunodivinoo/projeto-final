@@ -249,6 +249,37 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Normalizar nome da banca para formato padrão
+function normalizarBanca(banca: string): string {
+  const bancaNormalizada = banca.toLowerCase().trim()
+
+  // Mapeamento de variações comuns
+  const mapeamento: Record<string, string> = {
+    'cespe': 'CESPE/CEBRASPE',
+    'cebraspe': 'CESPE/CEBRASPE',
+    'cespe/cebraspe': 'CESPE/CEBRASPE',
+    'cesgranrio': 'CESGRANRIO',
+    'fcc': 'FCC',
+    'fundação carlos chagas': 'FCC',
+    'vunesp': 'VUNESP',
+    'fgv': 'FGV',
+    'fundação getúlio vargas': 'FGV',
+    'fundacao getulio vargas': 'FGV',
+    'ibfc': 'IBFC',
+    'iades': 'IADES',
+    'idecan': 'IDECAN',
+    'aocp': 'AOCP',
+    'quadrix': 'QUADRIX',
+    'funcab': 'FUNCAB',
+    'consulplan': 'CONSULPLAN',
+    'instituto cidades': 'INSTITUTO CIDADES',
+    'esaf': 'ESAF',
+    'fundatec': 'FUNDATEC'
+  }
+
+  return mapeamento[bancaNormalizada] || banca.toUpperCase()
+}
+
 async function gerarQuestaoComGemini(config: {
   disciplina: string
   assunto: string
@@ -264,66 +295,101 @@ async function gerarQuestaoComGemini(config: {
 } | null> {
   const MAX_TENTATIVAS = 3
   const isMultipla = config.modalidade === 'multipla_escolha'
+  const bancaNormalizada = normalizarBanca(config.banca)
+
+  // Contexto específico para cada assunto/subassunto
+  const contextoAssunto = config.subassunto
+    ? `focando especificamente em "${config.subassunto}" dentro de "${config.assunto}"`
+    : config.assunto
+      ? `focando no assunto "${config.assunto}"`
+      : ''
+
+  // Nível de dificuldade descritivo
+  const nivelDificuldade = {
+    'facil': 'FÁCIL (questão direta, conceitos básicos, sem pegadinhas)',
+    'media': 'MÉDIA (requer conhecimento intermediário, pode ter algumas nuances)',
+    'dificil': 'DIFÍCIL (questão complexa, detalhes técnicos, análise aprofundada)'
+  }[config.dificuldade] || 'MÉDIA'
 
   const prompt = isMultipla
-    ? `Você é um especialista em elaborar questões de concursos públicos brasileiros.
+    ? `Você é um professor experiente e especialista em elaborar questões de concursos públicos brasileiros com mais de 20 anos de experiência.
 
-CONFIGURAÇÃO:
+CONFIGURAÇÃO DA QUESTÃO:
 - Disciplina: ${config.disciplina}
-- Assunto: ${config.assunto || 'Geral'}
-- Subassunto: ${config.subassunto || 'Geral'}
-- Estilo da Banca: ${config.banca}
-- Dificuldade: ${config.dificuldade}
-- Modalidade: Múltipla Escolha (5 alternativas: A, B, C, D, E)
+- Assunto: ${config.assunto || 'Geral'}${config.subassunto ? `\n- Subassunto específico: ${config.subassunto}` : ''}
+- Estilo da Banca: ${bancaNormalizada}
+- Nível: ${nivelDificuldade}
+- Tipo: Múltipla Escolha (5 alternativas: A, B, C, D, E)
 
-INSTRUÇÕES:
-1. Crie UMA questão ORIGINAL no estilo da banca ${config.banca}
-2. A questão deve ser de dificuldade ${config.dificuldade}
-3. Inclua 5 alternativas (A a E), sendo apenas UMA correta
-4. Elabore um comentário detalhado explicando o gabarito
-5. A questão deve ser tecnicamente precisa e atualizada
+INSTRUÇÕES IMPORTANTES:
+1. Crie UMA questão ORIGINAL e INÉDITA ${contextoAssunto}
+2. Use o estilo característico da banca ${bancaNormalizada}:
+   ${bancaNormalizada === 'CESPE/CEBRASPE' ? '- Textos mais longos, contextualização, pegadinhas sutis' : ''}
+   ${bancaNormalizada === 'FCC' ? '- Questões diretas, alternativas bem estruturadas, foco em legislação' : ''}
+   ${bancaNormalizada === 'FGV' ? '- Questões elaboradas, interdisciplinaridade, casos práticos' : ''}
+   ${bancaNormalizada === 'VUNESP' ? '- Questões claras, foco em conhecimento aplicado' : ''}
+3. Inclua 5 alternativas (A a E), sendo APENAS UMA correta
+4. As alternativas incorretas devem ser plausíveis mas claramente distinguíveis
+5. O enunciado deve ser completo e autoexplicativo
 
-FORMATO DE RESPOSTA (JSON):
+IMPORTANTE PARA O COMENTÁRIO:
+- Explique de forma DIDÁTICA e ACESSÍVEL, como um professor explicaria para um aluno
+- Use linguagem clara, evite jargões excessivos
+- Explique POR QUE a alternativa correta está certa
+- Explique brevemente POR QUE cada alternativa errada está incorreta
+- Se possível, inclua dicas de estudo ou macetes para memorização
+- Evite respostas robotizadas ou mecânicas
+
+FORMATO DE RESPOSTA (JSON puro, sem markdown):
 {
-  "enunciado": "texto completo do enunciado da questão",
+  "enunciado": "texto completo do enunciado",
   "alternativa_a": "texto da alternativa A",
   "alternativa_b": "texto da alternativa B",
   "alternativa_c": "texto da alternativa C",
   "alternativa_d": "texto da alternativa D",
   "alternativa_e": "texto da alternativa E",
   "gabarito": "A",
-  "comentario": "explicação detalhada do gabarito, justificando por que a alternativa correta está certa e as demais estão erradas"
+  "comentario": "Explicação didática completa"
 }
 
-Retorne APENAS o JSON, sem markdown ou explicações.`
-    : `Você é um especialista em elaborar questões de concursos públicos brasileiros.
+Retorne APENAS o JSON, sem \`\`\`json ou qualquer formatação adicional.`
+    : `Você é um professor experiente e especialista em elaborar questões de concursos públicos brasileiros com mais de 20 anos de experiência.
 
-CONFIGURAÇÃO:
+CONFIGURAÇÃO DA QUESTÃO:
 - Disciplina: ${config.disciplina}
-- Assunto: ${config.assunto || 'Geral'}
-- Subassunto: ${config.subassunto || 'Geral'}
-- Estilo da Banca: ${config.banca}
-- Dificuldade: ${config.dificuldade}
-- Modalidade: Certo ou Errado
+- Assunto: ${config.assunto || 'Geral'}${config.subassunto ? `\n- Subassunto específico: ${config.subassunto}` : ''}
+- Estilo da Banca: ${bancaNormalizada} (Certo ou Errado)
+- Nível: ${nivelDificuldade}
+- Tipo: Julgamento de assertiva (CERTO ou ERRADO)
 
-INSTRUÇÕES:
-1. Crie UMA questão ORIGINAL no estilo CESPE/CEBRASPE (Certo ou Errado)
-2. A questão deve ser uma afirmação que pode ser julgada como CERTA ou ERRADA
-3. A questão deve ser de dificuldade ${config.dificuldade}
-4. Elabore um comentário detalhado explicando o gabarito
+INSTRUÇÕES IMPORTANTES:
+1. Crie UMA afirmação ORIGINAL e INÉDITA ${contextoAssunto}
+2. Use o estilo característico de questões CESPE/CEBRASPE:
+   - Afirmações técnicas e precisas
+   - Pode conter pegadinhas sutis (palavras como "sempre", "nunca", "somente")
+   - Nível de detalhe adequado à dificuldade
+3. A afirmação deve ser claramente CERTA ou ERRADA (sem ambiguidade)
 
-FORMATO DE RESPOSTA (JSON):
+IMPORTANTE PARA O COMENTÁRIO:
+- Explique de forma DIDÁTICA e ACESSÍVEL, como um professor explicaria para um aluno
+- Use linguagem clara, evite jargões excessivos
+- Explique POR QUE a afirmação está certa OU errada
+- Se ERRADA, indique qual seria a informação correta
+- Se possível, inclua dicas de estudo ou macetes para memorização
+- Evite respostas robotizadas ou mecânicas
+
+FORMATO DE RESPOSTA (JSON puro, sem markdown):
 {
-  "enunciado": "afirmação para julgar como certa ou errada",
+  "enunciado": "afirmação para julgar",
   "gabarito": "C",
-  "comentario": "explicação detalhada do gabarito"
+  "comentario": "Explicação didática completa"
 }
 
 REGRAS:
-- gabarito deve ser "C" para CERTO ou "E" para ERRADO
-- A afirmação deve ser clara e objetiva
+- gabarito: "C" para CERTO ou "E" para ERRADO
+- A afirmação deve ser tecnicamente precisa
 
-Retorne APENAS o JSON, sem markdown ou explicações.`
+Retorne APENAS o JSON, sem \`\`\`json ou qualquer formatação adicional.`
 
   for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
     try {
@@ -335,8 +401,10 @@ Retorne APENAS o JSON, sem markdown ou explicações.`
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
-              temperature: 0.8,
-              maxOutputTokens: 2048
+              temperature: 0.85,
+              maxOutputTokens: 4096,
+              topP: 0.95,
+              topK: 40
             }
           })
         }

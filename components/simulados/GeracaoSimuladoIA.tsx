@@ -36,6 +36,24 @@ interface PreferenciasSalvas {
   disciplinas: DisciplinaComSelecao[]
 }
 
+// Bancas de concursos mais comuns
+const BANCAS_COMUNS = [
+  'CESPE/CEBRASPE',
+  'FCC',
+  'FGV',
+  'VUNESP',
+  'CESGRANRIO',
+  'IBFC',
+  'IADES',
+  'IDECAN',
+  'AOCP',
+  'QUADRIX',
+  'FUNCAB',
+  'CONSULPLAN',
+  'FUNDATEC',
+  'ESAF'
+]
+
 // Disciplinas comuns para adicionar rapidamente
 const DISCIPLINAS_COMUNS = [
   'Língua Portuguesa',
@@ -246,6 +264,9 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
   const [modalidade, setModalidade] = useState<'multipla_escolha' | 'certo_errado' | 'mista'>('multipla_escolha')
   const [dificuldades, setDificuldades] = useState<string[]>(['media'])
   const [tempoLimite, setTempoLimite] = useState<number | undefined>(undefined)
+  const [bancaSelecionada, setBancaSelecionada] = useState<string>('CESPE/CEBRASPE')
+  const [bancaPersonalizada, setBancaPersonalizada] = useState('')
+  const [showBancaPersonalizada, setShowBancaPersonalizada] = useState(false)
 
   // Verificar limite de simulados
   useEffect(() => {
@@ -533,7 +554,10 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
     }
 
     const itens: ItemFilaGeracao[] = []
-    const banca = resultadoPesquisa?.concurso.banca_provavel || 'CESPE/CEBRASPE'
+    // Usar a banca selecionada pelo usuário, ou a da pesquisa, ou padrão
+    const bancaFinal = showBancaPersonalizada && bancaPersonalizada.trim()
+      ? bancaPersonalizada.trim()
+      : bancaSelecionada || resultadoPesquisa?.concurso.banca_provavel || 'CESPE/CEBRASPE'
 
     selecionadas.forEach(disc => {
       const assuntosSelecionados = disc.assuntos.filter(a => a.selecionado)
@@ -541,7 +565,7 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
       if (assuntosSelecionados.length === 0) {
         itens.push({
           disciplina: disc.disciplina,
-          banca,
+          banca: bancaFinal,
           modalidade,
           dificuldade: dificuldades[0]
         })
@@ -551,7 +575,7 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
             itens.push({
               disciplina: disc.disciplina,
               assunto: assunto.nome,
-              banca,
+              banca: bancaFinal,
               modalidade,
               dificuldade: dificuldades[0]
             })
@@ -561,7 +585,7 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
                 disciplina: disc.disciplina,
                 assunto: assunto.nome,
                 subassunto: sub,
-                banca,
+                banca: bancaFinal,
                 modalidade,
                 dificuldade: dificuldades[0]
               })
@@ -1209,6 +1233,56 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
                     <option value="mista">Mista</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Seleção de Banca */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  Estilo da Banca
+                </label>
+                <p className="text-xs text-gray-500 dark:text-[#9dabb9] mb-2">
+                  As questões serão geradas no estilo da banca selecionada
+                </p>
+                {!showBancaPersonalizada ? (
+                  <div className="space-y-2">
+                    <select
+                      value={bancaSelecionada}
+                      onChange={(e) => setBancaSelecionada(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-[#283039] rounded-xl bg-white dark:bg-[#141A21] text-gray-800 dark:text-white appearance-none cursor-pointer"
+                    >
+                      {BANCAS_COMUNS.map(banca => (
+                        <option key={banca} value={banca}>{banca}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => setShowBancaPersonalizada(true)}
+                      className="text-sm text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-base">edit</span>
+                      Outra banca (digitar)
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={bancaPersonalizada}
+                      onChange={(e) => setBancaPersonalizada(e.target.value)}
+                      placeholder="Digite o nome da banca..."
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-[#283039] rounded-xl bg-white dark:bg-[#141A21] text-gray-800 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <button
+                      onClick={() => {
+                        setShowBancaPersonalizada(false)
+                        setBancaPersonalizada('')
+                      }}
+                      className="text-sm text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-base">arrow_back</span>
+                      Escolher da lista
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Dificuldades */}
