@@ -113,6 +113,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
+interface OpcoesAvancadas {
+  distratos?: string
+  incluirJurisprudencia?: boolean
+  incluirSumulas?: boolean
+  incluirSumulasVinculantes?: boolean
+  incluirDoutrina?: boolean
+}
+
 // POST - Criar simulado e popular fila de geração
 export async function POST(request: NextRequest) {
   try {
@@ -125,7 +133,8 @@ export async function POST(request: NextRequest) {
       tempo_limite_minutos,
       modalidade,
       dificuldades,
-      itens // Array de disciplinas/assuntos/subassuntos para gerar
+      itens, // Array de disciplinas/assuntos/subassuntos para gerar
+      opcoesAvancadas // Opções avançadas (distratos, jurisprudência, etc)
     } = body as {
       user_id: string
       titulo: string
@@ -135,6 +144,7 @@ export async function POST(request: NextRequest) {
       modalidade: string
       dificuldades: string[]
       itens: ItemFila[]
+      opcoesAvancadas?: OpcoesAvancadas
     }
 
     if (!user_id) {
@@ -202,7 +212,8 @@ export async function POST(request: NextRequest) {
         tempo_limite_minutos: tempo_limite_minutos || null,
         dificuldades,
         status: 'gerando',
-        gerado_por_ia: true
+        gerado_por_ia: true,
+        opcoes_avancadas: opcoesAvancadas || null
       })
       .select()
       .single()

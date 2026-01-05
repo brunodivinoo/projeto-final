@@ -354,6 +354,14 @@ export interface ProgressoGeracao {
   }
 }
 
+export interface OpcoesAvancadasGeracao {
+  distratos?: string
+  incluirJurisprudencia?: boolean
+  incluirSumulas?: boolean
+  incluirSumulasVinculantes?: boolean
+  incluirDoutrina?: boolean
+}
+
 export interface ConfigGeracaoAvancada {
   titulo: string
   descricao?: string
@@ -362,6 +370,7 @@ export interface ConfigGeracaoAvancada {
   modalidade: 'certo_errado' | 'multipla_escolha' | 'mista'
   dificuldades: string[]
   itens: ItemFilaGeracao[]
+  opcoesAvancadas?: OpcoesAvancadasGeracao
 }
 
 export interface RespostaResultado {

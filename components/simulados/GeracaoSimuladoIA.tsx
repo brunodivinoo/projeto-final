@@ -268,6 +268,14 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
   const [bancaPersonalizada, setBancaPersonalizada] = useState('')
   const [showBancaPersonalizada, setShowBancaPersonalizada] = useState(false)
 
+  // Opções avançadas para questões jurídicas
+  const [distratos, setDistratos] = useState('')
+  const [incluirJurisprudencia, setIncluirJurisprudencia] = useState(false)
+  const [incluirSumulas, setIncluirSumulas] = useState(false)
+  const [incluirSumulasVinculantes, setIncluirSumulasVinculantes] = useState(false)
+  const [incluirDoutrina, setIncluirDoutrina] = useState(false)
+  const [showOpcoesAvancadas, setShowOpcoesAvancadas] = useState(false)
+
   // Verificar limite de simulados
   useEffect(() => {
     const verificarLimite = async () => {
@@ -597,13 +605,23 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
 
     setErro(null)
 
+    // Montar opções avançadas para o prompt
+    const opcoesAvancadas = {
+      distratos: distratos.trim() || undefined,
+      incluirJurisprudencia,
+      incluirSumulas,
+      incluirSumulasVinculantes,
+      incluirDoutrina
+    }
+
     const resultado = await iniciarGeracaoAvancada({
       titulo: titulo || `Simulado IA - ${new Date().toLocaleDateString('pt-BR')}`,
       quantidade_questoes: quantidade,
       tempo_limite_minutos: tempoLimite,
       modalidade,
       dificuldades,
-      itens
+      itens,
+      opcoesAvancadas
     })
 
     if (resultado) {
@@ -1334,6 +1352,105 @@ export function GeracaoSimuladoIA({ onSimuladoCriado, onVoltar }: Props) {
                   <option value="180">3 horas</option>
                   <option value="240">4 horas</option>
                 </select>
+              </div>
+
+              {/* Opções Avançadas */}
+              <div className="border-t border-gray-200 dark:border-[#283039] pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowOpcoesAvancadas(!showOpcoesAvancadas)}
+                  className="flex items-center gap-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300"
+                >
+                  <span className="material-symbols-outlined text-base transition-transform duration-200" style={{ transform: showOpcoesAvancadas ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                    expand_more
+                  </span>
+                  Opções Avançadas (Distratos, Jurisprudência, Súmulas...)
+                </button>
+
+                {showOpcoesAvancadas && (
+                  <div className="mt-4 space-y-4 p-4 bg-gray-50 dark:bg-[#141A21] rounded-xl border border-gray-200 dark:border-[#283039]">
+                    {/* Distratos */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        Distratos <span className="text-gray-400">(assuntos para NÃO cobrar)</span>
+                      </label>
+                      <textarea
+                        value={distratos}
+                        onChange={(e) => setDistratos(e.target.value)}
+                        placeholder="Ex: Não cobrar questões sobre prescrição intercorrente, não abordar crimes hediondos..."
+                        rows={2}
+                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-[#283039] rounded-xl bg-white dark:bg-[#1C252E] text-gray-800 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none text-sm"
+                      />
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Especifique temas ou conteúdos que você NÃO quer que apareçam nas questões
+                      </p>
+                    </div>
+
+                    {/* Opções de conteúdo jurídico */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                        Incluir nas questões:
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label className="flex items-center gap-3 p-3 bg-white dark:bg-[#1C252E] rounded-lg border border-gray-200 dark:border-[#3a4552] cursor-pointer hover:border-purple-400 dark:hover:border-purple-500 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={incluirJurisprudencia}
+                            onChange={(e) => setIncluirJurisprudencia(e.target.checked)}
+                            className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                          />
+                          <div>
+                            <span className="text-sm font-medium text-gray-800 dark:text-white">Jurisprudência</span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Decisões de tribunais</p>
+                          </div>
+                        </label>
+
+                        <label className="flex items-center gap-3 p-3 bg-white dark:bg-[#1C252E] rounded-lg border border-gray-200 dark:border-[#3a4552] cursor-pointer hover:border-purple-400 dark:hover:border-purple-500 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={incluirSumulas}
+                            onChange={(e) => setIncluirSumulas(e.target.checked)}
+                            className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                          />
+                          <div>
+                            <span className="text-sm font-medium text-gray-800 dark:text-white">Súmulas</span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">STF e STJ</p>
+                          </div>
+                        </label>
+
+                        <label className="flex items-center gap-3 p-3 bg-white dark:bg-[#1C252E] rounded-lg border border-gray-200 dark:border-[#3a4552] cursor-pointer hover:border-purple-400 dark:hover:border-purple-500 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={incluirSumulasVinculantes}
+                            onChange={(e) => setIncluirSumulasVinculantes(e.target.checked)}
+                            className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                          />
+                          <div>
+                            <span className="text-sm font-medium text-gray-800 dark:text-white">Súmulas Vinculantes</span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Efeito vinculante do STF</p>
+                          </div>
+                        </label>
+
+                        <label className="flex items-center gap-3 p-3 bg-white dark:bg-[#1C252E] rounded-lg border border-gray-200 dark:border-[#3a4552] cursor-pointer hover:border-purple-400 dark:hover:border-purple-500 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={incluirDoutrina}
+                            onChange={(e) => setIncluirDoutrina(e.target.checked)}
+                            className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                          />
+                          <div>
+                            <span className="text-sm font-medium text-gray-800 dark:text-white">Doutrina</span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Entendimentos doutrinários</p>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                      Estas opções são especialmente úteis para disciplinas jurídicas. Para outras áreas, as questões serão adaptadas ao conteúdo específico da disciplina.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

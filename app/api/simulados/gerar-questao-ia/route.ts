@@ -81,6 +81,15 @@ export async function POST(request: NextRequest) {
       .update({ status: 'processando' })
       .eq('id', proximoItem.id)
 
+    // Buscar opções avançadas do simulado
+    const { data: simulado } = await supabase
+      .from('simulados')
+      .select('opcoes_avancadas')
+      .eq('id', simulado_id)
+      .single()
+
+    const opcoesAvancadas = simulado?.opcoes_avancadas || {}
+
     // Gerar questão com Gemini
     const questao = await gerarQuestaoComGemini({
       disciplina: proximoItem.disciplina,
@@ -88,7 +97,8 @@ export async function POST(request: NextRequest) {
       subassunto: proximoItem.subassunto || '',
       banca: proximoItem.banca,
       modalidade: proximoItem.modalidade,
-      dificuldade: proximoItem.dificuldade
+      dificuldade: proximoItem.dificuldade,
+      opcoesAvancadas
     })
 
     if (!questao) {
@@ -280,6 +290,14 @@ function normalizarBanca(banca: string): string {
   return mapeamento[bancaNormalizada] || banca.toUpperCase()
 }
 
+interface OpcoesAvancadas {
+  distratos?: string
+  incluirJurisprudencia?: boolean
+  incluirSumulas?: boolean
+  incluirSumulasVinculantes?: boolean
+  incluirDoutrina?: boolean
+}
+
 async function gerarQuestaoComGemini(config: {
   disciplina: string
   assunto: string
@@ -287,6 +305,7 @@ async function gerarQuestaoComGemini(config: {
   banca: string
   modalidade: string
   dificuldade: string
+  opcoesAvancadas?: OpcoesAvancadas
 }): Promise<{
   enunciado: string
   alternativas?: Record<string, string>
@@ -296,6 +315,7 @@ async function gerarQuestaoComGemini(config: {
   const MAX_TENTATIVAS = 3
   const isMultipla = config.modalidade === 'multipla_escolha'
   const bancaNormalizada = normalizarBanca(config.banca)
+  const opcoes = config.opcoesAvancadas || {}
 
   // Contexto específico para cada assunto/subassunto
   const contextoAssunto = config.subassunto
@@ -310,6 +330,41 @@ async function gerarQuestaoComGemini(config: {
     'media': 'MÉDIA (requer conhecimento intermediário, pode ter algumas nuances)',
     'dificil': 'DIFÍCIL (questão complexa, detalhes técnicos, análise aprofundada)'
   }[config.dificuldade] || 'MÉDIA'
+
+  // Montar instruções de distratos (temas a NÃO abordar)
+  const instrucaoDistratos = opcoes.distratos?.trim()
+    ? `\n\nTEMAS/CONTEÚDOS A NÃO ABORDAR (DISTRATOS):\n${opcoes.distratos}\n- NÃO mencione nem aborde esses temas na questão ou nas alternativas.`
+    : ''
+
+  // Montar instruções de conteúdo jurídico
+  const conteudosJuridicos: string[] = []
+  if (opcoes.incluirJurisprudencia) {
+    conteudosJuridicos.push('jurisprudência dos tribunais superiores (STF, STJ, TST, etc.)')
+  }
+  if (opcoes.incluirSumulas) {
+    conteudosJuridicos.push('súmulas dos tribunais')
+  }
+  if (opcoes.incluirSumulasVinculantes) {
+    conteudosJuridicos.push('súmulas vinculantes do STF')
+  }
+  if (opcoes.incluirDoutrina) {
+    conteudosJuridicos.push('entendimentos doutrinários')
+  }
+
+  const instrucaoConteudoJuridico = conteudosJuridicos.length > 0
+    ? `\n\nCONTEÚDO JURÍDICO A INCLUIR:\n- A questão DEVE abordar ou fazer referência a: ${conteudosJuridicos.join(', ')}\n- Cite jurisprudências, súmulas ou doutrinas REAIS e EXISTENTES. NÃO INVENTE informações.\n- Se não houver jurisprudência/súmula/doutrina relevante para o tema específico, adapte a questão para um tema onde exista.`
+    : ''
+
+  // Instrução de qualidade e veracidade
+  const instrucaoQualidade = `
+
+REGRAS DE QUALIDADE E VERACIDADE:
+1. NUNCA invente leis, artigos, súmulas, jurisprudências ou doutrinas. Use APENAS informações REAIS e VERIFICÁVEIS.
+2. Se citar um artigo de lei, ele deve EXISTIR com aquele número e conteúdo.
+3. Se citar uma súmula ou súmula vinculante, ela deve ser REAL com o número correto.
+4. Se citar jurisprudência, deve ser um entendimento CONSOLIDADO dos tribunais.
+5. Em caso de dúvida sobre a existência de uma informação, prefira questões conceituais.
+6. O comentário deve ser RICO, DIDÁTICO e EDUCATIVO, como uma aula sobre o tema.`
 
   const prompt = isMultipla
     ? `Você é um professor experiente e especialista em elaborar questões de concursos públicos brasileiros com mais de 20 anos de experiência.
@@ -331,12 +386,14 @@ INSTRUÇÕES IMPORTANTES:
 3. Inclua 5 alternativas (A a E), sendo APENAS UMA correta
 4. As alternativas incorretas devem ser plausíveis mas claramente distinguíveis
 5. O enunciado deve ser completo e autoexplicativo
+${instrucaoDistratos}${instrucaoConteudoJuridico}${instrucaoQualidade}
 
 IMPORTANTE PARA O COMENTÁRIO:
 - Explique de forma DIDÁTICA e ACESSÍVEL, como um professor explicaria para um aluno
 - Use linguagem clara, evite jargões excessivos
 - Explique POR QUE a alternativa correta está certa
 - Explique brevemente POR QUE cada alternativa errada está incorreta
+- Cite a fundamentação legal, jurisprudencial ou doutrinária quando aplicável
 - Se possível, inclua dicas de estudo ou macetes para memorização
 - Evite respostas robotizadas ou mecânicas
 
@@ -349,7 +406,7 @@ FORMATO DE RESPOSTA (JSON puro, sem markdown):
   "alternativa_d": "texto da alternativa D",
   "alternativa_e": "texto da alternativa E",
   "gabarito": "A",
-  "comentario": "Explicação didática completa"
+  "comentario": "Explicação didática completa com fundamentação"
 }
 
 Retorne APENAS o JSON, sem \`\`\`json ou qualquer formatação adicional.`
@@ -369,12 +426,14 @@ INSTRUÇÕES IMPORTANTES:
    - Pode conter pegadinhas sutis (palavras como "sempre", "nunca", "somente")
    - Nível de detalhe adequado à dificuldade
 3. A afirmação deve ser claramente CERTA ou ERRADA (sem ambiguidade)
+${instrucaoDistratos}${instrucaoConteudoJuridico}${instrucaoQualidade}
 
 IMPORTANTE PARA O COMENTÁRIO:
 - Explique de forma DIDÁTICA e ACESSÍVEL, como um professor explicaria para um aluno
 - Use linguagem clara, evite jargões excessivos
 - Explique POR QUE a afirmação está certa OU errada
 - Se ERRADA, indique qual seria a informação correta
+- Cite a fundamentação legal, jurisprudencial ou doutrinária quando aplicável
 - Se possível, inclua dicas de estudo ou macetes para memorização
 - Evite respostas robotizadas ou mecânicas
 
@@ -382,7 +441,7 @@ FORMATO DE RESPOSTA (JSON puro, sem markdown):
 {
   "enunciado": "afirmação para julgar",
   "gabarito": "C",
-  "comentario": "Explicação didática completa"
+  "comentario": "Explicação didática completa com fundamentação"
 }
 
 REGRAS:
