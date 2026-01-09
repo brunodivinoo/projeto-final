@@ -87,8 +87,8 @@ export default function NovaAnotacaoPage() {
 
       router.push('/medicina/dashboard/anotacoes')
 
-    } catch (err: any) {
-      setError(err.message || 'Erro ao salvar anotação')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar anotação')
     } finally {
       setSaving(false)
     }

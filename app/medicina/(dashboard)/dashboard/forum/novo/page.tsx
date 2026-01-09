@@ -91,8 +91,8 @@ export default function NovoTopicoPage() {
 
       router.push(`/medicina/dashboard/forum/${data.topico.id}`)
 
-    } catch (err: any) {
-      setError(err.message || 'Erro ao criar tópico')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao criar tópico')
     } finally {
       setLoading(false)
     }

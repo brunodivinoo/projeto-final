@@ -21,17 +21,45 @@ import {
   Brain
 } from 'lucide-react'
 
+interface ConteudoBloco {
+  tipo: string
+  conteudo?: string
+  titulo?: string
+  texto?: string
+  itens?: string[]
+  url?: string
+  alt?: string
+}
+
+interface ConteudoTeoria {
+  titulo?: string
+  secoes?: Array<{ titulo: string; conteudo: string }>
+  blocos?: ConteudoBloco[]
+}
+
+interface TabelaResumo {
+  colunas: string[]
+  linhas: Array<Record<string, string>>
+}
+
+interface ReferenciaBibliografica {
+  titulo: string
+  autores: string
+  ano: number
+  url?: string
+}
+
 interface Teoria {
   id: string
   titulo: string
   subtitulo: string | null
-  conteudo: any // JSON com blocos de conteúdo
+  conteudo: ConteudoTeoria | null
   pontos_chave: string[] | null
   macetes: string[] | null
   pegadinhas: string[] | null
   correlacao_clinica: string | null
-  tabela_resumo: any | null
-  referencias_bibliograficas: any | null
+  tabela_resumo: TabelaResumo | null
+  referencias_bibliograficas: ReferenciaBibliografica[] | null
   tempo_leitura_minutos: number
   nivel_dificuldade: number
   disciplina: { id: string, nome: string } | null
@@ -147,7 +175,7 @@ export default function TeoriaPage() {
   }
 
   // Renderizar conteúdo JSON
-  const renderConteudo = (conteudo: any) => {
+  const renderConteudo = (conteudo: ConteudoTeoria | string | ConteudoBloco[] | null) => {
     if (!conteudo) return null
 
     if (typeof conteudo === 'string') {
@@ -158,14 +186,14 @@ export default function TeoriaPage() {
       return conteudo.map((bloco, index) => renderBloco(bloco, index))
     }
 
-    if (typeof conteudo === 'object' && conteudo.blocos) {
-      return conteudo.blocos.map((bloco: any, index: number) => renderBloco(bloco, index))
+    if (typeof conteudo === 'object' && 'blocos' in conteudo && conteudo.blocos) {
+      return conteudo.blocos.map((bloco: ConteudoBloco, index: number) => renderBloco(bloco, index))
     }
 
     return <p className="text-white/80">{JSON.stringify(conteudo)}</p>
   }
 
-  const renderBloco = (bloco: any, index: number) => {
+  const renderBloco = (bloco: ConteudoBloco | string, index: number) => {
     if (typeof bloco === 'string') {
       return <p key={index} className="text-white/80 mb-4">{bloco}</p>
     }

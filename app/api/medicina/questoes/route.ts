@@ -156,13 +156,7 @@ export async function POST(request: NextRequest) {
     if (respostaError) throw respostaError
 
     // Atualizar estatísticas da questão
-    const updateQuestao: Record<string, any> = {
-      total_respostas: supabase.rpc('increment_value', { x: 1 })
-    }
-    if (acertou) {
-      updateQuestao.total_acertos = supabase.rpc('increment_value', { x: 1 })
-    }
-
+    const questaoData = questao as { total_respostas: number; total_acertos: number }
     await supabase.rpc('incrementar_questao_med', {
       p_questao_id: questaoId,
       p_acertou: acertou
@@ -171,8 +165,8 @@ export async function POST(request: NextRequest) {
       supabase
         .from('questoes_med')
         .update({
-          total_respostas: (questao as any).total_respostas + 1,
-          total_acertos: (questao as any).total_acertos + (acertou ? 1 : 0)
+          total_respostas: questaoData.total_respostas + 1,
+          total_acertos: questaoData.total_acertos + (acertou ? 1 : 0)
         })
         .eq('id', questaoId)
     })

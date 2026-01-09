@@ -106,10 +106,10 @@ export default function IAPage() {
         timestamp: new Date()
       }])
 
-    } catch (error: any) {
+    } catch (error) {
       setMensagens(prev => [...prev, {
         tipo: 'ia',
-        conteudo: `Erro: ${error.message}`,
+        conteudo: `Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         timestamp: new Date()
       }])
     } finally {

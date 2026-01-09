@@ -176,7 +176,7 @@ export default function BibliotecaPage() {
         <div className="flex gap-2">
           <select
             value={filtroLido}
-            onChange={(e) => setFiltroLido(e.target.value as any)}
+            onChange={(e) => setFiltroLido(e.target.value as 'todos' | 'lidos' | 'nao_lidos')}
             className="bg-white/5 border border-white/10 rounded-lg py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
             <option value="todos" className="bg-slate-800">Todos</option>

@@ -134,8 +134,8 @@ export default function EditarAnotacaoPage() {
 
       router.push('/medicina/dashboard/anotacoes')
 
-    } catch (err: any) {
-      setError(err.message || 'Erro ao salvar anotação')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar anotação')
     } finally {
       setSaving(false)
     }
@@ -157,7 +157,7 @@ export default function EditarAnotacaoPage() {
 
       router.push('/medicina/dashboard/anotacoes')
 
-    } catch (err) {
+    } catch {
       setError('Erro ao excluir anotação')
     } finally {
       setDeleting(false)

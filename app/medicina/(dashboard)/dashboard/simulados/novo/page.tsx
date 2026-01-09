@@ -126,8 +126,8 @@ export default function NovoSimuladoPage() {
 
       router.push(`/medicina/dashboard/simulados/${data.simulado.id}`)
 
-    } catch (err: any) {
-      setError(err.message || 'Erro ao criar simulado')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao criar simulado')
     } finally {
       setLoading(false)
     }

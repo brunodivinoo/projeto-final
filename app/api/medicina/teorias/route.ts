@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     if (error) throw error
 
     // Buscar progresso do usuário
-    let progresso: Record<string, any> = {}
+    const progresso: Record<string, { teoria_id: string; percentual_lido: number; ultima_leitura: string }> = {}
     if (userId && teorias && teorias.length > 0) {
       const teoriaIds = teorias.map(t => t.id)
 
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       .eq('teoria_id', teoriaId)
       .single()
 
-    const dados: Record<string, any> = {
+    const dados: Record<string, string | boolean> = {
       ultima_leitura: new Date().toISOString()
     }
 

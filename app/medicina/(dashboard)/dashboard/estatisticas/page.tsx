@@ -124,7 +124,7 @@ export default function EstatisticasPage() {
       if (respostas && respostas.length > 0) {
         const porDisciplina: Record<string, { nome: string, questoes: number, corretas: number }> = {}
 
-        respostas.forEach((r: any) => {
+        respostas.forEach((r: { acertou: boolean; questao?: { disciplina?: { id: string; nome: string } } }) => {
           const disc = r.questao?.disciplina
           if (disc) {
             if (!porDisciplina[disc.id]) {
@@ -187,7 +187,7 @@ export default function EstatisticasPage() {
         <div className="relative">
           <select
             value={periodo}
-            onChange={(e) => setPeriodo(e.target.value as any)}
+            onChange={(e) => setPeriodo(e.target.value as '7d' | '30d' | '90d' | 'all')}
             className="appearance-none bg-white/5 border border-white/10 rounded-lg py-2 pl-4 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
             <option value="7d" className="bg-slate-800">Últimos 7 dias</option>

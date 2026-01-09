@@ -224,7 +224,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const updateData: Record<string, any> = {}
+    const updateData: Record<string, string | number> = {}
 
     if (tempoGasto !== undefined) updateData.tempo_gasto_segundos = tempoGasto
     if (status !== undefined) updateData.status = status

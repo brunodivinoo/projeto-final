@@ -172,7 +172,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, string | string[] | boolean | null> = {
       updated_at: new Date().toISOString()
     }
 

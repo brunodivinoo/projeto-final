@@ -61,7 +61,7 @@ export async function GET(
     ).filter(Boolean)
 
     // Combinar questões com respostas
-    const questoesComRespostas = questoesOrdenadas.map((questao: any) => {
+    const questoesComRespostas = questoesOrdenadas.map((questao: { id: string }) => {
       const resposta = respostas?.find(r => r.questao_id === questao.id)
       return {
         ...questao,
