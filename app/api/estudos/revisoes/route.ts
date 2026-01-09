@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         .select(`
           *,
           sessao_origem:sessoes_estudo (id, metodo, duracao_segundos),
-          disciplina:disciplinas (id, nome, icon, cor),
+          disciplina:disciplinas (id, nome),
           assunto:assuntos (id, nome),
           subassunto:subassuntos (id, nome),
           revisao_historico (*)
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
         .from('revisoes')
         .select(`
           *,
-          disciplina:disciplinas (id, nome, icon, cor),
+          disciplina:disciplinas (id, nome),
           assunto:assuntos (id, nome),
           subassunto:subassuntos (id, nome)
         `)
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
         .from('revisoes')
         .select(`
           *,
-          disciplina:disciplinas (id, nome, icon, cor),
+          disciplina:disciplinas (id, nome),
           assunto:assuntos (id, nome),
           subassunto:subassuntos (id, nome)
         `)
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
         .from('revisoes')
         .select(`
           *,
-          disciplina:disciplinas (id, nome, icon, cor),
+          disciplina:disciplinas (id, nome),
           assunto:assuntos (id, nome),
           subassunto:subassuntos (id, nome)
         `)
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
       .from('revisoes')
       .select(`
         *,
-        disciplina:disciplinas (id, nome, icon, cor),
+        disciplina:disciplinas (id, nome),
         assunto:assuntos (id, nome),
         subassunto:subassuntos (id, nome)
       `)
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
       })
       .select(`
         *,
-        disciplina:disciplinas (id, nome, icon, cor),
+        disciplina:disciplinas (id, nome),
         assunto:assuntos (id, nome),
         subassunto:subassuntos (id, nome)
       `)
@@ -319,7 +319,7 @@ export async function PUT(request: NextRequest) {
         .from('revisoes')
         .select(`
           *,
-          disciplina:disciplinas (id, nome, icon, cor),
+          disciplina:disciplinas (id, nome),
           assunto:assuntos (id, nome),
           subassunto:subassuntos (id, nome)
         `)

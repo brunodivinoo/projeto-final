@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
           *,
           ciclo:ciclos_estudo (id, nome),
           ciclo_item:ciclo_itens (id, nome_display),
-          disciplina:disciplinas (id, nome, icon, cor),
+          disciplina:disciplinas (id, nome),
           assunto:assuntos (id, nome),
           subassunto:subassuntos (id, nome)
         `)
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
           *,
           ciclo:ciclos_estudo (id, nome),
           ciclo_item:ciclo_itens (id, nome_display),
-          disciplina:disciplinas (id, nome, icon, cor),
+          disciplina:disciplinas (id, nome),
           assunto:assuntos (id, nome),
           subassunto:subassuntos (id, nome)
         `)
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
       .from('sessoes_estudo')
       .select(`
         *,
-        disciplina:disciplinas (id, nome, icon, cor),
+        disciplina:disciplinas (id, nome),
         assunto:assuntos (id, nome),
         subassunto:subassuntos (id, nome)
       `)
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       })
       .select(`
         *,
-        disciplina:disciplinas (id, nome, icon, cor),
+        disciplina:disciplinas (id, nome),
         assunto:assuntos (id, nome),
         subassunto:subassuntos (id, nome)
       `)
@@ -279,7 +279,7 @@ export async function PUT(request: NextRequest) {
       .from('sessoes_estudo')
       .select(`
         *,
-        disciplina:disciplinas (id, nome, icon, cor),
+        disciplina:disciplinas (id, nome),
         assunto:assuntos (id, nome),
         subassunto:subassuntos (id, nome)
       `)

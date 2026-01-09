@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
           plano:planos_estudo (id, nome),
           ciclo_itens (
             *,
-            disciplina:disciplinas (id, nome, icon, cor),
+            disciplina:disciplinas (id, nome),
             assunto:assuntos (id, nome),
             subassunto:subassuntos (id, nome)
           )
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
           plano:planos_estudo (id, nome),
           ciclo_itens (
             *,
-            disciplina:disciplinas (id, nome, icon, cor),
+            disciplina:disciplinas (id, nome),
             assunto:assuntos (id, nome),
             subassunto:subassuntos (id, nome)
           )
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
         plano:planos_estudo (id, nome),
         ciclo_itens (
           *,
-          disciplina:disciplinas (id, nome, icon, cor),
+          disciplina:disciplinas (id, nome),
           assunto:assuntos (id, nome),
           subassunto:subassuntos (id, nome)
         )
@@ -262,7 +262,7 @@ export async function PUT(request: NextRequest) {
         plano:planos_estudo (id, nome),
         ciclo_itens (
           *,
-          disciplina:disciplinas (id, nome, icon, cor),
+          disciplina:disciplinas (id, nome),
           assunto:assuntos (id, nome),
           subassunto:subassuntos (id, nome)
         )

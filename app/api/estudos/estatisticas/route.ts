@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
           *,
           ciclo_itens (
             *,
-            disciplina:disciplinas (id, nome, icon, cor)
+            disciplina:disciplinas (id, nome)
           )
         `)
         .eq('user_id', user_id)
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
           duracao_segundos,
           questoes_feitas,
           questoes_corretas,
-          disciplina:disciplinas (id, nome, icon, cor)
+          disciplina:disciplinas (id, nome)
         `)
         .eq('user_id', user_id)
         .eq('status', 'finalizada')
