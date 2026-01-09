@@ -124,14 +124,15 @@ export default function EstatisticasPage() {
       if (respostas && respostas.length > 0) {
         const porDisciplina: Record<string, { nome: string, questoes: number, corretas: number }> = {}
 
-        respostas.forEach((r: { acertou: boolean; questao?: { disciplina?: { id: string; nome: string } } }) => {
-          const disc = r.questao?.disciplina
+        respostas.forEach((r) => {
+          const resposta = r as { acertou: boolean; questao?: { disciplina?: { id: string; nome: string } | null } | null }
+          const disc = resposta.questao?.disciplina
           if (disc) {
             if (!porDisciplina[disc.id]) {
               porDisciplina[disc.id] = { nome: disc.nome, questoes: 0, corretas: 0 }
             }
             porDisciplina[disc.id].questoes++
-            if (r.acertou) porDisciplina[disc.id].corretas++
+            if (resposta.acertou) porDisciplina[disc.id].corretas++
           }
         })
 

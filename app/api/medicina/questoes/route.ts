@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     // Buscar gabarito da questão
     const { data: questao, error: questaoError } = await supabase
       .from('questoes_med')
-      .select('gabarito')
+      .select('gabarito, total_respostas, total_acertos')
       .eq('id', questaoId)
       .single()
 
@@ -156,28 +156,28 @@ export async function POST(request: NextRequest) {
     if (respostaError) throw respostaError
 
     // Atualizar estatísticas da questão
-    const questaoData = questao as { total_respostas: number; total_acertos: number }
-    await supabase.rpc('incrementar_questao_med', {
+    const questaoData = questao as { gabarito: string; total_respostas: number; total_acertos: number }
+    const { error: rpcError } = await supabase.rpc('incrementar_questao_med', {
       p_questao_id: questaoId,
       p_acertou: acertou
-    }).catch(() => {
+    })
+
+    if (rpcError) {
       // Se a função não existir, usar update direto
-      supabase
+      await supabase
         .from('questoes_med')
         .update({
-          total_respostas: questaoData.total_respostas + 1,
-          total_acertos: questaoData.total_acertos + (acertou ? 1 : 0)
+          total_respostas: (questaoData.total_respostas || 0) + 1,
+          total_acertos: (questaoData.total_acertos || 0) + (acertou ? 1 : 0)
         })
         .eq('id', questaoId)
-    })
+    }
 
     // Atualizar profile
     await supabase.rpc('atualizar_estatisticas_med', {
       p_user_id: userId,
       p_acertou: acertou,
       p_tempo: tempoSegundos || 0
-    }).catch(() => {
-      // Fallback se a função não existir
     })
 
     // Atualizar estudo diário

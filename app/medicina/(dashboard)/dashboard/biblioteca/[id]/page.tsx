@@ -29,6 +29,7 @@ interface ConteudoBloco {
   itens?: string[]
   url?: string
   alt?: string
+  legenda?: string
 }
 
 interface ConteudoTeoria {
@@ -343,7 +344,7 @@ export default function TeoriaPage() {
           return (
             <button
               key={nivel}
-              onClick={() => acessivel && setNivelAtivo(nivel as any)}
+              onClick={() => acessivel && setNivelAtivo(nivel as 'basico' | 'avancado' | 'expert')}
               disabled={!acessivel}
               className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
                 nivelAtivo === nivel

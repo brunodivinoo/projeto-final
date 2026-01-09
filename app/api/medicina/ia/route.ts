@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-})
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 
 // POST - Fazer pergunta para IA
 export async function POST(request: NextRequest) {
@@ -88,19 +86,16 @@ Você está criando flashcards para revisão. Crie perguntas diretas na frente e
 Retorne no formato JSON: { "flashcards": [{ "frente": "pergunta", "verso": "resposta" }] }`
     }
 
-    // Fazer chamada para OpenAI
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...(contexto ? [{ role: 'user' as const, content: `Contexto: ${contexto}` }] : []),
-        { role: 'user', content: mensagem }
-      ],
-      temperature: 0.7,
-      max_tokens: 2000
-    })
+    // Fazer chamada para Gemini
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.0-flash' })
 
-    const resposta = completion.choices[0]?.message?.content || 'Desculpe, não consegui gerar uma resposta.'
+    const fullPrompt = contexto
+      ? `${systemPrompt}\n\nContexto: ${contexto}\n\nPergunta do usuário: ${mensagem}`
+      : `${systemPrompt}\n\nPergunta do usuário: ${mensagem}`
+
+    const result = await model.generateContent(fullPrompt)
+    const response = await result.response
+    const resposta = response.text() || 'Desculpe, não consegui gerar uma resposta.'
 
     // Salvar no histórico
     await supabase
