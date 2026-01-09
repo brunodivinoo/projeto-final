@@ -21,6 +21,9 @@ export default function Home() {
             <a className="text-slate-900 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#contato">Contato</a>
           </div>
           <div className="flex gap-2">
+            <Link href="/medicina" className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 transition-colors text-sm font-bold leading-normal tracking-[0.015em] shadow-md">
+              <span className="truncate">Medicina</span>
+            </Link>
             <Link href="/login" className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-slate-100 text-slate-900 hover:bg-slate-200 transition-colors text-sm font-bold leading-normal tracking-[0.015em]">
               <span className="truncate">Login</span>
             </Link>
