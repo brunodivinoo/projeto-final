@@ -20,6 +20,7 @@ import {
   Clock
 } from 'lucide-react'
 import Link from 'next/link'
+import UpgradePrompt from '@/components/medicina/UpgradePrompt'
 
 interface Mensagem {
   tipo: 'usuario' | 'ia'
@@ -146,23 +147,7 @@ export default function IAPage() {
   if (plano === 'gratuito') {
     return (
       <div className="max-w-3xl mx-auto">
-        <div className="bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl p-8 border border-amber-500/30 text-center">
-          <div className="w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-6">
-            <Crown className="w-10 h-10 text-amber-400" />
-          </div>
-          <h1 className="text-2xl font-bold text-white mb-3">IA Tutora</h1>
-          <p className="text-amber-200/80 mb-6 max-w-md mx-auto">
-            A IA Tutora está disponível apenas para assinantes Premium e Residência.
-            Tire suas dúvidas, peça explicações e receba ajuda personalizada para seus estudos.
-          </p>
-          <Link
-            href="/medicina/dashboard/assinatura"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-700 transition-colors"
-          >
-            <Sparkles className="w-5 h-5" />
-            Fazer Upgrade
-          </Link>
-        </div>
+        <UpgradePrompt tipo="ia" planoAtual={plano} />
       </div>
     )
   }

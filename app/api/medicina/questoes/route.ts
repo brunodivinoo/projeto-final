@@ -11,11 +11,21 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
+
+    // Suporte para múltiplos valores (separados por vírgula)
+    const disciplinaIds = searchParams.get('disciplinaIds')?.split(',').filter(Boolean) || []
+    const assuntoIds = searchParams.get('assuntoIds')?.split(',').filter(Boolean) || []
+    const bancas = searchParams.get('bancas')?.split(',').filter(Boolean) || []
+    const anos = searchParams.get('anos')?.split(',').filter(Boolean).map(a => parseInt(a)) || []
+    const dificuldades = searchParams.get('dificuldades')?.split(',').filter(Boolean).map(d => parseInt(d)) || []
+
+    // Suporte para filtros únicos (retrocompatibilidade)
     const disciplinaId = searchParams.get('disciplinaId')
     const assuntoId = searchParams.get('assuntoId')
     const banca = searchParams.get('banca')
     const ano = searchParams.get('ano')
     const dificuldade = searchParams.get('dificuldade')
+
     const naoRespondidas = searchParams.get('naoRespondidas') === 'true'
     const erradas = searchParams.get('erradas') === 'true'
     const limit = parseInt(searchParams.get('limit') || '20')
@@ -45,20 +55,34 @@ export async function GET(request: NextRequest) {
       `, { count: 'exact' })
       .eq('ativo', true)
 
-    // Aplicar filtros
-    if (disciplinaId) {
+    // Aplicar filtros múltiplos ou únicos
+    if (disciplinaIds.length > 0) {
+      query = query.in('disciplina_id', disciplinaIds)
+    } else if (disciplinaId) {
       query = query.eq('disciplina_id', disciplinaId)
     }
-    if (assuntoId) {
+
+    if (assuntoIds.length > 0) {
+      query = query.in('assunto_id', assuntoIds)
+    } else if (assuntoId) {
       query = query.eq('assunto_id', assuntoId)
     }
-    if (banca) {
+
+    if (bancas.length > 0) {
+      query = query.in('banca', bancas)
+    } else if (banca) {
       query = query.eq('banca', banca)
     }
-    if (ano) {
+
+    if (anos.length > 0) {
+      query = query.in('ano', anos)
+    } else if (ano) {
       query = query.eq('ano', parseInt(ano))
     }
-    if (dificuldade) {
+
+    if (dificuldades.length > 0) {
+      query = query.in('dificuldade', dificuldades)
+    } else if (dificuldade) {
       query = query.eq('dificuldade', parseInt(dificuldade))
     }
 
