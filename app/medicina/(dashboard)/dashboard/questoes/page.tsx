@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useMedAuth } from '@/contexts/MedAuthContext'
 import { supabase } from '@/lib/supabase'
@@ -19,7 +19,8 @@ import {
   Crown,
   Sparkles,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Check
 } from 'lucide-react'
 
 interface Alternativa {
@@ -58,6 +59,154 @@ interface RespostaUsuario {
   resposta_selecionada: string
 }
 
+// Componente de Dropdown Multi-Select
+function MultiSelectDropdown({
+  label,
+  options,
+  selected,
+  onChange,
+  placeholder,
+  disabled = false,
+  groupBy
+}: {
+  label: string
+  options: { id: string; nome: string; group?: string }[]
+  selected: string[]
+  onChange: (selected: string[]) => void
+  placeholder: string
+  disabled?: boolean
+  groupBy?: string
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const toggleOption = (id: string) => {
+    if (selected.includes(id)) {
+      onChange(selected.filter(s => s !== id))
+    } else {
+      onChange([...selected, id])
+    }
+  }
+
+  const clearAll = () => {
+    onChange([])
+  }
+
+  const selectedNames = options
+    .filter(o => selected.includes(o.id))
+    .map(o => o.nome)
+
+  // Agrupar opcoes se necessario
+  const groupedOptions = groupBy
+    ? options.reduce((acc, opt) => {
+        const group = opt.group || 'Outros'
+        if (!acc[group]) acc[group] = []
+        acc[group].push(opt)
+        return acc
+      }, {} as Record<string, typeof options>)
+    : null
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <label className="block text-white/60 text-sm mb-2">{label}</label>
+      <button
+        type="button"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between gap-2 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-left transition-colors ${
+          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10 cursor-pointer'
+        } ${isOpen ? 'ring-2 ring-emerald-500' : ''}`}
+      >
+        <span className={selected.length > 0 ? 'text-white' : 'text-white/40'}>
+          {selected.length === 0
+            ? placeholder
+            : selected.length === 1
+            ? selectedNames[0]
+            : `${selected.length} selecionados`}
+        </span>
+        <ChevronDown className={`w-5 h-5 text-white/40 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-2 bg-slate-800 border border-white/10 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+          {/* Header com limpar */}
+          {selected.length > 0 && (
+            <div className="sticky top-0 bg-slate-800 border-b border-white/10 px-4 py-2 flex items-center justify-between">
+              <span className="text-white/60 text-sm">{selected.length} selecionados</span>
+              <button
+                onClick={clearAll}
+                className="text-emerald-400 text-sm hover:underline"
+              >
+                Limpar
+              </button>
+            </div>
+          )}
+
+          {/* Opcoes agrupadas ou simples */}
+          {groupedOptions ? (
+            Object.entries(groupedOptions).map(([group, opts]) => (
+              <div key={group}>
+                <div className="px-4 py-2 bg-white/5 text-white/40 text-xs font-semibold uppercase">
+                  {group}
+                </div>
+                {opts.map(option => (
+                  <button
+                    key={option.id}
+                    onClick={() => toggleOption(option.id)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors"
+                  >
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center ${
+                      selected.includes(option.id)
+                        ? 'bg-emerald-500 border-emerald-500'
+                        : 'border-white/20'
+                    }`}>
+                      {selected.includes(option.id) && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    <span className="text-white/80">{option.nome}</span>
+                  </button>
+                ))}
+              </div>
+            ))
+          ) : (
+            options.map(option => (
+              <button
+                key={option.id}
+                onClick={() => toggleOption(option.id)}
+                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors"
+              >
+                <div className={`w-5 h-5 rounded border flex items-center justify-center ${
+                  selected.includes(option.id)
+                    ? 'bg-emerald-500 border-emerald-500'
+                    : 'border-white/20'
+                }`}>
+                  {selected.includes(option.id) && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <span className="text-white/80">{option.nome}</span>
+              </button>
+            ))
+          )}
+
+          {options.length === 0 && (
+            <div className="px-4 py-6 text-center text-white/40">
+              Nenhuma opcao disponivel
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function QuestoesPage() {
   const { user, plano, limitesPlano, limites } = useMedAuth()
   const [questoes, setQuestoes] = useState<Questao[]>([])
@@ -65,13 +214,13 @@ export default function QuestoesPage() {
   const [loading, setLoading] = useState(false)
   const [buscaIniciada, setBuscaIniciada] = useState(false)
 
-  // Filtros
+  // Dados para filtros
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([])
-  const [assuntos, setAssuntos] = useState<Assunto[]>([])
-  const [bancas, setBancas] = useState<string[]>([])
+  const [todosAssuntos, setTodosAssuntos] = useState<Assunto[]>([])
+  const [bancasDisponiveis, setBancasDisponiveis] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(true)
 
-  // Seleções múltiplas
+  // Selecoes
   const [disciplinasSelecionadas, setDisciplinasSelecionadas] = useState<string[]>([])
   const [assuntosSelecionados, setAssuntosSelecionados] = useState<string[]>([])
   const [bancasSelecionadas, setBancasSelecionadas] = useState<string[]>([])
@@ -80,7 +229,7 @@ export default function QuestoesPage() {
   const [naoRespondidas, setNaoRespondidas] = useState(false)
   const [erradas, setErradas] = useState(false)
 
-  // Estado das questões
+  // Estado das questoes
   const [respostasUsuario, setRespostasUsuario] = useState<Record<string, RespostaUsuario>>({})
   const [respostasSelecionadas, setRespostasSelecionadas] = useState<Record<string, string>>({})
   const [questoesRespondidas, setQuestoesRespondidas] = useState<Set<string>>(new Set())
@@ -90,23 +239,38 @@ export default function QuestoesPage() {
   const [shareMenuAberto, setShareMenuAberto] = useState<string | null>(null)
   const [copiado, setCopiado] = useState(false)
 
-  // Paginação
+  // Paginacao
   const [page, setPage] = useState(0)
   const pageSize = 10
 
-  // Anos disponíveis
-  const anos = [2024, 2023, 2022, 2021, 2020, 2019, 2018]
-
-  // Dificuldades
-  const dificuldades = [
-    { value: '1', label: 'Muito Fácil', cor: 'text-green-400 bg-green-500/20' },
-    { value: '2', label: 'Fácil', cor: 'text-emerald-400 bg-emerald-500/20' },
-    { value: '3', label: 'Médio', cor: 'text-yellow-400 bg-yellow-500/20' },
-    { value: '4', label: 'Difícil', cor: 'text-orange-400 bg-orange-500/20' },
-    { value: '5', label: 'Muito Difícil', cor: 'text-red-400 bg-red-500/20' }
+  // Anos e dificuldades
+  const anos = [
+    { id: '2024', nome: '2024' },
+    { id: '2023', nome: '2023' },
+    { id: '2022', nome: '2022' },
+    { id: '2021', nome: '2021' },
+    { id: '2020', nome: '2020' },
+    { id: '2019', nome: '2019' },
+    { id: '2018', nome: '2018' }
   ]
 
-  // Carregar disciplinas e bancas
+  const dificuldadesOpcoes = [
+    { id: '1', nome: 'Muito Facil' },
+    { id: '2', nome: 'Facil' },
+    { id: '3', nome: 'Medio' },
+    { id: '4', nome: 'Dificil' },
+    { id: '5', nome: 'Muito Dificil' }
+  ]
+
+  const dificuldadesInfo: Record<string, { label: string; cor: string }> = {
+    '1': { label: 'Muito Facil', cor: 'text-green-400 bg-green-500/20' },
+    '2': { label: 'Facil', cor: 'text-emerald-400 bg-emerald-500/20' },
+    '3': { label: 'Medio', cor: 'text-yellow-400 bg-yellow-500/20' },
+    '4': { label: 'Dificil', cor: 'text-orange-400 bg-orange-500/20' },
+    '5': { label: 'Muito Dificil', cor: 'text-red-400 bg-red-500/20' }
+  }
+
+  // Carregar disciplinas, assuntos e bancas
   useEffect(() => {
     const loadMeta = async () => {
       const { data: discs } = await supabase
@@ -121,7 +285,7 @@ export default function QuestoesPage() {
         .select('id, nome, disciplina_id')
         .order('nome')
 
-      if (assuntosData) setAssuntos(assuntosData)
+      if (assuntosData) setTodosAssuntos(assuntosData)
 
       const { data: bancasData } = await supabase
         .from('questoes_med')
@@ -130,16 +294,35 @@ export default function QuestoesPage() {
 
       if (bancasData) {
         const unique = [...new Set(bancasData.map(b => b.banca).filter(Boolean))]
-        setBancas(unique as string[])
+        setBancasDisponiveis(unique as string[])
       }
     }
     loadMeta()
   }, [])
 
-  // Filtrar assuntos baseado nas disciplinas selecionadas
+  // Assuntos filtrados por disciplinas selecionadas (com agrupamento por disciplina)
   const assuntosFiltrados = disciplinasSelecionadas.length > 0
-    ? assuntos.filter(a => disciplinasSelecionadas.includes(a.disciplina_id))
-    : assuntos
+    ? todosAssuntos
+        .filter(a => disciplinasSelecionadas.includes(a.disciplina_id))
+        .map(a => {
+          const disc = disciplinas.find(d => d.id === a.disciplina_id)
+          return { ...a, group: disc?.nome || 'Outros' }
+        })
+    : []
+
+  // Quando disciplinas mudam, limpar assuntos que nao pertencem mais
+  useEffect(() => {
+    if (disciplinasSelecionadas.length > 0) {
+      setAssuntosSelecionados(prev =>
+        prev.filter(aId => {
+          const assunto = todosAssuntos.find(a => a.id === aId)
+          return assunto && disciplinasSelecionadas.includes(assunto.disciplina_id)
+        })
+      )
+    } else {
+      setAssuntosSelecionados([])
+    }
+  }, [disciplinasSelecionadas, todosAssuntos])
 
   const buscarQuestoes = useCallback(async () => {
     if (!user) return
@@ -178,10 +361,10 @@ export default function QuestoesPage() {
       setQuestoes(questoesData)
       setTotal(data.total || 0)
 
-      // Expandir todas as questões por padrão
+      // Expandir todas as questoes por padrao
       setQuestoesExpandidas(new Set(questoesData.map((q: Questao) => q.id)))
 
-      // Carregar respostas anteriores do usuário
+      // Carregar respostas anteriores do usuario
       if (questoesData.length > 0) {
         const { data: respostas } = await supabase
           .from('respostas_med')
@@ -202,7 +385,7 @@ export default function QuestoesPage() {
       }
 
     } catch (error) {
-      console.error('Erro ao buscar questões:', error)
+      console.error('Erro ao buscar questoes:', error)
     } finally {
       setLoading(false)
     }
@@ -228,16 +411,7 @@ export default function QuestoesPage() {
     naoRespondidas ||
     erradas
 
-  // Toggle seleção
-  const toggleSelecao = (array: string[], setArray: (arr: string[]) => void, value: string) => {
-    if (array.includes(value)) {
-      setArray(array.filter(v => v !== value))
-    } else {
-      setArray([...array, value])
-    }
-  }
-
-  // Responder questão
+  // Responder questao
   const responderQuestao = async (questaoId: string) => {
     if (!user || questoesRespondidas.has(questaoId)) return
 
@@ -284,13 +458,13 @@ export default function QuestoesPage() {
     }, 2000)
   }
 
-  // Limite de questões
+  // Limite de questoes
   const questoesUsadas = limites?.questoes_dia || 0
   const questoesLimite = limitesPlano.questoes_dia
   const podeResponder = questoesLimite === -1 || questoesUsadas < questoesLimite
 
   const getDificuldadeInfo = (nivel: number) => {
-    return dificuldades.find(d => d.value === String(nivel)) || dificuldades[2]
+    return dificuldadesInfo[String(nivel)] || dificuldadesInfo['3']
   }
 
   return (
@@ -333,139 +507,67 @@ export default function QuestoesPage() {
         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-white">Filtros</h3>
-            <div className="flex items-center gap-3">
-              {temFiltrosAtivos && (
-                <button
-                  onClick={limparFiltros}
-                  className="text-white/60 text-sm hover:text-white flex items-center gap-1"
-                >
-                  <X className="w-4 h-4" />
-                  Limpar
-                </button>
-              )}
-            </div>
+            {temFiltrosAtivos && (
+              <button
+                onClick={limparFiltros}
+                className="text-white/60 text-sm hover:text-white flex items-center gap-1"
+              >
+                <X className="w-4 h-4" />
+                Limpar todos
+              </button>
+            )}
           </div>
 
-          {/* Disciplinas - Multi-select */}
-          <div className="mb-6">
-            <label className="block text-white/60 text-sm mb-3">Disciplinas</label>
-            <div className="flex flex-wrap gap-2">
-              {disciplinas.map((d) => (
-                <button
-                  key={d.id}
-                  onClick={() => {
-                    toggleSelecao(disciplinasSelecionadas, setDisciplinasSelecionadas, d.id)
-                    // Limpar assuntos que não pertencem mais às disciplinas selecionadas
-                    if (disciplinasSelecionadas.includes(d.id)) {
-                      setAssuntosSelecionados(prev =>
-                        prev.filter(aId => {
-                          const assunto = assuntos.find(a => a.id === aId)
-                          return assunto && disciplinasSelecionadas.filter(id => id !== d.id).includes(assunto.disciplina_id)
-                        })
-                      )
-                    }
-                  }}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                    disciplinasSelecionadas.includes(d.id)
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-white/5 text-white/70 hover:bg-white/10'
-                  }`}
-                >
-                  {d.nome}
-                </button>
-              ))}
-            </div>
+          {/* Linha 1: Disciplinas e Assuntos */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <MultiSelectDropdown
+              label="Disciplinas"
+              options={disciplinas.map(d => ({ id: d.id, nome: d.nome }))}
+              selected={disciplinasSelecionadas}
+              onChange={setDisciplinasSelecionadas}
+              placeholder="Selecione as disciplinas"
+            />
+
+            <MultiSelectDropdown
+              label="Assuntos"
+              options={assuntosFiltrados}
+              selected={assuntosSelecionados}
+              onChange={setAssuntosSelecionados}
+              placeholder={disciplinasSelecionadas.length === 0 ? "Selecione disciplinas primeiro" : "Selecione os assuntos"}
+              disabled={disciplinasSelecionadas.length === 0}
+              groupBy="group"
+            />
           </div>
 
-          {/* Assuntos - Multi-select */}
-          {assuntosFiltrados.length > 0 && (
-            <div className="mb-6">
-              <label className="block text-white/60 text-sm mb-3">
-                Assuntos {disciplinasSelecionadas.length > 0 && `(${assuntosFiltrados.length} disponiveis)`}
-              </label>
-              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                {assuntosFiltrados.map((a) => (
-                  <button
-                    key={a.id}
-                    onClick={() => toggleSelecao(assuntosSelecionados, setAssuntosSelecionados, a.id)}
-                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                      assuntosSelecionados.includes(a.id)
-                        ? 'bg-teal-500 text-white'
-                        : 'bg-white/5 text-white/70 hover:bg-white/10'
-                    }`}
-                  >
-                    {a.nome}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Linha 2: Bancas, Anos, Dificuldade */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <MultiSelectDropdown
+              label="Bancas"
+              options={bancasDisponiveis.map(b => ({ id: b, nome: b }))}
+              selected={bancasSelecionadas}
+              onChange={setBancasSelecionadas}
+              placeholder="Todas as bancas"
+            />
 
-          {/* Segunda linha de filtros */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {/* Bancas */}
-            <div>
-              <label className="block text-white/60 text-sm mb-3">Bancas</label>
-              <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
-                {bancas.map((b) => (
-                  <button
-                    key={b}
-                    onClick={() => toggleSelecao(bancasSelecionadas, setBancasSelecionadas, b)}
-                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                      bancasSelecionadas.includes(b)
-                        ? 'bg-purple-500 text-white'
-                        : 'bg-white/5 text-white/70 hover:bg-white/10'
-                    }`}
-                  >
-                    {b}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <MultiSelectDropdown
+              label="Anos"
+              options={anos}
+              selected={anosSelecionados}
+              onChange={setAnosSelecionados}
+              placeholder="Todos os anos"
+            />
 
-            {/* Anos */}
-            <div>
-              <label className="block text-white/60 text-sm mb-3">Anos</label>
-              <div className="flex flex-wrap gap-2">
-                {anos.map((ano) => (
-                  <button
-                    key={ano}
-                    onClick={() => toggleSelecao(anosSelecionados, setAnosSelecionados, String(ano))}
-                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                      anosSelecionados.includes(String(ano))
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white/5 text-white/70 hover:bg-white/10'
-                    }`}
-                  >
-                    {ano}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Dificuldades */}
-            <div>
-              <label className="block text-white/60 text-sm mb-3">Dificuldade</label>
-              <div className="flex flex-wrap gap-2">
-                {dificuldades.map((d) => (
-                  <button
-                    key={d.value}
-                    onClick={() => toggleSelecao(dificuldadesSelecionadas, setDificuldadesSelecionadas, d.value)}
-                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                      dificuldadesSelecionadas.includes(d.value)
-                        ? d.cor
-                        : 'bg-white/5 text-white/70 hover:bg-white/10'
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <MultiSelectDropdown
+              label="Dificuldade"
+              options={dificuldadesOpcoes}
+              selected={dificuldadesSelecionadas}
+              onChange={setDificuldadesSelecionadas}
+              placeholder="Todas as dificuldades"
+            />
           </div>
 
           {/* Filtros extras */}
-          <div className="flex flex-wrap items-center gap-4 mb-6">
+          <div className="flex flex-wrap items-center gap-6 mb-6">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -476,7 +578,7 @@ export default function QuestoesPage() {
                 }}
                 className="w-4 h-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500"
               />
-              <span className="text-white/80 text-sm">Apenas nao respondidas</span>
+              <span className="text-white/80">Apenas nao respondidas</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -488,17 +590,45 @@ export default function QuestoesPage() {
                 }}
                 className="w-4 h-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500"
               />
-              <span className="text-white/80 text-sm">Apenas erradas</span>
+              <span className="text-white/80">Apenas erradas</span>
             </label>
           </div>
 
-          {/* Botao Buscar */}
+          {/* Resumo e Botao Buscar */}
           <div className="flex items-center justify-between border-t border-white/10 pt-4">
-            <p className="text-white/40 text-sm">
-              {temFiltrosAtivos
-                ? `${disciplinasSelecionadas.length} disciplinas, ${assuntosSelecionados.length} assuntos selecionados`
-                : 'Nenhum filtro selecionado - todas as questoes'}
-            </p>
+            <div className="text-white/40 text-sm">
+              {temFiltrosAtivos ? (
+                <div className="flex flex-wrap gap-2">
+                  {disciplinasSelecionadas.length > 0 && (
+                    <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs">
+                      {disciplinasSelecionadas.length} disciplina(s)
+                    </span>
+                  )}
+                  {assuntosSelecionados.length > 0 && (
+                    <span className="px-2 py-1 bg-teal-500/20 text-teal-400 rounded-full text-xs">
+                      {assuntosSelecionados.length} assunto(s)
+                    </span>
+                  )}
+                  {bancasSelecionadas.length > 0 && (
+                    <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs">
+                      {bancasSelecionadas.length} banca(s)
+                    </span>
+                  )}
+                  {anosSelecionados.length > 0 && (
+                    <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs">
+                      {anosSelecionados.length} ano(s)
+                    </span>
+                  )}
+                  {dificuldadesSelecionadas.length > 0 && (
+                    <span className="px-2 py-1 bg-orange-500/20 text-orange-400 rounded-full text-xs">
+                      {dificuldadesSelecionadas.length} dificuldade(s)
+                    </span>
+                  )}
+                </div>
+              ) : (
+                'Nenhum filtro - todas as questoes'
+              )}
+            </div>
             <button
               onClick={() => {
                 setPage(0)
