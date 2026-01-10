@@ -11,6 +11,7 @@ export interface ProfileMED {
   avatar_url: string | null
   faculdade: string | null
   ano_curso: number | null
+  periodo_curso: number | null
   estado: string | null
   cidade: string | null
   plano: 'gratuito' | 'premium' | 'residencia'

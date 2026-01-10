@@ -22,14 +22,20 @@ const estados = [
   'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ]
 
-const anosCurso = [
-  { value: 1, label: '1º Ano' },
-  { value: 2, label: '2º Ano' },
-  { value: 3, label: '3º Ano' },
-  { value: 4, label: '4º Ano' },
-  { value: 5, label: '5º Ano' },
-  { value: 6, label: '6º Ano (Internato)' },
-  { value: 7, label: 'Formado' },
+const periodosCurso = [
+  { value: 1, label: '1º Período' },
+  { value: 2, label: '2º Período' },
+  { value: 3, label: '3º Período' },
+  { value: 4, label: '4º Período' },
+  { value: 5, label: '5º Período' },
+  { value: 6, label: '6º Período' },
+  { value: 7, label: '7º Período' },
+  { value: 8, label: '8º Período' },
+  { value: 9, label: '9º Período (Internato)' },
+  { value: 10, label: '10º Período (Internato)' },
+  { value: 11, label: '11º Período (Internato)' },
+  { value: 12, label: '12º Período (Internato)' },
+  { value: 13, label: 'Formado' },
 ]
 
 export default function PerfilPage() {
@@ -43,7 +49,7 @@ export default function PerfilPage() {
     nome: '',
     email: '',
     faculdade: '',
-    ano_curso: 1,
+    periodo_curso: 1,
     estado: '',
     cidade: ''
   })
@@ -54,7 +60,7 @@ export default function PerfilPage() {
         nome: profile.nome || '',
         email: profile.email || user?.email || '',
         faculdade: profile.faculdade || '',
-        ano_curso: profile.ano_curso || 1,
+        periodo_curso: profile.periodo_curso || profile.ano_curso || 1,
         estado: profile.estado || '',
         cidade: profile.cidade || ''
       })
@@ -195,16 +201,16 @@ export default function PerfilPage() {
 
             <div>
               <label className="block text-white/80 text-sm font-medium mb-2">
-                Ano do Curso
+                Período do Curso
               </label>
               <select
-                value={form.ano_curso}
-                onChange={(e) => setForm({ ...form, ano_curso: parseInt(e.target.value) })}
+                value={form.periodo_curso}
+                onChange={(e) => setForm({ ...form, periodo_curso: parseInt(e.target.value) })}
                 className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
-                {anosCurso.map((ano) => (
-                  <option key={ano.value} value={ano.value} className="bg-slate-800">
-                    {ano.label}
+                {periodosCurso.map((periodo) => (
+                  <option key={periodo.value} value={periodo.value} className="bg-slate-800">
+                    {periodo.label}
                   </option>
                 ))}
               </select>

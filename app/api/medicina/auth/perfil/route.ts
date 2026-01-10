@@ -60,9 +60,11 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { user_id, nome, faculdade, ano_curso, estado, cidade, avatar_url } = body
+    const { user_id, userId, nome, faculdade, ano_curso, periodo_curso, estado, cidade, avatar_url } = body
 
-    if (!user_id) {
+    const finalUserId = user_id || userId
+
+    if (!finalUserId) {
       return NextResponse.json({ error: 'user_id é obrigatório' }, { status: 400 })
     }
 
@@ -72,6 +74,8 @@ export async function PUT(request: NextRequest) {
 
     if (nome !== undefined) updates.nome = nome
     if (faculdade !== undefined) updates.faculdade = faculdade
+    // Suporta tanto periodo_curso quanto ano_curso para retrocompatibilidade
+    if (periodo_curso !== undefined) updates.periodo_curso = periodo_curso
     if (ano_curso !== undefined) updates.ano_curso = ano_curso
     if (estado !== undefined) updates.estado = estado
     if (cidade !== undefined) updates.cidade = cidade
@@ -80,7 +84,7 @@ export async function PUT(request: NextRequest) {
     const { data: profile, error } = await supabase
       .from('profiles_med')
       .update(updates)
-      .eq('id', user_id)
+      .eq('id', finalUserId)
       .select()
       .single()
 
@@ -100,7 +104,7 @@ export async function PUT(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { user_id, nome, email, faculdade, ano_curso, estado, cidade } = body
+    const { user_id, nome, email, faculdade, ano_curso, periodo_curso, estado, cidade } = body
 
     if (!user_id) {
       return NextResponse.json({ error: 'user_id é obrigatório' }, { status: 400 })
@@ -125,7 +129,7 @@ export async function POST(request: NextRequest) {
         nome: nome || 'Estudante',
         email,
         faculdade,
-        ano_curso,
+        periodo_curso: periodo_curso || ano_curso,
         estado,
         cidade,
         plano: 'gratuito'
