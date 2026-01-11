@@ -179,19 +179,100 @@ export default function TeoriaPage() {
   const renderConteudo = (conteudo: ConteudoTeoria | string | ConteudoBloco[] | null) => {
     if (!conteudo) return null
 
+    // String simples
     if (typeof conteudo === 'string') {
       return <p className="text-white/80 whitespace-pre-wrap leading-relaxed">{conteudo}</p>
     }
 
+    // Array de blocos
     if (Array.isArray(conteudo)) {
       return conteudo.map((bloco, index) => renderBloco(bloco, index))
     }
 
-    if (typeof conteudo === 'object' && 'blocos' in conteudo && conteudo.blocos) {
-      return conteudo.blocos.map((bloco: ConteudoBloco, index: number) => renderBloco(bloco, index))
+    // Objeto com estrutura
+    if (typeof conteudo === 'object') {
+      // Formato com blocos
+      if ('blocos' in conteudo && conteudo.blocos) {
+        return conteudo.blocos.map((bloco: ConteudoBloco, index: number) => renderBloco(bloco, index))
+      }
+
+      // Formato com seções (o formato do print!)
+      if ('secoes' in conteudo && Array.isArray(conteudo.secoes)) {
+        return (
+          <div className="space-y-8">
+            {conteudo.titulo && (
+              <h2 className="text-2xl font-bold text-white border-b border-white/10 pb-4">{conteudo.titulo}</h2>
+            )}
+            {conteudo.secoes.map((secao: { titulo: string; conteudo: string }, index: number) => (
+              <div key={index} className="space-y-3">
+                <h3 className="text-xl font-semibold text-emerald-400 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-sm">
+                    {index + 1}
+                  </span>
+                  {secao.titulo}
+                </h3>
+                <div className="pl-10">
+                  <p className="text-white/80 leading-relaxed whitespace-pre-wrap">{secao.conteudo}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      }
+
+      // Formato com título e conteúdo direto
+      if ('titulo' in conteudo && 'conteudo' in conteudo) {
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-white">{conteudo.titulo}</h2>
+            <p className="text-white/80 leading-relaxed whitespace-pre-wrap">
+              {typeof conteudo.conteudo === 'string' ? conteudo.conteudo : JSON.stringify(conteudo.conteudo, null, 2)}
+            </p>
+          </div>
+        )
+      }
+
+      // Fallback: renderizar objeto de forma legível
+      return renderObjectAsContent(conteudo as unknown as Record<string, unknown>)
     }
 
-    return <p className="text-white/80">{JSON.stringify(conteudo)}</p>
+    return <p className="text-white/80">{String(conteudo)}</p>
+  }
+
+  // Renderizar objeto genérico de forma legível
+  const renderObjectAsContent = (obj: Record<string, unknown>) => {
+    return (
+      <div className="space-y-6">
+        {Object.entries(obj).map(([key, value], index) => {
+          // Ignorar chaves internas
+          if (key.startsWith('_')) return null
+
+          const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+
+          return (
+            <div key={index} className="space-y-2">
+              <h3 className="text-lg font-semibold text-emerald-400">{formattedKey}</h3>
+              <div className="pl-4 border-l-2 border-emerald-500/30">
+                {typeof value === 'string' ? (
+                  <p className="text-white/80 leading-relaxed whitespace-pre-wrap">{value}</p>
+                ) : Array.isArray(value) ? (
+                  <ul className="space-y-2">
+                    {value.map((item, i) => (
+                      <li key={i} className="text-white/80 flex items-start gap-2">
+                        <span className="text-emerald-400 mt-1">•</span>
+                        {typeof item === 'string' ? item : JSON.stringify(item)}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-white/80">{JSON.stringify(value, null, 2)}</p>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
   }
 
   const renderBloco = (bloco: ConteudoBloco | string, index: number) => {
