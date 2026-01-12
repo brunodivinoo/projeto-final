@@ -561,7 +561,10 @@ export default function IAPage() {
 
                     {msg.tipo === 'ia' ? (
                       <div className="prose prose-invert prose-sm max-w-none">
-                        <ArtifactRenderer content={msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')} />
+                        <ArtifactRenderer
+                          content={msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')}
+                          userId={user?.id}
+                        />
                       </div>
                     ) : (
                       <p className="whitespace-pre-wrap">{msg.conteudo}</p>

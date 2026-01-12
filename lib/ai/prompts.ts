@@ -118,6 +118,19 @@ Use o método SOAP expandido:
 - Use linguagem técnica mas acessível
 - Seja completo mas organizado
 
+# IMAGENS MÉDICAS REAIS (Plano Premium)
+Você pode incluir imagens médicas reais quando apropriado.
+
+Para solicitar uma imagem, use: [IMAGE_SEARCH: termo em inglês]
+
+Exemplos:
+- Radiologia: [IMAGE_SEARCH: chest xray pneumonia]
+- Histologia: [IMAGE_SEARCH: histology liver cirrhosis]
+- Dermatologia: [IMAGE_SEARCH: melanoma dermoscopy]
+
+Use apenas quando a imagem ajudar na compreensão (max 2 por resposta).
+NÃO use para conceitos abstratos ou fisiologia pura.
+
 # IDIOMA
 - SEMPRE em português brasileiro
 - Mantenha termos técnicos em latim/inglês quando padrão médico`
@@ -304,6 +317,49 @@ Tipos de imagens que podem ser geradas:
 - Comparações visuais
 - Fluxogramas coloridos
 </image_generation>
+
+<medical_images_real>
+IMPORTANTE: Você pode incluir IMAGENS MÉDICAS REAIS de bancos como PubMed/OpenI quando apropriado.
+
+Para solicitar uma imagem médica real, use o marcador:
+[IMAGE_SEARCH: termo de busca em inglês]
+
+REGRAS:
+1. Use termos em INGLÊS para a busca (maior cobertura)
+2. Seja específico com modalidade quando relevante
+3. NÃO use para conceitos abstratos ou fisiologia pura
+4. Máximo de 3 marcadores por resposta
+5. Coloque o marcador APÓS explicar o conceito relacionado
+
+QUANDO USAR:
+✓ Achados radiológicos: [IMAGE_SEARCH: chest xray lobar pneumonia consolidation]
+✓ Histopatologia: [IMAGE_SEARCH: histology adenocarcinoma colon HE stain]
+✓ Anatomia visual: [IMAGE_SEARCH: heart anatomy cross section]
+✓ Dermatologia: [IMAGE_SEARCH: psoriasis plaque skin lesion]
+✓ Lesões macroscópicas: [IMAGE_SEARCH: gross pathology myocardial infarction]
+✓ Exames de imagem: [IMAGE_SEARCH: CT scan pulmonary embolism]
+
+QUANDO NÃO USAR:
+✗ Conceitos de fisiologia pura (ciclo de Krebs isolado)
+✗ Farmacologia teórica (mecanismo de ação sem imagem)
+✗ Definições e conceitos abstratos
+✗ Quando já está criando um diagrama Mermaid do mesmo tema
+
+EXEMPLOS DE USO:
+
+Pergunta: "Como identificar pneumonia lobar no raio-X?"
+Resposta:
+A pneumonia lobar apresenta na radiografia de tórax uma consolidação homogênea...
+[IMAGE_SEARCH: lobar pneumonia chest xray consolidation]
+
+Pergunta: "Como é a histologia do adenocarcinoma de cólon?"
+Resposta:
+O adenocarcinoma colorretal apresenta glândulas atípicas com...
+[IMAGE_SEARCH: colon adenocarcinoma histology HE microscopy]
+
+Pergunta: "O que é o ciclo de Krebs?"
+Resposta: (SEM marcador - conceito abstrato, use diagrama Mermaid)
+</medical_images_real>
 
 <formatting_rules>
 ## Formatação Obrigatória:

@@ -33,8 +33,22 @@ const ImageGenerator = dynamic(() => import('./ImageGenerator'), {
   )
 })
 
+// Importar MedicalImageGallery dinamicamente
+const MedicalImageGallery = dynamic(() => import('./MedicalImageGallery'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-slate-800/30 rounded-xl p-4 my-4">
+      <div className="flex items-center gap-2 text-white/40">
+        <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full" />
+        <span>Buscando imagens médicas...</span>
+      </div>
+    </div>
+  )
+})
+
 interface ArtifactRendererProps {
   content: string
+  userId?: string
 }
 
 // Regex para detectar artefatos no formato ```artifact:tipo:titulo
@@ -46,6 +60,9 @@ const MERMAID_REGEX = /```mermaid\n([\s\S]*?)```/g
 // Regex para detectar solicitações de geração de imagem
 const IMAGE_GEN_REGEX = /```generate_image\n([\s\S]*?)```/g
 
+// Regex para detectar marcadores de busca de imagens médicas reais
+const IMAGE_SEARCH_REGEX = /\[IMAGE_SEARCH:\s*([^\]]+)\]/g
+
 interface Artifact {
   type: 'artifact' | 'mermaid' | 'image_request'
   subtype?: string
@@ -53,6 +70,22 @@ interface Artifact {
   content: string
   startIndex: number
   endIndex: number
+}
+
+// Função para extrair termos de busca de imagens do conteúdo
+function extractImageSearchTerms(content: string): string[] {
+  const terms: string[] = []
+  let match
+  const regex = new RegExp(IMAGE_SEARCH_REGEX.source, 'g')
+  while ((match = regex.exec(content)) !== null) {
+    terms.push(match[1].trim())
+  }
+  return terms
+}
+
+// Função para remover marcadores IMAGE_SEARCH do texto
+function removeImageSearchMarkers(content: string): string {
+  return content.replace(IMAGE_SEARCH_REGEX, '')
 }
 
 function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifacts: Artifact[] } {
@@ -140,13 +173,19 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   return { parts, artifacts }
 }
 
-export default function ArtifactRenderer({ content }: ArtifactRendererProps) {
+export default function ArtifactRenderer({ content, userId }: ArtifactRendererProps) {
   const { parts } = useMemo(() => parseArtifacts(content), [content])
+
+  // Extrair termos de busca de imagens médicas reais
+  const imageSearchTerms = useMemo(() => extractImageSearchTerms(content), [content])
 
   return (
     <div className="artifact-renderer">
       {parts.map((part, index) => {
         if (typeof part === 'string') {
+          // Remover marcadores IMAGE_SEARCH do texto antes de renderizar
+          const cleanedPart = removeImageSearchMarkers(part)
+
           // Renderizar Markdown normal
           return (
             <ReactMarkdown
@@ -313,7 +352,7 @@ export default function ArtifactRenderer({ content }: ArtifactRendererProps) {
                 )
               }}
             >
-              {part}
+              {cleanedPart}
             </ReactMarkdown>
           )
         }
@@ -359,6 +398,14 @@ export default function ArtifactRenderer({ content }: ArtifactRendererProps) {
 
         return null
       })}
+
+      {/* Renderizar galeria de imagens médicas reais se houver termos de busca */}
+      {imageSearchTerms.length > 0 && userId && (
+        <MedicalImageGallery
+          searchTerms={imageSearchTerms}
+          userId={userId}
+        />
+      )}
     </div>
   )
 }
