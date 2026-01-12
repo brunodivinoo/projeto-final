@@ -20,6 +20,19 @@ const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
   )
 })
 
+// Importar ImageGenerator dinamicamente
+const ImageGenerator = dynamic(() => import('./ImageGenerator'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-white/40">
+        <div className="animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full" />
+        <span>Carregando gerador de imagens...</span>
+      </div>
+    </div>
+  )
+})
+
 interface ArtifactRendererProps {
   content: string
 }
@@ -199,7 +212,7 @@ export default function ArtifactRenderer({ content }: ArtifactRendererProps) {
                 ),
 
                 // Code
-                code: ({ className, children, ...props }) => {
+                code: ({ className, children }) => {
                   const match = /language-(\w+)/.exec(className || '')
                   const isInline = !match
 
@@ -217,7 +230,6 @@ export default function ArtifactRenderer({ content }: ArtifactRendererProps) {
                       language={match[1]}
                       PreTag="div"
                       className="rounded-lg my-3 text-sm"
-                      {...props}
                     >
                       {String(children).replace(/\n$/, '')}
                     </SyntaxHighlighter>
@@ -319,18 +331,10 @@ export default function ArtifactRenderer({ content }: ArtifactRendererProps) {
 
         if (part.type === 'image_request') {
           return (
-            <div key={index} className="my-4 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 rounded-full bg-amber-500" />
-                <span className="text-amber-400 font-medium text-sm">Solicitação de Imagem</span>
-              </div>
-              <p className="text-white/60 text-sm">
-                Esta é uma solicitação para geração de imagem. O recurso de geração de imagens está sendo configurado.
-              </p>
-              <pre className="mt-2 text-xs text-white/40 bg-slate-800/50 p-2 rounded overflow-x-auto">
-                {part.content}
-              </pre>
-            </div>
+            <ImageGenerator
+              key={index}
+              prompt={part.content}
+            />
           )
         }
 
