@@ -25,7 +25,7 @@ import {
   Settings,
   Zap
 } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
+import ArtifactRenderer from '@/components/ia/ArtifactRenderer'
 
 interface Mensagem {
   id: string
@@ -561,7 +561,7 @@ export default function IAPage() {
 
                     {msg.tipo === 'ia' ? (
                       <div className="prose prose-invert prose-sm max-w-none">
-                        <ReactMarkdown>{msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')}</ReactMarkdown>
+                        <ArtifactRenderer content={msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')} />
                       </div>
                     ) : (
                       <p className="whitespace-pre-wrap">{msg.conteudo}</p>
