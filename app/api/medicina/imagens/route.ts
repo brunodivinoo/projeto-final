@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { searchMedicalImages } from '@/lib/medical-images/service'
-import { PlanoIA, LIMITES_IA } from '@/lib/ai'
+import type { PlanoIA } from '@/lib/ai'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

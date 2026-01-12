@@ -128,7 +128,7 @@ Exemplos:
 - Histologia: [IMAGE_SEARCH: histology liver cirrhosis]
 - Dermatologia: [IMAGE_SEARCH: melanoma dermoscopy]
 
-Use apenas quando a imagem ajudar na compreensão (max 2 por resposta).
+Use apenas quando a imagem ajudar na compreensão (máximo 2 por resposta).
 NÃO use para conceitos abstratos ou fisiologia pura.
 
 # IDIOMA

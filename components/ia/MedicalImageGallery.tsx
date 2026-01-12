@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { X, ExternalLink, ZoomIn, Loader2, ImageOff, Info } from 'lucide-react'
 import type { MedicalImage } from '@/lib/medical-images/service'
 
@@ -9,12 +9,23 @@ interface MedicalImageGalleryProps {
   userId?: string
 }
 
+// Sanitizar HTML básico (remover scripts e eventos)
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/on\w+="[^"]*"/gi, '')
+    .replace(/on\w+='[^']*'/gi, '')
+}
+
 export default function MedicalImageGallery({ searchTerms, userId }: MedicalImageGalleryProps) {
   const [images, setImages] = useState<MedicalImage[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<MedicalImage | null>(null)
   const [needsUpgrade, setNeedsUpgrade] = useState(false)
+
+  // Estabilizar a referência do array para evitar re-renders
+  const termsKey = useMemo(() => searchTerms.join('|'), [searchTerms])
 
   useEffect(() => {
     if (searchTerms.length === 0 || !userId) return
@@ -55,7 +66,8 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
     }
 
     fetchImages()
-  }, [searchTerms, userId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [termsKey, userId])
 
   // Loading state
   if (loading) {
@@ -190,7 +202,7 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
               {selectedImage.caption && (
                 <p
                   className="text-white/70 text-sm"
-                  dangerouslySetInnerHTML={{ __html: selectedImage.caption }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedImage.caption) }}
                 />
               )}
 
