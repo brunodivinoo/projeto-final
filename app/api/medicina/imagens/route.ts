@@ -177,10 +177,16 @@ export async function POST(request: NextRequest) {
       index === self.findIndex(i => i.id === img.id)
     )
 
+    // Pegar informações da primeira busca que encontrou algo (ou da última se nenhuma encontrou)
+    const firstSuccessfulResult = results.find(r => r.images.length > 0) || results[results.length - 1]
+
     return NextResponse.json({
       images: uniqueImages,
       total: uniqueImages.length,
-      queries: limitedQueries.length
+      queries: limitedQueries.length,
+      queryUsed: firstSuccessfulResult?.queryUsed,
+      originalQuery: limitedQueries[0],
+      suggestions: uniqueImages.length === 0 ? firstSuccessfulResult?.suggestions : undefined
     })
 
   } catch (error) {

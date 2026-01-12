@@ -1,12 +1,22 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { X, ExternalLink, ZoomIn, Loader2, ImageOff, Info } from 'lucide-react'
+import { X, ExternalLink, ZoomIn, Loader2, ImageOff, Info, AlertCircle, Search } from 'lucide-react'
 import type { MedicalImage } from '@/lib/medical-images/service'
 
 interface MedicalImageGalleryProps {
   searchTerms: string[]
   userId?: string
+}
+
+interface SearchResponse {
+  images: MedicalImage[]
+  total: number
+  queryUsed?: string
+  originalQuery?: string
+  suggestions?: string[]
+  error?: string
+  upgrade?: boolean
 }
 
 // Sanitizar HTML básico (remover scripts e eventos)
@@ -23,6 +33,12 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
   const [error, setError] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<MedicalImage | null>(null)
   const [needsUpgrade, setNeedsUpgrade] = useState(false)
+  const [searchInfo, setSearchInfo] = useState<{
+    queryUsed?: string
+    originalQuery?: string
+    suggestions?: string[]
+    searched: boolean
+  }>({ searched: false })
 
   // Estabilizar a referência do array para evitar re-renders
   const termsKey = useMemo(() => searchTerms.join('|'), [searchTerms])
@@ -34,6 +50,7 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
       setLoading(true)
       setError(null)
       setNeedsUpgrade(false)
+      setSearchInfo({ searched: false })
 
       try {
         const response = await fetch('/api/medicina/imagens', {
@@ -45,7 +62,7 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
           })
         })
 
-        const data = await response.json()
+        const data: SearchResponse = await response.json()
 
         if (!response.ok) {
           if (data.upgrade) {
@@ -57,6 +74,12 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
         }
 
         setImages(data.images || [])
+        setSearchInfo({
+          queryUsed: data.queryUsed,
+          originalQuery: data.originalQuery,
+          suggestions: data.suggestions,
+          searched: true
+        })
       } catch (err) {
         console.error('Erro ao buscar imagens:', err)
         setError('Erro de conexão')
@@ -75,8 +98,11 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
       <div className="my-4 p-4 bg-slate-800/30 rounded-xl border border-white/10">
         <div className="flex items-center gap-3 text-white/60">
           <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
-          <span className="text-sm">Buscando imagens médicas...</span>
+          <span className="text-sm">Buscando imagens médicas reais...</span>
         </div>
+        <p className="text-white/40 text-xs mt-2">
+          Traduzindo termos e pesquisando em bancos médicos...
+        </p>
       </div>
     )
   }
@@ -115,7 +141,57 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
     )
   }
 
-  // No images found
+  // No images found - mostrar feedback útil
+  if (images.length === 0 && searchInfo.searched) {
+    return (
+      <div className="my-4 p-4 bg-amber-500/5 rounded-xl border border-amber-500/20">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+            <Search className="w-4 h-4 text-amber-400" />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-white/80 font-medium text-sm">
+              Imagem não encontrada
+            </h4>
+            <p className="text-white/50 text-xs mt-1">
+              Não encontramos imagens médicas para os termos buscados.
+            </p>
+
+            {/* Mostrar o que foi buscado */}
+            {searchInfo.queryUsed && (
+              <p className="text-white/40 text-xs mt-2">
+                Termo buscado: <span className="text-white/60">{searchInfo.queryUsed}</span>
+              </p>
+            )}
+
+            {/* Sugestões */}
+            {searchInfo.suggestions && searchInfo.suggestions.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-white/5">
+                <p className="text-amber-400/80 text-xs font-medium mb-1">Sugestões:</p>
+                <ul className="space-y-1">
+                  {searchInfo.suggestions.map((suggestion, i) => (
+                    <li key={i} className="text-white/50 text-xs flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 text-amber-400/60" />
+                      {suggestion}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Dicas gerais */}
+            <div className="mt-3 pt-3 border-t border-white/5">
+              <p className="text-white/40 text-xs">
+                Dica: Use termos em inglês como &quot;chest xray pneumonia&quot; ou &quot;ct scan liver&quot; para melhores resultados.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Não pesquisou ainda ou não tem termos
   if (images.length === 0) {
     return null
   }
@@ -133,6 +209,14 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
             ({images.length} {images.length === 1 ? 'imagem' : 'imagens'})
           </span>
         </div>
+
+        {/* Mostrar termo que encontrou resultados (se diferente do original) */}
+        {searchInfo.queryUsed && searchInfo.originalQuery &&
+         searchInfo.queryUsed.toLowerCase() !== searchInfo.originalQuery.toLowerCase() && (
+          <p className="text-white/40 text-xs mb-3">
+            Buscado como: <span className="text-emerald-400/80">{searchInfo.queryUsed}</span>
+          </p>
+        )}
 
         {/* Image Grid */}
         <div className="flex gap-3 overflow-x-auto pb-2">
