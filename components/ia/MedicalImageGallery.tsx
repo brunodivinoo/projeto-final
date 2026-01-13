@@ -102,12 +102,12 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
   }, [src])
 
   const handleError = useCallback(() => {
-    if (retryCount < 2 && fallbackSrc && currentSrc !== fallbackSrc) {
+    if (retryCount < 1 && fallbackSrc && currentSrc !== fallbackSrc) {
       // Tentar fallback (usar URL completa ao invés de thumb)
       setCurrentSrc(fallbackSrc)
       setRetryCount(prev => prev + 1)
-    } else if (retryCount < 3) {
-      // Tentar adicionar proxy ou forçar HTTPS
+    } else if (retryCount < 2) {
+      // Tentar forçar HTTPS
       const httpsUrl = currentSrc.replace('http://', 'https://')
       if (httpsUrl !== currentSrc) {
         setCurrentSrc(httpsUrl)
@@ -144,6 +144,7 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
           <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
         </div>
       )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={currentSrc}
         alt={alt}
@@ -151,7 +152,6 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
         loading="lazy"
         onError={handleError}
         onLoad={handleLoad}
-        crossOrigin="anonymous"
         referrerPolicy="no-referrer"
       />
     </div>

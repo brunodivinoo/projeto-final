@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { Maximize2, Minimize2, Download, Copy, Check } from 'lucide-react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { Maximize2, Minimize2, Download, Copy, Check, ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react'
 
 interface MermaidDiagramProps {
   chart: string
@@ -10,10 +10,17 @@ interface MermaidDiagramProps {
 
 export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const svgContainerRef = useRef<HTMLDivElement>(null)
   const [svg, setSvg] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [copied, setCopied] = useState(false)
+
+  // Estados para zoom e pan
+  const [scale, setScale] = useState(1)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
     const renderDiagram = async () => {
@@ -107,6 +114,78 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
     renderDiagram()
   }, [chart])
 
+  // Reset zoom e posição
+  const resetView = useCallback(() => {
+    setScale(1)
+    setPosition({ x: 0, y: 0 })
+  }, [])
+
+  // Zoom in
+  const zoomIn = useCallback(() => {
+    setScale(s => Math.min(s + 0.25, 3))
+  }, [])
+
+  // Zoom out
+  const zoomOut = useCallback(() => {
+    setScale(s => Math.max(s - 0.25, 0.5))
+  }, [])
+
+  // Mouse wheel zoom
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault()
+      const delta = e.deltaY > 0 ? -0.1 : 0.1
+      setScale(s => Math.max(0.5, Math.min(3, s + delta)))
+    }
+  }, [])
+
+  // Pan com mouse drag
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button === 0 && (e.ctrlKey || e.metaKey || scale > 1)) {
+      setIsDragging(true)
+      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
+    }
+  }, [position, scale])
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isDragging) {
+      setPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      })
+    }
+  }, [isDragging, dragStart])
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false)
+  }, [])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!isFullscreen) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'Escape':
+          setIsFullscreen(false)
+          break
+        case '+':
+        case '=':
+          zoomIn()
+          break
+        case '-':
+          zoomOut()
+          break
+        case '0':
+          resetView()
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFullscreen, zoomIn, zoomOut, resetView])
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(chart)
@@ -146,8 +225,8 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
   }
 
   return (
-    <div className={`my-4 ${isFullscreen ? 'fixed inset-0 z-50 bg-slate-900/95 p-8 overflow-auto' : ''}`}>
-      <div className={`bg-slate-800/50 border border-white/10 rounded-xl overflow-hidden ${isFullscreen ? 'h-full' : ''}`}>
+    <div className={`my-4 ${isFullscreen ? 'fixed inset-0 z-50 bg-slate-900/95 p-8 overflow-hidden' : ''}`}>
+      <div className={`bg-slate-800/50 border border-white/10 rounded-xl overflow-hidden ${isFullscreen ? 'h-full flex flex-col' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2 bg-slate-800/80 border-b border-white/10">
           <div className="flex items-center gap-2">
@@ -155,8 +234,38 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
             <span className="text-white/80 text-sm font-medium">
               {title || 'Diagrama'}
             </span>
+            {scale !== 1 && (
+              <span className="text-white/40 text-xs ml-2">
+                {Math.round(scale * 100)}%
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {/* Zoom controls */}
+            <button
+              onClick={zoomOut}
+              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+              title="Diminuir zoom (-)"
+            >
+              <ZoomOut className="w-4 h-4 text-white/60" />
+            </button>
+            <button
+              onClick={resetView}
+              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+              title="Resetar visualização (0)"
+            >
+              <RotateCcw className="w-4 h-4 text-white/60" />
+            </button>
+            <button
+              onClick={zoomIn}
+              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+              title="Aumentar zoom (+)"
+            >
+              <ZoomIn className="w-4 h-4 text-white/60" />
+            </button>
+
+            <div className="w-px h-4 bg-white/10 mx-1" />
+
             <button
               onClick={handleCopy}
               className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
@@ -178,7 +287,7 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
               className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
-              title={isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+              title={isFullscreen ? 'Sair da tela cheia (ESC)' : 'Tela cheia'}
             >
               {isFullscreen ? (
                 <Minimize2 className="w-4 h-4 text-white/60" />
@@ -192,17 +301,45 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
         {/* Diagrama */}
         <div
           ref={containerRef}
-          className={`p-6 flex items-center justify-center ${isFullscreen ? 'min-h-[calc(100vh-12rem)]' : 'min-h-[200px]'}`}
+          className={`relative overflow-hidden ${isFullscreen ? 'flex-1' : 'min-h-[200px]'}`}
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          style={{ cursor: isDragging ? 'grabbing' : (scale > 1 ? 'grab' : 'default') }}
         >
-          {svg ? (
-            <div
-              className="mermaid-container w-full overflow-x-auto"
-              dangerouslySetInnerHTML={{ __html: svg }}
-            />
-          ) : (
-            <div className="flex items-center gap-2 text-white/40">
-              <div className="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full" />
-              <span>Renderizando diagrama...</span>
+          <div
+            ref={svgContainerRef}
+            className="p-6 flex items-center justify-center transition-transform duration-100"
+            style={{
+              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transformOrigin: 'center center',
+              minHeight: isFullscreen ? 'calc(100vh - 12rem)' : '200px'
+            }}
+          >
+            {svg ? (
+              <div
+                className="mermaid-container w-full overflow-visible"
+                dangerouslySetInnerHTML={{ __html: svg }}
+              />
+            ) : (
+              <div className="flex items-center gap-2 text-white/40">
+                <div className="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full" />
+                <span>Renderizando diagrama...</span>
+              </div>
+            )}
+          </div>
+
+          {/* Hint para zoom/pan em fullscreen */}
+          {isFullscreen && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 bg-slate-800/80 rounded-lg text-white/40 text-xs">
+              <Move className="w-3 h-3" />
+              <span>Arraste para mover</span>
+              <span className="text-white/20">|</span>
+              <span>Ctrl + Scroll para zoom</span>
+              <span className="text-white/20">|</span>
+              <span>ESC para sair</span>
             </div>
           )}
         </div>

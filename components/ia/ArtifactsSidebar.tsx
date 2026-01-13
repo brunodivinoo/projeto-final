@@ -1,9 +1,22 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
-import { X, PanelRightClose, PanelRightOpen, Trash2, Maximize2, Download, Copy, Check, ExternalLink } from 'lucide-react'
-import { useArtifactsStore, ARTIFACT_ICONS, ARTIFACT_LABELS, type Artifact } from '@/stores/artifactsStore'
-import { useState } from 'react'
+import { useEffect, useCallback, useState, useMemo } from 'react'
+import {
+  X,
+  PanelRightClose,
+  PanelRightOpen,
+  Trash2,
+  Maximize2,
+  Minimize2,
+  Copy,
+  Check,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Layers
+} from 'lucide-react'
+import { useArtifactsStore, ARTIFACT_ICONS, ARTIFACT_LABELS, type Artifact, type ArtifactType } from '@/stores/artifactsStore'
 import dynamic from 'next/dynamic'
 
 // Importar MermaidDiagram dinamicamente
@@ -21,7 +34,7 @@ interface ArtifactsSidebarProps {
 }
 
 // Componente para renderizar conteúdo do artefato
-function ArtifactContent({ artifact }: { artifact: Artifact }) {
+function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifact; isFullscreen?: boolean }) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = useCallback(() => {
@@ -30,12 +43,14 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
     setTimeout(() => setCopied(false), 2000)
   }, [artifact.content])
 
+  const containerClass = isFullscreen ? 'max-h-[70vh] overflow-auto' : ''
+
   // Renderização baseada no tipo
   switch (artifact.type) {
     case 'diagram':
     case 'flowchart':
       return (
-        <div className="relative">
+        <div className={`relative ${containerClass}`}>
           <MermaidDiagram chart={artifact.content} title={artifact.title} />
           <button
             onClick={handleCopy}
@@ -49,7 +64,7 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
 
     case 'ecg':
       return (
-        <div className="p-4 bg-slate-900 rounded-lg">
+        <div className={`p-4 bg-slate-900 rounded-lg ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-2xl">💓</span>
             <h4 className="text-white font-medium">{artifact.title}</h4>
@@ -81,7 +96,7 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
 
     case 'comparison':
       return (
-        <div className="p-4">
+        <div className={`p-4 ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">⚖️</span>
             <h4 className="text-white font-medium">{artifact.title}</h4>
@@ -94,7 +109,7 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
 
     case 'checklist':
       return (
-        <div className="p-4">
+        <div className={`p-4 ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">✅</span>
             <h4 className="text-white font-medium">{artifact.title}</h4>
@@ -123,7 +138,7 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
 
     case 'timeline':
       return (
-        <div className="p-4">
+        <div className={`p-4 ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">📅</span>
             <h4 className="text-white font-medium">{artifact.title}</h4>
@@ -141,7 +156,7 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
 
     case 'table':
       return (
-        <div className="p-4 overflow-x-auto">
+        <div className={`p-4 overflow-x-auto ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">📋</span>
             <h4 className="text-white font-medium">{artifact.title}</h4>
@@ -154,7 +169,7 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
 
     case 'code':
       return (
-        <div className="relative">
+        <div className={`relative ${containerClass}`}>
           <pre className="p-4 bg-slate-900 rounded-lg overflow-x-auto text-sm font-mono text-white/80">
             {artifact.content}
           </pre>
@@ -170,7 +185,7 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
 
     default:
       return (
-        <div className="p-4">
+        <div className={`p-4 ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">{ARTIFACT_ICONS[artifact.type]}</span>
             <h4 className="text-white font-medium">{artifact.title}</h4>
@@ -179,6 +194,214 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
         </div>
       )
   }
+}
+
+// Modal de tela cheia
+function FullscreenModal({
+  artifact,
+  onClose,
+  onPrevious,
+  onNext,
+  hasPrevious,
+  hasNext,
+  currentIndex,
+  totalCount
+}: {
+  artifact: Artifact
+  onClose: () => void
+  onPrevious: () => void
+  onNext: () => void
+  hasPrevious: boolean
+  hasNext: boolean
+  currentIndex: number
+  totalCount: number
+}) {
+  const [copied, setCopied] = useState(false)
+
+  // Navegação por teclado
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'Escape':
+          onClose()
+          break
+        case 'ArrowLeft':
+          if (hasPrevious) onPrevious()
+          break
+        case 'ArrowRight':
+          if (hasNext) onNext()
+          break
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose, onPrevious, onNext, hasPrevious, hasNext])
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(artifact.content)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">{ARTIFACT_ICONS[artifact.type]}</span>
+          <div>
+            <h2 className="text-white font-semibold text-lg">{artifact.title}</h2>
+            <span className="text-white/40 text-sm">{ARTIFACT_LABELS[artifact.type]}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Contador */}
+          <span className="text-white/40 text-sm mr-4">
+            {currentIndex + 1} / {totalCount}
+          </span>
+
+          {/* Copiar */}
+          <button
+            onClick={handleCopy}
+            className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+            title="Copiar conteúdo"
+          >
+            {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
+          </button>
+
+          {/* Fechar */}
+          <button
+            onClick={onClose}
+            className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+            title="Fechar (ESC)"
+          >
+            <Minimize2 className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Conteúdo */}
+      <div className="flex-1 overflow-auto p-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-slate-800/50 rounded-xl overflow-hidden border border-white/10">
+            <ArtifactContent artifact={artifact} isFullscreen />
+          </div>
+        </div>
+      </div>
+
+      {/* Navegação */}
+      <div className="flex items-center justify-center gap-4 p-4 border-t border-white/10">
+        <button
+          onClick={onPrevious}
+          disabled={!hasPrevious}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            hasPrevious
+              ? 'bg-white/10 text-white hover:bg-white/20'
+              : 'bg-white/5 text-white/30 cursor-not-allowed'
+          }`}
+        >
+          <ChevronLeft className="w-5 h-5" />
+          <span>Anterior</span>
+        </button>
+
+        <div className="text-white/40 text-sm">
+          Use ← → para navegar, ESC para fechar
+        </div>
+
+        <button
+          onClick={onNext}
+          disabled={!hasNext}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            hasNext
+              ? 'bg-white/10 text-white hover:bg-white/20'
+              : 'bg-white/5 text-white/30 cursor-not-allowed'
+          }`}
+        >
+          <span>Próximo</span>
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Card de artefato para lista vertical
+function ArtifactCard({
+  artifact,
+  isSelected,
+  onSelect,
+  onRemove,
+  onFullscreen
+}: {
+  artifact: Artifact
+  isSelected: boolean
+  onSelect: () => void
+  onRemove: () => void
+  onFullscreen: () => void
+}) {
+  return (
+    <div
+      className={`group relative p-3 rounded-xl border transition-all cursor-pointer ${
+        isSelected
+          ? 'bg-purple-500/20 border-purple-500/50 shadow-lg shadow-purple-500/10'
+          : 'bg-slate-800/50 border-white/5 hover:border-white/20 hover:bg-slate-800/80'
+      }`}
+      onClick={onSelect}
+    >
+      <div className="flex items-start gap-3">
+        {/* Ícone do tipo */}
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${
+          isSelected ? 'bg-purple-500/30' : 'bg-white/5'
+        }`}>
+          {ARTIFACT_ICONS[artifact.type]}
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <h4 className={`font-medium truncate ${isSelected ? 'text-purple-300' : 'text-white'}`}>
+            {artifact.title}
+          </h4>
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`text-xs px-2 py-0.5 rounded ${
+              isSelected ? 'bg-purple-500/20 text-purple-300' : 'bg-white/10 text-white/50'
+            }`}>
+              {ARTIFACT_LABELS[artifact.type]}
+            </span>
+          </div>
+        </div>
+
+        {/* Ações (visíveis no hover) */}
+        <div className={`flex items-center gap-1 transition-opacity ${
+          isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        }`}>
+          <button
+            onClick={(e) => { e.stopPropagation(); onFullscreen() }}
+            className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+            title="Tela cheia"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onRemove() }}
+            className="p-1.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            title="Remover"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Preview do conteúdo (selecionado) */}
+      {isSelected && (
+        <div className="mt-3 pt-3 border-t border-purple-500/20">
+          <div className="bg-slate-900/50 rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+            <ArtifactContent artifact={artifact} />
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 // Componente principal da Sidebar
@@ -194,26 +417,80 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
     setSidebarOpen
   } = useArtifactsStore()
 
-  const selectedArtifact = artifacts.find(a => a.id === selectedArtifactId)
+  // Estados locais
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeFilter, setActiveFilter] = useState<ArtifactType | 'all'>('all')
+  const [fullscreenArtifact, setFullscreenArtifact] = useState<Artifact | null>(null)
+  const [showFilters, setShowFilters] = useState(false)
 
-  // Fechar com ESC
+  // Filtrar artefatos
+  const filteredArtifacts = useMemo(() => {
+    return artifacts.filter(artifact => {
+      const matchesSearch = searchQuery === '' ||
+        artifact.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        artifact.content.toLowerCase().includes(searchQuery.toLowerCase())
+
+      const matchesFilter = activeFilter === 'all' || artifact.type === activeFilter
+
+      return matchesSearch && matchesFilter
+    })
+  }, [artifacts, searchQuery, activeFilter])
+
+  // Tipos disponíveis para filtro
+  const availableTypes = useMemo(() => {
+    const types = new Set(artifacts.map(a => a.type))
+    return Array.from(types) as ArtifactType[]
+  }, [artifacts])
+
+  // Navegação no fullscreen
+  const currentFullscreenIndex = fullscreenArtifact
+    ? filteredArtifacts.findIndex(a => a.id === fullscreenArtifact.id)
+    : -1
+
+  const handlePreviousFullscreen = useCallback(() => {
+    if (currentFullscreenIndex > 0) {
+      setFullscreenArtifact(filteredArtifacts[currentFullscreenIndex - 1])
+    }
+  }, [currentFullscreenIndex, filteredArtifacts])
+
+  const handleNextFullscreen = useCallback(() => {
+    if (currentFullscreenIndex < filteredArtifacts.length - 1) {
+      setFullscreenArtifact(filteredArtifacts[currentFullscreenIndex + 1])
+    }
+  }, [currentFullscreenIndex, filteredArtifacts])
+
+  // Fechar sidebar com ESC (quando não está em fullscreen)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isSidebarOpen) {
+      if (e.key === 'Escape' && isSidebarOpen && !fullscreenArtifact) {
         setSidebarOpen(false)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isSidebarOpen, setSidebarOpen])
+  }, [isSidebarOpen, setSidebarOpen, fullscreenArtifact])
 
-  // Se não há artefatos, mostrar apenas o botão toggle
+  // Se não há artefatos, não mostrar nada
   if (artifacts.length === 0) {
     return null
   }
 
   return (
     <>
+      {/* Modal Fullscreen */}
+      {fullscreenArtifact && (
+        <FullscreenModal
+          artifact={fullscreenArtifact}
+          onClose={() => setFullscreenArtifact(null)}
+          onPrevious={handlePreviousFullscreen}
+          onNext={handleNextFullscreen}
+          hasPrevious={currentFullscreenIndex > 0}
+          hasNext={currentFullscreenIndex < filteredArtifacts.length - 1}
+          currentIndex={currentFullscreenIndex}
+          totalCount={filteredArtifacts.length}
+        />
+      )}
+
       {/* Botão toggle quando sidebar está fechada */}
       {!isSidebarOpen && artifacts.length > 0 && (
         <button
@@ -233,7 +510,7 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
       {/* Sidebar Desktop */}
       <div
         className={`fixed top-0 right-0 h-full bg-slate-900/95 backdrop-blur-sm border-l border-white/10 transition-all duration-300 z-50 hidden md:flex flex-col ${
-          isSidebarOpen ? 'w-96' : 'w-0'
+          isSidebarOpen ? 'w-[420px]' : 'w-0'
         } ${className}`}
       >
         {isSidebarOpen && (
@@ -241,9 +518,9 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <span className="text-lg">📦</span>
+                <Layers className="w-5 h-5 text-purple-400" />
                 <h3 className="text-white font-semibold">Artefatos</h3>
-                <span className="text-white/40 text-sm">({artifacts.length})</span>
+                <span className="text-white/40 text-sm">({filteredArtifacts.length})</span>
               </div>
               <div className="flex items-center gap-2">
                 {artifacts.length > 0 && (
@@ -265,66 +542,105 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
               </div>
             </div>
 
-            {/* Lista de artefatos */}
-            <div className="flex-1 overflow-y-auto">
-              {/* Tabs dos artefatos */}
-              <div className="p-2 border-b border-white/10 flex gap-1 overflow-x-auto">
-                {artifacts.map((artifact) => (
-                  <button
-                    key={artifact.id}
-                    onClick={() => selectArtifact(artifact.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${
-                      selectedArtifactId === artifact.id
-                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                        : 'text-white/60 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    <span>{ARTIFACT_ICONS[artifact.type]}</span>
-                    <span className="max-w-[100px] truncate">{artifact.title}</span>
-                  </button>
-                ))}
+            {/* Busca e Filtros */}
+            <div className="p-3 border-b border-white/10 space-y-2">
+              {/* Campo de busca */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                <input
+                  type="text"
+                  placeholder="Buscar artefatos..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 text-sm"
+                />
               </div>
 
-              {/* Conteúdo do artefato selecionado */}
-              {selectedArtifact ? (
-                <div className="p-4">
-                  {/* Header do artefato */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-400 rounded">
-                        {ARTIFACT_LABELS[selectedArtifact.type]}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                        title="Expandir"
-                      >
-                        <Maximize2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => removeArtifact(selectedArtifact.id)}
-                        className="p-2 text-white/40 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                        title="Remover"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+              {/* Toggle filtros */}
+              {availableTypes.length > 1 && (
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                    showFilters ? 'bg-purple-500/20 text-purple-400' : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Filter className="w-4 h-4" />
+                  <span>Filtrar por tipo</span>
+                  {activeFilter !== 'all' && (
+                    <span className="px-1.5 py-0.5 bg-purple-500/30 text-purple-300 rounded text-xs">
+                      {ARTIFACT_LABELS[activeFilter]}
+                    </span>
+                  )}
+                </button>
+              )}
 
-                  {/* Conteúdo */}
-                  <div className="bg-slate-800/50 rounded-xl overflow-hidden border border-white/5">
-                    <ArtifactContent artifact={selectedArtifact} />
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-64 text-center p-4">
-                  <span className="text-4xl mb-3">📦</span>
-                  <p className="text-white/60 text-sm">
-                    Selecione um artefato para visualizar
-                  </p>
+              {/* Filtros por tipo */}
+              {showFilters && (
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  <button
+                    onClick={() => setActiveFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                      activeFilter === 'all'
+                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                        : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  {availableTypes.map(type => (
+                    <button
+                      key={type}
+                      onClick={() => setActiveFilter(type)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                        activeFilter === type
+                          ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                          : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      <span>{ARTIFACT_ICONS[type]}</span>
+                      <span>{ARTIFACT_LABELS[type]}</span>
+                    </button>
+                  ))}
                 </div>
               )}
+            </div>
+
+            {/* Lista de artefatos - VERTICAL */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {filteredArtifacts.length > 0 ? (
+                filteredArtifacts.map((artifact) => (
+                  <ArtifactCard
+                    key={artifact.id}
+                    artifact={artifact}
+                    isSelected={selectedArtifactId === artifact.id}
+                    onSelect={() => selectArtifact(artifact.id)}
+                    onRemove={() => removeArtifact(artifact.id)}
+                    onFullscreen={() => setFullscreenArtifact(artifact)}
+                  />
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center h-40 text-center">
+                  <Search className="w-8 h-8 text-white/20 mb-2" />
+                  <p className="text-white/40 text-sm">
+                    Nenhum artefato encontrado
+                  </p>
+                  {(searchQuery || activeFilter !== 'all') && (
+                    <button
+                      onClick={() => { setSearchQuery(''); setActiveFilter('all') }}
+                      className="mt-2 text-purple-400 text-sm hover:underline"
+                    >
+                      Limpar filtros
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer com dica */}
+            <div className="p-3 border-t border-white/10 text-center">
+              <p className="text-white/30 text-xs">
+                Clique em um artefato para expandir • <Maximize2 className="w-3 h-3 inline" /> para tela cheia
+              </p>
             </div>
           </>
         )}
@@ -343,7 +659,7 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
         className={`fixed bottom-0 left-0 right-0 bg-slate-900 rounded-t-2xl border-t border-white/10 transition-transform duration-300 z-50 md:hidden ${
           isSidebarOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
-        style={{ maxHeight: '80vh' }}
+        style={{ maxHeight: '85vh' }}
       >
         {/* Handle */}
         <div className="flex justify-center py-2">
@@ -353,9 +669,9 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
         {/* Header */}
         <div className="flex items-center justify-between px-4 pb-3 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <span className="text-lg">📦</span>
+            <Layers className="w-5 h-5 text-purple-400" />
             <h3 className="text-white font-semibold">Artefatos</h3>
-            <span className="text-white/40 text-sm">({artifacts.length})</span>
+            <span className="text-white/40 text-sm">({filteredArtifacts.length})</span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -365,34 +681,32 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
           </button>
         </div>
 
-        {/* Conteúdo */}
-        <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 100px)' }}>
-          {/* Tabs */}
-          <div className="p-2 border-b border-white/10 flex gap-1 overflow-x-auto">
-            {artifacts.map((artifact) => (
-              <button
-                key={artifact.id}
-                onClick={() => selectArtifact(artifact.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${
-                  selectedArtifactId === artifact.id
-                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <span>{ARTIFACT_ICONS[artifact.type]}</span>
-                <span className="max-w-[80px] truncate">{artifact.title}</span>
-              </button>
-            ))}
+        {/* Busca mobile */}
+        <div className="px-4 py-2 border-b border-white/10">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <input
+              type="text"
+              placeholder="Buscar artefatos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 text-sm"
+            />
           </div>
+        </div>
 
-          {/* Conteúdo do artefato */}
-          {selectedArtifact && (
-            <div className="p-4">
-              <div className="bg-slate-800/50 rounded-xl overflow-hidden border border-white/5">
-                <ArtifactContent artifact={selectedArtifact} />
-              </div>
-            </div>
-          )}
+        {/* Lista mobile */}
+        <div className="overflow-y-auto p-3 space-y-2" style={{ maxHeight: 'calc(85vh - 150px)' }}>
+          {filteredArtifacts.map((artifact) => (
+            <ArtifactCard
+              key={artifact.id}
+              artifact={artifact}
+              isSelected={selectedArtifactId === artifact.id}
+              onSelect={() => selectArtifact(artifact.id)}
+              onRemove={() => removeArtifact(artifact.id)}
+              onFullscreen={() => setFullscreenArtifact(artifact)}
+            />
+          ))}
         </div>
       </div>
     </>
@@ -410,7 +724,7 @@ export function ArtifactsFloatingButton() {
       onClick={toggleSidebar}
       className="fixed bottom-24 right-4 z-40 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full shadow-lg hover:from-purple-700 hover:to-pink-700 transition-all hover:scale-105 md:hidden"
     >
-      <span className="text-lg">📦</span>
+      <Layers className="w-5 h-5" />
       <span className="text-sm font-medium">Artefatos</span>
       <span className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-xs">
         {artifacts.length}

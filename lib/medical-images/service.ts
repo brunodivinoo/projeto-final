@@ -390,15 +390,22 @@ interface OpenIResponse {
 
 async function searchOpenI(query: string, limit: number = 10): Promise<MedicalImage[]> {
   try {
+    // Usar a API do OpenI com parâmetros otimizados
+    // it=xg busca apenas imagens de raio-X/gráficos (mais confiáveis)
     const response = await fetch(
-      `https://openi.nlm.nih.gov/api/search?query=${encodeURIComponent(query)}&m=1&n=${limit}`,
+      `https://openi.nlm.nih.gov/api/search?query=${encodeURIComponent(query)}&m=1&n=${limit * 2}`,
       {
-        headers: { 'Accept': 'application/json' },
-        signal: AbortSignal.timeout(10000)
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'PreparaMed/1.0 (Medical Education App)'
+        },
+        signal: AbortSignal.timeout(15000),
+        cache: 'no-store' // Evitar cache do browser que pode causar CORS
       }
     )
 
     if (!response.ok) {
+      console.error(`OpenI API error: ${response.status}`)
       throw new Error(`OpenI API error: ${response.status}`)
     }
 
@@ -408,17 +415,44 @@ async function searchOpenI(query: string, limit: number = 10): Promise<MedicalIm
       return []
     }
 
-    return data.list.map((item) => ({
-      id: item.uid,
-      url: `https://openi.nlm.nih.gov${item.imgLarge}`,
-      thumbUrl: `https://openi.nlm.nih.gov${item.imgThumb}`,
-      title: item.title || 'Medical Image',
-      caption: item.image?.caption || '',
-      source: 'openi' as const,
-      sourceUrl: item.pmc_url || `https://www.ncbi.nlm.nih.gov/pmc/articles/${item.uid}`,
-      modality: detectModality(item),
-      license: 'Open Access (PubMed Central)'
-    }))
+    const validImages = data.list
+      .filter(item => item.imgLarge || item.imgThumb) // Filtrar itens sem imagens
+      .slice(0, limit)
+      .map((item) => {
+        // Construir URLs corretas - OpenI usa caminhos relativos
+        const baseUrl = 'https://openi.nlm.nih.gov'
+
+        // Tratar os caminhos de imagem
+        let imgLarge = item.imgLarge || ''
+        let imgThumb = item.imgThumb || ''
+
+        // Garantir que o caminho começa com /
+        if (imgLarge && !imgLarge.startsWith('http')) {
+          imgLarge = imgLarge.startsWith('/') ? `${baseUrl}${imgLarge}` : `${baseUrl}/${imgLarge}`
+        }
+        if (imgThumb && !imgThumb.startsWith('http')) {
+          imgThumb = imgThumb.startsWith('/') ? `${baseUrl}${imgThumb}` : `${baseUrl}/${imgThumb}`
+        }
+
+        // Fallback: usar imagem grande se thumb não existir
+        if (!imgThumb) imgThumb = imgLarge
+        if (!imgLarge) imgLarge = imgThumb
+
+        return {
+          id: item.uid || `openi-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          url: imgLarge,
+          thumbUrl: imgThumb,
+          title: item.title || 'Medical Image',
+          caption: item.image?.caption || '',
+          source: 'openi' as const,
+          sourceUrl: item.pmc_url || `https://www.ncbi.nlm.nih.gov/pmc/articles/${item.uid}`,
+          modality: detectModality(item),
+          license: 'Open Access (PubMed Central)'
+        }
+      })
+      .filter(img => img.url && img.url.length > 10) // Filtrar imagens sem URL válida
+
+    return validImages
   } catch (error) {
     console.error('OpenI search error:', error)
     return []
