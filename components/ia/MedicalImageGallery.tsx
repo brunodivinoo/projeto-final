@@ -1,8 +1,59 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { X, ExternalLink, ZoomIn, Loader2, ImageOff, Info, AlertCircle, Search } from 'lucide-react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { X, ExternalLink, ZoomIn, Loader2, ImageOff, Info, AlertCircle, Search, RefreshCw, Languages } from 'lucide-react'
 import type { MedicalImage } from '@/lib/medical-images/service'
+
+// Dicionário de tradução EN → PT para termos médicos comuns
+const TRANSLATION_EN_PT: Record<string, string> = {
+  // Anatomia
+  'heart': 'coração', 'lung': 'pulmão', 'lungs': 'pulmões', 'liver': 'fígado',
+  'kidney': 'rim', 'kidneys': 'rins', 'brain': 'cérebro', 'stomach': 'estômago',
+  'bone': 'osso', 'bones': 'ossos', 'chest': 'tórax', 'abdomen': 'abdome',
+  'spine': 'coluna', 'skull': 'crânio', 'pelvis': 'pelve', 'thorax': 'tórax',
+  'artery': 'artéria', 'vein': 'veia', 'blood': 'sangue', 'breast': 'mama',
+
+  // Exames
+  'x-ray': 'raio-X', 'xray': 'raio-X', 'radiograph': 'radiografia',
+  'ct scan': 'tomografia', 'computed tomography': 'tomografia computadorizada',
+  'mri': 'ressonância magnética', 'magnetic resonance': 'ressonância magnética',
+  'ultrasound': 'ultrassom', 'echocardiogram': 'ecocardiograma',
+  'mammogram': 'mamografia', 'biopsy': 'biópsia',
+
+  // Condições
+  'pneumonia': 'pneumonia', 'fracture': 'fratura', 'tumor': 'tumor',
+  'cancer': 'câncer', 'carcinoma': 'carcinoma', 'infection': 'infecção',
+  'inflammation': 'inflamação', 'hemorrhage': 'hemorragia', 'edema': 'edema',
+  'effusion': 'derrame', 'nodule': 'nódulo', 'mass': 'massa', 'lesion': 'lesão',
+  'acute': 'agudo', 'chronic': 'crônico', 'bilateral': 'bilateral',
+  'normal': 'normal', 'abnormal': 'anormal', 'benign': 'benigno', 'malignant': 'maligno',
+
+  // Descrições comuns
+  'patient': 'paciente', 'male': 'masculino', 'female': 'feminino',
+  'year': 'ano', 'years': 'anos', 'old': 'anos de idade',
+  'showing': 'mostrando', 'demonstrates': 'demonstra', 'reveals': 'revela',
+  'image': 'imagem', 'figure': 'figura', 'view': 'vista', 'section': 'corte',
+  'left': 'esquerdo', 'right': 'direito', 'upper': 'superior', 'lower': 'inferior',
+  'anterior': 'anterior', 'posterior': 'posterior', 'lateral': 'lateral',
+}
+
+// Função para traduzir texto médico EN → PT
+function translateMedicalText(text: string): string {
+  if (!text) return text
+
+  let translated = text
+
+  // Ordenar por tamanho decrescente para evitar substituições parciais
+  const sortedTerms = Object.entries(TRANSLATION_EN_PT).sort((a, b) => b[0].length - a[0].length)
+
+  for (const [en, pt] of sortedTerms) {
+    // Usar regex case-insensitive
+    const regex = new RegExp(`\\b${en}\\b`, 'gi')
+    translated = translated.replace(regex, pt)
+  }
+
+  return translated
+}
 
 interface MedicalImageGalleryProps {
   searchTerms: string[]
@@ -27,12 +78,94 @@ function sanitizeHtml(html: string): string {
     .replace(/on\w+='[^']*'/gi, '')
 }
 
+// Componente de imagem com tratamento de erro e retry
+interface ImageWithFallbackProps {
+  src: string
+  fallbackSrc?: string
+  alt: string
+  className?: string
+  onLoadError?: () => void
+}
+
+function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: ImageWithFallbackProps) {
+  const [currentSrc, setCurrentSrc] = useState(src)
+  const [hasError, setHasError] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [retryCount, setRetryCount] = useState(0)
+
+  useEffect(() => {
+    // Reset state when src changes
+    setCurrentSrc(src)
+    setHasError(false)
+    setIsLoading(true)
+    setRetryCount(0)
+  }, [src])
+
+  const handleError = useCallback(() => {
+    if (retryCount < 2 && fallbackSrc && currentSrc !== fallbackSrc) {
+      // Tentar fallback (usar URL completa ao invés de thumb)
+      setCurrentSrc(fallbackSrc)
+      setRetryCount(prev => prev + 1)
+    } else if (retryCount < 3) {
+      // Tentar adicionar proxy ou forçar HTTPS
+      const httpsUrl = currentSrc.replace('http://', 'https://')
+      if (httpsUrl !== currentSrc) {
+        setCurrentSrc(httpsUrl)
+        setRetryCount(prev => prev + 1)
+      } else {
+        setHasError(true)
+        setIsLoading(false)
+        onLoadError?.()
+      }
+    } else {
+      setHasError(true)
+      setIsLoading(false)
+      onLoadError?.()
+    }
+  }, [currentSrc, fallbackSrc, retryCount, onLoadError])
+
+  const handleLoad = useCallback(() => {
+    setIsLoading(false)
+    setHasError(false)
+  }, [])
+
+  if (hasError) {
+    return (
+      <div className={`flex items-center justify-center bg-slate-800/50 ${className}`}>
+        <ImageOff className="w-8 h-8 text-white/20" />
+      </div>
+    )
+  }
+
+  return (
+    <div className={`relative ${className}`}>
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-800/50">
+          <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+        </div>
+      )}
+      <img
+        src={currentSrc}
+        alt={alt}
+        className={`w-full h-full object-cover ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}
+        loading="lazy"
+        onError={handleError}
+        onLoad={handleLoad}
+        crossOrigin="anonymous"
+        referrerPolicy="no-referrer"
+      />
+    </div>
+  )
+}
+
 export default function MedicalImageGallery({ searchTerms, userId }: MedicalImageGalleryProps) {
   const [images, setImages] = useState<MedicalImage[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<MedicalImage | null>(null)
   const [needsUpgrade, setNeedsUpgrade] = useState(false)
+  const [showTranslation, setShowTranslation] = useState(false)
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   const [searchInfo, setSearchInfo] = useState<{
     queryUsed?: string
     originalQuery?: string
@@ -42,6 +175,17 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
 
   // Estabilizar a referência do array para evitar re-renders
   const termsKey = useMemo(() => searchTerms.join('|'), [searchTerms])
+
+  // Filtrar imagens que falharam ao carregar
+  const validImages = useMemo(() =>
+    images.filter(img => !failedImages.has(img.id)),
+    [images, failedImages]
+  )
+
+  // Marcar imagem como falhou
+  const handleImageLoadError = useCallback((imageId: string) => {
+    setFailedImages(prev => new Set([...prev, imageId]))
+  }, [])
 
   useEffect(() => {
     if (searchTerms.length === 0 || !userId) return
@@ -196,18 +340,41 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
     return null
   }
 
+  // Se todas as imagens falharam
+  if (validImages.length === 0 && images.length > 0) {
+    return (
+      <div className="my-4 p-4 bg-amber-500/5 rounded-xl border border-amber-500/20">
+        <div className="flex items-center gap-3">
+          <ImageOff className="w-5 h-5 text-amber-400" />
+          <p className="text-white/60 text-sm">
+            As imagens não puderam ser carregadas. Tente novamente mais tarde.
+          </p>
+          <button
+            onClick={() => setFailedImages(new Set())}
+            className="ml-auto flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+          >
+            <RefreshCw className="w-3 h-3" />
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="my-4 p-4 bg-slate-800/30 rounded-xl border border-white/10">
         {/* Header */}
-        <div className="flex items-center gap-2 mb-3">
-          <Info className="w-4 h-4 text-blue-400" />
-          <span className="text-white/80 text-sm font-medium">
-            Imagens de Referência
-          </span>
-          <span className="text-white/40 text-xs">
-            ({images.length} {images.length === 1 ? 'imagem' : 'imagens'})
-          </span>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Info className="w-4 h-4 text-blue-400" />
+            <span className="text-white/80 text-sm font-medium">
+              Imagens de Referência
+            </span>
+            <span className="text-white/40 text-xs">
+              ({validImages.length} {validImages.length === 1 ? 'imagem' : 'imagens'})
+            </span>
+          </div>
         </div>
 
         {/* Mostrar termo que encontrou resultados (se diferente do original) */}
@@ -220,25 +387,26 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
 
         {/* Image Grid */}
         <div className="flex gap-3 overflow-x-auto pb-2">
-          {images.map((img) => (
+          {validImages.map((img) => (
             <button
               key={img.id}
               onClick={() => setSelectedImage(img)}
               className="group relative flex-shrink-0 w-28 h-28 rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-500 transition-all bg-slate-900/50"
             >
-              <img
+              <ImageWithFallback
                 src={img.thumbUrl}
+                fallbackSrc={img.url}
                 alt={img.title}
-                className="w-full h-full object-cover"
-                loading="lazy"
+                className="w-full h-full"
+                onLoadError={() => handleImageLoadError(img.id)}
               />
               {/* Hover overlay */}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center pointer-events-none">
                 <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
               {/* Modality badge */}
               {img.modality && (
-                <span className="absolute bottom-1 left-1 text-[10px] bg-black/70 text-white px-1.5 py-0.5 rounded">
+                <span className="absolute bottom-1 left-1 text-[10px] bg-black/70 text-white px-1.5 py-0.5 rounded z-10">
                   {img.modality}
                 </span>
               )}
@@ -248,7 +416,7 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
 
         {/* Footer */}
         <p className="text-white/40 text-xs mt-2">
-          Clique para ampliar • Fonte: {images[0]?.source === 'openi' ? 'OpenI/NIH' : 'Wikimedia Commons'}
+          Clique para ampliar • Fonte: {validImages[0]?.source === 'openi' ? 'OpenI/NIH' : 'Wikimedia Commons'}
         </p>
       </div>
 
@@ -272,28 +440,52 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
 
             {/* Image */}
             <div className="relative bg-black min-h-[300px] max-h-[60vh] flex items-center justify-center">
-              <img
+              <ImageWithFallback
                 src={selectedImage.url}
+                fallbackSrc={selectedImage.thumbUrl}
                 alt={selectedImage.title}
-                className="max-w-full max-h-[60vh] object-contain"
+                className="max-w-full max-h-[60vh] flex items-center justify-center"
               />
             </div>
 
             {/* Info */}
             <div className="p-4 space-y-3">
-              <h3 className="text-white font-semibold">{selectedImage.title}</h3>
+              <div className="flex items-start justify-between gap-4">
+                <h3 className="text-white font-semibold">
+                  {showTranslation ? translateMedicalText(selectedImage.title) : selectedImage.title}
+                </h3>
+                {/* Toggle de tradução */}
+                <button
+                  onClick={() => setShowTranslation(!showTranslation)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    showTranslation
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10'
+                  }`}
+                  title={showTranslation ? 'Ver texto original (EN)' : 'Traduzir para português'}
+                >
+                  <Languages className="w-3.5 h-3.5" />
+                  {showTranslation ? 'PT' : 'EN'}
+                </button>
+              </div>
 
               {selectedImage.caption && (
                 <p
                   className="text-white/70 text-sm"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedImage.caption) }}
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeHtml(
+                      showTranslation
+                        ? translateMedicalText(selectedImage.caption)
+                        : selectedImage.caption
+                    )
+                  }}
                 />
               )}
 
               {/* Modality badge */}
               {selectedImage.modality && (
                 <span className="inline-block text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">
-                  {selectedImage.modality}
+                  {showTranslation ? translateMedicalText(selectedImage.modality) : selectedImage.modality}
                 </span>
               )}
 

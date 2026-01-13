@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism'
+import { useArtifactsStore, detectArtifactType } from '@/stores/artifactsStore'
 
 // Importar MermaidDiagram dinamicamente para evitar SSR issues
 const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
@@ -49,6 +50,7 @@ const MedicalImageGallery = dynamic(() => import('./MedicalImageGallery'), {
 interface ArtifactRendererProps {
   content: string
   userId?: string
+  messageId?: string
 }
 
 // Regex para detectar artefatos no formato ```artifact:tipo:titulo
@@ -173,11 +175,46 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   return { parts, artifacts }
 }
 
-export default function ArtifactRenderer({ content, userId }: ArtifactRendererProps) {
-  const { parts } = useMemo(() => parseArtifacts(content), [content])
+export default function ArtifactRenderer({ content, userId, messageId }: ArtifactRendererProps) {
+  const { parts, artifacts } = useMemo(() => parseArtifacts(content), [content])
+  const { addArtifact, artifacts: storeArtifacts } = useArtifactsStore()
+  const addedArtifactsRef = useRef<Set<string>>(new Set())
 
   // Extrair termos de busca de imagens médicas reais
   const imageSearchTerms = useMemo(() => extractImageSearchTerms(content), [content])
+
+  // Adicionar artefatos à store quando detectados
+  useEffect(() => {
+    if (artifacts.length === 0) return
+
+    artifacts.forEach((artifact) => {
+      // Criar uma chave única para evitar duplicatas
+      const artifactKey = `${messageId}-${artifact.startIndex}-${artifact.type}`
+
+      // Verificar se já foi adicionado nesta sessão ou está na store
+      if (addedArtifactsRef.current.has(artifactKey)) return
+
+      // Verificar se já existe na store (para evitar duplicatas em re-renders)
+      const exists = storeArtifacts.some(
+        (a) => a.messageId === messageId && a.content === artifact.content
+      )
+      if (exists) return
+
+      // Adicionar à store
+      const type = detectArtifactType(artifact.content) || 'diagram'
+      addArtifact({
+        type,
+        title: artifact.title || 'Artefato',
+        content: artifact.content,
+        messageId,
+        metadata: {
+          subtype: artifact.subtype
+        }
+      })
+
+      addedArtifactsRef.current.add(artifactKey)
+    })
+  }, [artifacts, messageId, addArtifact, storeArtifacts])
 
   return (
     <div className="artifact-renderer">

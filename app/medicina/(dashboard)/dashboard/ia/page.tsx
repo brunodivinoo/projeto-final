@@ -23,9 +23,13 @@ import {
   Loader2,
   X,
   Settings,
-  Zap
+  Zap,
+  ChevronDown
 } from 'lucide-react'
 import ArtifactRenderer from '@/components/ia/ArtifactRenderer'
+import ArtifactsSidebar, { ArtifactsFloatingButton } from '@/components/ia/ArtifactsSidebar'
+import { useSmartScroll } from '@/hooks/useSmartScroll'
+import { useArtifactsStore } from '@/stores/artifactsStore'
 
 interface Mensagem {
   id: string
@@ -92,7 +96,12 @@ export default function IAPage() {
   const [imagemTipo, setImagemTipo] = useState<string | null>(null)
   const [pdfBase64, setPdfBase64] = useState<string | null>(null)
 
-  const chatRef = useRef<HTMLDivElement>(null)
+  // Smart scroll - permite scroll manual durante streaming
+  const { containerRef: chatRef, isAtBottom, scrollToBottom } = useSmartScroll({
+    threshold: 150,
+    smoothScroll: true
+  })
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
 
@@ -155,11 +164,8 @@ export default function IAPage() {
     fetchConversas()
   }, [fetchUso, fetchConversas])
 
-  useEffect(() => {
-    if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight
-    }
-  }, [mensagens])
+  // O scroll automático agora é gerenciado pelo hook useSmartScroll
+  // Permite scroll manual durante streaming sem travar
 
   // Processar imagem
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,9 +194,18 @@ export default function IAPage() {
     reader.readAsDataURL(file)
   }
 
+  // Ref para controlar requisições em andamento
+  const abortControllerRef = useRef<AbortController | null>(null)
+
   // Enviar mensagem com streaming
   const enviarMensagem = async () => {
     if (!input.trim() || !user || loading || !podeUsarIA) return
+
+    // Cancelar requisição anterior se existir
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
 
     const mensagemUsuario = input.trim()
     const novoId = Date.now().toString()
@@ -216,6 +231,18 @@ export default function IAPage() {
       timestamp: new Date()
     }])
 
+    // Timeout de segurança - garante que loading seja resetado após 5 minutos
+    const timeoutId = setTimeout(() => {
+      console.warn('Timeout de segurança atingido - resetando estado')
+      setLoading(false)
+      setStreaming(false)
+      setMensagens(prev => prev.map(m =>
+        m.id === respostaId && !m.conteudo
+          ? { ...m, conteudo: 'A resposta demorou muito. Tente novamente.' }
+          : m
+      ))
+    }, 5 * 60 * 1000) // 5 minutos
+
     try {
       const response = await fetch('/api/medicina/ia/chat', {
         method: 'POST',
@@ -230,7 +257,8 @@ export default function IAPage() {
           use_web_search: useWebSearch,
           use_extended_thinking: useExtendedThinking,
           thinking_budget: 8000
-        })
+        }),
+        signal: abortControllerRef.current.signal
       })
 
       if (!response.ok) {
@@ -248,12 +276,13 @@ export default function IAPage() {
 
       let fullResponse = ''
       let thinking = ''
+      let receivedDone = false
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const chunk = decoder.decode(value)
+        const chunk = decoder.decode(value, { stream: true })
         const lines = chunk.split('\n')
 
         for (const line of lines) {
@@ -272,6 +301,7 @@ export default function IAPage() {
                 // Tool foi executada
                 console.log('Tool result:', data)
               } else if (data.type === 'done') {
+                receivedDone = true
                 setConversaAtual(data.conversa_id)
                 thinking = data.thinking || ''
 
@@ -289,31 +319,55 @@ export default function IAPage() {
               }
             } catch (parseError) {
               // Ignorar erros de parsing de chunks incompletos
+              // Mas logar se não for erro de JSON
+              if (!(parseError instanceof SyntaxError)) {
+                console.error('Erro no processamento:', parseError)
+              }
             }
           }
         }
       }
 
+      // Se stream terminou sem evento 'done', marcar como completo mesmo assim
+      if (!receivedDone && fullResponse) {
+        console.warn('Stream terminou sem evento done, mas há resposta')
+        fetchUso()
+        fetchConversas()
+      }
+
     } catch (error) {
+      // Ignorar erros de abort (usuário cancelou)
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Requisição cancelada pelo usuário')
+        return
+      }
+
+      console.error('Erro no envio de mensagem:', error)
       setMensagens(prev => prev.map(m =>
         m.id === respostaId
           ? { ...m, conteudo: `Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}` }
           : m
       ))
     } finally {
+      clearTimeout(timeoutId)
       setLoading(false)
       setStreaming(false)
       setImagemBase64(null)
       setImagemTipo(null)
       setPdfBase64(null)
+      abortControllerRef.current = null
     }
   }
+
+  // Limpar artefatos
+  const { clearArtifacts } = useArtifactsStore()
 
   // Nova conversa
   const novaConversa = () => {
     setMensagens([])
     setConversaAtual(null)
     setShowConversas(false)
+    clearArtifacts() // Limpar artefatos ao iniciar nova conversa
   }
 
   // Deletar conversa
@@ -420,7 +474,7 @@ export default function IAPage() {
       </div>
 
       {/* Chat Principal */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col relative">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-3">
@@ -564,6 +618,7 @@ export default function IAPage() {
                         <ArtifactRenderer
                           content={msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')}
                           userId={user?.id}
+                          messageId={msg.id}
                         />
                       </div>
                     ) : (
@@ -609,6 +664,19 @@ export default function IAPage() {
             </div>
           )}
         </div>
+
+        {/* Botão voltar ao final - aparece quando scroll não está no fundo */}
+        {!isAtBottom && mensagens.length > 0 && (
+          <div className="absolute bottom-32 right-8 z-10">
+            <button
+              onClick={() => scrollToBottom(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-all hover:scale-105"
+            >
+              <ChevronDown className="w-4 h-4" />
+              <span className="text-sm font-medium">Voltar ao final</span>
+            </button>
+          </div>
+        )}
 
         {/* Anexos Preview */}
         {(imagemBase64 || pdfBase64) && (
@@ -731,6 +799,12 @@ export default function IAPage() {
           </div>
         </div>
       </div>
+
+      {/* Sidebar de Artefatos */}
+      <ArtifactsSidebar />
+
+      {/* Botão flutuante para mobile */}
+      <ArtifactsFloatingButton />
     </div>
   )
 }
