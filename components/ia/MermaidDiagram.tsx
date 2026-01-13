@@ -34,49 +34,77 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
           startOnLoad: false,
           theme: 'dark',
           themeVariables: {
-            primaryColor: '#10b981',
-            primaryTextColor: '#fff',
-            primaryBorderColor: '#059669',
-            lineColor: '#6b7280',
-            secondaryColor: '#1f2937',
-            tertiaryColor: '#374151',
-            background: '#111827',
-            mainBkg: '#1f2937',
+            // Cores principais - melhor contraste
+            primaryColor: '#1e3a5f',
+            primaryTextColor: '#ffffff',
+            primaryBorderColor: '#10b981',
+            lineColor: '#94a3b8',
+            secondaryColor: '#1e293b',
+            tertiaryColor: '#334155',
+            background: '#0f172a',
+            mainBkg: '#1e293b',
+
+            // Nós e bordas
             nodeBorder: '#10b981',
-            clusterBkg: '#1f2937',
-            clusterBorder: '#374151',
-            titleColor: '#f3f4f6',
-            edgeLabelBackground: '#1f2937',
-            actorTextColor: '#f3f4f6',
-            actorBkg: '#1f2937',
+            nodeTextColor: '#ffffff',
+
+            // Clusters/subgraphs
+            clusterBkg: '#1e293b',
+            clusterBorder: '#475569',
+
+            // Títulos e labels
+            titleColor: '#ffffff',
+            edgeLabelBackground: '#1e293b',
+
+            // Atores (sequence diagrams)
+            actorTextColor: '#ffffff',
+            actorBkg: '#1e3a5f',
             actorBorder: '#10b981',
-            signalColor: '#f3f4f6',
-            signalTextColor: '#f3f4f6',
-            labelBoxBkgColor: '#1f2937',
-            labelBoxBorderColor: '#374151',
-            labelTextColor: '#f3f4f6',
-            loopTextColor: '#f3f4f6',
-            noteBkgColor: '#374151',
-            noteTextColor: '#f3f4f6',
-            noteBorderColor: '#4b5563',
-            activationBkgColor: '#1f2937',
+
+            // Sinais
+            signalColor: '#ffffff',
+            signalTextColor: '#ffffff',
+
+            // Labels
+            labelBoxBkgColor: '#1e293b',
+            labelBoxBorderColor: '#475569',
+            labelTextColor: '#ffffff',
+            loopTextColor: '#ffffff',
+
+            // Notas
+            noteBkgColor: '#334155',
+            noteTextColor: '#ffffff',
+            noteBorderColor: '#64748b',
+
+            // Ativação
+            activationBkgColor: '#1e293b',
             sequenceNumberColor: '#10b981',
-            sectionBkgColor: '#1f2937',
-            altSectionBkgColor: '#374151',
-            sectionBkgColor2: '#1f2937',
-            taskBkgColor: '#10b981',
-            taskTextColor: '#fff',
-            taskTextLightColor: '#fff',
-            taskTextOutsideColor: '#f3f4f6',
+
+            // Seções
+            sectionBkgColor: '#1e293b',
+            altSectionBkgColor: '#334155',
+            sectionBkgColor2: '#1e293b',
+
+            // Tasks (gantt)
+            taskBkgColor: '#1e3a5f',
+            taskTextColor: '#ffffff',
+            taskTextLightColor: '#ffffff',
+            taskTextOutsideColor: '#ffffff',
             taskTextClickableColor: '#10b981',
-            activeTaskBorderColor: '#059669',
-            gridColor: '#374151',
-            doneTaskBkgColor: '#065f46',
-            doneTaskBorderColor: '#047857',
-            critBkgColor: '#dc2626',
-            critBorderColor: '#b91c1c',
+            activeTaskBorderColor: '#10b981',
+            gridColor: '#475569',
+            doneTaskBkgColor: '#064e3b',
+            doneTaskBorderColor: '#10b981',
+            critBkgColor: '#7f1d1d',
+            critBorderColor: '#ef4444',
             todayLineColor: '#f59e0b',
-            fontFamily: 'ui-sans-serif, system-ui, sans-serif'
+
+            // Flowchart específico
+            defaultLinkColor: '#94a3b8',
+
+            // Fonte
+            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+            fontSize: '14px'
           },
           flowchart: {
             htmlLabels: true,
@@ -139,13 +167,14 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
     }
   }, [])
 
-  // Pan com mouse drag
+  // Pan com mouse drag - funciona sempre em fullscreen ou quando scale > 1
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button === 0 && (e.ctrlKey || e.metaKey || scale > 1)) {
+    if (e.button === 0 && (isFullscreen || e.ctrlKey || e.metaKey || scale > 1)) {
+      e.preventDefault()
       setIsDragging(true)
       setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
     }
-  }, [position, scale])
+  }, [position, scale, isFullscreen])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (isDragging) {
@@ -307,7 +336,7 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          style={{ cursor: isDragging ? 'grabbing' : (scale > 1 ? 'grab' : 'default') }}
+          style={{ cursor: isDragging ? 'grabbing' : (isFullscreen || scale > 1 ? 'grab' : 'default') }}
         >
           <div
             ref={svgContainerRef}

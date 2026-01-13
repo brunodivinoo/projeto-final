@@ -29,6 +29,16 @@ const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
   )
 })
 
+// Importar InteractiveDiagram dinamicamente
+const InteractiveDiagram = dynamic(() => import('./InteractiveDiagram'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-48">
+      <div className="animate-spin w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full" />
+    </div>
+  )
+})
+
 interface ArtifactsSidebarProps {
   className?: string
 }
@@ -180,6 +190,24 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
           >
             {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-white/60" />}
           </button>
+        </div>
+      )
+
+    case 'interactive':
+      // Detectar o tipo de diagrama interativo pelo conteúdo
+      const interactiveType = artifact.content.toLowerCase().includes('ecg') ||
+                              artifact.content.toLowerCase().includes('iam') ||
+                              artifact.content.toLowerCase().includes('infarto')
+        ? 'ecg' as const
+        : artifact.content.toLowerCase().includes('metabol') ||
+          artifact.content.toLowerCase().includes('glic') ||
+          artifact.content.toLowerCase().includes('krebs')
+        ? 'metabolism' as const
+        : 'ecg' as const
+
+      return (
+        <div className={containerClass}>
+          <InteractiveDiagram type={interactiveType} title={artifact.title} />
         </div>
       )
 

@@ -12,6 +12,12 @@ const TRANSLATION_EN_PT: Record<string, string> = {
   'bone': 'osso', 'bones': 'ossos', 'chest': 'tórax', 'abdomen': 'abdome',
   'spine': 'coluna', 'skull': 'crânio', 'pelvis': 'pelve', 'thorax': 'tórax',
   'artery': 'artéria', 'vein': 'veia', 'blood': 'sangue', 'breast': 'mama',
+  'colon': 'cólon', 'intestine': 'intestino', 'pancreas': 'pâncreas',
+  'spleen': 'baço', 'thyroid': 'tireoide', 'prostate': 'próstata',
+  'ovary': 'ovário', 'uterus': 'útero', 'bladder': 'bexiga',
+  'esophagus': 'esôfago', 'gallbladder': 'vesícula biliar',
+  'aorta': 'aorta', 'ventricle': 'ventrículo', 'atrium': 'átrio',
+  'muscle': 'músculo', 'tissue': 'tecido', 'cell': 'célula', 'cells': 'células',
 
   // Exames
   'x-ray': 'raio-X', 'xray': 'raio-X', 'radiograph': 'radiografia',
@@ -19,14 +25,25 @@ const TRANSLATION_EN_PT: Record<string, string> = {
   'mri': 'ressonância magnética', 'magnetic resonance': 'ressonância magnética',
   'ultrasound': 'ultrassom', 'echocardiogram': 'ecocardiograma',
   'mammogram': 'mamografia', 'biopsy': 'biópsia',
+  'histology': 'histologia', 'pathology': 'patologia', 'histological': 'histológico',
+  'microscopy': 'microscopia', 'staining': 'coloração', 'immunohistochemistry': 'imunohistoquímica',
+  'immunohistochemical': 'imunohistoquímico', 'fluorescence': 'fluorescência',
+  'western blot': 'western blot', 'protein': 'proteína', 'expression': 'expressão',
 
-  // Condições
+  // Condições e patologias
   'pneumonia': 'pneumonia', 'fracture': 'fratura', 'tumor': 'tumor',
   'cancer': 'câncer', 'carcinoma': 'carcinoma', 'infection': 'infecção',
   'inflammation': 'inflamação', 'hemorrhage': 'hemorragia', 'edema': 'edema',
   'effusion': 'derrame', 'nodule': 'nódulo', 'mass': 'massa', 'lesion': 'lesão',
   'acute': 'agudo', 'chronic': 'crônico', 'bilateral': 'bilateral',
   'normal': 'normal', 'abnormal': 'anormal', 'benign': 'benigno', 'malignant': 'maligno',
+  'adenocarcinoma': 'adenocarcinoma', 'metastasis': 'metástase', 'metastatic': 'metastático',
+  'necrosis': 'necrose', 'fibrosis': 'fibrose', 'atrophy': 'atrofia',
+  'hyperplasia': 'hiperplasia', 'dysplasia': 'displasia', 'neoplasia': 'neoplasia',
+  'lymphoma': 'linfoma', 'melanoma': 'melanoma', 'sarcoma': 'sarcoma',
+  'adenoma': 'adenoma', 'polyp': 'pólipo', 'cyst': 'cisto',
+  'stenosis': 'estenose', 'thrombosis': 'trombose', 'embolism': 'embolia',
+  'ischemia': 'isquemia', 'infarction': 'infarto', 'necrotic': 'necrótico',
 
   // Descrições comuns
   'patient': 'paciente', 'male': 'masculino', 'female': 'feminino',
@@ -35,6 +52,25 @@ const TRANSLATION_EN_PT: Record<string, string> = {
   'image': 'imagem', 'figure': 'figura', 'view': 'vista', 'section': 'corte',
   'left': 'esquerdo', 'right': 'direito', 'upper': 'superior', 'lower': 'inferior',
   'anterior': 'anterior', 'posterior': 'posterior', 'lateral': 'lateral',
+  'sensitivity': 'sensibilidade', 'correlates': 'correlaciona', 'localization': 'localização',
+  'analysis': 'análise', 'representative': 'representativo', 'magnification': 'magnificação',
+  'original': 'original', 'positive': 'positivo', 'negative': 'negativo',
+  'staining of': 'coloração de', 'using the': 'usando o', 'procedure': 'procedimento',
+  'human': 'humano', 'clinical': 'clínico', 'significance': 'significância',
+  'superfamily': 'superfamília', 'transmembrane': 'transmembrana',
+
+  // Termos de biologia celular
+  'receptor': 'receptor', 'ligand': 'ligante', 'cytoplasm': 'citoplasma',
+  'cytoplasmic': 'citoplasmático', 'nuclear': 'nuclear', 'nucleus': 'núcleo',
+  'membrane': 'membrana', 'distribution': 'distribuição', 'relative': 'relativo',
+  'quantification': 'quantificação', 'ratio': 'razão', 'regression': 'regressão',
+  'coefficient': 'coeficiente', 'correlation': 'correlação', 'relationship': 'relação',
+  'calculated': 'calculado', 'experiments': 'experimentos', 'different': 'diferentes',
+  'loading control': 'controle de carga', 'loading': 'carga',
+
+  // Frases compostas (ordem importa - mais longas primeiro)
+  'Open Access': 'Acesso Aberto',
+  'PubMed Central': 'PubMed Central',
 }
 
 // Função para traduzir texto médico EN → PT
@@ -148,7 +184,7 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
       <img
         src={currentSrc}
         alt={alt}
-        className={`w-full h-full object-cover ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}
+        className={`${className?.includes('object-contain') ? 'object-contain' : 'w-full h-full object-cover'} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}
         loading="lazy"
         onError={handleError}
         onLoad={handleLoad}
@@ -439,12 +475,12 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
             </button>
 
             {/* Image */}
-            <div className="relative bg-black min-h-[300px] max-h-[60vh] flex items-center justify-center">
+            <div className="relative bg-black min-h-[300px] max-h-[60vh] flex items-center justify-center overflow-hidden">
               <ImageWithFallback
                 src={selectedImage.url}
                 fallbackSrc={selectedImage.thumbUrl}
                 alt={selectedImage.title}
-                className="max-w-full max-h-[60vh] flex items-center justify-center"
+                className="w-auto h-auto max-w-full max-h-[60vh] object-contain"
               />
             </div>
 

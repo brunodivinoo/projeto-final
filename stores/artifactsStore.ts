@@ -12,6 +12,7 @@ export type ArtifactType =
   | 'checklist'
   | 'formula'
   | 'anatomy'
+  | 'interactive'
 
 export interface Artifact {
   id: string
@@ -188,7 +189,8 @@ export const ARTIFACT_ICONS: Record<ArtifactType, string> = {
   timeline: '📅',
   checklist: '✅',
   formula: '🔢',
-  anatomy: '🫀'
+  anatomy: '🫀',
+  interactive: '🎯'
 }
 
 // Labels para cada tipo
@@ -202,5 +204,6 @@ export const ARTIFACT_LABELS: Record<ArtifactType, string> = {
   timeline: 'Linha do Tempo',
   checklist: 'Checklist',
   formula: 'Fórmula',
-  anatomy: 'Anatomia'
+  anatomy: 'Anatomia',
+  interactive: 'Interativo'
 }

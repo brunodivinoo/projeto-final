@@ -65,3 +65,80 @@ body {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Mermaid Diagram - Melhor legibilidade */
+.mermaid-container svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Garantir texto branco em todos os nós */
+.mermaid-container .node rect,
+.mermaid-container .node circle,
+.mermaid-container .node ellipse,
+.mermaid-container .node polygon,
+.mermaid-container .node path {
+  stroke-width: 2px;
+}
+
+.mermaid-container .nodeLabel,
+.mermaid-container .label,
+.mermaid-container .edgeLabel,
+.mermaid-container text {
+  fill: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Texto em nós com fundo colorido */
+.mermaid-container .node .label {
+  color: #ffffff !important;
+}
+
+.mermaid-container .node .nodeLabel {
+  color: #ffffff !important;
+}
+
+/* Forçar texto escuro em fundos claros (verde claro, amarelo, rosa claro) */
+.mermaid-container .node[style*="fill: rgb(144, 238"] .nodeLabel,
+.mermaid-container .node[style*="fill: #90"] .nodeLabel,
+.mermaid-container .node[style*="fill: rgb(255, 255"] .nodeLabel,
+.mermaid-container .node[style*="fill: #ff"] .nodeLabel,
+.mermaid-container .node[style*="fill: rgb(255, 182"] .nodeLabel,
+.mermaid-container .node[style*="fill: #ffb"] .nodeLabel {
+  color: #1e293b !important;
+  fill: #1e293b !important;
+}
+
+/* Clusters/Subgraphs */
+.mermaid-container .cluster rect {
+  fill: #1e293b !important;
+  stroke: #475569 !important;
+}
+
+.mermaid-container .cluster text {
+  fill: #ffffff !important;
+}
+
+/* Labels de arestas */
+.mermaid-container .edgeLabel rect {
+  fill: #1e293b !important;
+}
+
+.mermaid-container .edgeLabel span {
+  color: #ffffff !important;
+}
+
+/* Linhas e setas */
+.mermaid-container .flowchart-link {
+  stroke: #94a3b8 !important;
+}
+
+.mermaid-container marker path {
+  fill: #94a3b8 !important;
+}
+
+/* Melhorar sombra e visibilidade */
+.mermaid-container .node rect,
+.mermaid-container .node polygon {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
