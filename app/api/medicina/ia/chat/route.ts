@@ -508,7 +508,7 @@ async function streamGemini(params: StreamGeminiParams) {
     generationConfig: {
       temperature: 0.7,
       topP: 0.95,
-      maxOutputTokens: 4096
+      maxOutputTokens: 8192  // Aumentado para evitar cortes em respostas longas
     }
   })
 

@@ -277,18 +277,28 @@ export default function IAPage() {
       let fullResponse = ''
       let thinking = ''
       let receivedDone = false
+      let buffer = '' // Buffer para chunks incompletos
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
         const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
+        buffer += chunk
+
+        // Processar linhas completas (terminadas em \n)
+        const lines = buffer.split('\n')
+        // Manter a última linha (possivelmente incompleta) no buffer
+        buffer = lines.pop() || ''
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          const trimmedLine = line.trim()
+          if (trimmedLine.startsWith('data: ')) {
             try {
-              const data = JSON.parse(line.slice(6))
+              const jsonStr = trimmedLine.slice(6)
+              if (!jsonStr) continue
+
+              const data = JSON.parse(jsonStr)
 
               if (data.type === 'text') {
                 fullResponse += data.content
@@ -328,9 +338,32 @@ export default function IAPage() {
         }
       }
 
+      // Processar qualquer dado restante no buffer
+      if (buffer.trim().startsWith('data: ')) {
+        try {
+          const data = JSON.parse(buffer.trim().slice(6))
+          if (data.type === 'text') {
+            fullResponse += data.content
+            setMensagens(prev => prev.map(m =>
+              m.id === respostaId
+                ? { ...m, conteudo: fullResponse }
+                : m
+            ))
+          }
+        } catch {
+          // Ignorar - chunk incompleto no final
+        }
+      }
+
       // Se stream terminou sem evento 'done', marcar como completo mesmo assim
       if (!receivedDone && fullResponse) {
         console.warn('Stream terminou sem evento done, mas há resposta')
+        // Adicionar indicador visual de que pode estar incompleto
+        setMensagens(prev => prev.map(m =>
+          m.id === respostaId
+            ? { ...m, conteudo: fullResponse + '\n\n---\n*A geração pode ter sido interrompida. Se a resposta parece incompleta, tente perguntar novamente.*' }
+            : m
+        ))
         fetchUso()
         fetchConversas()
       }

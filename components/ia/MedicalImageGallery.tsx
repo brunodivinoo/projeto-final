@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { X, ExternalLink, ZoomIn, Loader2, ImageOff, Info, AlertCircle, Search, RefreshCw, Languages } from 'lucide-react'
 import type { MedicalImage } from '@/lib/medical-images/service'
 
@@ -128,6 +128,8 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
   const [hasError, setHasError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [retryCount, setRetryCount] = useState(0)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
 
   useEffect(() => {
     // Reset state when src changes
@@ -137,7 +139,36 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
     setRetryCount(0)
   }, [src])
 
+  // Timeout para loading - se não carregar em 8s, mostrar imagem mesmo assim
+  useEffect(() => {
+    if (isLoading) {
+      timeoutRef.current = setTimeout(() => {
+        // Se ainda está loading após timeout, verificar se imagem tem dimensões
+        if (imgRef.current && (imgRef.current.naturalWidth > 0 || imgRef.current.complete)) {
+          setIsLoading(false)
+        } else if (fallbackSrc && currentSrc !== fallbackSrc && retryCount < 1) {
+          // Tentar fallback
+          setCurrentSrc(fallbackSrc)
+          setRetryCount(prev => prev + 1)
+        } else {
+          // Mostrar imagem mesmo com loading (pode ter carregado parcialmente)
+          setIsLoading(false)
+        }
+      }, 8000)
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [isLoading, currentSrc, fallbackSrc, retryCount])
+
   const handleError = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+
     if (retryCount < 1 && fallbackSrc && currentSrc !== fallbackSrc) {
       // Tentar fallback (usar URL completa ao invés de thumb)
       setCurrentSrc(fallbackSrc)
@@ -161,6 +192,9 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
   }, [currentSrc, fallbackSrc, retryCount, onLoadError])
 
   const handleLoad = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
     setIsLoading(false)
     setHasError(false)
   }, [])
@@ -176,16 +210,18 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
   return (
     <div className={`relative ${className}`}>
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-800/50">
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-800/50 z-10">
           <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
         </div>
       )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={imgRef}
         src={currentSrc}
         alt={alt}
         className={`${className?.includes('object-contain') ? 'object-contain' : 'w-full h-full object-cover'} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}
-        loading="lazy"
+        loading="eager"
+        decoding="async"
         onError={handleError}
         onLoad={handleLoad}
         referrerPolicy="no-referrer"

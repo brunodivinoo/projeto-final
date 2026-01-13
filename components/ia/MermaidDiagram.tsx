@@ -33,8 +33,10 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
         mermaid.initialize({
           startOnLoad: false,
           theme: 'dark',
+          securityLevel: 'loose',
+          suppressErrorRendering: false,
           themeVariables: {
-            // Cores principais - melhor contraste
+            // Cores principais - todas escuras para melhor contraste de texto
             primaryColor: '#1e3a5f',
             primaryTextColor: '#ffffff',
             primaryBorderColor: '#10b981',
@@ -48,7 +50,7 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
             nodeBorder: '#10b981',
             nodeTextColor: '#ffffff',
 
-            // Clusters/subgraphs
+            // Clusters/subgraphs - fundo escuro sempre
             clusterBkg: '#1e293b',
             clusterBorder: '#475569',
 
@@ -102,6 +104,9 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
             // Flowchart específico
             defaultLinkColor: '#94a3b8',
 
+            // Mindmap - cores escuras para contraste
+            mindmapBranchColor: '#94a3b8',
+
             // Fonte
             fontFamily: 'ui-sans-serif, system-ui, sans-serif',
             fontSize: '14px'
@@ -109,7 +114,11 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
           flowchart: {
             htmlLabels: true,
             curve: 'basis',
-            padding: 15
+            padding: 15,
+            nodeSpacing: 80,
+            rankSpacing: 80,
+            useMaxWidth: true,
+            wrappingWidth: 200
           },
           sequence: {
             diagramMarginX: 50,
@@ -122,7 +131,13 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
             noteMargin: 10,
             messageMargin: 35,
             mirrorActors: true,
-            useMaxWidth: true
+            useMaxWidth: true,
+            wrap: true
+          },
+          mindmap: {
+            useMaxWidth: true,
+            padding: 25,
+            maxNodeWidth: 200
           }
         })
 

@@ -66,13 +66,16 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Mermaid Diagram - Melhor legibilidade */
+/* ================================================
+   MERMAID DIAGRAMS - Melhor legibilidade
+   ================================================ */
 .mermaid-container svg {
   max-width: 100%;
   height: auto;
+  overflow: visible;
 }
 
-/* Garantir texto branco em todos os nós */
+/* === NÓS E FORMAS === */
 .mermaid-container .node rect,
 .mermaid-container .node circle,
 .mermaid-container .node ellipse,
@@ -81,35 +84,68 @@ body {
   stroke-width: 2px;
 }
 
+/* === TEXTO BASE - Branco por padrão === */
 .mermaid-container .nodeLabel,
 .mermaid-container .label,
 .mermaid-container .edgeLabel,
-.mermaid-container text {
+.mermaid-container text,
+.mermaid-container tspan {
   fill: #ffffff !important;
   color: #ffffff !important;
 }
 
-/* Texto em nós com fundo colorido */
-.mermaid-container .node .label {
-  color: #ffffff !important;
-}
-
+.mermaid-container .node .label,
 .mermaid-container .node .nodeLabel {
   color: #ffffff !important;
 }
 
-/* Forçar texto escuro em fundos claros (verde claro, amarelo, rosa claro) */
-.mermaid-container .node[style*="fill: rgb(144, 238"] .nodeLabel,
-.mermaid-container .node[style*="fill: #90"] .nodeLabel,
-.mermaid-container .node[style*="fill: rgb(255, 255"] .nodeLabel,
-.mermaid-container .node[style*="fill: #ff"] .nodeLabel,
-.mermaid-container .node[style*="fill: rgb(255, 182"] .nodeLabel,
-.mermaid-container .node[style*="fill: #ffb"] .nodeLabel {
+/* === TEXTO ESCURO EM FUNDOS CLAROS === */
+/* Verde claro */
+.mermaid-container g.node[style*="fill: rgb(144"] .nodeLabel,
+.mermaid-container g.node[style*="fill: rgb(152"] .nodeLabel,
+.mermaid-container g.node[style*="fill:#90"] .nodeLabel,
+.mermaid-container g.node[style*="fill: #90"] .nodeLabel,
+.mermaid-container g[style*="fill: rgb(144"] text,
+.mermaid-container g[style*="fill:#90"] text,
+/* Amarelo */
+.mermaid-container g.node[style*="fill: rgb(255, 255"] .nodeLabel,
+.mermaid-container g.node[style*="fill:#ff"] .nodeLabel,
+.mermaid-container g.node[style*="fill: #ff"] .nodeLabel,
+.mermaid-container g[style*="fill: rgb(255, 255"] text,
+.mermaid-container g[style*="fill:#ff"] text,
+/* Rosa claro */
+.mermaid-container g.node[style*="fill: rgb(255, 182"] .nodeLabel,
+.mermaid-container g.node[style*="fill: rgb(255, 192"] .nodeLabel,
+.mermaid-container g.node[style*="fill:#ffb"] .nodeLabel,
+.mermaid-container g[style*="fill: rgb(255, 182"] text,
+.mermaid-container g[style*="fill:#ffb"] text,
+/* Laranja claro */
+.mermaid-container g.node[style*="fill: rgb(255, 200"] .nodeLabel,
+.mermaid-container g.node[style*="fill: rgb(255, 220"] .nodeLabel,
+/* Ciano claro */
+.mermaid-container g.node[style*="fill: rgb(173, 216"] .nodeLabel,
+.mermaid-container g.node[style*="fill: rgb(135, 206"] .nodeLabel,
+/* Branco/cinza claro */
+.mermaid-container g.node[style*="fill: rgb(240"] .nodeLabel,
+.mermaid-container g.node[style*="fill: rgb(245"] .nodeLabel,
+.mermaid-container g.node[style*="fill: rgb(250"] .nodeLabel,
+.mermaid-container g.node[style*="fill: rgb(255, 250"] .nodeLabel,
+.mermaid-container g.node[style*="fill: white"] .nodeLabel,
+.mermaid-container g.node[style*="fill:#fff"] .nodeLabel {
   color: #1e293b !important;
   fill: #1e293b !important;
 }
 
-/* Clusters/Subgraphs */
+/* Também pegar o text diretamente */
+.mermaid-container rect[style*="fill: rgb(144"] + foreignObject span,
+.mermaid-container rect[style*="fill: rgb(255, 255"] + foreignObject span,
+.mermaid-container rect[style*="fill: rgb(255, 182"] + foreignObject span,
+.mermaid-container rect[style*="fill:#90"] + foreignObject span,
+.mermaid-container rect[style*="fill:#ff"] + foreignObject span {
+  color: #1e293b !important;
+}
+
+/* === CLUSTERS/SUBGRAPHS === */
 .mermaid-container .cluster rect {
   fill: #1e293b !important;
   stroke: #475569 !important;
@@ -119,26 +155,111 @@ body {
   fill: #ffffff !important;
 }
 
-/* Labels de arestas */
+/* === LABELS DE ARESTAS === */
+.mermaid-container .edgeLabel {
+  background-color: #1e293b !important;
+}
+
 .mermaid-container .edgeLabel rect {
   fill: #1e293b !important;
+  opacity: 1 !important;
 }
 
-.mermaid-container .edgeLabel span {
+.mermaid-container .edgeLabel span,
+.mermaid-container .edgeLabel p {
   color: #ffffff !important;
+  background: transparent !important;
 }
 
-/* Linhas e setas */
-.mermaid-container .flowchart-link {
+/* === LINHAS E SETAS === */
+.mermaid-container .flowchart-link,
+.mermaid-container path.flowchart-link {
   stroke: #94a3b8 !important;
+  stroke-width: 2px !important;
 }
 
 .mermaid-container marker path {
   fill: #94a3b8 !important;
 }
 
-/* Melhorar sombra e visibilidade */
+/* Evitar sobreposição de linhas com texto - z-index para nós */
+.mermaid-container .node {
+  z-index: 10;
+}
+
+.mermaid-container .edgeLabel {
+  z-index: 5;
+}
+
+/* === EVITAR TEXTO ESTOURADO === */
+.mermaid-container .nodeLabel,
+.mermaid-container .label {
+  max-width: 200px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap !important;
+  text-overflow: ellipsis;
+}
+
+.mermaid-container foreignObject {
+  overflow: visible;
+}
+
+.mermaid-container foreignObject div {
+  max-width: 200px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* === MINDMAP ESPECÍFICO === */
+.mermaid-container .mindmap-node rect,
+.mermaid-container .mindmap-node circle {
+  fill: #1e3a5f !important;
+  stroke: #10b981 !important;
+}
+
+.mermaid-container .mindmap-node text {
+  fill: #ffffff !important;
+}
+
+.mermaid-container .mindmap-edge {
+  stroke: #94a3b8 !important;
+  stroke-width: 2px !important;
+}
+
+/* Mindmap section colors - forçar escuro */
+.mermaid-container .section-0,
+.mermaid-container .section-1,
+.mermaid-container .section-2,
+.mermaid-container .section-3 {
+  fill: #1e3a5f !important;
+}
+
+/* === SEQUENCE DIAGRAM === */
+.mermaid-container .actor {
+  fill: #1e3a5f !important;
+  stroke: #10b981 !important;
+}
+
+.mermaid-container .actor-line {
+  stroke: #475569 !important;
+}
+
+.mermaid-container .messageLine0,
+.mermaid-container .messageLine1 {
+  stroke: #94a3b8 !important;
+}
+
+/* === SOMBRAS E VISIBILIDADE === */
 .mermaid-container .node rect,
-.mermaid-container .node polygon {
+.mermaid-container .node polygon,
+.mermaid-container .node circle {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* === FORÇAR CORES ESCURAS EM TODOS OS NÓS (override) === */
+.mermaid-container g.node > rect:not([style*="fill"]),
+.mermaid-container g.node > polygon:not([style*="fill"]),
+.mermaid-container g.node > circle:not([style*="fill"]) {
+  fill: #1e3a5f !important;
 }
