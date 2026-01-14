@@ -13,6 +13,9 @@ export type ArtifactType =
   | 'formula'
   | 'anatomy'
   | 'interactive'
+  | 'layers'
+  | 'staging'
+  | 'note'
 
 export interface Artifact {
   id: string
@@ -190,7 +193,10 @@ export const ARTIFACT_ICONS: Record<ArtifactType, string> = {
   checklist: '✅',
   formula: '🔢',
   anatomy: '🫀',
-  interactive: '🎯'
+  interactive: '🎯',
+  layers: '🔬',
+  staging: '📈',
+  note: '📝'
 }
 
 // Labels para cada tipo
@@ -205,5 +211,8 @@ export const ARTIFACT_LABELS: Record<ArtifactType, string> = {
   checklist: 'Checklist',
   formula: 'Fórmula',
   anatomy: 'Anatomia',
-  interactive: 'Interativo'
+  interactive: 'Interativo',
+  layers: 'Camadas',
+  staging: 'Estadiamento',
+  note: 'Nota'
 }

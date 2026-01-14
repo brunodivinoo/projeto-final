@@ -1,14 +1,44 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Maximize2, Minimize2, Download, Copy, Check, ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Maximize2,
+  Minimize2,
+  Download,
+  Copy,
+  Check,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Move,
+  Info,
+  X,
+  MousePointer2
+} from 'lucide-react'
 
 interface MermaidDiagramProps {
   chart: string
   title?: string
+  nodeDescriptions?: Record<string, string>
 }
 
-export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
+interface NodeInfo {
+  id: string
+  label: string
+  description?: string
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+interface SelectedNode {
+  info: NodeInfo
+  element: SVGElement
+}
+
+export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: MermaidDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const svgContainerRef = useRef<HTMLDivElement>(null)
   const [svg, setSvg] = useState<string>('')
@@ -21,6 +51,12 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+
+  // Estados para interatividade de nós
+  const [hoveredNode, setHoveredNode] = useState<NodeInfo | null>(null)
+  const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null)
+  const [highlightedPaths, setHighlightedPaths] = useState<Set<string>>(new Set())
+  const [interactiveMode, setInteractiveMode] = useState(true)
 
   useEffect(() => {
     const renderDiagram = async () => {
@@ -156,6 +192,169 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
 
     renderDiagram()
   }, [chart])
+
+  // Extrair descrições dos nós do próprio código Mermaid
+  const extractNodeDescriptions = useCallback((chartCode: string): Record<string, string> => {
+    const descriptions: Record<string, string> = { ...nodeDescriptions }
+
+    // Procurar por comentários no formato %% NodeId: Descrição
+    const commentRegex = /%%\s*(\w+):\s*(.+)/g
+    let match
+    while ((match = commentRegex.exec(chartCode)) !== null) {
+      descriptions[match[1]] = match[2].trim()
+    }
+
+    return descriptions
+  }, [nodeDescriptions])
+
+  // Adicionar interatividade aos nós após renderização
+  useEffect(() => {
+    if (!svg || !svgContainerRef.current || !interactiveMode) return
+
+    const container = svgContainerRef.current
+    const svgElement = container.querySelector('svg')
+    if (!svgElement) return
+
+    const descriptions = extractNodeDescriptions(chart)
+
+    // Selecionar todos os nós (flowchart nodes)
+    const nodes = svgElement.querySelectorAll('.node, .nodeLabel, [id^="flowchart-"]')
+
+    nodes.forEach((node) => {
+      const nodeElement = node as SVGElement
+
+      // Encontrar o elemento pai que contém o ID do nó
+      let nodeId = nodeElement.id || ''
+      let parentNode: Element | null = nodeElement
+
+      // Procurar o ID no elemento ou pai
+      while (parentNode && !nodeId.includes('flowchart-')) {
+        parentNode = parentNode.parentElement
+        if (parentNode) {
+          nodeId = parentNode.id || ''
+        }
+      }
+
+      // Extrair ID limpo
+      const cleanId = nodeId.replace('flowchart-', '').replace(/-\d+$/, '')
+
+      // Encontrar o texto do nó
+      const labelElement = nodeElement.querySelector('.nodeLabel') || nodeElement
+      const label = labelElement.textContent || cleanId
+
+      // Adicionar cursor pointer
+      nodeElement.style.cursor = 'pointer'
+
+      // Handler de hover
+      const handleMouseEnter = (e: Event) => {
+        const rect = nodeElement.getBoundingClientRect()
+        const containerRect = container.getBoundingClientRect()
+
+        setHoveredNode({
+          id: cleanId,
+          label: label,
+          description: descriptions[cleanId],
+          x: rect.left - containerRect.left + rect.width / 2,
+          y: rect.top - containerRect.top,
+          width: rect.width,
+          height: rect.height
+        })
+
+        // Destacar o nó
+        nodeElement.classList.add('node-hovered')
+      }
+
+      const handleMouseLeave = () => {
+        setHoveredNode(null)
+        nodeElement.classList.remove('node-hovered')
+      }
+
+      // Handler de clique
+      const handleClick = (e: Event) => {
+        e.stopPropagation()
+
+        const rect = nodeElement.getBoundingClientRect()
+        const containerRect = container.getBoundingClientRect()
+
+        const nodeInfo: NodeInfo = {
+          id: cleanId,
+          label: label,
+          description: descriptions[cleanId],
+          x: rect.left - containerRect.left + rect.width / 2,
+          y: rect.top - containerRect.top,
+          width: rect.width,
+          height: rect.height
+        }
+
+        setSelectedNode({ info: nodeInfo, element: nodeElement })
+
+        // Destacar paths conectados
+        highlightConnectedPaths(svgElement, cleanId)
+
+        // Adicionar classe de selecionado
+        svgElement.querySelectorAll('.node-selected').forEach(n => n.classList.remove('node-selected'))
+        nodeElement.classList.add('node-selected')
+      }
+
+      nodeElement.addEventListener('mouseenter', handleMouseEnter)
+      nodeElement.addEventListener('mouseleave', handleMouseLeave)
+      nodeElement.addEventListener('click', handleClick)
+
+      // Cleanup
+      return () => {
+        nodeElement.removeEventListener('mouseenter', handleMouseEnter)
+        nodeElement.removeEventListener('mouseleave', handleMouseLeave)
+        nodeElement.removeEventListener('click', handleClick)
+      }
+    })
+
+    // Clique fora para deselecionar
+    const handleContainerClick = () => {
+      setSelectedNode(null)
+      setHighlightedPaths(new Set())
+      svgElement.querySelectorAll('.node-selected').forEach(n => n.classList.remove('node-selected'))
+      svgElement.querySelectorAll('.edge-highlighted').forEach(e => e.classList.remove('edge-highlighted'))
+    }
+
+    container.addEventListener('click', handleContainerClick)
+
+    return () => {
+      container.removeEventListener('click', handleContainerClick)
+    }
+  }, [svg, interactiveMode, chart, extractNodeDescriptions])
+
+  // Destacar caminhos conectados a um nó
+  const highlightConnectedPaths = (svgElement: SVGSVGElement, nodeId: string) => {
+    const paths = new Set<string>()
+
+    // Procurar todas as edges/links
+    const edges = svgElement.querySelectorAll('.edge, .link, [class*="edge"], path[id*="L-"]')
+
+    edges.forEach((edge) => {
+      const edgeId = edge.id || ''
+
+      // Verificar se a edge conecta ao nó
+      if (edgeId.toLowerCase().includes(nodeId.toLowerCase())) {
+        paths.add(edgeId)
+        edge.classList.add('edge-highlighted')
+      } else {
+        edge.classList.remove('edge-highlighted')
+      }
+    })
+
+    setHighlightedPaths(paths)
+  }
+
+  // Fechar painel de detalhes
+  const closeDetails = useCallback(() => {
+    setSelectedNode(null)
+    setHighlightedPaths(new Set())
+    const svgElement = svgContainerRef.current?.querySelector('svg')
+    if (svgElement) {
+      svgElement.querySelectorAll('.node-selected').forEach(n => n.classList.remove('node-selected'))
+      svgElement.querySelectorAll('.edge-highlighted').forEach(e => e.classList.remove('edge-highlighted'))
+    }
+  }, [])
 
   // Reset zoom e posição
   const resetView = useCallback(() => {
@@ -310,6 +509,19 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
 
             <div className="w-px h-4 bg-white/10 mx-1" />
 
+            {/* Toggle modo interativo */}
+            <button
+              onClick={() => setInteractiveMode(!interactiveMode)}
+              className={`p-1.5 rounded-lg transition-colors ${
+                interactiveMode ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-white/10 text-white/60'
+              }`}
+              title={interactiveMode ? 'Desativar modo interativo' : 'Ativar modo interativo'}
+            >
+              <MousePointer2 className="w-4 h-4" />
+            </button>
+
+            <div className="w-px h-4 bg-white/10 mx-1" />
+
             <button
               onClick={handleCopy}
               className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
@@ -375,6 +587,108 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
             )}
           </div>
 
+          {/* Tooltip flutuante no hover */}
+          <AnimatePresence>
+            {hoveredNode && !selectedNode && interactiveMode && (
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 5 }}
+                className="absolute z-20 pointer-events-none"
+                style={{
+                  left: hoveredNode.x,
+                  top: hoveredNode.y - 10,
+                  transform: 'translate(-50%, -100%)'
+                }}
+              >
+                <div className="bg-slate-800 border border-white/20 rounded-lg px-3 py-2 shadow-xl">
+                  <p className="text-white font-medium text-sm">{hoveredNode.label}</p>
+                  {hoveredNode.description && (
+                    <p className="text-white/60 text-xs mt-1 max-w-[200px]">
+                      {hoveredNode.description}
+                    </p>
+                  )}
+                  {!hoveredNode.description && (
+                    <p className="text-white/40 text-xs mt-1 italic">
+                      Clique para ver mais
+                    </p>
+                  )}
+                </div>
+                {/* Arrow */}
+                <div className="w-3 h-3 bg-slate-800 border-r border-b border-white/20 rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1.5" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Painel de detalhes do nó selecionado */}
+          <AnimatePresence>
+            {selectedNode && interactiveMode && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="absolute top-4 right-4 z-30 w-72"
+              >
+                <div className="bg-slate-800/95 backdrop-blur-sm border border-white/20 rounded-xl shadow-2xl overflow-hidden">
+                  {/* Header do painel */}
+                  <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border-b border-white/10">
+                    <div className="flex items-center gap-2">
+                      <Info className="w-4 h-4 text-emerald-400" />
+                      <span className="text-white font-medium text-sm">Detalhes do Nó</span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        closeDetails()
+                      }}
+                      className="p-1 hover:bg-white/10 rounded transition-colors"
+                    >
+                      <X className="w-4 h-4 text-white/60" />
+                    </button>
+                  </div>
+
+                  {/* Conteúdo */}
+                  <div className="p-4 space-y-3">
+                    {/* Nome do nó */}
+                    <div>
+                      <span className="text-xs text-white/40 uppercase">Elemento</span>
+                      <p className="text-white font-medium">{selectedNode.info.label}</p>
+                    </div>
+
+                    {/* ID do nó */}
+                    <div>
+                      <span className="text-xs text-white/40 uppercase">ID</span>
+                      <p className="text-emerald-400 font-mono text-sm">{selectedNode.info.id}</p>
+                    </div>
+
+                    {/* Descrição */}
+                    {selectedNode.info.description && (
+                      <div>
+                        <span className="text-xs text-white/40 uppercase">Descrição</span>
+                        <p className="text-white/80 text-sm">{selectedNode.info.description}</p>
+                      </div>
+                    )}
+
+                    {/* Conexões */}
+                    {highlightedPaths.size > 0 && (
+                      <div>
+                        <span className="text-xs text-white/40 uppercase">Conexões</span>
+                        <p className="text-cyan-400 text-sm">{highlightedPaths.size} caminho(s) destacado(s)</p>
+                      </div>
+                    )}
+
+                    {/* Dica de uso */}
+                    <div className="pt-2 border-t border-white/10">
+                      <p className="text-white/40 text-xs">
+                        💡 Clique em outros nós para ver suas conexões
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Hint para zoom/pan em fullscreen */}
           {isFullscreen && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 bg-slate-800/80 rounded-lg text-white/40 text-xs">
@@ -386,8 +700,46 @@ export default function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
               <span>ESC para sair</span>
             </div>
           )}
+
+          {/* Indicador de modo interativo */}
+          {interactiveMode && !isFullscreen && (
+            <div className="absolute bottom-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+              <MousePointer2 className="w-3 h-3 text-emerald-400" />
+              <span className="text-emerald-400 text-xs">Clique nos nós</span>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Estilos CSS para interatividade */}
+      <style jsx global>{`
+        .node-hovered rect,
+        .node-hovered polygon,
+        .node-hovered circle,
+        .node-hovered ellipse {
+          filter: brightness(1.3) drop-shadow(0 0 8px rgba(16, 185, 129, 0.5));
+          transition: all 0.2s ease;
+        }
+
+        .node-selected rect,
+        .node-selected polygon,
+        .node-selected circle,
+        .node-selected ellipse {
+          stroke: #10b981 !important;
+          stroke-width: 3px !important;
+          filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.7));
+        }
+
+        .edge-highlighted path {
+          stroke: #06b6d4 !important;
+          stroke-width: 3px !important;
+          filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.6));
+        }
+
+        .mermaid-container .node {
+          transition: all 0.2s ease;
+        }
+      `}</style>
     </div>
   )
 }

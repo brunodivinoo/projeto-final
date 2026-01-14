@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useCallback, useState, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   X,
   PanelRightClose,
@@ -13,11 +14,50 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Filter,
-  Layers
+  Layers,
+  Eye,
+  EyeOff,
+  Grid3X3,
+  List,
+  FolderOpen,
+  Folder
 } from 'lucide-react'
 import { useArtifactsStore, ARTIFACT_ICONS, ARTIFACT_LABELS, type Artifact, type ArtifactType } from '@/stores/artifactsStore'
 import dynamic from 'next/dynamic'
+
+// Categorias de artefatos
+const ARTIFACT_CATEGORIES: Record<string, { label: string; icon: string; types: ArtifactType[]; color: string }> = {
+  visual: {
+    label: 'Visualizações',
+    icon: '📊',
+    types: ['diagram', 'flowchart', 'table', 'timeline', 'layers', 'staging'],
+    color: 'from-blue-500 to-cyan-500'
+  },
+  medical: {
+    label: 'Médicos',
+    icon: '🏥',
+    types: ['ecg', 'anatomy', 'comparison'],
+    color: 'from-emerald-500 to-teal-500'
+  },
+  interactive: {
+    label: 'Interativos',
+    icon: '✨',
+    types: ['interactive', 'checklist'],
+    color: 'from-purple-500 to-pink-500'
+  },
+  reference: {
+    label: 'Referência',
+    icon: '📚',
+    types: ['code', 'note'],
+    color: 'from-amber-500 to-orange-500'
+  }
+}
+
+// Tipo de view da sidebar
+type ViewMode = 'list' | 'grid' | 'categories'
 
 // Importar MermaidDiagram dinamicamente
 const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
@@ -31,6 +71,26 @@ const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
 
 // Importar InteractiveDiagram dinamicamente
 const InteractiveDiagram = dynamic(() => import('./InteractiveDiagram'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-48">
+      <div className="animate-spin w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full" />
+    </div>
+  )
+})
+
+// Importar LayeredDiagram dinamicamente
+const LayeredDiagram = dynamic(() => import('./LayeredDiagram'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-48">
+      <div className="animate-spin w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full" />
+    </div>
+  )
+})
+
+// Importar StagingTable dinamicamente
+const StagingTable = dynamic(() => import('./StagingTable'), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-48">
@@ -211,6 +271,60 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         </div>
       )
 
+    case 'layers':
+      // Renderizar diagrama de camadas
+      try {
+        const layersData = JSON.parse(artifact.content)
+        return (
+          <div className={containerClass}>
+            <LayeredDiagram
+              title={layersData.title || artifact.title}
+              layers={layersData.layers || []}
+              theme={layersData.theme || 'histology'}
+              showLegend={layersData.showLegend ?? true}
+              interactive={layersData.interactive ?? true}
+            />
+          </div>
+        )
+      } catch {
+        return (
+          <div className={`p-4 ${containerClass}`}>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl">🔬</span>
+              <h4 className="text-white font-medium">{artifact.title}</h4>
+            </div>
+            <div className="text-white/80 text-sm whitespace-pre-wrap">{artifact.content}</div>
+          </div>
+        )
+      }
+
+    case 'staging':
+      // Renderizar tabela de estadiamento
+      try {
+        const stagingData = JSON.parse(artifact.content)
+        return (
+          <div className={containerClass}>
+            <StagingTable
+              title={stagingData.title || artifact.title}
+              rows={stagingData.rows || []}
+              highlightStage={stagingData.highlightStage}
+              cancerType={stagingData.cancerType}
+              source={stagingData.source}
+            />
+          </div>
+        )
+      } catch {
+        return (
+          <div className={`p-4 ${containerClass}`}>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl">📈</span>
+              <h4 className="text-white font-medium">{artifact.title}</h4>
+            </div>
+            <div className="text-white/80 text-sm whitespace-pre-wrap">{artifact.content}</div>
+          </div>
+        )
+      }
+
     default:
       return (
         <div className={`p-4 ${containerClass}`}>
@@ -354,55 +468,166 @@ function FullscreenModal({
   )
 }
 
-// Card de artefato para lista vertical
+// Níveis de preview
+type PreviewLevel = 'collapsed' | 'preview' | 'expanded'
+
+// Card de artefato com 3 níveis de preview
 function ArtifactCard({
   artifact,
   isSelected,
   onSelect,
   onRemove,
-  onFullscreen
+  onFullscreen,
+  viewMode = 'list'
 }: {
   artifact: Artifact
   isSelected: boolean
   onSelect: () => void
   onRemove: () => void
   onFullscreen: () => void
+  viewMode?: ViewMode
 }) {
+  const [previewLevel, setPreviewLevel] = useState<PreviewLevel>('collapsed')
+
+  // Quando selecionado, mostrar preview automaticamente
+  useEffect(() => {
+    if (isSelected && previewLevel === 'collapsed') {
+      setPreviewLevel('preview')
+    }
+  }, [isSelected, previewLevel])
+
+  // Alternar entre níveis de preview
+  const cyclePreview = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (previewLevel === 'collapsed') setPreviewLevel('preview')
+    else if (previewLevel === 'preview') setPreviewLevel('expanded')
+    else setPreviewLevel('collapsed')
+  }
+
+  // Encontrar categoria do artefato
+  const category = Object.entries(ARTIFACT_CATEGORIES).find(([, cat]) =>
+    cat.types.includes(artifact.type)
+  )
+  const categoryColor = category?.[1].color || 'from-slate-500 to-slate-600'
+
+  // Card em modo grid (compacto)
+  if (viewMode === 'grid') {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className={`group relative rounded-xl border overflow-hidden transition-all cursor-pointer ${
+          isSelected
+            ? 'border-purple-500/50 shadow-lg shadow-purple-500/10 ring-2 ring-purple-500/30'
+            : 'border-white/10 hover:border-white/20'
+        }`}
+        onClick={onSelect}
+      >
+        {/* Gradiente de fundo baseado na categoria */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${categoryColor} opacity-10`} />
+
+        {/* Miniatura/Thumbnail */}
+        <div className="relative h-24 bg-slate-900/50 flex items-center justify-center overflow-hidden">
+          <span className="text-3xl opacity-50">{ARTIFACT_ICONS[artifact.type]}</span>
+
+          {/* Ações no hover */}
+          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); onFullscreen() }}
+              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              title="Tela cheia"
+            >
+              <Maximize2 className="w-4 h-4 text-white" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onRemove() }}
+              className="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors"
+              title="Remover"
+            >
+              <Trash2 className="w-4 h-4 text-red-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* Info */}
+        <div className="relative p-2">
+          <h4 className="text-white text-sm font-medium truncate">{artifact.title}</h4>
+          <span className="text-white/40 text-xs">{ARTIFACT_LABELS[artifact.type]}</span>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Card em modo lista (vertical) com 3 níveis de preview
   return (
-    <div
-      className={`group relative p-3 rounded-xl border transition-all cursor-pointer ${
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className={`group relative rounded-xl border transition-all overflow-hidden ${
         isSelected
-          ? 'bg-purple-500/20 border-purple-500/50 shadow-lg shadow-purple-500/10'
+          ? 'bg-purple-500/10 border-purple-500/50 shadow-lg shadow-purple-500/10'
           : 'bg-slate-800/50 border-white/5 hover:border-white/20 hover:bg-slate-800/80'
       }`}
-      onClick={onSelect}
     >
-      <div className="flex items-start gap-3">
+      {/* Indicador de categoria (barra lateral) */}
+      <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${categoryColor}`} />
+
+      {/* Header do card */}
+      <div
+        className="flex items-center gap-3 p-3 pl-4 cursor-pointer"
+        onClick={onSelect}
+      >
         {/* Ícone do tipo */}
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${
-          isSelected ? 'bg-purple-500/30' : 'bg-white/5'
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all ${
+          isSelected
+            ? `bg-gradient-to-br ${categoryColor} bg-opacity-30`
+            : 'bg-white/5'
         }`}>
           {ARTIFACT_ICONS[artifact.type]}
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <h4 className={`font-medium truncate ${isSelected ? 'text-purple-300' : 'text-white'}`}>
+          <h4 className={`font-medium truncate transition-colors ${
+            isSelected ? 'text-purple-300' : 'text-white'
+          }`}>
             {artifact.title}
           </h4>
           <div className="flex items-center gap-2 mt-1">
-            <span className={`text-xs px-2 py-0.5 rounded ${
+            <span className={`text-xs px-2 py-0.5 rounded transition-colors ${
               isSelected ? 'bg-purple-500/20 text-purple-300' : 'bg-white/10 text-white/50'
             }`}>
               {ARTIFACT_LABELS[artifact.type]}
             </span>
+            {/* Indicador de preview level */}
+            {previewLevel !== 'collapsed' && (
+              <span className="text-xs text-white/30">
+                {previewLevel === 'preview' ? 'Preview' : 'Expandido'}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Ações (visíveis no hover) */}
+        {/* Ações */}
         <div className={`flex items-center gap-1 transition-opacity ${
           isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
         }`}>
+          {/* Toggle preview */}
+          <button
+            onClick={cyclePreview}
+            className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+            title={previewLevel === 'collapsed' ? 'Mostrar preview' : previewLevel === 'preview' ? 'Expandir' : 'Recolher'}
+          >
+            {previewLevel === 'collapsed' && <Eye className="w-4 h-4" />}
+            {previewLevel === 'preview' && <ChevronDown className="w-4 h-4" />}
+            {previewLevel === 'expanded' && <ChevronUp className="w-4 h-4" />}
+          </button>
+
+          {/* Fullscreen */}
           <button
             onClick={(e) => { e.stopPropagation(); onFullscreen() }}
             className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
@@ -410,6 +635,8 @@ function ArtifactCard({
           >
             <Maximize2 className="w-4 h-4" />
           </button>
+
+          {/* Remover */}
           <button
             onClick={(e) => { e.stopPropagation(); onRemove() }}
             className="p-1.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
@@ -420,14 +647,134 @@ function ArtifactCard({
         </div>
       </div>
 
-      {/* Preview do conteúdo (selecionado) */}
-      {isSelected && (
-        <div className="mt-3 pt-3 border-t border-purple-500/20">
-          <div className="bg-slate-900/50 rounded-lg overflow-hidden max-h-48 overflow-y-auto">
-            <ArtifactContent artifact={artifact} />
-          </div>
+      {/* Preview do conteúdo - nível 2 (preview compacto) */}
+      <AnimatePresence>
+        {previewLevel === 'preview' && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-3 pt-1 border-t border-white/5">
+              <div className="bg-slate-900/50 rounded-lg overflow-hidden max-h-32 overflow-y-auto">
+                {/* Preview resumido */}
+                <div className="p-3 text-white/60 text-sm line-clamp-3">
+                  {artifact.content.substring(0, 200)}
+                  {artifact.content.length > 200 && '...'}
+                </div>
+              </div>
+              <button
+                onClick={cyclePreview}
+                className="w-full mt-2 py-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                Ver mais ↓
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Preview do conteúdo - nível 3 (expandido completo) */}
+        {previewLevel === 'expanded' && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-3 pt-1 border-t border-purple-500/20">
+              <div className="bg-slate-900/50 rounded-lg overflow-hidden max-h-64 overflow-y-auto">
+                <ArtifactContent artifact={artifact} />
+              </div>
+              <button
+                onClick={cyclePreview}
+                className="w-full mt-2 py-1 text-xs text-white/40 hover:text-white/60 transition-colors"
+              >
+                Recolher ↑
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// Componente de categoria colapsável
+function CategorySection({
+  categoryKey,
+  category,
+  artifacts,
+  selectedArtifactId,
+  onSelectArtifact,
+  onRemoveArtifact,
+  onFullscreen,
+  defaultExpanded = true
+}: {
+  categoryKey: string
+  category: typeof ARTIFACT_CATEGORIES[string]
+  artifacts: Artifact[]
+  selectedArtifactId: string | null
+  onSelectArtifact: (id: string) => void
+  onRemoveArtifact: (id: string) => void
+  onFullscreen: (artifact: Artifact) => void
+  defaultExpanded?: boolean
+}) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded)
+
+  if (artifacts.length === 0) return null
+
+  return (
+    <div className="mb-4">
+      {/* Header da categoria */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          {isExpanded ? (
+            <FolderOpen className="w-4 h-4 text-white/40" />
+          ) : (
+            <Folder className="w-4 h-4 text-white/40" />
+          )}
+          <span className="text-lg">{category.icon}</span>
+          <span className="text-white font-medium text-sm">{category.label}</span>
+          <span className="text-white/40 text-xs">({artifacts.length})</span>
         </div>
-      )}
+        {isExpanded ? (
+          <ChevronUp className="w-4 h-4 text-white/40" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-white/40" />
+        )}
+      </button>
+
+      {/* Lista de artefatos da categoria */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-2 space-y-2 pl-2">
+              {artifacts.map((artifact) => (
+                <ArtifactCard
+                  key={artifact.id}
+                  artifact={artifact}
+                  isSelected={selectedArtifactId === artifact.id}
+                  onSelect={() => onSelectArtifact(artifact.id)}
+                  onRemove={() => onRemoveArtifact(artifact.id)}
+                  onFullscreen={() => onFullscreen(artifact)}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -450,6 +797,7 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
   const [activeFilter, setActiveFilter] = useState<ArtifactType | 'all'>('all')
   const [fullscreenArtifact, setFullscreenArtifact] = useState<Artifact | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
 
   // Filtrar artefatos
   const filteredArtifacts = useMemo(() => {
@@ -469,6 +817,25 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
     const types = new Set(artifacts.map(a => a.type))
     return Array.from(types) as ArtifactType[]
   }, [artifacts])
+
+  // Agrupar artefatos por categoria
+  const artifactsByCategory = useMemo(() => {
+    const grouped: Record<string, Artifact[]> = {}
+
+    Object.keys(ARTIFACT_CATEGORIES).forEach(key => {
+      grouped[key] = filteredArtifacts.filter(artifact =>
+        ARTIFACT_CATEGORIES[key].types.includes(artifact.type)
+      )
+    })
+
+    // Artefatos sem categoria
+    const categorizedTypes = Object.values(ARTIFACT_CATEGORIES).flatMap(c => c.types)
+    grouped['other'] = filteredArtifacts.filter(
+      artifact => !categorizedTypes.includes(artifact.type)
+    )
+
+    return grouped
+  }, [filteredArtifacts])
 
   // Navegação no fullscreen
   const currentFullscreenIndex = fullscreenArtifact
@@ -570,22 +937,55 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
               </div>
             </div>
 
-            {/* Busca e Filtros */}
+            {/* Busca, Filtros e Modo de Visualização */}
             <div className="p-3 border-b border-white/10 space-y-2">
-              {/* Campo de busca */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-                <input
-                  type="text"
-                  placeholder="Buscar artefatos..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 text-sm"
-                />
+              {/* Campo de busca + botões de modo */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                  <input
+                    type="text"
+                    placeholder="Buscar artefatos..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 text-sm"
+                  />
+                </div>
+
+                {/* Botões de modo de visualização */}
+                <div className="flex items-center bg-white/5 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-1.5 rounded transition-colors ${
+                      viewMode === 'list' ? 'bg-purple-500/30 text-purple-400' : 'text-white/40 hover:text-white'
+                    }`}
+                    title="Lista"
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-1.5 rounded transition-colors ${
+                      viewMode === 'grid' ? 'bg-purple-500/30 text-purple-400' : 'text-white/40 hover:text-white'
+                    }`}
+                    title="Grade"
+                  >
+                    <Grid3X3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('categories')}
+                    className={`p-1.5 rounded transition-colors ${
+                      viewMode === 'categories' ? 'bg-purple-500/30 text-purple-400' : 'text-white/40 hover:text-white'
+                    }`}
+                    title="Categorias"
+                  >
+                    <Folder className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Toggle filtros */}
-              {availableTypes.length > 1 && (
+              {availableTypes.length > 1 && viewMode !== 'categories' && (
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
@@ -603,7 +1003,7 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
               )}
 
               {/* Filtros por tipo */}
-              {showFilters && (
+              {showFilters && viewMode !== 'categories' && (
                 <div className="flex flex-wrap gap-1.5 pt-2">
                   <button
                     onClick={() => setActiveFilter('all')}
@@ -633,19 +1033,76 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
               )}
             </div>
 
-            {/* Lista de artefatos - VERTICAL */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {/* Lista de artefatos */}
+            <div className="flex-1 overflow-y-auto p-3">
               {filteredArtifacts.length > 0 ? (
-                filteredArtifacts.map((artifact) => (
-                  <ArtifactCard
-                    key={artifact.id}
-                    artifact={artifact}
-                    isSelected={selectedArtifactId === artifact.id}
-                    onSelect={() => selectArtifact(artifact.id)}
-                    onRemove={() => removeArtifact(artifact.id)}
-                    onFullscreen={() => setFullscreenArtifact(artifact)}
-                  />
-                ))
+                <>
+                  {/* Modo LISTA */}
+                  {viewMode === 'list' && (
+                    <div className="space-y-2">
+                      {filteredArtifacts.map((artifact) => (
+                        <ArtifactCard
+                          key={artifact.id}
+                          artifact={artifact}
+                          isSelected={selectedArtifactId === artifact.id}
+                          onSelect={() => selectArtifact(artifact.id)}
+                          onRemove={() => removeArtifact(artifact.id)}
+                          onFullscreen={() => setFullscreenArtifact(artifact)}
+                          viewMode="list"
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Modo GRID */}
+                  {viewMode === 'grid' && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <AnimatePresence>
+                        {filteredArtifacts.map((artifact) => (
+                          <ArtifactCard
+                            key={artifact.id}
+                            artifact={artifact}
+                            isSelected={selectedArtifactId === artifact.id}
+                            onSelect={() => selectArtifact(artifact.id)}
+                            onRemove={() => removeArtifact(artifact.id)}
+                            onFullscreen={() => setFullscreenArtifact(artifact)}
+                            viewMode="grid"
+                          />
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  )}
+
+                  {/* Modo CATEGORIAS */}
+                  {viewMode === 'categories' && (
+                    <div>
+                      {Object.entries(ARTIFACT_CATEGORIES).map(([key, category]) => (
+                        <CategorySection
+                          key={key}
+                          categoryKey={key}
+                          category={category}
+                          artifacts={artifactsByCategory[key] || []}
+                          selectedArtifactId={selectedArtifactId}
+                          onSelectArtifact={selectArtifact}
+                          onRemoveArtifact={removeArtifact}
+                          onFullscreen={setFullscreenArtifact}
+                        />
+                      ))}
+                      {/* Outros (sem categoria) */}
+                      {artifactsByCategory['other']?.length > 0 && (
+                        <CategorySection
+                          categoryKey="other"
+                          category={{ label: 'Outros', icon: '📄', types: [], color: 'from-slate-500 to-slate-600' }}
+                          artifacts={artifactsByCategory['other']}
+                          selectedArtifactId={selectedArtifactId}
+                          onSelectArtifact={selectArtifact}
+                          onRemoveArtifact={removeArtifact}
+                          onFullscreen={setFullscreenArtifact}
+                        />
+                      )}
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-40 text-center">
                   <Search className="w-8 h-8 text-white/20 mb-2" />
@@ -667,7 +1124,9 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
             {/* Footer com dica */}
             <div className="p-3 border-t border-white/10 text-center">
               <p className="text-white/30 text-xs">
-                Clique em um artefato para expandir • <Maximize2 className="w-3 h-3 inline" /> para tela cheia
+                {viewMode === 'list' && 'Clique para preview • 👁 para expandir • ⛶ para tela cheia'}
+                {viewMode === 'grid' && 'Hover para ações • Clique para selecionar'}
+                {viewMode === 'categories' && 'Clique nas categorias para expandir/recolher'}
               </p>
             </div>
           </>
