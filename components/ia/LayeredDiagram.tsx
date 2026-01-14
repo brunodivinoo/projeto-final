@@ -9,10 +9,17 @@ import {
   X,
   Info,
   AlertTriangle,
-  Target
+  Target,
+  Layers,
+  SplitSquareHorizontal,
+  BookOpen,
+  Microscope,
+  Activity
 } from 'lucide-react'
 
 // Tipos
+type ViewMode = 'stacked' | 'crossSection' | 'timeline'
+
 interface Sublayer {
   name: string
   detail?: string
@@ -29,6 +36,7 @@ interface Layer {
   stagingName?: string
   details?: string
   marker?: string // Ex: "← Membrana basal ÍNTEGRA"
+  depth?: string  // Profundidade anatômica
 }
 
 interface LayeredDiagramProps {
@@ -40,6 +48,7 @@ interface LayeredDiagramProps {
   theme?: 'histology' | 'anatomy' | 'staging' | 'invasion'
   description?: string
   orientation?: 'vertical' | 'horizontal'
+  viewMode?: ViewMode
 }
 
 // Paleta de cores por tema
@@ -262,6 +271,346 @@ function LayerCard({
   )
 }
 
+// Componente de visualização Corte Transversal (Cross-Section)
+function CrossSectionView({
+  layers,
+  theme,
+  onLayerClick,
+  selectedLayerId
+}: {
+  layers: Layer[]
+  theme: string
+  onLayerClick: (layerId: string) => void
+  selectedLayerId: string | null
+}) {
+  return (
+    <div className="relative">
+      {/* Indicadores laterais */}
+      <div className="absolute left-0 top-0 bottom-0 w-16 flex flex-col justify-between py-2 pr-2 border-r border-white/10">
+        <div className="text-[10px] text-white/40 text-center">Lúmen</div>
+        <div className="text-[10px] text-white/40 text-center">Serosa</div>
+      </div>
+
+      {/* Visualização de corte */}
+      <div className="ml-16 flex flex-col">
+        {layers.map((layer, index) => {
+          const colors = getLayerColors(layer.color, theme)
+          const isSelected = selectedLayerId === layer.id
+          const heightClass = layer.sublayers && layer.sublayers.length > 2 ? 'min-h-[80px]' : 'min-h-[50px]'
+
+          return (
+            <motion.div
+              key={layer.id}
+              initial={{ opacity: 0, scaleY: 0 }}
+              animate={{ opacity: 1, scaleY: 1 }}
+              transition={{ delay: index * 0.1, duration: 0.3 }}
+              className={`
+                relative ${heightClass} ${colors.bg} border-b-2 ${colors.border}
+                cursor-pointer transition-all duration-300
+                ${isSelected ? 'ring-2 ring-white/50 z-10' : ''}
+                ${layer.invaded ? 'ring-2 ring-red-500/50' : ''}
+              `}
+              onClick={() => onLayerClick(layer.id)}
+            >
+              {/* Gradiente de fundo */}
+              <div className={`absolute inset-0 bg-gradient-to-r ${colors.gradient} opacity-60`} />
+
+              {/* Indicador de invasão */}
+              {layer.invaded && (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: layer.invasionLevel === 'full' ? '100%' : '60%' }}
+                  transition={{ duration: 0.8, delay: index * 0.1 + 0.3 }}
+                  className="absolute inset-y-0 left-0 bg-red-500/40 border-r-2 border-red-500"
+                />
+              )}
+
+              {/* Conteúdo da camada */}
+              <div className="relative z-10 p-3 flex items-center justify-between h-full">
+                <div className="flex items-center gap-3">
+                  {/* Número */}
+                  <span className={`
+                    w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
+                    ${colors.bg} ${colors.text} border ${colors.border}
+                  `}>
+                    {index + 1}
+                  </span>
+                  {/* Nome e sublayers */}
+                  <div>
+                    <h5 className="font-bold text-white text-sm">{layer.name}</h5>
+                    {layer.sublayers && layer.sublayers.length > 0 && (
+                      <p className="text-[10px] text-white/50 truncate max-w-[200px]">
+                        {layer.sublayers.slice(0, 2).map(s => typeof s === 'string' ? s : s.name).join(' • ')}
+                        {layer.sublayers.length > 2 && ` +${layer.sublayers.length - 2}`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Estadiamento */}
+                {layer.staging && (
+                  <span className={`
+                    px-2 py-1 rounded text-xs font-bold
+                    ${layer.staging.toLowerCase().includes('tis') ? 'bg-emerald-500/30 text-emerald-300' :
+                      layer.staging.toLowerCase().includes('t1') ? 'bg-yellow-500/30 text-yellow-300' :
+                      layer.staging.toLowerCase().includes('t2') ? 'bg-orange-500/30 text-orange-300' :
+                      layer.staging.toLowerCase().includes('t3') ? 'bg-red-500/30 text-red-300' :
+                      'bg-red-700/30 text-red-300'}
+                  `}>
+                    {layer.staging}
+                  </span>
+                )}
+              </div>
+
+              {/* Marcador de membrana */}
+              {layer.marker && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-emerald-400 font-medium">
+                  {layer.marker}
+                </div>
+              )}
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* Legenda lateral direita */}
+      <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-pink-500/50 via-red-500/50 to-yellow-500/50 rounded-r" />
+    </div>
+  )
+}
+
+// Componente de visualização Timeline (progressão)
+function TimelineView({
+  layers,
+  theme,
+  onLayerClick,
+  selectedLayerId
+}: {
+  layers: Layer[]
+  theme: string
+  onLayerClick: (layerId: string) => void
+  selectedLayerId: string | null
+}) {
+  return (
+    <div className="relative px-4">
+      {/* Linha central */}
+      <div className="absolute left-1/2 top-8 bottom-8 w-1 bg-gradient-to-b from-emerald-500/50 via-yellow-500/50 to-red-500/50 rounded-full" />
+
+      {/* Camadas alternadas */}
+      <div className="space-y-4">
+        {layers.map((layer, index) => {
+          const colors = getLayerColors(layer.color, theme)
+          const isSelected = selectedLayerId === layer.id
+          const isLeft = index % 2 === 0
+
+          return (
+            <motion.div
+              key={layer.id}
+              initial={{ opacity: 0, x: isLeft ? -50 : 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.15, duration: 0.4 }}
+              className={`flex items-center gap-4 ${isLeft ? 'flex-row' : 'flex-row-reverse'}`}
+            >
+              {/* Card da camada */}
+              <div
+                className={`
+                  flex-1 ${colors.bg} ${colors.border} border-2 rounded-xl p-3
+                  cursor-pointer transition-all duration-300
+                  ${isSelected ? 'ring-2 ring-white/50 scale-[1.02]' : ''}
+                  ${layer.invaded ? 'ring-2 ring-red-500/50' : ''}
+                  hover:scale-[1.01]
+                `}
+                onClick={() => onLayerClick(layer.id)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={`
+                      w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold
+                      ${colors.bg} ${colors.text} border ${colors.border}
+                    `}>
+                      {index + 1}
+                    </span>
+                    <div>
+                      <h5 className="font-bold text-white text-sm">{layer.name}</h5>
+                      {layer.staging && (
+                        <span className="text-[10px] text-white/50">{layer.stagingName || layer.staging}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {layer.staging && (
+                    <span className={`
+                      px-2 py-1 rounded text-xs font-bold
+                      ${layer.staging.toLowerCase().includes('tis') ? 'bg-emerald-500/30 text-emerald-300' :
+                        layer.staging.toLowerCase().includes('t1') ? 'bg-yellow-500/30 text-yellow-300' :
+                        layer.staging.toLowerCase().includes('t2') ? 'bg-orange-500/30 text-orange-300' :
+                        layer.staging.toLowerCase().includes('t3') ? 'bg-red-500/30 text-red-300' :
+                        'bg-red-700/30 text-red-300'}
+                    `}>
+                      {layer.staging}
+                    </span>
+                  )}
+                </div>
+
+                {/* Sublayers resumidas */}
+                {layer.sublayers && layer.sublayers.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-white/10">
+                    <div className="flex flex-wrap gap-1">
+                      {layer.sublayers.slice(0, 3).map((sub, i) => (
+                        <span key={i} className="px-1.5 py-0.5 bg-white/5 rounded text-[10px] text-white/60">
+                          {typeof sub === 'string' ? sub : sub.name}
+                        </span>
+                      ))}
+                      {layer.sublayers.length > 3 && (
+                        <span className="px-1.5 py-0.5 text-[10px] text-white/40">+{layer.sublayers.length - 3}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Ponto central */}
+              <div className={`
+                w-4 h-4 rounded-full border-2 flex-shrink-0
+                ${layer.invaded ? 'bg-red-500 border-red-400' : `${colors.bg} ${colors.border}`}
+              `}>
+                {layer.invaded && (
+                  <div className="w-full h-full rounded-full bg-red-500 animate-pulse" />
+                )}
+              </div>
+
+              {/* Espaço do outro lado */}
+              <div className="flex-1" />
+            </motion.div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// Painel de detalhes lateral
+function LayerDetailPanel({
+  layer,
+  theme,
+  onClose
+}: {
+  layer: Layer
+  theme: string
+  onClose: () => void
+}) {
+  const colors = getLayerColors(layer.color, theme)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      className="absolute top-4 right-4 w-72 z-20"
+    >
+      <div className="bg-slate-800/95 backdrop-blur-sm border border-white/20 rounded-xl shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className={`flex items-center justify-between px-4 py-3 bg-gradient-to-r ${colors.gradient} border-b border-white/10`}>
+          <div className="flex items-center gap-2">
+            <Microscope className="w-4 h-4 text-white/80" />
+            <span className="text-white font-medium text-sm">Detalhes da Camada</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-white/10 rounded transition-colors"
+          >
+            <X className="w-4 h-4 text-white/60" />
+          </button>
+        </div>
+
+        {/* Conteúdo */}
+        <div className="p-4 space-y-4">
+          {/* Nome */}
+          <div>
+            <span className="text-xs text-white/40 uppercase tracking-wider">Camada</span>
+            <p className="text-white font-bold text-lg mt-1">{layer.name}</p>
+          </div>
+
+          {/* Estadiamento */}
+          {layer.staging && (
+            <div>
+              <span className="text-xs text-white/40 uppercase tracking-wider">Estadiamento</span>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`
+                  px-3 py-1.5 rounded-lg text-sm font-bold
+                  ${layer.staging.toLowerCase().includes('tis') ? 'bg-emerald-500/30 text-emerald-300' :
+                    layer.staging.toLowerCase().includes('t1') ? 'bg-yellow-500/30 text-yellow-300' :
+                    layer.staging.toLowerCase().includes('t2') ? 'bg-orange-500/30 text-orange-300' :
+                    layer.staging.toLowerCase().includes('t3') ? 'bg-red-500/30 text-red-300' :
+                    'bg-red-700/30 text-red-300'}
+                `}>
+                  {layer.staging}
+                </span>
+                {layer.stagingName && (
+                  <span className="text-white/60 text-sm">{layer.stagingName}</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Status de invasão */}
+          {layer.invaded && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-400" />
+                <span className="text-red-300 text-sm font-medium">
+                  {layer.invasionLevel === 'full' ? 'Camada totalmente invadida' : 'Camada parcialmente invadida'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Sublayers */}
+          {layer.sublayers && layer.sublayers.length > 0 && (
+            <div>
+              <span className="text-xs text-white/40 uppercase tracking-wider">Componentes</span>
+              <ul className="mt-2 space-y-1.5">
+                {layer.sublayers.map((sub, i) => {
+                  const subName = typeof sub === 'string' ? sub : sub.name
+                  const subDetail = typeof sub === 'string' ? null : sub.detail
+                  return (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${colors.bg} ${colors.border} border`} />
+                      <div>
+                        <span className="text-white/80">{subName}</span>
+                        {subDetail && (
+                          <span className="block text-xs text-white/40 mt-0.5">{subDetail}</span>
+                        )}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )}
+
+          {/* Detalhes extras */}
+          {layer.details && (
+            <div className="bg-slate-900/50 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <BookOpen className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-white/70">{layer.details}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Marcador */}
+          {layer.marker && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+              <p className="text-emerald-300 text-sm font-medium">{layer.marker}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
 // Componente principal
 export default function LayeredDiagram({
   title,
@@ -271,13 +620,16 @@ export default function LayeredDiagram({
   interactive = true,
   theme = 'histology',
   description,
-  orientation = 'vertical'
+  orientation = 'vertical',
+  viewMode: initialViewMode = 'stacked'
 }: LayeredDiagramProps) {
   // showLegend é um alias para showStaging
   const displayStaging = showLegend ?? showStaging
   const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set())
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode)
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null)
 
   // Detectar mobile para responsividade do fullscreen
   useEffect(() => {
@@ -308,8 +660,24 @@ export default function LayeredDiagram({
     setExpandedLayers(new Set())
   }, [])
 
+  // Handler para clique em camada nos modos alternativos
+  const handleLayerClick = useCallback((layerId: string) => {
+    if (!interactive) return
+    setSelectedLayerId(prev => prev === layerId ? null : layerId)
+  }, [interactive])
+
+  // Obter camada selecionada
+  const selectedLayer = layers.find(l => l.id === selectedLayerId)
+
   // Contar camadas invadidas
   const invadedCount = layers.filter(l => l.invaded).length
+
+  // Definições dos modos de visualização
+  const viewModes = [
+    { id: 'stacked' as ViewMode, icon: Layers, label: 'Empilhado', description: 'Visão clássica em cards' },
+    { id: 'crossSection' as ViewMode, icon: SplitSquareHorizontal, label: 'Corte', description: 'Corte transversal' },
+    { id: 'timeline' as ViewMode, icon: Activity, label: 'Timeline', description: 'Progressão visual' },
+  ]
 
   const content = (
     <div className={`
@@ -317,7 +685,7 @@ export default function LayeredDiagram({
     `}>
       {/* Header */}
       <div className="p-4 border-b border-white/10 bg-white/5">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
               <Target className="w-5 h-5 text-white" />
@@ -332,7 +700,7 @@ export default function LayeredDiagram({
 
           <div className="flex items-center gap-2">
             {/* Stats */}
-            <div className="flex items-center gap-4 mr-4 text-sm">
+            <div className="flex items-center gap-4 mr-2 text-sm">
               <span className="text-white/60">
                 <span className="font-bold text-white">{layers.length}</span> camadas
               </span>
@@ -343,8 +711,37 @@ export default function LayeredDiagram({
               )}
             </div>
 
-            {/* Ações */}
+            {/* Seletor de modo de visualização */}
             {interactive && (
+              <div className="flex items-center gap-1 p-1 bg-white/5 rounded-lg">
+                {viewModes.map((mode) => {
+                  const IconComponent = mode.icon
+                  return (
+                    <button
+                      key={mode.id}
+                      onClick={() => {
+                        setViewMode(mode.id)
+                        setSelectedLayerId(null)
+                      }}
+                      className={`
+                        p-1.5 rounded-md transition-all duration-200 relative group
+                        ${viewMode === mode.id ? 'bg-purple-500/30 text-purple-300' : 'text-white/40 hover:text-white/60 hover:bg-white/5'}
+                      `}
+                      title={mode.label}
+                    >
+                      <IconComponent className="w-4 h-4" />
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        {mode.label}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Ações do modo stacked */}
+            {interactive && viewMode === 'stacked' && (
               <>
                 <button
                   onClick={expandAll}
@@ -395,26 +792,67 @@ export default function LayeredDiagram({
         )}
       </div>
 
-      {/* Camadas */}
-      <div className={`p-4 space-y-3 ${orientation === 'horizontal' ? 'flex gap-3 overflow-x-auto' : ''}`}>
-        {layers.map((layer, index) => (
-          <LayerCard
-            key={layer.id}
-            layer={layer}
-            index={index}
-            isExpanded={expandedLayers.has(layer.id)}
-            onToggle={() => toggleLayer(layer.id)}
-            theme={theme}
-            showStaging={displayStaging}
-          />
-        ))}
+      {/* Camadas - Renderização condicional por viewMode */}
+      <div className="relative">
+        {viewMode === 'stacked' && (
+          <div className={`p-4 space-y-3 ${orientation === 'horizontal' ? 'flex gap-3 overflow-x-auto' : ''}`}>
+            {layers.map((layer, index) => (
+              <LayerCard
+                key={layer.id}
+                layer={layer}
+                index={index}
+                isExpanded={expandedLayers.has(layer.id)}
+                onToggle={() => toggleLayer(layer.id)}
+                theme={theme}
+                showStaging={displayStaging}
+              />
+            ))}
+          </div>
+        )}
+
+        {viewMode === 'crossSection' && (
+          <div className="p-4">
+            <CrossSectionView
+              layers={layers}
+              theme={theme}
+              onLayerClick={handleLayerClick}
+              selectedLayerId={selectedLayerId}
+            />
+          </div>
+        )}
+
+        {viewMode === 'timeline' && (
+          <div className="p-4">
+            <TimelineView
+              layers={layers}
+              theme={theme}
+              onLayerClick={handleLayerClick}
+              selectedLayerId={selectedLayerId}
+            />
+          </div>
+        )}
+
+        {/* Painel de detalhes lateral para modos alternativos */}
+        <AnimatePresence>
+          {selectedLayer && viewMode !== 'stacked' && (
+            <LayerDetailPanel
+              layer={selectedLayer}
+              theme={theme}
+              onClose={() => setSelectedLayerId(null)}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Footer com info */}
+      {/* Footer com info dinâmico */}
       {interactive && (
         <div className="p-3 border-t border-white/10 bg-white/5">
           <p className="text-xs text-white/40 text-center">
-            Clique nas camadas para ver detalhes
+            {viewMode === 'stacked'
+              ? 'Clique nas camadas para ver detalhes'
+              : viewMode === 'crossSection'
+              ? 'Visão de corte transversal - Clique para detalhes'
+              : 'Progressão das camadas - Clique para detalhes'}
           </p>
         </div>
       )}
