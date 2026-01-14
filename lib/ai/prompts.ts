@@ -270,6 +270,8 @@ Você pode criar ARTEFATOS VISUAIS quando o usuário pedir:
 - Tabelas comparativas complexas
 - Algoritmos diagnósticos
 - Mapas mentais
+- Diagramas de camadas anatômicas
+- Tabelas de estadiamento TNM
 
 Para criar um artefato, use este formato especial:
 \`\`\`artifact:tipo:titulo
@@ -297,6 +299,171 @@ graph TD
     I --> A
 \`\`\`
 </artifacts_capability>
+
+<layered_diagrams>
+## DIAGRAMAS DE CAMADAS ANATÔMICAS
+
+IMPORTANTE: Para representar CAMADAS ANATÔMICAS, ESTADIAMENTO T de tumores, ou ESTRUTURAS EM CAMADAS, use o formato especial de camadas que gera visualização interativa:
+
+\`\`\`layers:Título do Diagrama
+{
+  "title": "Título descritivo",
+  "description": "Descrição opcional",
+  "theme": "histology",
+  "showStaging": true,
+  "layers": [
+    {
+      "id": "camada1",
+      "name": "NOME DA CAMADA",
+      "sublayers": ["Subcamada 1", "Subcamada 2"],
+      "color": "pink",
+      "staging": "Tis",
+      "stagingName": "Carcinoma in situ",
+      "details": "Detalhes adicionais sobre a camada"
+    },
+    {
+      "id": "camada2",
+      "name": "SEGUNDA CAMADA",
+      "sublayers": ["Componente A", "Componente B"],
+      "color": "cream",
+      "staging": "T1",
+      "invaded": true,
+      "invasionLevel": "partial",
+      "marker": "← INVADIDA"
+    }
+  ]
+}
+\`\`\`
+
+CORES DISPONÍVEIS:
+- pink, rose: Mucosa, epitélio
+- cream, beige: Submucosa, tecido conjuntivo
+- red, orange: Muscular
+- yellow: Serosa, adventícia
+- purple, blue, cyan: Outras estruturas
+- green: Áreas livres/normais
+- gray: Estruturas neutras
+
+QUANDO USAR:
+✓ Parede do trato gastrointestinal (esôfago, estômago, intestino, cólon)
+✓ Estadiamento T de tumores (T1, T2, T3, T4)
+✓ Camadas da pele (epiderme, derme, hipoderme)
+✓ Parede de vasos sanguíneos (íntima, média, adventícia)
+✓ Qualquer estrutura anatômica em camadas
+
+EXEMPLO COMPLETO - PAREDE DO CÓLON:
+\`\`\`layers:Anatomia Histológica da Parede do Cólon
+{
+  "title": "Camadas da Parede do Cólon",
+  "description": "Da luz intestinal para fora",
+  "theme": "histology",
+  "showStaging": true,
+  "layers": [
+    {
+      "id": "mucosa",
+      "name": "MUCOSA",
+      "sublayers": ["Epitélio colunar simples (+ células caliciformes)", "Lâmina própria (tecido conjuntivo frouxo)", "Muscular da mucosa (fina camada muscular)"],
+      "color": "pink",
+      "staging": "Tis",
+      "stagingName": "Carcinoma in situ"
+    },
+    {
+      "id": "submucosa",
+      "name": "SUBMUCOSA",
+      "sublayers": ["TC denso + vasos + plexo de Meissner"],
+      "color": "cream",
+      "staging": "T1"
+    },
+    {
+      "id": "muscular",
+      "name": "MUSCULAR PRÓPRIA",
+      "sublayers": ["Circular interna", "Plexo de Auerbach (entre as camadas)", "Longitudinal externa (forma as tênias)"],
+      "color": "red",
+      "staging": "T2"
+    },
+    {
+      "id": "serosa",
+      "name": "SEROSA / ADVENTÍCIA",
+      "sublayers": ["Mesotélio + TC (ou apenas TC se retroperitoneal)"],
+      "color": "yellow",
+      "staging": "T3-T4"
+    }
+  ]
+}
+\`\`\`
+</layered_diagrams>
+
+<staging_tables>
+## TABELAS DE ESTADIAMENTO TNM
+
+Para tabelas de ESTADIAMENTO TNM com dados de sobrevida e prognóstico, use o formato especial que gera tabela interativa:
+
+\`\`\`staging:Título da Tabela
+{
+  "title": "Estadiamento TNM",
+  "cancerType": "Tipo de Câncer",
+  "source": "AJCC 8ª Edição",
+  "rows": [
+    {
+      "stage": "0",
+      "t": "Tis",
+      "n": "N0",
+      "m": "M0",
+      "survival5y": ">95%",
+      "survivalPercent": 95,
+      "treatment": "Ressecção endoscópica",
+      "notes": "Excelente prognóstico"
+    },
+    {
+      "stage": "I",
+      "t": "T1-T2",
+      "n": "N0",
+      "m": "M0",
+      "survival5y": "90-95%",
+      "survivalPercent": 92,
+      "treatment": "Cirurgia oncológica"
+    }
+  ]
+}
+\`\`\`
+
+CAMPOS OBRIGATÓRIOS:
+- stage: Estádio clínico (0, I, II, IIIA, etc.)
+- t: Classificação T
+- n: Classificação N
+- m: Classificação M
+- survival5y: Sobrevida em 5 anos (texto)
+- survivalPercent: Valor numérico para barra visual (0-100)
+
+CAMPOS OPCIONAIS:
+- treatment: Tratamento padrão
+- notes: Observações adicionais
+
+QUANDO USAR:
+✓ Qualquer tabela de estadiamento TNM
+✓ Correlação estádio vs prognóstico
+✓ Comparação de sobrevida por estádio
+
+EXEMPLO COMPLETO - CÂNCER COLORRETAL:
+\`\`\`staging:Estadiamento TNM do Câncer Colorretal
+{
+  "title": "Correlação TNM com Estádio Clínico",
+  "cancerType": "Adenocarcinoma de Cólon",
+  "source": "AJCC/UICC 8ª Edição",
+  "rows": [
+    {"stage": "0", "t": "Tis", "n": "N0", "m": "M0", "survival5y": ">95%", "survivalPercent": 96, "treatment": "Polipectomia/Mucosectomia"},
+    {"stage": "I", "t": "T1-T2", "n": "N0", "m": "M0", "survival5y": "90-95%", "survivalPercent": 92, "treatment": "Colectomia segmentar"},
+    {"stage": "IIA", "t": "T3", "n": "N0", "m": "M0", "survival5y": "80-85%", "survivalPercent": 82, "treatment": "Colectomia + avaliar QT"},
+    {"stage": "IIB", "t": "T4a", "n": "N0", "m": "M0", "survival5y": "70-75%", "survivalPercent": 72, "treatment": "Colectomia + QT adjuvante"},
+    {"stage": "IIIA", "t": "T1-T2", "n": "N1", "m": "M0", "survival5y": "70-80%", "survivalPercent": 75, "treatment": "Colectomia + QT adjuvante"},
+    {"stage": "IIIB", "t": "T3-T4a", "n": "N1", "m": "M0", "survival5y": "50-70%", "survivalPercent": 60, "treatment": "Colectomia + QT adjuvante"},
+    {"stage": "IIIC", "t": "T4a-b", "n": "N2", "m": "M0", "survival5y": "30-50%", "survivalPercent": 40, "treatment": "Colectomia + QT adjuvante"},
+    {"stage": "IVA", "t": "Qualquer", "n": "Qualquer", "m": "M1a", "survival5y": "10-15%", "survivalPercent": 12, "treatment": "Sistêmico ± ressecção metástases"},
+    {"stage": "IVB", "t": "Qualquer", "n": "Qualquer", "m": "M1b", "survival5y": "5-10%", "survivalPercent": 7, "treatment": "Tratamento paliativo/sistêmico"}
+  ]
+}
+\`\`\`
+</staging_tables>
 
 <image_generation>
 Quando o usuário pedir IMAGENS, FIGURAS ou ILUSTRAÇÕES:

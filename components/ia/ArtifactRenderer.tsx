@@ -21,6 +21,32 @@ const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
   )
 })
 
+// Importar LayeredDiagram dinamicamente
+const LayeredDiagram = dynamic(() => import('./LayeredDiagram'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-white/40">
+        <div className="animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full" />
+        <span>Carregando diagrama de camadas...</span>
+      </div>
+    </div>
+  )
+})
+
+// Importar StagingTable dinamicamente
+const StagingTable = dynamic(() => import('./StagingTable'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-white/40">
+        <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full" />
+        <span>Carregando tabela de estadiamento...</span>
+      </div>
+    </div>
+  )
+})
+
 // Importar ImageGenerator dinamicamente
 const ImageGenerator = dynamic(() => import('./ImageGenerator'), {
   ssr: false,
@@ -65,8 +91,14 @@ const IMAGE_GEN_REGEX = /```generate_image\n([\s\S]*?)```/g
 // Regex para detectar marcadores de busca de imagens médicas reais
 const IMAGE_SEARCH_REGEX = /\[IMAGE_SEARCH:\s*([^\]]+)\]/g
 
+// Regex para detectar diagramas de camadas (layers)
+const LAYERS_REGEX = /```layers:([^\n]*)\n([\s\S]*?)```/g
+
+// Regex para detectar tabelas de estadiamento
+const STAGING_REGEX = /```staging:([^\n]*)\n([\s\S]*?)```/g
+
 interface Artifact {
-  type: 'artifact' | 'mermaid' | 'image_request'
+  type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging'
   subtype?: string
   title?: string
   content: string
@@ -98,7 +130,7 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   // Combinar todas as regex em uma busca
   const allMatches: Array<{
     match: RegExpMatchArray
-    type: 'artifact' | 'mermaid' | 'image_request'
+    type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging'
   }> = []
 
   // Buscar artefatos personalizados
@@ -118,6 +150,18 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   const imageRegex = new RegExp(IMAGE_GEN_REGEX.source, 'g')
   while ((match = imageRegex.exec(content)) !== null) {
     allMatches.push({ match, type: 'image_request' })
+  }
+
+  // Buscar diagramas de camadas (layers)
+  const layersRegex = new RegExp(LAYERS_REGEX.source, 'g')
+  while ((match = layersRegex.exec(content)) !== null) {
+    allMatches.push({ match, type: 'layers' })
+  }
+
+  // Buscar tabelas de estadiamento
+  const stagingRegex = new RegExp(STAGING_REGEX.source, 'g')
+  while ((match = stagingRegex.exec(content)) !== null) {
+    allMatches.push({ match, type: 'staging' })
   }
 
   // Ordenar por índice
@@ -149,6 +193,22 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
         type: 'mermaid',
         title: 'Diagrama',
         content: match[1].trim(),
+        startIndex,
+        endIndex
+      }
+    } else if (type === 'layers') {
+      artifact = {
+        type: 'layers',
+        title: match[1].trim() || 'Diagrama de Camadas',
+        content: match[2].trim(),
+        startIndex,
+        endIndex
+      }
+    } else if (type === 'staging') {
+      artifact = {
+        type: 'staging',
+        title: match[1].trim() || 'Estadiamento',
+        content: match[2].trim(),
         startIndex,
         endIndex
       }
@@ -403,6 +463,58 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
               title={part.title}
             />
           )
+        }
+
+        // Renderizar diagramas de camadas (layers)
+        if (part.type === 'layers') {
+          try {
+            const layerData = JSON.parse(part.content)
+            return (
+              <div key={index} className="my-4">
+                <LayeredDiagram
+                  title={part.title || layerData.title || 'Diagrama de Camadas'}
+                  layers={layerData.layers || []}
+                  showStaging={layerData.showStaging}
+                  interactive={layerData.interactive !== false}
+                  theme={layerData.theme || 'histology'}
+                  description={layerData.description}
+                  orientation={layerData.orientation}
+                />
+              </div>
+            )
+          } catch {
+            // Se não for JSON válido, mostrar como texto
+            return (
+              <div key={index} className="my-4 bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <pre className="text-white/80 text-sm whitespace-pre-wrap">{part.content}</pre>
+              </div>
+            )
+          }
+        }
+
+        // Renderizar tabelas de estadiamento
+        if (part.type === 'staging') {
+          try {
+            const stagingData = JSON.parse(part.content)
+            return (
+              <div key={index} className="my-4">
+                <StagingTable
+                  title={part.title || stagingData.title || 'Estadiamento'}
+                  rows={stagingData.rows || []}
+                  highlightStage={stagingData.highlightStage}
+                  cancerType={stagingData.cancerType}
+                  source={stagingData.source}
+                />
+              </div>
+            )
+          } catch {
+            // Se não for JSON válido, mostrar como texto
+            return (
+              <div key={index} className="my-4 bg-slate-800/50 border border-white/10 rounded-xl p-4">
+                <pre className="text-white/80 text-sm whitespace-pre-wrap">{part.content}</pre>
+              </div>
+            )
+          }
         }
 
         if (part.type === 'image_request') {
