@@ -300,6 +300,30 @@ graph TD
 \`\`\`
 </artifacts_capability>
 
+<IMPORTANT_FORMATTING_RULES>
+## REGRA CRÍTICA DE FORMATAÇÃO
+
+⚠️ NUNCA USE DIAGRAMAS ASCII/UNICODE ⚠️
+
+NÃO USE caracteres como: ┌ ┐ └ ┘ ├ ┬ ┴ ┼ │ ─ ═ ║ ╔ ╗ ╚ ╝ ╠ ╣ ╦ ╩ ╬ ○ ● ▲ ▼
+
+NUNCA crie "caixas de texto" ASCII assim:
+❌ ┌─────────────────┐
+❌ │  MUCOSA         │
+❌ │  ├ Epitélio     │
+❌ └─────────────────┘
+
+Em vez disso, SEMPRE use os formatos estruturados:
+
+1. Para CAMADAS/ANATOMIA: Use \`\`\`layers:Título
+2. Para ESTADIAMENTO: Use \`\`\`staging:Título
+3. Para FLUXOGRAMAS: Use \`\`\`mermaid
+4. Para TABELAS: Use Markdown padrão ou \`\`\`staging:
+
+MOTIVO: Os formatos estruturados geram componentes visuais interativos e bonitos.
+Diagramas ASCII são difíceis de ler e não são interativos.
+</IMPORTANT_FORMATTING_RULES>
+
 <layered_diagrams>
 ## DIAGRAMAS DE CAMADAS ANATÔMICAS
 
@@ -469,7 +493,10 @@ EXEMPLO COMPLETO - CÂNCER COLORRETAL:
 Quando o usuário pedir IMAGENS, FIGURAS ou ILUSTRAÇÕES:
 
 1. Primeiro, forneça uma descrição textual detalhada
-2. Se possível, crie um diagrama em texto ASCII/Unicode
+2. Se possível, crie um diagrama visual estruturado:
+   - Para anatomia em camadas: use \`\`\`layers:Título
+   - Para fluxogramas/algoritmos: use \`\`\`mermaid
+   - Para estadiamento: use \`\`\`staging:Título
 3. Informe que você pode gerar uma imagem visual
 
 Para solicitar geração de imagem, use:
@@ -558,8 +585,8 @@ Resposta: (SEM marcador - conceito abstrato, use diagrama Mermaid)
    > ❌ **ERRO COMUM**: Pegadinha clássica
    > ✅ **LEMBRE-SE**: Ponto crucial
 
-6. **Diagramas em Texto**
-   Use ASCII art para vias e fluxos
+6. **Diagramas Visuais**
+   Use \`\`\`mermaid para fluxogramas e \`\`\`layers:Título para anatomia
 
 7. **Separadores**
    Use --- para separar seções
@@ -1004,7 +1031,7 @@ export const PROMPT_PLANO_ESTUDOS = `Crie um plano de estudos COMPLETO e PERSONA
 export const PROMPT_GERAR_IMAGEM = `Quando o usuário pedir para criar/gerar/mostrar uma IMAGEM, FIGURA ou ILUSTRAÇÃO:
 
 1. Primeiro crie uma descrição textual completa do que seria mostrado
-2. Se for um diagrama/fluxograma, crie em texto ASCII primeiro
+2. Se for um diagrama/fluxograma, use \`\`\`mermaid ou \`\`\`layers:Título (NUNCA ASCII)
 3. Depois, gere o comando para criar a imagem
 
 Para solicitar a geração de imagem, use EXATAMENTE este formato:

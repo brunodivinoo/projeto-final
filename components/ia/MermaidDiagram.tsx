@@ -323,6 +323,68 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
     }
   }, [svg, interactiveMode, chart, extractNodeDescriptions])
 
+  // Melhorar contraste de texto em nós claros após renderização
+  useEffect(() => {
+    if (!svg || !svgContainerRef.current) return
+
+    const svgElement = svgContainerRef.current.querySelector('svg')
+    if (!svgElement) return
+
+    // Função para verificar se uma cor é clara
+    const isLightColor = (fill: string): boolean => {
+      // Cores claras conhecidas do Mermaid (amarelos, verdes claros, etc.)
+      const lightColorPatterns = [
+        '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f59e0b', // Amarelos
+        '#bef264', '#a3e635', '#84cc16', '#86efac', '#6ee7b7', // Verdes claros
+        '#99f6e4', '#5eead4', '#2dd4bf', // Teals
+        '#a5f3fc', '#67e8f9', // Cyans claros
+        '#fca5a5', '#f87171', // Vermelhos claros
+        '#fdba74', '#fb923c', // Laranjas
+        '#fcd34d', '#fde68a', // Mais amarelos
+        '#d9f99d', '#ecfccb', // Verde limão
+        '#ffffff', '#f8fafc', '#f1f5f9', '#e2e8f0', // Brancos/cinzas claros
+      ]
+
+      const fillLower = fill.toLowerCase()
+      return lightColorPatterns.some(c => fillLower.includes(c.slice(1).toLowerCase()))
+    }
+
+    // Encontrar todos os nós e ajustar contraste
+    const nodes = svgElement.querySelectorAll('.node')
+    nodes.forEach(node => {
+      const shapes = node.querySelectorAll('rect, polygon, circle, ellipse, path')
+      const textElements = node.querySelectorAll('.nodeLabel, text, tspan')
+
+      shapes.forEach(shape => {
+        const fill = shape.getAttribute('fill') || ''
+
+        if (isLightColor(fill)) {
+          // Aplicar texto escuro para fundos claros
+          textElements.forEach(text => {
+            const textEl = text as SVGElement
+            textEl.style.fill = '#1e293b'
+            textEl.style.fontWeight = '600'
+          })
+        }
+      })
+    })
+
+    // Também verificar elementos com classes específicas de cor clara
+    const yellowElements = svgElement.querySelectorAll('[fill*="fef"], [fill*="fde"], [fill*="fbc"], [fill*="facc"]')
+    yellowElements.forEach(el => {
+      const parentNode = el.closest('.node')
+      if (parentNode) {
+        const texts = parentNode.querySelectorAll('.nodeLabel, text, tspan')
+        texts.forEach(text => {
+          const textEl = text as SVGElement
+          textEl.style.fill = '#1e293b'
+          textEl.style.fontWeight = '600'
+        })
+      }
+    })
+
+  }, [svg])
+
   // Destacar caminhos conectados a um nó
   const highlightConnectedPaths = (svgElement: SVGSVGElement, nodeId: string) => {
     const paths = new Set<string>()
@@ -627,7 +689,7 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="absolute top-4 right-4 z-30 w-72"
+                className="absolute top-4 right-4 z-30 w-80"
               >
                 <div className="bg-slate-800/95 backdrop-blur-sm border border-white/20 rounded-xl shadow-2xl overflow-hidden">
                   {/* Header do painel */}
@@ -648,39 +710,80 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
                   </div>
 
                   {/* Conteúdo */}
-                  <div className="p-4 space-y-3">
-                    {/* Nome do nó */}
+                  <div className="p-4 space-y-4">
+                    {/* Nome/Label principal */}
                     <div>
-                      <span className="text-xs text-white/40 uppercase">Elemento</span>
-                      <p className="text-white font-medium">{selectedNode.info.label}</p>
+                      <span className="text-xs text-white/40 uppercase tracking-wider">Elemento</span>
+                      <p className="text-white font-bold text-lg mt-1">{selectedNode.info.label}</p>
                     </div>
 
-                    {/* ID do nó */}
+                    {/* Tipo de nó (detectado automaticamente) */}
                     <div>
-                      <span className="text-xs text-white/40 uppercase">ID</span>
-                      <p className="text-emerald-400 font-mono text-sm">{selectedNode.info.id}</p>
+                      <span className="text-xs text-white/40 uppercase tracking-wider">Tipo</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          selectedNode.info.label.includes('?')
+                            ? 'bg-amber-500/20 text-amber-300'
+                            : selectedNode.info.id.toLowerCase().includes('start') || selectedNode.info.id.toLowerCase().includes('inicio')
+                              ? 'bg-emerald-500/20 text-emerald-300'
+                              : selectedNode.info.id.toLowerCase().includes('end') || selectedNode.info.id.toLowerCase().includes('fim')
+                                ? 'bg-red-500/20 text-red-300'
+                                : selectedNode.info.label.toLowerCase().includes('t1') || selectedNode.info.label.toLowerCase().includes('t2') || selectedNode.info.label.toLowerCase().includes('t3') || selectedNode.info.label.toLowerCase().includes('t4') || selectedNode.info.label.toLowerCase().includes('tis')
+                                  ? 'bg-purple-500/20 text-purple-300'
+                                  : 'bg-blue-500/20 text-blue-300'
+                        }`}>
+                          {selectedNode.info.label.includes('?') ? '⬥ Decisão' :
+                           selectedNode.info.id.toLowerCase().includes('start') || selectedNode.info.id.toLowerCase().includes('inicio') ? '▶ Início' :
+                           selectedNode.info.id.toLowerCase().includes('end') || selectedNode.info.id.toLowerCase().includes('fim') ? '■ Fim' :
+                           selectedNode.info.label.toLowerCase().includes('t1') || selectedNode.info.label.toLowerCase().includes('t2') || selectedNode.info.label.toLowerCase().includes('t3') || selectedNode.info.label.toLowerCase().includes('t4') || selectedNode.info.label.toLowerCase().includes('tis') ? '📊 Estadiamento' :
+                           '▢ Processo'}
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Descrição */}
-                    {selectedNode.info.description && (
-                      <div>
-                        <span className="text-xs text-white/40 uppercase">Descrição</span>
-                        <p className="text-white/80 text-sm">{selectedNode.info.description}</p>
+                    {/* ID técnico */}
+                    <div>
+                      <span className="text-xs text-white/40 uppercase tracking-wider">ID</span>
+                      <p className="text-emerald-400 font-mono text-sm mt-1">{selectedNode.info.id}</p>
+                    </div>
+
+                    {/* Descrição contextual */}
+                    {selectedNode.info.description ? (
+                      <div className="bg-slate-900/50 rounded-lg p-3">
+                        <span className="text-xs text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                          📚 Explicação
+                        </span>
+                        <p className="text-white/80 text-sm mt-2 leading-relaxed">
+                          {selectedNode.info.description}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                        <p className="text-amber-200/80 text-xs leading-relaxed">
+                          💡 Este nó representa um passo no algoritmo. Clique em outros nós para entender o fluxo completo de decisões.
+                        </p>
                       </div>
                     )}
 
                     {/* Conexões */}
                     {highlightedPaths.size > 0 && (
                       <div>
-                        <span className="text-xs text-white/40 uppercase">Conexões</span>
-                        <p className="text-cyan-400 text-sm">{highlightedPaths.size} caminho(s) destacado(s)</p>
+                        <span className="text-xs text-white/40 uppercase tracking-wider">Conexões</span>
+                        <p className="text-cyan-400 text-sm mt-1 flex items-center gap-2">
+                          <span className="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                          {highlightedPaths.size} caminho(s) destacado(s)
+                        </p>
+                        <p className="text-white/40 text-xs mt-1">
+                          Siga as linhas destacadas para ver o fluxo
+                        </p>
                       </div>
                     )}
 
                     {/* Dica de uso */}
-                    <div className="pt-2 border-t border-white/10">
-                      <p className="text-white/40 text-xs">
-                        💡 Clique em outros nós para ver suas conexões
+                    <div className="pt-3 border-t border-white/10">
+                      <p className="text-white/40 text-xs flex items-center gap-2">
+                        <MousePointer2 className="w-3 h-3" />
+                        Clique em outros nós para ver suas conexões
                       </p>
                     </div>
                   </div>

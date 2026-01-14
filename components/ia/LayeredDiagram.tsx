@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronDown,
@@ -277,6 +277,15 @@ export default function LayeredDiagram({
   const displayStaging = showLegend ?? showStaging
   const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set())
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Detectar mobile para responsividade do fullscreen
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const toggleLayer = useCallback((layerId: string) => {
     if (!interactive) return
@@ -304,8 +313,7 @@ export default function LayeredDiagram({
 
   const content = (
     <div className={`
-      bg-slate-900/50 rounded-2xl border border-white/10 overflow-hidden
-      ${isFullscreen ? 'fixed inset-4 z-50 overflow-y-auto' : ''}
+      ${isFullscreen ? 'h-full overflow-y-auto' : 'bg-slate-900/50 rounded-2xl border border-white/10 overflow-hidden'}
     `}>
       {/* Header */}
       <div className="p-4 border-b border-white/10 bg-white/5">
@@ -413,15 +421,21 @@ export default function LayeredDiagram({
     </div>
   )
 
-  // Overlay para fullscreen
+  // Overlay para fullscreen com fundo OPACO
   if (isFullscreen) {
     return (
       <>
+        {/* Backdrop OPACO - não deixa ver o conteúdo por trás */}
         <div
-          className="fixed inset-0 bg-black/80 z-40"
+          className="fixed inset-0 bg-slate-950 z-40"
           onClick={() => setIsFullscreen(false)}
         />
-        {content}
+        {/* Container do conteúdo fullscreen */}
+        <div className={`fixed z-50 bg-slate-900 rounded-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl ${
+          isMobile ? 'inset-0 rounded-none' : 'inset-4'
+        }`}>
+          {content}
+        </div>
       </>
     )
   }

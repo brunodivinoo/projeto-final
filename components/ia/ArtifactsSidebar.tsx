@@ -28,6 +28,230 @@ import {
 import { useArtifactsStore, ARTIFACT_ICONS, ARTIFACT_LABELS, type Artifact, type ArtifactType } from '@/stores/artifactsStore'
 import dynamic from 'next/dynamic'
 
+// Funções auxiliares para extrair informações do JSON
+function tryParseJson(content: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(content)
+  } catch {
+    return null
+  }
+}
+
+function tryParseTitle(content: string): string | null {
+  const data = tryParseJson(content)
+  return data?.title as string | null
+}
+
+function tryParseLayerCount(content: string): number {
+  const data = tryParseJson(content)
+  return Array.isArray(data?.layers) ? data.layers.length : 0
+}
+
+function tryParseRowCount(content: string): number {
+  const data = tryParseJson(content)
+  return Array.isArray(data?.rows) ? data.rows.length : 0
+}
+
+function tryParseLayerNames(content: string): string[] {
+  const data = tryParseJson(content)
+  if (!data?.layers || !Array.isArray(data.layers)) return []
+  return data.layers.slice(0, 4).map((layer: { name?: string }) => layer.name || 'Camada')
+}
+
+function tryParseStagingRows(content: string): string[] {
+  const data = tryParseJson(content)
+  if (!data?.rows || !Array.isArray(data.rows)) return []
+  return data.rows.slice(0, 4).map((row: { stage?: string }) => row.stage || 'Estádio')
+}
+
+// Componente de preview para Layers/Anatomy
+function PreviewLayersCard({ content, onExpand }: { content: string; onExpand: (e: React.MouseEvent) => void }) {
+  const title = tryParseTitle(content)
+  const layerCount = tryParseLayerCount(content)
+  const layerNames = tryParseLayerNames(content)
+
+  // Cores para as camadas
+  const layerColors = ['bg-pink-500/30', 'bg-amber-500/30', 'bg-red-500/30', 'bg-orange-500/30', 'bg-purple-500/30', 'bg-cyan-500/30']
+
+  return (
+    <div className="bg-gradient-to-b from-pink-500/10 to-purple-500/10 rounded-lg p-3 border border-white/10">
+      <div className="flex items-start gap-3">
+        {/* Ícone visual de camadas */}
+        <div className="w-12 h-12 rounded-lg bg-slate-900/50 flex flex-col items-center justify-center gap-0.5 overflow-hidden p-1">
+          {layerNames.slice(0, 4).map((_, i) => (
+            <div
+              key={i}
+              className={`w-full h-2 rounded-sm ${layerColors[i % layerColors.length]}`}
+            />
+          ))}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-white/80 text-sm font-medium truncate">
+            {title || 'Diagrama de Camadas'}
+          </p>
+          <p className="text-white/40 text-xs mt-1">
+            {layerCount} camadas
+          </p>
+
+          {/* Mini lista de camadas */}
+          {layerNames.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {layerNames.map((name, i) => (
+                <span
+                  key={i}
+                  className={`px-1.5 py-0.5 rounded text-[10px] ${layerColors[i % layerColors.length]} text-white/70 truncate max-w-[80px]`}
+                >
+                  {name}
+                </span>
+              ))}
+              {layerCount > 4 && (
+                <span className="px-1.5 py-0.5 rounded text-[10px] bg-white/10 text-white/50">
+                  +{layerCount - 4}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <button
+        onClick={onExpand}
+        className="w-full mt-3 py-1.5 text-xs text-purple-400 hover:text-purple-300 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+      >
+        Ver diagrama completo ↓
+      </button>
+    </div>
+  )
+}
+
+// Componente de preview para Staging Tables
+function PreviewStagingCard({ content, onExpand }: { content: string; onExpand: (e: React.MouseEvent) => void }) {
+  const title = tryParseTitle(content)
+  const rowCount = tryParseRowCount(content)
+  const stages = tryParseStagingRows(content)
+  const data = tryParseJson(content)
+  const cancerType = data?.cancerType as string | undefined
+
+  // Cores para estágios
+  const stageColors: Record<string, string> = {
+    'tis': 'bg-emerald-500/30 text-emerald-300',
+    't1': 'bg-yellow-500/30 text-yellow-300',
+    't1a': 'bg-yellow-500/30 text-yellow-300',
+    't1b': 'bg-yellow-500/30 text-yellow-300',
+    't2': 'bg-orange-500/30 text-orange-300',
+    't3': 'bg-red-500/30 text-red-300',
+    't4': 'bg-red-700/30 text-red-300',
+    't4a': 'bg-red-700/30 text-red-300',
+    't4b': 'bg-red-700/30 text-red-300',
+  }
+
+  const getStageColor = (stage: string) => {
+    const key = stage.toLowerCase()
+    return stageColors[key] || 'bg-slate-500/30 text-slate-300'
+  }
+
+  return (
+    <div className="bg-gradient-to-b from-emerald-500/10 to-cyan-500/10 rounded-lg p-3 border border-white/10">
+      <div className="flex items-start gap-3">
+        {/* Ícone visual de tabela */}
+        <div className="w-12 h-12 rounded-lg bg-slate-900/50 flex items-center justify-center">
+          <span className="text-2xl">📊</span>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-white/80 text-sm font-medium truncate">
+            {title || 'Tabela de Estadiamento'}
+          </p>
+          {cancerType && (
+            <p className="text-white/50 text-xs truncate">{cancerType}</p>
+          )}
+          <p className="text-white/40 text-xs mt-1">
+            {rowCount} estádios
+          </p>
+
+          {/* Mini lista de estágios */}
+          {stages.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {stages.map((stage, i) => (
+                <span
+                  key={i}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${getStageColor(stage)}`}
+                >
+                  {stage}
+                </span>
+              ))}
+              {rowCount > 4 && (
+                <span className="px-1.5 py-0.5 rounded text-[10px] bg-white/10 text-white/50">
+                  +{rowCount - 4}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <button
+        onClick={onExpand}
+        className="w-full mt-3 py-1.5 text-xs text-emerald-400 hover:text-emerald-300 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+      >
+        Ver tabela completa ↓
+      </button>
+    </div>
+  )
+}
+
+// Componente de preview para Diagramas/Fluxogramas
+function PreviewDiagramCard({ content, title, onExpand }: { content: string; title: string; onExpand: (e: React.MouseEvent) => void }) {
+  // Detectar tipo de diagrama mermaid
+  const diagramType = content.includes('graph TD') || content.includes('graph TB')
+    ? 'Fluxograma Vertical'
+    : content.includes('graph LR') || content.includes('graph RL')
+    ? 'Fluxograma Horizontal'
+    : content.includes('sequenceDiagram')
+    ? 'Diagrama de Sequência'
+    : content.includes('stateDiagram')
+    ? 'Diagrama de Estados'
+    : content.includes('erDiagram')
+    ? 'Diagrama ER'
+    : 'Diagrama'
+
+  // Contar nós aproximadamente
+  const nodeCount = (content.match(/\[[^\]]+\]/g) || []).length +
+                    (content.match(/\{[^\}]+\}/g) || []).length +
+                    (content.match(/\([^\)]+\)/g) || []).length
+
+  return (
+    <div className="bg-gradient-to-b from-blue-500/10 to-cyan-500/10 rounded-lg p-3 border border-white/10">
+      <div className="flex items-start gap-3">
+        {/* Ícone visual */}
+        <div className="w-12 h-12 rounded-lg bg-slate-900/50 flex items-center justify-center">
+          <span className="text-2xl">🔀</span>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-white/80 text-sm font-medium truncate">
+            {title}
+          </p>
+          <p className="text-white/50 text-xs">{diagramType}</p>
+          {nodeCount > 0 && (
+            <p className="text-white/40 text-xs mt-1">
+              ~{nodeCount} elementos
+            </p>
+          )}
+        </div>
+      </div>
+
+      <button
+        onClick={onExpand}
+        className="w-full mt-3 py-1.5 text-xs text-blue-400 hover:text-blue-300 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+      >
+        Ver diagrama completo ↓
+      </button>
+    </div>
+  )
+}
+
 // Categorias de artefatos
 const ARTIFACT_CATEGORIES: Record<string, { label: string; icon: string; types: ArtifactType[]; color: string }> = {
   visual: {
@@ -272,28 +496,43 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
       )
 
     case 'layers':
-      // Renderizar diagrama de camadas
+    case 'anatomy':
+      // Renderizar diagrama de camadas (layers e anatomy usam o mesmo componente)
       try {
         const layersData = JSON.parse(artifact.content)
+        // Validar se tem a estrutura esperada
+        if (!layersData.layers || !Array.isArray(layersData.layers)) {
+          throw new Error('Estrutura inválida')
+        }
         return (
           <div className={containerClass}>
             <LayeredDiagram
               title={layersData.title || artifact.title}
-              layers={layersData.layers || []}
+              layers={layersData.layers}
               theme={layersData.theme || 'histology'}
-              showLegend={layersData.showLegend ?? true}
+              showLegend={layersData.showLegend}
+              showStaging={layersData.showStaging}
               interactive={layersData.interactive ?? true}
+              description={layersData.description}
             />
           </div>
         )
       } catch {
+        // Fallback: mostrar preview visual ao invés de conteúdo bruto
         return (
           <div className={`p-4 ${containerClass}`}>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-xl">🔬</span>
               <h4 className="text-white font-medium">{artifact.title}</h4>
             </div>
-            <div className="text-white/80 text-sm whitespace-pre-wrap">{artifact.content}</div>
+            <div className="bg-gradient-to-b from-pink-500/10 to-purple-500/10 rounded-lg p-4 border border-white/10">
+              <p className="text-white/60 text-sm text-center">
+                Diagrama de camadas disponível
+              </p>
+              <p className="text-white/40 text-xs text-center mt-2">
+                Clique em &quot;Tela cheia&quot; para visualizar
+              </p>
+            </div>
           </div>
         )
       }
@@ -302,11 +541,15 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
       // Renderizar tabela de estadiamento
       try {
         const stagingData = JSON.parse(artifact.content)
+        // Validar se tem a estrutura esperada
+        if (!stagingData.rows || !Array.isArray(stagingData.rows)) {
+          throw new Error('Estrutura inválida')
+        }
         return (
           <div className={containerClass}>
             <StagingTable
               title={stagingData.title || artifact.title}
-              rows={stagingData.rows || []}
+              rows={stagingData.rows}
               highlightStage={stagingData.highlightStage}
               cancerType={stagingData.cancerType}
               source={stagingData.source}
@@ -314,13 +557,21 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
           </div>
         )
       } catch {
+        // Fallback: mostrar preview visual ao invés de conteúdo bruto
         return (
           <div className={`p-4 ${containerClass}`}>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-xl">📈</span>
               <h4 className="text-white font-medium">{artifact.title}</h4>
             </div>
-            <div className="text-white/80 text-sm whitespace-pre-wrap">{artifact.content}</div>
+            <div className="bg-gradient-to-b from-emerald-500/10 to-cyan-500/10 rounded-lg p-4 border border-white/10">
+              <p className="text-white/60 text-sm text-center">
+                Tabela de estadiamento disponível
+              </p>
+              <p className="text-white/40 text-xs text-center mt-2">
+                Clique em &quot;Tela cheia&quot; para visualizar
+              </p>
+            </div>
           </div>
         )
       }
@@ -658,19 +909,30 @@ function ArtifactCard({
             className="overflow-hidden"
           >
             <div className="px-4 pb-3 pt-1 border-t border-white/5">
-              <div className="bg-slate-900/50 rounded-lg overflow-hidden max-h-32 overflow-y-auto">
-                {/* Preview resumido */}
-                <div className="p-3 text-white/60 text-sm line-clamp-3">
-                  {artifact.content.substring(0, 200)}
-                  {artifact.content.length > 200 && '...'}
-                </div>
-              </div>
-              <button
-                onClick={cyclePreview}
-                className="w-full mt-2 py-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
-              >
-                Ver mais ↓
-              </button>
+              {/* Preview visual para tipos especiais */}
+              {(artifact.type === 'layers' || artifact.type === 'anatomy') ? (
+                <PreviewLayersCard content={artifact.content} onExpand={cyclePreview} />
+              ) : artifact.type === 'staging' ? (
+                <PreviewStagingCard content={artifact.content} onExpand={cyclePreview} />
+              ) : artifact.type === 'diagram' || artifact.type === 'flowchart' ? (
+                <PreviewDiagramCard content={artifact.content} title={artifact.title} onExpand={cyclePreview} />
+              ) : (
+                <>
+                  <div className="bg-slate-900/50 rounded-lg overflow-hidden max-h-32 overflow-y-auto">
+                    {/* Preview resumido */}
+                    <div className="p-3 text-white/60 text-sm line-clamp-3">
+                      {artifact.content.substring(0, 200)}
+                      {artifact.content.length > 200 && '...'}
+                    </div>
+                  </div>
+                  <button
+                    onClick={cyclePreview}
+                    className="w-full mt-2 py-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                  >
+                    Ver mais ↓
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
         )}

@@ -25,6 +25,8 @@ interface StagingRow {
   treatment?: string
   notes?: string
   prognosis?: 'excellent' | 'good' | 'moderate' | 'poor' | 'critical'
+  prognosticFactors?: string[]  // Fatores prognósticos adicionais
+  clinicalNotes?: string         // Notas clínicas adicionais
 }
 
 interface StagingTableProps {
@@ -121,7 +123,7 @@ function TableRow({
   isHighlighted: boolean
 }) {
   const colors = getPrognosisColors(row.survivalPercent)
-  const hasDetails = row.treatment || row.notes
+  const hasDetails = row.treatment || row.notes || row.prognosticFactors?.length || row.clinicalNotes
 
   return (
     <motion.div
@@ -210,23 +212,56 @@ function TableRow({
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 pt-2 border-t border-white/10">
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Tratamento */}
                 {row.treatment && (
-                  <div className="p-3 bg-white/5 rounded-lg">
-                    <h5 className="text-xs text-white/50 uppercase mb-2">Tratamento</h5>
-                    <p className="text-sm text-white/80">{row.treatment}</p>
+                  <div className="bg-slate-900/50 rounded-lg p-3">
+                    <span className="text-xs text-white/40 uppercase block mb-2">Tratamento</span>
+                    <p className="text-white text-sm">{row.treatment}</p>
                   </div>
                 )}
 
-                {/* Notas */}
+                {/* Observações */}
                 {row.notes && (
-                  <div className="p-3 bg-white/5 rounded-lg">
-                    <h5 className="text-xs text-white/50 uppercase mb-2">Observações</h5>
-                    <p className="text-sm text-white/80">{row.notes}</p>
+                  <div className="bg-slate-900/50 rounded-lg p-3">
+                    <span className="text-xs text-white/40 uppercase block mb-2">Observações</span>
+                    <p className="text-white/80 text-sm">{row.notes}</p>
+                  </div>
+                )}
+
+                {/* Fatores Prognósticos */}
+                {row.prognosticFactors && row.prognosticFactors.length > 0 && (
+                  <div className="bg-slate-900/50 rounded-lg p-3">
+                    <span className="text-xs text-white/40 uppercase block mb-2">Fatores Prognósticos</span>
+                    <ul className="text-white/70 text-xs space-y-1">
+                      {row.prognosticFactors.map((factor, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                          {factor}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Notas Clínicas (caso existam e não haja fatores prognósticos) */}
+                {row.clinicalNotes && !row.prognosticFactors?.length && (
+                  <div className="bg-slate-900/50 rounded-lg p-3">
+                    <span className="text-xs text-white/40 uppercase block mb-2">Notas Clínicas</span>
+                    <p className="text-white/70 text-sm">{row.clinicalNotes}</p>
                   </div>
                 )}
               </div>
+
+              {/* Se tem apenas 1 ou 2 itens, adicionar dica de estudo */}
+              {!row.prognosticFactors?.length && !row.clinicalNotes && (
+                <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-blue-300/80 text-xs flex items-center gap-2">
+                    <Info className="w-3 h-3" />
+                    Clique em outros estádios para comparar tratamentos e prognósticos
+                  </p>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -276,8 +311,7 @@ export default function StagingTable({
 
   const content = (
     <div className={`
-      bg-slate-900/50 rounded-2xl border border-white/10 overflow-hidden
-      ${isFullscreen ? 'fixed inset-4 z-50 overflow-y-auto' : ''}
+      ${isFullscreen ? 'h-full overflow-y-auto' : 'bg-slate-900/50 rounded-2xl border border-white/10 overflow-hidden'}
     `}>
       {/* Header */}
       <div className="p-4 border-b border-white/10 bg-white/5">
@@ -382,15 +416,19 @@ export default function StagingTable({
     </div>
   )
 
-  // Overlay para fullscreen
+  // Overlay para fullscreen com fundo OPACO
   if (isFullscreen) {
     return (
       <>
+        {/* Backdrop OPACO */}
         <div
-          className="fixed inset-0 bg-black/80 z-40"
+          className="fixed inset-0 bg-slate-950 z-40"
           onClick={() => setIsFullscreen(false)}
         />
-        {content}
+        {/* Container fullscreen */}
+        <div className="fixed inset-4 z-50 bg-slate-900 rounded-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl">
+          {content}
+        </div>
       </>
     )
   }
