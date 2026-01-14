@@ -35,6 +35,7 @@ interface LayeredDiagramProps {
   title: string
   layers: Layer[]
   showStaging?: boolean
+  showLegend?: boolean // Alias para showStaging (para compatibilidade)
   interactive?: boolean
   theme?: 'histology' | 'anatomy' | 'staging' | 'invasion'
   description?: string
@@ -266,11 +267,14 @@ export default function LayeredDiagram({
   title,
   layers,
   showStaging = false,
+  showLegend,
   interactive = true,
   theme = 'histology',
   description,
   orientation = 'vertical'
 }: LayeredDiagramProps) {
+  // showLegend é um alias para showStaging
+  const displayStaging = showLegend ?? showStaging
   const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set())
   const [isFullscreen, setIsFullscreen] = useState(false)
 
@@ -363,7 +367,7 @@ export default function LayeredDiagram({
         </div>
 
         {/* Legenda de estadiamento */}
-        {showStaging && (
+        {displayStaging && (
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/10">
             <span className="text-xs text-white/50">Estadiamento:</span>
             <div className="flex items-center gap-2 flex-wrap">
@@ -393,7 +397,7 @@ export default function LayeredDiagram({
             isExpanded={expandedLayers.has(layer.id)}
             onToggle={() => toggleLayer(layer.id)}
             theme={theme}
-            showStaging={showStaging}
+            showStaging={displayStaging}
           />
         ))}
       </div>
@@ -445,6 +449,7 @@ export function parseLayeredDiagram(content: string): LayeredDiagramProps | null
       title: data.title || 'Diagrama de Camadas',
       layers,
       showStaging: data.showStaging ?? false,
+      showLegend: data.showLegend,
       interactive: data.interactive ?? true,
       theme: data.theme || 'histology',
       description: data.description,
