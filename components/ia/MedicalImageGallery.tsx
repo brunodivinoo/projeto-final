@@ -114,6 +114,15 @@ function sanitizeHtml(html: string): string {
     .replace(/on\w+='[^']*'/gi, '')
 }
 
+// Função para converter URL de imagem para usar o proxy (evita CORS)
+function getProxiedImageUrl(url: string): string {
+  if (!url) return url
+  // Já é uma URL do proxy? Retornar como está
+  if (url.startsWith('/api/medicina/imagens/proxy')) return url
+  // Converter para usar o proxy
+  return `/api/medicina/imagens/proxy?url=${encodeURIComponent(url)}`
+}
+
 // Componente de imagem com tratamento de erro e retry
 interface ImageWithFallbackProps {
   src: string
@@ -124,7 +133,11 @@ interface ImageWithFallbackProps {
 }
 
 function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: ImageWithFallbackProps) {
-  const [currentSrc, setCurrentSrc] = useState(src)
+  // Usar proxy para evitar problemas de CORS
+  const proxiedSrc = getProxiedImageUrl(src)
+  const proxiedFallback = fallbackSrc ? getProxiedImageUrl(fallbackSrc) : undefined
+
+  const [currentSrc, setCurrentSrc] = useState(proxiedSrc)
   const [hasError, setHasError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [retryCount, setRetryCount] = useState(0)
@@ -133,28 +146,28 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
 
   useEffect(() => {
     // Reset state when src changes
-    setCurrentSrc(src)
+    setCurrentSrc(proxiedSrc)
     setHasError(false)
     setIsLoading(true)
     setRetryCount(0)
-  }, [src])
+  }, [proxiedSrc])
 
-  // Timeout para loading - se não carregar em 8s, mostrar imagem mesmo assim
+  // Timeout para loading - se não carregar em 10s, mostrar imagem mesmo assim
   useEffect(() => {
     if (isLoading) {
       timeoutRef.current = setTimeout(() => {
         // Se ainda está loading após timeout, verificar se imagem tem dimensões
         if (imgRef.current && (imgRef.current.naturalWidth > 0 || imgRef.current.complete)) {
           setIsLoading(false)
-        } else if (fallbackSrc && currentSrc !== fallbackSrc && retryCount < 1) {
+        } else if (proxiedFallback && currentSrc !== proxiedFallback && retryCount < 1) {
           // Tentar fallback
-          setCurrentSrc(fallbackSrc)
+          setCurrentSrc(proxiedFallback)
           setRetryCount(prev => prev + 1)
         } else {
           // Mostrar imagem mesmo com loading (pode ter carregado parcialmente)
           setIsLoading(false)
         }
-      }, 8000)
+      }, 10000)
     }
 
     return () => {
@@ -162,37 +175,30 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [isLoading, currentSrc, fallbackSrc, retryCount])
+  }, [isLoading, currentSrc, proxiedFallback, retryCount])
 
   const handleError = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
 
-    if (retryCount < 1 && fallbackSrc && currentSrc !== fallbackSrc) {
+    if (retryCount < 1 && proxiedFallback && currentSrc !== proxiedFallback) {
       // Tentar fallback (usar URL completa ao invés de thumb)
-      setCurrentSrc(fallbackSrc)
+      setCurrentSrc(proxiedFallback)
       setRetryCount(prev => prev + 1)
     } else if (retryCount < 2) {
-      // Tentar forçar HTTPS
-      const httpsUrl = currentSrc.replace('http://', 'https://')
-      if (httpsUrl !== currentSrc) {
-        setCurrentSrc(httpsUrl)
-        setRetryCount(prev => prev + 1)
-      } else {
-        // Tentar adicionar query string para bypass de cache
-        const cacheBustUrl = currentSrc.includes('?')
-          ? `${currentSrc}&_cb=${Date.now()}`
-          : `${currentSrc}?_cb=${Date.now()}`
-        setCurrentSrc(cacheBustUrl)
-        setRetryCount(prev => prev + 1)
-      }
+      // Tentar adicionar query string para bypass de cache no proxy
+      const cacheBustUrl = currentSrc.includes('&_cb=')
+        ? currentSrc
+        : `${currentSrc}&_cb=${Date.now()}`
+      setCurrentSrc(cacheBustUrl)
+      setRetryCount(prev => prev + 1)
     } else {
       setHasError(true)
       setIsLoading(false)
       onLoadError?.()
     }
-  }, [currentSrc, fallbackSrc, retryCount, onLoadError])
+  }, [currentSrc, proxiedFallback, retryCount, onLoadError])
 
   const handleLoad = useCallback(() => {
     if (timeoutRef.current) {
