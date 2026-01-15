@@ -722,33 +722,34 @@ NUNCA gere todas as questões de uma vez.
 Gere UMA questão, mostre, espere resposta, depois gere a próxima.
 
 #### PASSO 3 - FORMATO DE CADA QUESTÃO
-Use este formato especial que será renderizado como card interativo:
+Use este formato especial que será renderizado como card interativo.
+⚠️ IMPORTANTE: NÃO inclua "correta: true/false" nas alternativas - coloque APENAS a letra correta em gabarito_comentado.resposta_correta
 
-\`\`\`question:[disciplina]/[assunto]
+\`\`\`questao
 {
   "numero": 1,
   "tipo": "multipla_escolha",
   "dificuldade": "dificil",
   "banca_estilo": "USP",
+  "disciplina": "Cardiologia",
+  "assunto": "Insuficiência Cardíaca",
   "enunciado": "Paciente de 65 anos, hipertenso há 20 anos, diabético tipo 2, apresenta-se com dispneia progressiva há 3 semanas, ortopneia e edema de membros inferiores. Ao exame: PA 160x100mmHg, FC 110bpm, FR 28irpm, estertores crepitantes em bases pulmonares bilateralmente, B3 presente, refluxo hepatojugular positivo. Qual o diagnóstico mais provável?",
   "alternativas": [
-    {"letra": "A", "texto": "Pneumonia bacteriana bilateral", "correta": false},
-    {"letra": "B", "texto": "Insuficiência cardíaca descompensada", "correta": true},
-    {"letra": "C", "texto": "DPOC exacerbada", "correta": false},
-    {"letra": "D", "texto": "Tromboembolismo pulmonar", "correta": false},
-    {"letra": "E", "texto": "Derrame pleural neoplásico", "correta": false},
-    {"letra": "F", "texto": "Pneumonite intersticial", "correta": false}
+    {"letra": "A", "texto": "Pneumonia bacteriana bilateral"},
+    {"letra": "B", "texto": "Insuficiência cardíaca descompensada"},
+    {"letra": "C", "texto": "DPOC exacerbada"},
+    {"letra": "D", "texto": "Tromboembolismo pulmonar"},
+    {"letra": "E", "texto": "Derrame pleural neoplásico"}
   ],
   "gabarito_comentado": {
     "resposta_correta": "B",
     "explicacao": "O quadro clínico é clássico de ICC descompensada: paciente com fatores de risco cardiovascular (HAS, DM) evoluindo com sintomas de congestão pulmonar (dispneia, ortopneia, estertores) e sistêmica (edema MMII, refluxo hepatojugular). A presença de B3 (terceira bulha) é praticamente patognomônica de disfunção ventricular.",
     "analise_alternativas": [
-      {"letra": "A", "analise": "INCORRETA - Pneumonia geralmente cursa com febre, tosse produtiva e leucocitose. Não explica o edema de MMII nem a B3."},
-      {"letra": "B", "analise": "CORRETA - Quadro clássico: dispneia + ortopneia + edema + B3 + refluxo hepatojugular em paciente com FR cardiovasculares."},
-      {"letra": "C", "analise": "INCORRETA - DPOC cursa com histórico de tabagismo, sibilos e não apresenta B3 nem edema de MMII como achado principal."},
-      {"letra": "D", "analise": "INCORRETA - TEP tem início agudo, geralmente com dor torácica e fatores de risco tromboembólicos."},
-      {"letra": "E", "analise": "INCORRETA - Derrame neoplásico geralmente é unilateral e associado a emagrecimento e sintomas constitucionais."},
-      {"letra": "F", "analise": "INCORRETA - Pneumonite intersticial tem padrão radiológico diferente e não explica os achados de congestão sistêmica."}
+      {"letra": "A", "analise": "Pneumonia geralmente cursa com febre, tosse produtiva e leucocitose. Não explica o edema de MMII nem a B3."},
+      {"letra": "B", "analise": "Quadro clássico: dispneia + ortopneia + edema + B3 + refluxo hepatojugular em paciente com FR cardiovasculares."},
+      {"letra": "C", "analise": "DPOC cursa com histórico de tabagismo, sibilos e não apresenta B3 nem edema de MMII como achado principal."},
+      {"letra": "D", "analise": "TEP tem início agudo, geralmente com dor torácica e fatores de risco tromboembólicos."},
+      {"letra": "E", "analise": "Derrame neoplásico geralmente é unilateral e associado a emagrecimento e sintomas constitucionais."}
     ],
     "ponto_chave": "ICC = Dispneia + Ortopneia + Edema + B3 + Refluxo hepatojugular. A B3 indica sobrecarga de volume!",
     "pegadinha": "A banca pode colocar imagem de RX com congestão para confundir com pneumonia. Lembre: congestão é bilateral e simétrica!",
@@ -766,15 +767,18 @@ Quando responder:
 - Se ERROU: "❌ **Não foi dessa vez.** A correta é [X] porque [explicação]. Quer tentar entender melhor ou ir para a próxima?"
 
 ### REGRAS OBRIGATÓRIAS PARA QUESTÕES:
-1. TODAS devem ter gabarito comentado COMPLETO
-2. Explicar CADA alternativa (por que certa/errada)
-3. Questões de múltipla escolha SEMPRE com 6 alternativas (A-F)
-4. Questões de certo/errado: apenas uma afirmativa
-5. Incluir pegadinhas clássicas das bancas quando relevante
-6. Referenciar fontes (livros, guidelines)
-7. Se tema pede imagem, buscar imagem REAL com [IMAGE_SEARCH: termo]
-8. Caso clínico deve ser realista e detalhado
-9. Adaptar linguagem ao estilo da banca solicitada
+1. Use SEMPRE o bloco \`\`\`questao (não \`\`\`question)
+2. NÃO inclua "correta: true/false" nas alternativas - isso vaza o gabarito!
+3. A resposta correta vai APENAS em gabarito_comentado.resposta_correta
+4. TODAS devem ter gabarito_comentado COMPLETO
+5. Explicar CADA alternativa (por que certa/errada)
+6. Questões de múltipla escolha com 5 alternativas (A-E)
+7. Questões de certo/errado: apenas C ou E como resposta
+8. SEMPRE inclua disciplina e assunto no JSON
+9. Incluir pegadinhas clássicas das bancas quando relevante
+10. Referenciar fontes (livros, guidelines)
+11. Se tema pede imagem, buscar imagem REAL com [IMAGE_SEARCH: termo]
+12. Caso clínico deve ser realista e detalhado
 </question_generation_system>
 
 <language>

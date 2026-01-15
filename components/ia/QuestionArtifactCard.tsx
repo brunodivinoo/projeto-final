@@ -26,8 +26,10 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
   const handleSubmitAnswer = useCallback(() => {
     if (!selectedAnswer || showFeedback) return
 
-    const correctAnswer = question.alternativas.find(a => a.correta)?.letra
-    const correct = selectedAnswer === correctAnswer
+    // Buscar resposta correta do gabarito (não das alternativas para não vazar)
+    const correctAnswerLetter = question.gabarito_comentado?.resposta_correta ||
+      question.alternativas.find(a => a.correta)?.letra
+    const correct = selectedAnswer === correctAnswerLetter
 
     setIsCorrect(correct)
     setShowFeedback(true)
@@ -41,7 +43,10 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
     setExpandedSection(prev => prev === section ? null : section)
   }, [])
 
-  const correctAnswer = question.alternativas.find(a => a.correta)
+  // Resposta correta vem do gabarito_comentado (não das alternativas)
+  const correctAnswerLetter = question.gabarito_comentado?.resposta_correta ||
+    question.alternativas.find(a => a.correta)?.letra
+  const correctAnswer = question.alternativas.find(a => a.letra === correctAnswerLetter)
 
   return (
     <div className="bg-[#1A2332] border border-white/10 rounded-xl overflow-hidden shadow-lg">
@@ -144,7 +149,8 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
         <div className="space-y-2.5">
           {question.alternativas.map((alt) => {
             const isSelected = selectedAnswer === alt.letra
-            const isCorrectAlt = alt.correta
+            // Usar correctAnswerLetter do gabarito (não alt.correta que pode não existir)
+            const isCorrectAlt = alt.letra === correctAnswerLetter
             const showResultStyles = showFeedback
 
             let containerClasses = 'border-white/10 hover:border-white/20 hover:bg-white/5'
@@ -227,7 +233,7 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Errou! Resposta: {correctAnswer?.letra}
+                Errou! Resposta: {correctAnswerLetter}
               </>
             )}
           </div>

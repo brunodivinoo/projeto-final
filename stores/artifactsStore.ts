@@ -22,7 +22,7 @@ export type ArtifactType =
 export interface QuestionAlternative {
   letra: string
   texto: string
-  correta: boolean
+  correta?: boolean  // Opcional - não vem no JSON para não vazar gabarito
 }
 
 // Interface para análise de alternativa no gabarito

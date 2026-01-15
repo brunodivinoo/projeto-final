@@ -111,7 +111,8 @@ const LAYERS_REGEX = /```layers:([^\n]*)\n([\s\S]*?)```/g
 const STAGING_REGEX = /```staging:([^\n]*)\n([\s\S]*?)```/g
 
 // Regex para detectar questões geradas pela IA (formato JSON)
-const QUESTION_REGEX = /```questao\n([\s\S]*?)```/g
+// Aceita: ```questao, ```question, ```question:Disciplina/Assunto
+const QUESTION_REGEX = /```quest(?:ao|ion)(?::[^\n]*)?\n([\s\S]*?)```/g
 
 // ============================================================
 // DETECÇÃO E CONVERSÃO DE ASCII ART
@@ -345,7 +346,7 @@ function convertAsciiToLayers(text: string): string | null {
 }
 
 // Regex para detectar blocos de código que podem conter ASCII
-const CODE_BLOCK_REGEX = /```(?!mermaid|layers|staging|generate_image|artifact|questao)(\w*)\n([\s\S]*?)```/g
+const CODE_BLOCK_REGEX = /```(?!mermaid|layers|staging|generate_image|artifact|quest)(\w*)\n([\s\S]*?)```/g
 
 interface Artifact {
   type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question'
