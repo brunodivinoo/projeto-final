@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { X, ExternalLink, ZoomIn, Loader2, ImageOff, Info, AlertCircle, Search, RefreshCw, Languages } from 'lucide-react'
 import type { MedicalImage } from '@/lib/medical-images/service'
+import { getCachedImage, cacheImage, cleanOldCache } from '@/lib/hooks/useImageCache'
 
 // Dicionário de tradução EN → PT para termos médicos comuns
 const TRANSLATION_EN_PT: Record<string, string> = {
@@ -123,7 +124,7 @@ function getProxiedImageUrl(url: string): string {
   return `/api/medicina/imagens/proxy?url=${encodeURIComponent(url)}`
 }
 
-// Componente de imagem com tratamento de erro robusto e retry inteligente
+// Componente de imagem com cache persistente e retry inteligente
 interface ImageWithFallbackProps {
   src: string
   fallbackSrc?: string
@@ -133,19 +134,20 @@ interface ImageWithFallbackProps {
 }
 
 function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: ImageWithFallbackProps) {
-  // Usar proxy para evitar problemas de CORS
+  // URLs do proxy
   const proxiedSrc = getProxiedImageUrl(src)
   const proxiedFallback = fallbackSrc ? getProxiedImageUrl(fallbackSrc) : undefined
 
-  const [currentSrc, setCurrentSrc] = useState(proxiedSrc)
+  const [displaySrc, setDisplaySrc] = useState<string | null>(null)
   const [hasError, setHasError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [retryCount, setRetryCount] = useState(0)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   const mountedRef = useRef(true)
+  const objectUrlRef = useRef<string | null>(null)
 
-  // Cleanup ao desmontar
+  // Cleanup ao desmontar - revogar object URLs
   useEffect(() => {
     mountedRef.current = true
     return () => {
@@ -153,32 +155,66 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
+      // Revogar object URL para liberar memória
+      if (objectUrlRef.current && objectUrlRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(objectUrlRef.current)
+      }
     }
   }, [])
 
+  // Verificar cache ao montar/mudar src
   useEffect(() => {
-    // Reset state when src changes
-    setCurrentSrc(proxiedSrc)
-    setHasError(false)
-    setIsLoading(true)
-    setRetryCount(0)
-  }, [proxiedSrc])
+    let cancelled = false
 
-  // Timeout para loading - 15s para dar tempo ao proxy
+    async function loadImage() {
+      setIsLoading(true)
+      setHasError(false)
+
+      // Revogar object URL anterior
+      if (objectUrlRef.current && objectUrlRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(objectUrlRef.current)
+        objectUrlRef.current = null
+      }
+
+      try {
+        // Tentar buscar do cache primeiro (usando URL original como chave)
+        const cached = await getCachedImage(src)
+        if (cached && !cancelled) {
+          objectUrlRef.current = cached
+          setDisplaySrc(cached)
+          setIsLoading(false)
+          return
+        }
+      } catch {
+        // Cache não disponível, continuar com fetch normal
+      }
+
+      // Não está no cache, usar URL do proxy
+      if (!cancelled) {
+        setDisplaySrc(proxiedSrc)
+      }
+    }
+
+    loadImage()
+    setRetryCount(0)
+
+    return () => {
+      cancelled = true
+    }
+  }, [src, proxiedSrc])
+
+  // Timeout para loading - 15s
   useEffect(() => {
-    if (isLoading) {
+    if (isLoading && displaySrc) {
       timeoutRef.current = setTimeout(() => {
         if (!mountedRef.current) return
 
-        // Se ainda está loading após timeout, verificar se imagem tem dimensões
         if (imgRef.current && imgRef.current.naturalWidth > 0 && imgRef.current.complete) {
           setIsLoading(false)
-        } else if (proxiedFallback && currentSrc !== proxiedFallback && retryCount === 0) {
-          // Tentar fallback (URL completa ao invés de thumb)
-          setCurrentSrc(proxiedFallback)
+        } else if (proxiedFallback && retryCount === 0) {
+          setDisplaySrc(proxiedFallback)
           setRetryCount(1)
         } else {
-          // Timeout expirou sem carregar - marcar como erro
           setHasError(true)
           setIsLoading(false)
           onLoadError?.()
@@ -191,7 +227,7 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [isLoading, currentSrc, proxiedFallback, retryCount, onLoadError])
+  }, [isLoading, displaySrc, proxiedFallback, retryCount, onLoadError])
 
   const handleError = useCallback(() => {
     if (!mountedRef.current) return
@@ -200,40 +236,31 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
       clearTimeout(timeoutRef.current)
     }
 
-    // Estratégia de retry:
-    // 1. Tentar URL completa (fallback) se tiver e ainda não tentou
-    // 2. Tentar com cache bust
-    // 3. Desistir e mostrar erro
-
-    if (retryCount === 0 && proxiedFallback && currentSrc !== proxiedFallback) {
-      // Retry 1: Tentar URL completa ao invés de thumbnail
-      setCurrentSrc(proxiedFallback)
+    if (retryCount === 0 && proxiedFallback) {
+      setDisplaySrc(proxiedFallback)
       setRetryCount(1)
-    } else if (retryCount === 1) {
-      // Retry 2: Tentar com cache bust no proxy
-      const baseUrl = currentSrc.split('&_cb=')[0]
-      setCurrentSrc(`${baseUrl}&_cb=${Date.now()}`)
+    } else if (retryCount === 1 && displaySrc) {
+      const baseUrl = displaySrc.split('&_cb=')[0]
+      setDisplaySrc(`${baseUrl}&_cb=${Date.now()}`)
       setRetryCount(2)
     } else {
-      // Desistir
       setHasError(true)
       setIsLoading(false)
       onLoadError?.()
     }
-  }, [currentSrc, proxiedFallback, retryCount, onLoadError])
+  }, [displaySrc, proxiedFallback, retryCount, onLoadError])
 
-  const handleLoad = useCallback(() => {
+  const handleLoad = useCallback(async () => {
     if (!mountedRef.current) return
 
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
 
-    // Verificar se a imagem realmente carregou (não é placeholder 1x1)
+    // Verificar dimensões mínimas
     if (imgRef.current) {
       const { naturalWidth, naturalHeight } = imgRef.current
       if (naturalWidth < 10 || naturalHeight < 10) {
-        // Imagem muito pequena, provavelmente erro
         handleError()
         return
       }
@@ -241,7 +268,24 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
 
     setIsLoading(false)
     setHasError(false)
-  }, [handleError])
+
+    // Se carregou do proxy (não do cache), salvar no cache
+    if (displaySrc && !displaySrc.startsWith('blob:') && imgRef.current) {
+      try {
+        // Baixar como blob e cachear
+        const response = await fetch(displaySrc)
+        if (response.ok) {
+          const blob = await response.blob()
+          if (blob.type.startsWith('image/') || blob.size > 100) {
+            // Usar URL original como chave do cache
+            await cacheImage(src, blob)
+          }
+        }
+      } catch {
+        // Falha ao cachear não é crítico
+      }
+    }
+  }, [displaySrc, src, handleError])
 
   if (hasError) {
     return (
@@ -258,19 +302,21 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
           <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
         </div>
       )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        ref={imgRef}
-        src={currentSrc}
-        alt={alt}
-        className={`${className?.includes('object-contain') ? 'object-contain' : 'w-full h-full object-cover'} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}
-        loading="eager"
-        decoding="async"
-        onError={handleError}
-        onLoad={handleLoad}
-        referrerPolicy="no-referrer"
-        crossOrigin="anonymous"
-      />
+      {displaySrc && (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          ref={imgRef}
+          src={displaySrc}
+          alt={alt}
+          className={`${className?.includes('object-contain') ? 'object-contain' : 'w-full h-full object-cover'} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}
+          loading="eager"
+          decoding="async"
+          onError={handleError}
+          onLoad={handleLoad}
+          referrerPolicy="no-referrer"
+          crossOrigin="anonymous"
+        />
+      )}
     </div>
   )
 }
@@ -278,6 +324,11 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
 export default function MedicalImageGallery({ searchTerms, userId }: MedicalImageGalleryProps) {
   const [images, setImages] = useState<MedicalImage[]>([])
   const [loading, setLoading] = useState(false)
+
+  // Limpar cache antigo ao montar (uma vez por sessão)
+  useEffect(() => {
+    cleanOldCache().catch(() => {})
+  }, [])
   const [error, setError] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<MedicalImage | null>(null)
   const [needsUpgrade, setNeedsUpgrade] = useState(false)
