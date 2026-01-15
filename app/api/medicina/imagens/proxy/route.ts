@@ -212,7 +212,7 @@ export async function GET(request: NextRequest) {
     const detectedType = detectImageType(arrayBuffer)
 
     // Usar tipo detectado, fallback para server content-type, fallback para jpeg
-    let contentType = detectedType ||
+    const contentType = detectedType ||
       (isValidImageType(serverContentType) ? serverContentType!.split(';')[0].trim() : null) ||
       'image/jpeg'
 
