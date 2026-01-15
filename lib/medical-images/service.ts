@@ -438,6 +438,16 @@ async function searchOpenI(query: string, limit: number = 10): Promise<MedicalIm
         if (!imgThumb) imgThumb = imgLarge
         if (!imgLarge) imgLarge = imgThumb
 
+        // Se ambas URLs são vazias, tentar construir a partir do PMC URL
+        if (!imgLarge && !imgThumb && item.pmc_url) {
+          // Extrair PMC ID e tentar URL de figura
+          const pmcMatch = item.pmc_url.match(/PMC\d+/)
+          if (pmcMatch) {
+            imgLarge = `https://www.ncbi.nlm.nih.gov/pmc/articles/${pmcMatch[0]}/bin/${item.uid}.jpg`
+            imgThumb = imgLarge
+          }
+        }
+
         return {
           id: item.uid || `openi-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           url: imgLarge,

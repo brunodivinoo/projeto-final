@@ -180,9 +180,12 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
         setCurrentSrc(httpsUrl)
         setRetryCount(prev => prev + 1)
       } else {
-        setHasError(true)
-        setIsLoading(false)
-        onLoadError?.()
+        // Tentar adicionar query string para bypass de cache
+        const cacheBustUrl = currentSrc.includes('?')
+          ? `${currentSrc}&_cb=${Date.now()}`
+          : `${currentSrc}?_cb=${Date.now()}`
+        setCurrentSrc(cacheBustUrl)
+        setRetryCount(prev => prev + 1)
       }
     } else {
       setHasError(true)

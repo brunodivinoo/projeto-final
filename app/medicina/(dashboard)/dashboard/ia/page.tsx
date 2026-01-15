@@ -24,12 +24,21 @@ import {
   X,
   Settings,
   Zap,
-  ChevronDown
+  ChevronDown,
+  Menu,
+  Square
 } from 'lucide-react'
 import ArtifactRenderer from '@/components/ia/ArtifactRenderer'
 import ArtifactsSidebar, { ArtifactsFloatingButton } from '@/components/ia/ArtifactsSidebar'
 import { useSmartScroll } from '@/hooks/useSmartScroll'
 import { useArtifactsStore } from '@/stores/artifactsStore'
+
+// Hook para obter o estado da sidebar de artefatos
+const useArtifactsSidebar = () => {
+  const isSidebarOpen = useArtifactsStore(state => state.isSidebarOpen)
+  const artifacts = useArtifactsStore(state => state.artifacts)
+  return { isSidebarOpen, hasArtifacts: artifacts.length > 0 }
+}
 
 interface Mensagem {
   id: string
@@ -108,6 +117,19 @@ export default function IAPage() {
   // Verificar limites (gratuito agora tem 10 chats grátis)
   const podeUsarIA = true // todos os planos podem usar IA agora
   const isResidencia = plano === 'residencia'
+
+  // Estado da sidebar de artefatos para ajustar layout
+  const { isSidebarOpen: isArtifactsSidebarOpen, hasArtifacts } = useArtifactsSidebar()
+
+  // Detectar mobile para responsividade
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Buscar uso
   const fetchUso = useCallback(async () => {
@@ -196,6 +218,27 @@ export default function IAPage() {
 
   // Ref para controlar requisições em andamento
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Função para cancelar geração (Problema 5)
+  const cancelarGeracao = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      setLoading(false)
+      setStreaming(false)
+
+      // Atualizar última mensagem para indicar que foi cancelada
+      setMensagens(prev => {
+        const updated = [...prev]
+        const lastMsg = updated[updated.length - 1]
+        if (lastMsg && lastMsg.tipo === 'ia' && !lastMsg.conteudo) {
+          lastMsg.conteudo = '*Geração interrompida pelo usuário*'
+        } else if (lastMsg && lastMsg.tipo === 'ia') {
+          lastMsg.conteudo += '\n\n---\n*Geração interrompida*'
+        }
+        return updated
+      })
+    }
+  }, [])
 
   // Enviar mensagem com streaming
   const enviarMensagem = async () => {
@@ -438,109 +481,213 @@ export default function IAPage() {
   // (gratuito agora tem 10 chats, então não bloqueia mais)
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex">
-      {/* Sidebar de Conversas */}
-      <div className={`${showConversas ? 'w-72' : 'w-0'} transition-all duration-300 overflow-hidden border-r border-white/10`}>
-        <div className="w-72 h-full bg-white/5 p-4 flex flex-col">
-          <button
-            onClick={novaConversa}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-colors mb-4"
-          >
-            <Plus className="w-5 h-5" />
-            Nova Conversa
-          </button>
+    <div className={`h-[calc(100vh-8rem)] md:h-[calc(100vh-8rem)] flex transition-all duration-300 ${
+      isArtifactsSidebarOpen && hasArtifacts && !isMobile ? 'mr-[420px]' : ''
+    }`}>
+      {/* MOBILE: Sidebar como Drawer sobreposto */}
+      {isMobile ? (
+        <>
+          {/* Backdrop */}
+          {showConversas && (
+            <div
+              className="fixed inset-0 bg-black/60 z-40"
+              onClick={() => setShowConversas(false)}
+            />
+          )}
 
-          <div className="flex-1 overflow-y-auto space-y-2">
-            {conversas.map((conv) => (
-              <div
-                key={conv.id}
-                className={`group p-3 rounded-lg cursor-pointer transition-colors ${
-                  conversaAtual === conv.id ? 'bg-purple-500/20' : 'hover:bg-white/5'
-                }`}
-                onClick={() => carregarConversa(conv.id)}
+          {/* Drawer */}
+          <div className={`
+            fixed top-0 left-0 h-full w-[85%] max-w-[320px] bg-slate-900 z-50
+            transform transition-transform duration-300 ease-out
+            ${showConversas ? 'translate-x-0' : '-translate-x-full'}
+          `}>
+            <div className="h-full flex flex-col p-4">
+              {/* Header do drawer */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white font-semibold">Conversas</h3>
+                <button
+                  onClick={() => setShowConversas(false)}
+                  className="p-2 hover:bg-white/10 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-white/60" />
+                </button>
+              </div>
+
+              {/* Botão Nova Conversa */}
+              <button
+                onClick={() => { novaConversa(); setShowConversas(false) }}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-colors mb-4"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white/80 text-sm truncate">{conv.titulo}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs px-2 py-0.5 rounded ${
-                        conv.modelo === 'claude' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
-                      }`}>
-                        {conv.modelo === 'claude' ? 'Claude' : 'Gemini'}
-                      </span>
-                      <span className="text-white/40 text-xs">
-                        {new Date(conv.created_at).toLocaleDateString('pt-BR')}
-                      </span>
+                <Plus className="w-5 h-5" />
+                Nova Conversa
+              </button>
+
+              {/* Lista de conversas */}
+              <div className="flex-1 overflow-y-auto space-y-2">
+                {conversas.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className={`group p-3 rounded-lg cursor-pointer transition-colors ${
+                      conversaAtual === conv.id ? 'bg-purple-500/20' : 'hover:bg-white/5'
+                    }`}
+                    onClick={() => { carregarConversa(conv.id); setShowConversas(false) }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white/80 text-sm truncate">{conv.titulo}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            conv.modelo === 'claude' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+                          }`}>
+                            {conv.modelo === 'claude' ? 'Claude' : 'Gemini'}
+                          </span>
+                          <span className="text-white/40 text-xs">
+                            {new Date(conv.created_at).toLocaleDateString('pt-BR')}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deletarConversa(conv.id)
+                        }}
+                        className="p-1 hover:bg-white/10 rounded transition-all"
+                      >
+                        <Trash2 className="w-4 h-4 text-white/40" />
+                      </button>
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deletarConversa(conv.id)
-                    }}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded transition-all"
-                  >
-                    <Trash2 className="w-4 h-4 text-white/40" />
-                  </button>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Estatísticas de Uso */}
-          {uso && (
-            <div className="mt-4 p-3 bg-white/5 rounded-lg border border-white/10">
-              <h4 className="text-white/60 text-xs font-medium mb-2">Uso este mês</h4>
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between text-white/80">
-                  <span>Chats</span>
-                  <span>{uso.uso_mes.chats}{uso.limites.chats !== -1 && `/${uso.limites.chats}`}</span>
+              {/* Estatísticas de Uso */}
+              {uso && (
+                <div className="mt-4 p-3 bg-white/5 rounded-lg border border-white/10">
+                  <h4 className="text-white/60 text-xs font-medium mb-2">Uso este mês</h4>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between text-white/80">
+                      <span>Chats</span>
+                      <span>{uso.uso_mes.chats}{uso.limites.chats !== -1 && `/${uso.limites.chats}`}</span>
+                    </div>
+                    <div className="flex justify-between text-white/80">
+                      <span>Tokens</span>
+                      <span>{((uso.uso_mes.tokens_input + uso.uso_mes.tokens_output) / 1000).toFixed(1)}k</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between text-white/80">
-                  <span>Tokens</span>
-                  <span>{((uso.uso_mes.tokens_input + uso.uso_mes.tokens_output) / 1000).toFixed(1)}k</span>
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        /* DESKTOP: Sidebar fixa */
+        <div className={`${showConversas ? 'w-72' : 'w-0'} transition-all duration-300 overflow-hidden border-r border-white/10`}>
+          <div className="w-72 h-full bg-white/5 p-4 flex flex-col">
+            <button
+              onClick={novaConversa}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-colors mb-4"
+            >
+              <Plus className="w-5 h-5" />
+              Nova Conversa
+            </button>
+
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {conversas.map((conv) => (
+                <div
+                  key={conv.id}
+                  className={`group p-3 rounded-lg cursor-pointer transition-colors ${
+                    conversaAtual === conv.id ? 'bg-purple-500/20' : 'hover:bg-white/5'
+                  }`}
+                  onClick={() => carregarConversa(conv.id)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white/80 text-sm truncate">{conv.titulo}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          conv.modelo === 'claude' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+                        }`}>
+                          {conv.modelo === 'claude' ? 'Claude' : 'Gemini'}
+                        </span>
+                        <span className="text-white/40 text-xs">
+                          {new Date(conv.created_at).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deletarConversa(conv.id)
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded transition-all"
+                    >
+                      <Trash2 className="w-4 h-4 text-white/40" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Estatísticas de Uso */}
+            {uso && (
+              <div className="mt-4 p-3 bg-white/5 rounded-lg border border-white/10">
+                <h4 className="text-white/60 text-xs font-medium mb-2">Uso este mês</h4>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between text-white/80">
+                    <span>Chats</span>
+                    <span>{uso.uso_mes.chats}{uso.limites.chats !== -1 && `/${uso.limites.chats}`}</span>
+                  </div>
+                  <div className="flex justify-between text-white/80">
+                    <span>Tokens</span>
+                    <span>{((uso.uso_mes.tokens_input + uso.uso_mes.tokens_output) / 1000).toFixed(1)}k</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Chat Principal */}
       <div className="flex-1 flex flex-col relative">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <div className="flex items-center gap-3">
+        {/* Header - Responsivo */}
+        <div className="flex items-center justify-between p-3 md:p-4 border-b border-white/10">
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Botão menu/conversas */}
             <button
               onClick={() => setShowConversas(!showConversas)}
               className="p-2 hover:bg-white/5 rounded-lg transition-colors"
             >
-              <MessageSquare className="w-5 h-5 text-white/60" />
+              {isMobile ? (
+                <Menu className="w-5 h-5 text-white/60" />
+              ) : (
+                <MessageSquare className="w-5 h-5 text-white/60" />
+              )}
             </button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-                <Brain className="w-6 h-6 text-white" />
+
+            {/* Logo e info */}
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                <Brain className="w-4 h-4 md:w-6 md:h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-white">PREPARAMED IA</h1>
-                <p className="text-white/60 text-xs">
-                  {isResidencia ? 'Claude Opus' : 'Gemini Flash'} | {isResidencia ? 'Ilimitado' : `${uso?.uso_mes.chats || 0}/100 chats`}
+                <h1 className="text-sm md:text-lg font-bold text-white">PREPARAMED IA</h1>
+                <p className="text-white/60 text-[10px] md:text-xs hidden sm:block">
+                  {isResidencia ? 'Claude Opus | Ilimitado' : `Gemini Flash | ${uso?.uso_mes.chats || 0}/100`}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {isResidencia && (
-              <Crown className="w-5 h-5 text-amber-400" />
-            )}
+          <div className="flex items-center gap-1 md:gap-2">
+            {isResidencia && <Crown className="w-4 h-4 md:w-5 md:h-5 text-amber-400" />}
             <button
               onClick={() => setShowOpcoes(!showOpcoes)}
               className={`p-2 rounded-lg transition-colors ${
                 showOpcoes ? 'bg-purple-500/20 text-purple-400' : 'text-white/40 hover:text-white hover:bg-white/5'
               }`}
             >
-              <Settings className="w-5 h-5" />
+              <Settings className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           </div>
         </div>
@@ -574,32 +721,32 @@ export default function IAPage() {
           </div>
         )}
 
-        {/* Chat Area */}
+        {/* Chat Area - Responsivo */}
         <div
           ref={chatRef}
-          className="flex-1 overflow-y-auto p-4 space-y-4"
+          className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4"
         >
           {mensagens.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 flex items-center justify-center mb-6">
-                <Brain className="w-10 h-10 text-purple-400" />
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 flex items-center justify-center mb-4 md:mb-6">
+                <Brain className="w-8 h-8 md:w-10 md:h-10 text-purple-400" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Como posso ajudar?</h2>
-              <p className="text-white/60 mb-8 max-w-md">
+              <h2 className="text-xl md:text-2xl font-bold text-white mb-2">Como posso ajudar?</h2>
+              <p className="text-white/60 mb-6 md:mb-8 max-w-md text-sm md:text-base">
                 {isResidencia
                   ? 'Tire dúvidas, analise imagens, PDFs e use busca na web para informações atualizadas.'
                   : 'Tire dúvidas sobre medicina, peça explicações de conceitos ou ajuda com questões.'}
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 w-full max-w-xl">
                 {sugestoes.map((sugestao, i) => (
                   <button
                     key={i}
                     onClick={() => setInput(sugestao.texto)}
-                    className="flex items-center gap-3 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-left border border-white/5 hover:border-white/10"
+                    className="flex items-center gap-2 md:gap-3 p-3 md:p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-left border border-white/5 hover:border-white/10"
                   >
-                    <sugestao.icon className={`w-5 h-5 ${sugestao.cor} flex-shrink-0`} />
-                    <span className="text-white/80 text-sm">{sugestao.texto}</span>
+                    <sugestao.icon className={`w-4 h-4 md:w-5 md:h-5 ${sugestao.cor} flex-shrink-0`} />
+                    <span className="text-white/80 text-xs md:text-sm">{sugestao.texto}</span>
                   </button>
                 ))}
               </div>
@@ -608,25 +755,27 @@ export default function IAPage() {
             mensagens.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-3 ${msg.tipo === 'usuario' ? 'justify-end' : 'justify-start'}`}
+                className={`flex gap-2 md:gap-3 ${msg.tipo === 'usuario' ? 'justify-end' : 'justify-start'}`}
               >
+                {/* Avatar - menor no mobile */}
                 {msg.tipo === 'ia' && (
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0 mt-1">
-                    <Bot className="w-5 h-5 text-white" />
+                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0 mt-1">
+                    <Bot className="w-3 h-3 md:w-5 md:h-5 text-white" />
                   </div>
                 )}
 
-                <div className={`max-w-[80%] ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
+                {/* Mensagem com largura ajustada */}
+                <div className={`max-w-[85%] md:max-w-[80%] ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
                   {msg.thinking && (
-                    <div className="mb-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                      <p className="text-amber-200 text-xs font-medium mb-1 flex items-center gap-1">
+                    <div className="mb-2 p-2 md:p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                      <p className="text-amber-200 text-[10px] md:text-xs font-medium mb-1 flex items-center gap-1">
                         <Lightbulb className="w-3 h-3" /> Raciocínio
                       </p>
-                      <p className="text-amber-100/60 text-xs line-clamp-3">{msg.thinking}</p>
+                      <p className="text-amber-100/60 text-[10px] md:text-xs line-clamp-3">{msg.thinking}</p>
                     </div>
                   )}
 
-                  <div className={`rounded-2xl p-4 ${
+                  <div className={`rounded-xl md:rounded-2xl p-3 md:p-4 ${
                     msg.tipo === 'usuario'
                       ? 'bg-emerald-500/20 text-white'
                       : 'bg-white/5 text-white/90 border border-white/5'
@@ -634,12 +783,12 @@ export default function IAPage() {
                     {(msg.hasImage || msg.hasPdf) && msg.tipo === 'usuario' && (
                       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
                         {msg.hasImage && (
-                          <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded flex items-center gap-1">
+                          <span className="text-[10px] md:text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded flex items-center gap-1">
                             <ImageIcon className="w-3 h-3" /> Imagem
                           </span>
                         )}
                         {msg.hasPdf && (
-                          <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded flex items-center gap-1">
+                          <span className="text-[10px] md:text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded flex items-center gap-1">
                             <FileUp className="w-3 h-3" /> PDF
                           </span>
                         )}
@@ -647,7 +796,7 @@ export default function IAPage() {
                     )}
 
                     {msg.tipo === 'ia' ? (
-                      <div className="prose prose-invert prose-sm max-w-none">
+                      <div className="prose prose-invert prose-sm max-w-none text-sm md:text-base">
                         <ArtifactRenderer
                           content={msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')}
                           userId={user?.id}
@@ -655,21 +804,21 @@ export default function IAPage() {
                         />
                       </div>
                     ) : (
-                      <p className="whitespace-pre-wrap">{msg.conteudo}</p>
+                      <p className="whitespace-pre-wrap text-sm md:text-base">{msg.conteudo}</p>
                     )}
                   </div>
 
                   {msg.tipo === 'ia' && msg.conteudo && (
-                    <div className="flex items-center gap-3 mt-1 ml-2">
+                    <div className="flex items-center gap-2 md:gap-3 mt-1 ml-2">
                       <button
                         onClick={() => copiarResposta(msg.id, msg.conteudo)}
-                        className="text-white/40 hover:text-white text-xs flex items-center gap-1"
+                        className="text-white/40 hover:text-white text-[10px] md:text-xs flex items-center gap-1"
                       >
                         {copiado === msg.id ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                         {copiado === msg.id ? 'Copiado!' : 'Copiar'}
                       </button>
                       {msg.tokens && (
-                        <span className="text-white/30 text-xs">
+                        <span className="text-white/30 text-[10px] md:text-xs">
                           {msg.tokens.toLocaleString()} tokens
                         </span>
                       )}
@@ -678,8 +827,8 @@ export default function IAPage() {
                 </div>
 
                 {msg.tipo === 'usuario' && (
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-                    <User className="w-5 h-5 text-emerald-400" />
+                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                    <User className="w-3 h-3 md:w-5 md:h-5 text-emerald-400" />
                   </div>
                 )}
               </div>
@@ -687,149 +836,200 @@ export default function IAPage() {
           )}
 
           {loading && !mensagens.find(m => m.tipo === 'ia' && m.conteudo === '') && (
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
-                <Bot className="w-5 h-5 text-white" />
+            <div className="flex gap-2 md:gap-3">
+              <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
+                <Bot className="w-3 h-3 md:w-5 md:h-5 text-white" />
               </div>
-              <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
+              <div className="bg-white/5 rounded-xl md:rounded-2xl p-3 md:p-4 border border-white/5">
+                <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-purple-400 animate-spin" />
               </div>
             </div>
           )}
         </div>
 
-        {/* Botão voltar ao final - aparece quando scroll não está no fundo */}
+        {/* Botão voltar ao final - só ícone */}
         {!isAtBottom && mensagens.length > 0 && (
-          <div className="absolute bottom-32 right-8 z-10">
+          <div className="absolute bottom-28 md:bottom-32 right-4 md:right-6 z-10">
             <button
               onClick={() => scrollToBottom(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-all hover:scale-105"
+              className="p-2.5 md:p-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-all hover:scale-105"
+              title="Voltar ao final"
             >
-              <ChevronDown className="w-4 h-4" />
-              <span className="text-sm font-medium">Voltar ao final</span>
+              <ChevronDown className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           </div>
         )}
 
-        {/* Anexos Preview */}
-        {(imagemBase64 || pdfBase64) && (
-          <div className="px-4 py-2 flex gap-2">
-            {imagemBase64 && (
-              <div className="flex items-center gap-2 bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-sm">
-                <ImageIcon className="w-4 h-4" />
-                <span>Imagem anexada</span>
-                <button onClick={() => { setImagemBase64(null); setImagemTipo(null) }}>
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-            {pdfBase64 && (
-              <div className="flex items-center gap-2 bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-sm">
-                <FileUp className="w-4 h-4" />
-                <span>PDF anexado</span>
-                <button onClick={() => setPdfBase64(null)}>
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
+        {/* Indicador de streaming */}
+        {streaming && (
+          <div className="px-4 pb-2">
+            <div className="flex items-center justify-center gap-2 text-purple-400 text-xs">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>Gerando resposta...</span>
+              <button
+                onClick={cancelarGeracao}
+                className="text-white/40 hover:text-red-400 transition-colors underline"
+              >
+                cancelar
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Input Area */}
-        <div className="p-4 border-t border-white/10">
-          <div className="flex gap-3 items-end">
-            {/* Botões de anexo */}
-            {isResidencia && (
-              <div className="flex gap-1">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-3 text-white/40 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
-                  title="Anexar imagem"
-                >
-                  <ImageIcon className="w-5 h-5" />
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
+        {/* Input Area - REDESENHADO (Problema 1) */}
+        <div className="p-2 md:p-4 border-t border-white/10 bg-slate-900/50">
+          <div className="relative">
+            {/* Container do input com borda visual */}
+            <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-purple-500/50 focus-within:border-purple-500/30 transition-all">
 
-                <button
-                  onClick={() => pdfInputRef.current?.click()}
-                  className="p-3 text-white/40 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
-                  title="Anexar PDF"
-                >
-                  <FileUp className="w-5 h-5" />
-                </button>
-                <input
-                  ref={pdfInputRef}
-                  type="file"
-                  accept=".pdf"
-                  onChange={handlePdfUpload}
-                  className="hidden"
-                />
-              </div>
-            )}
+              {/* Área de anexos DENTRO do container */}
+              {(imagemBase64 || pdfBase64) && (
+                <div className="px-3 md:px-4 pt-3 flex gap-2 flex-wrap">
+                  {imagemBase64 && (
+                    <div className="flex items-center gap-2 bg-blue-500/20 text-blue-400 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs">
+                      <ImageIcon className="w-3 h-3" />
+                      <span className="hidden sm:inline">Imagem</span>
+                      <button
+                        onClick={() => { setImagemBase64(null); setImagemTipo(null) }}
+                        className="hover:bg-blue-500/20 rounded p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                  {pdfBase64 && (
+                    <div className="flex items-center gap-2 bg-red-500/20 text-red-400 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs">
+                      <FileUp className="w-3 h-3" />
+                      <span className="hidden sm:inline">PDF</span>
+                      <button
+                        onClick={() => setPdfBase64(null)}
+                        className="hover:bg-red-500/20 rounded p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {/* Input de texto */}
-            <div className="flex-1 relative">
+              {/* Textarea expandível */}
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault()
-                    enviarMensagem()
+                    if (loading) {
+                      cancelarGeracao()
+                    } else {
+                      enviarMensagem()
+                    }
                   }
                 }}
-                placeholder="Digite sua pergunta... (Enter para enviar, Shift+Enter para nova linha)"
+                placeholder="Digite sua pergunta..."
                 disabled={loading}
                 rows={1}
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none min-h-[56px] max-h-[200px]"
+                className="w-full bg-transparent py-3 md:py-4 px-3 md:px-5 text-white placeholder-white/40 focus:outline-none disabled:opacity-50 resize-none min-h-[48px] md:min-h-[56px] max-h-[120px] md:max-h-[160px] text-sm"
                 style={{ height: 'auto' }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement
                   target.style.height = 'auto'
-                  target.style.height = Math.min(target.scrollHeight, 200) + 'px'
+                  target.style.height = Math.min(target.scrollHeight, isMobile ? 120 : 160) + 'px'
                 }}
               />
+
+              {/* Barra de ações DENTRO do container */}
+              <div className="flex items-center justify-between px-2 md:px-4 py-2 border-t border-white/5 bg-white/[0.02]">
+                {/* Botões de ação à esquerda */}
+                <div className="flex items-center gap-0.5 md:gap-1">
+                  {isResidencia && (
+                    <>
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-1.5 md:p-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                        title="Anexar imagem"
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+
+                      <button
+                        onClick={() => pdfInputRef.current?.click()}
+                        className="p-1.5 md:p-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                        title="Anexar PDF"
+                      >
+                        <FileUp className="w-4 h-4" />
+                      </button>
+                      <input
+                        ref={pdfInputRef}
+                        type="file"
+                        accept=".pdf"
+                        onChange={handlePdfUpload}
+                        className="hidden"
+                      />
+
+                      {/* Separador */}
+                      <div className="w-px h-4 bg-white/10 mx-0.5 md:mx-1" />
+
+                      {/* Toggle Web Search */}
+                      <button
+                        onClick={() => setUseWebSearch(!useWebSearch)}
+                        className={`p-1.5 md:p-2 rounded-lg transition-colors ${
+                          useWebSearch
+                            ? 'bg-blue-500/20 text-blue-400'
+                            : 'text-white/40 hover:text-white hover:bg-white/5'
+                        }`}
+                        title="Busca na Web"
+                      >
+                        <Search className="w-4 h-4" />
+                      </button>
+
+                      {/* Toggle Extended Thinking */}
+                      <button
+                        onClick={() => setUseExtendedThinking(!useExtendedThinking)}
+                        className={`p-1.5 md:p-2 rounded-lg transition-colors ${
+                          useExtendedThinking
+                            ? 'bg-amber-500/20 text-amber-400'
+                            : 'text-white/40 hover:text-white hover:bg-white/5'
+                        }`}
+                        title="Extended Thinking"
+                      >
+                        <Zap className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Botão enviar/cancelar à direita */}
+                <button
+                  onClick={loading ? cancelarGeracao : enviarMensagem}
+                  disabled={!loading && !input.trim()}
+                  className={`p-2 md:p-2.5 rounded-lg md:rounded-xl transition-all ${
+                    loading
+                      ? 'bg-red-500/80 hover:bg-red-600 text-white'
+                      : 'bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105'
+                  }`}
+                >
+                  {loading ? (
+                    <Square className="w-4 h-4 md:w-5 md:h-5" />
+                  ) : (
+                    <Send className="w-4 h-4 md:w-5 md:h-5" />
+                  )}
+                </button>
+              </div>
             </div>
-
-            {/* Botão enviar */}
-            <button
-              onClick={enviarMensagem}
-              disabled={!input.trim() || loading}
-              className="p-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
-            </button>
           </div>
 
-          {/* Info de funcionalidades */}
-          <div className="mt-2 flex items-center justify-center gap-4 text-xs text-white/40">
-            {isResidencia && (
-              <>
-                <span className="flex items-center gap-1">
-                  <ImageIcon className="w-3 h-3" /> Imagens
-                </span>
-                <span className="flex items-center gap-1">
-                  <FileUp className="w-3 h-3" /> PDFs
-                </span>
-                <span className="flex items-center gap-1">
-                  <Search className="w-3 h-3" /> Web Search
-                </span>
-                <span className="flex items-center gap-1">
-                  <Zap className="w-3 h-3" /> Extended Thinking
-                </span>
-              </>
-            )}
-          </div>
+          {/* Dica de atalho - mais discreta */}
+          <p className="text-center text-white/30 text-[10px] mt-2">
+            Enter para enviar • Shift+Enter para nova linha
+          </p>
         </div>
       </div>
 

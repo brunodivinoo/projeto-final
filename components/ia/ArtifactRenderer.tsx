@@ -587,10 +587,21 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
       )
       if (exists) return
 
-      // Adicionar à store
-      const type = detectArtifactType(artifact.content) || 'diagram'
+      // Adicionar à store - usar tipo do artefato se já definido
+      // Mapear tipos internos para tipos da store
+      let storeType: string
+      if (artifact.type === 'layers' || artifact.type === 'converted_ascii' && artifact.conversionType === 'layers') {
+        storeType = 'layers'
+      } else if (artifact.type === 'staging') {
+        storeType = 'staging'
+      } else if (artifact.type === 'mermaid') {
+        storeType = 'flowchart'
+      } else {
+        storeType = detectArtifactType(artifact.content) || 'diagram'
+      }
+
       addArtifact({
-        type,
+        type: storeType as import('@/stores/artifactsStore').ArtifactType,
         title: artifact.title || 'Artefato',
         content: artifact.content,
         messageId,
@@ -616,48 +627,48 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
               key={index}
               remarkPlugins={[remarkGfm]}
               components={{
-                // Headings
+                // Headings - menores e mais compactos
                 h1: ({ children }) => (
-                  <h1 className="text-2xl font-bold text-white mt-6 mb-4 pb-2 border-b border-white/10">
+                  <h1 className="text-lg md:text-xl font-bold text-white mt-4 mb-2 pb-1 border-b border-white/10">
                     {children}
                   </h1>
                 ),
                 h2: ({ children }) => (
-                  <h2 className="text-xl font-semibold text-white mt-5 mb-3">
+                  <h2 className="text-base md:text-lg font-semibold text-white mt-3 mb-2">
                     {children}
                   </h2>
                 ),
                 h3: ({ children }) => (
-                  <h3 className="text-lg font-semibold text-emerald-400 mt-4 mb-2">
+                  <h3 className="text-sm md:text-base font-semibold text-emerald-400 mt-3 mb-1.5">
                     {children}
                   </h3>
                 ),
                 h4: ({ children }) => (
-                  <h4 className="text-base font-semibold text-white/90 mt-3 mb-2">
+                  <h4 className="text-sm font-semibold text-white/90 mt-2 mb-1">
                     {children}
                   </h4>
                 ),
 
-                // Paragraphs
+                // Paragraphs - texto menor
                 p: ({ children }) => (
-                  <p className="text-white/80 leading-relaxed mb-3">
+                  <p className="text-white/80 leading-relaxed mb-2 text-sm">
                     {children}
                   </p>
                 ),
 
-                // Lists
+                // Lists - espaçamento reduzido
                 ul: ({ children }) => (
-                  <ul className="list-disc list-inside space-y-1 mb-3 text-white/80 ml-2">
+                  <ul className="list-disc list-inside space-y-0.5 mb-2 text-white/80 ml-2 text-sm">
                     {children}
                   </ul>
                 ),
                 ol: ({ children }) => (
-                  <ol className="list-decimal list-inside space-y-1 mb-3 text-white/80 ml-2">
+                  <ol className="list-decimal list-inside space-y-0.5 mb-2 text-white/80 ml-2 text-sm">
                     {children}
                   </ol>
                 ),
                 li: ({ children }) => (
-                  <li className="text-white/80">
+                  <li className="text-white/80 text-sm">
                     {children}
                   </li>
                 ),
@@ -674,14 +685,14 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
                   </em>
                 ),
 
-                // Code
+                // Code - tamanho reduzido
                 code: ({ className, children }) => {
                   const match = /language-(\w+)/.exec(className || '')
                   const isInline = !match
 
                   if (isInline) {
                     return (
-                      <code className="bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded text-sm font-mono">
+                      <code className="bg-emerald-500/20 text-emerald-300 px-1 py-0.5 rounded text-xs font-mono">
                         {children}
                       </code>
                     )
@@ -692,24 +703,24 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
                       style={oneDark}
                       language={match[1]}
                       PreTag="div"
-                      className="rounded-lg my-3 text-sm"
+                      className="rounded-lg my-2 text-xs"
                     >
                       {String(children).replace(/\n$/, '')}
                     </SyntaxHighlighter>
                   )
                 },
 
-                // Pre (for code blocks without language)
+                // Pre (for code blocks without language) - mais compacto
                 pre: ({ children }) => (
-                  <pre className="bg-slate-800/80 rounded-lg p-4 my-3 overflow-x-auto text-sm font-mono text-white/80">
+                  <pre className="bg-slate-800/80 rounded-lg p-3 my-2 overflow-x-auto text-xs font-mono text-white/80">
                     {children}
                   </pre>
                 ),
 
-                // Tables
+                // Tables - células mais compactas
                 table: ({ children }) => (
-                  <div className="overflow-x-auto my-4">
-                    <table className="min-w-full border-collapse border border-white/10 rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto my-3">
+                    <table className="min-w-full border-collapse border border-white/10 rounded-lg overflow-hidden text-sm">
                       {children}
                     </table>
                   </div>
@@ -730,20 +741,20 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
                   </tr>
                 ),
                 th: ({ children }) => (
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-emerald-400 border-b border-white/10">
+                  <th className="px-2 md:px-3 py-2 text-left text-xs font-semibold text-emerald-400 border-b border-white/10">
                     {children}
                   </th>
                 ),
                 td: ({ children }) => (
-                  <td className="px-4 py-3 text-sm text-white/80">
+                  <td className="px-2 md:px-3 py-2 text-xs text-white/80">
                     {children}
                   </td>
                 ),
 
-                // Blockquotes (para boxes de destaque)
+                // Blockquotes (para boxes de destaque) - mais compacto
                 blockquote: ({ children }) => (
-                  <blockquote className="border-l-4 border-emerald-500 bg-emerald-500/10 pl-4 py-2 my-3 rounded-r-lg">
-                    <div className="text-white/80">
+                  <blockquote className="border-l-3 border-emerald-500 bg-emerald-500/10 pl-3 py-1.5 my-2 rounded-r-lg">
+                    <div className="text-white/80 text-sm">
                       {children}
                     </div>
                   </blockquote>
@@ -761,17 +772,17 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
                   </a>
                 ),
 
-                // Horizontal rule
+                // Horizontal rule - espaçamento reduzido
                 hr: () => (
-                  <hr className="my-6 border-white/10" />
+                  <hr className="my-4 border-white/10" />
                 ),
 
-                // Images
+                // Images - responsivas
                 img: ({ src, alt }) => (
                   <img
                     src={src}
                     alt={alt}
-                    className="max-w-full h-auto rounded-lg my-4"
+                    className="max-w-full h-auto rounded-lg my-3 max-h-[300px] md:max-h-[400px] object-contain"
                   />
                 )
               }}
@@ -781,23 +792,24 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
           )
         }
 
-        // Renderizar artefatos
+        // Renderizar artefatos - com containers responsivos
         if (part.type === 'mermaid' || (part.type === 'artifact' && (part.subtype === 'diagram' || part.subtype === 'flowchart'))) {
           return (
-            <MermaidDiagram
-              key={index}
-              chart={part.content}
-              title={part.title}
-            />
+            <div key={index} className="my-3 max-h-[350px] md:max-h-[450px] overflow-auto rounded-xl">
+              <MermaidDiagram
+                chart={part.content}
+                title={part.title}
+              />
+            </div>
           )
         }
 
-        // Renderizar diagramas de camadas (layers)
+        // Renderizar diagramas de camadas (layers) - responsivos
         if (part.type === 'layers') {
           try {
             const layerData = JSON.parse(part.content)
             return (
-              <div key={index} className="my-4">
+              <div key={index} className="my-3 max-h-[350px] md:max-h-[450px] overflow-auto">
                 <LayeredDiagram
                   title={part.title || layerData.title || 'Diagrama de Camadas'}
                   layers={layerData.layers || []}
@@ -812,19 +824,19 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
           } catch {
             // Se não for JSON válido, mostrar como texto
             return (
-              <div key={index} className="my-4 bg-slate-800/50 border border-white/10 rounded-xl p-4">
-                <pre className="text-white/80 text-sm whitespace-pre-wrap">{part.content}</pre>
+              <div key={index} className="my-3 bg-slate-800/50 border border-white/10 rounded-xl p-3">
+                <pre className="text-white/80 text-xs whitespace-pre-wrap">{part.content}</pre>
               </div>
             )
           }
         }
 
-        // Renderizar tabelas de estadiamento
+        // Renderizar tabelas de estadiamento - responsivas
         if (part.type === 'staging') {
           try {
             const stagingData = JSON.parse(part.content)
             return (
-              <div key={index} className="my-4">
+              <div key={index} className="my-3 max-h-[400px] md:max-h-[500px] overflow-auto">
                 <StagingTable
                   title={part.title || stagingData.title || 'Estadiamento'}
                   rows={stagingData.rows || []}
@@ -837,8 +849,8 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
           } catch {
             // Se não for JSON válido, mostrar como texto
             return (
-              <div key={index} className="my-4 bg-slate-800/50 border border-white/10 rounded-xl p-4">
-                <pre className="text-white/80 text-sm whitespace-pre-wrap">{part.content}</pre>
+              <div key={index} className="my-3 bg-slate-800/50 border border-white/10 rounded-xl p-3">
+                <pre className="text-white/80 text-xs whitespace-pre-wrap">{part.content}</pre>
               </div>
             )
           }
@@ -846,26 +858,27 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
 
         if (part.type === 'image_request') {
           return (
-            <ImageGenerator
-              key={index}
-              prompt={part.content}
-            />
+            <div key={index} className="my-3 max-h-[350px] md:max-h-[450px] overflow-auto">
+              <ImageGenerator
+                prompt={part.content}
+              />
+            </div>
           )
         }
 
-        // Renderizar ASCII convertido para visual
+        // Renderizar ASCII convertido para visual - responsivo
         if (part.type === 'converted_ascii') {
           // Se foi convertido para layers (JSON)
           if (part.conversionType === 'layers') {
             try {
               const layerData = JSON.parse(part.content)
               return (
-                <div key={index} className="my-4">
+                <div key={index} className="my-3 max-h-[350px] md:max-h-[450px] overflow-auto">
                   {/* Banner indicando conversão automática */}
-                  <div className="mb-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-lg inline-flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-                    <span className="text-xs text-purple-300">
-                      Diagrama ASCII convertido automaticamente para visual interativo
+                  <div className="mb-2 px-2 py-1 bg-purple-500/10 border border-purple-500/20 rounded-lg inline-flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                    <span className="text-[10px] text-purple-300">
+                      ASCII convertido para visual
                     </span>
                   </div>
                   <LayeredDiagram
@@ -880,11 +893,11 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
             } catch {
               // Fallback: mostrar como Mermaid
               return (
-                <div key={index} className="my-4">
-                  <div className="mb-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-lg inline-flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-                    <span className="text-xs text-purple-300">
-                      Diagrama ASCII convertido automaticamente
+                <div key={index} className="my-3 max-h-[350px] md:max-h-[450px] overflow-auto">
+                  <div className="mb-2 px-2 py-1 bg-purple-500/10 border border-purple-500/20 rounded-lg inline-flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                    <span className="text-[10px] text-purple-300">
+                      ASCII convertido
                     </span>
                   </div>
                   <MermaidDiagram
@@ -898,12 +911,12 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
 
           // Se foi convertido para Mermaid (flowchart, tree, etc)
           return (
-            <div key={index} className="my-4">
+            <div key={index} className="my-3 max-h-[350px] md:max-h-[450px] overflow-auto">
               {/* Banner indicando conversão automática */}
-              <div className="mb-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-lg inline-flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-                <span className="text-xs text-purple-300">
-                  Diagrama ASCII convertido para fluxograma interativo
+              <div className="mb-2 px-2 py-1 bg-purple-500/10 border border-purple-500/20 rounded-lg inline-flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                <span className="text-[10px] text-purple-300">
+                  ASCII convertido para fluxograma
                 </span>
               </div>
               <MermaidDiagram
@@ -914,17 +927,17 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
           )
         }
 
-        // Outros tipos de artefato (tabela, comparação, mindmap)
+        // Outros tipos de artefato (tabela, comparação, mindmap) - responsivo
         if (part.type === 'artifact') {
           return (
-            <div key={index} className="my-4 bg-slate-800/50 border border-white/10 rounded-xl overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/80 border-b border-white/10">
-                <div className="w-3 h-3 rounded-full bg-blue-500" />
-                <span className="text-white/80 text-sm font-medium">
+            <div key={index} className="my-3 bg-slate-800/50 border border-white/10 rounded-xl overflow-hidden max-h-[300px] md:max-h-[400px] overflow-auto">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 border-b border-white/10 sticky top-0">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                <span className="text-white/80 text-xs font-medium">
                   {part.title || part.subtype}
                 </span>
               </div>
-              <div className="p-4">
+              <div className="p-3 text-sm">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {part.content}
                 </ReactMarkdown>

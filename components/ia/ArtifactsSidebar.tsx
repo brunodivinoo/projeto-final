@@ -747,12 +747,14 @@ function ArtifactCard({
     }
   }, [isSelected, previewLevel])
 
-  // Alternar entre níveis de preview
+  // Alternar entre níveis de preview (simplificado: collapsed <-> expanded)
   const cyclePreview = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (previewLevel === 'collapsed') setPreviewLevel('preview')
-    else if (previewLevel === 'preview') setPreviewLevel('expanded')
-    else setPreviewLevel('collapsed')
+    if (previewLevel === 'collapsed') {
+      setPreviewLevel('expanded')
+    } else {
+      setPreviewLevel('collapsed')
+    }
   }
 
   // Encontrar categoria do artefato
@@ -867,15 +869,13 @@ function ArtifactCard({
         <div className={`flex items-center gap-1 transition-opacity ${
           isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
         }`}>
-          {/* Toggle preview */}
+          {/* Toggle preview - apenas expandir/fechar */}
           <button
             onClick={cyclePreview}
             className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-            title={previewLevel === 'collapsed' ? 'Mostrar preview' : previewLevel === 'preview' ? 'Expandir' : 'Recolher'}
+            title={previewLevel === 'collapsed' ? 'Expandir' : 'Fechar'}
           >
-            {previewLevel === 'collapsed' && <Eye className="w-4 h-4" />}
-            {previewLevel === 'preview' && <ChevronDown className="w-4 h-4" />}
-            {previewLevel === 'expanded' && <ChevronUp className="w-4 h-4" />}
+            {previewLevel === 'collapsed' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>
 
           {/* Fullscreen */}
@@ -898,52 +898,14 @@ function ArtifactCard({
         </div>
       </div>
 
-      {/* Preview do conteúdo - nível 2 (preview compacto) */}
+      {/* Preview do conteúdo - apenas um nível (expandido) */}
       <AnimatePresence>
-        {previewLevel === 'preview' && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="px-4 pb-3 pt-1 border-t border-white/5">
-              {/* Preview visual para tipos especiais */}
-              {(artifact.type === 'layers' || artifact.type === 'anatomy') ? (
-                <PreviewLayersCard content={artifact.content} onExpand={cyclePreview} />
-              ) : artifact.type === 'staging' ? (
-                <PreviewStagingCard content={artifact.content} onExpand={cyclePreview} />
-              ) : artifact.type === 'diagram' || artifact.type === 'flowchart' ? (
-                <PreviewDiagramCard content={artifact.content} title={artifact.title} onExpand={cyclePreview} />
-              ) : (
-                <>
-                  <div className="bg-slate-900/50 rounded-lg overflow-hidden max-h-32 overflow-y-auto">
-                    {/* Preview resumido */}
-                    <div className="p-3 text-white/60 text-sm line-clamp-3">
-                      {artifact.content.substring(0, 200)}
-                      {artifact.content.length > 200 && '...'}
-                    </div>
-                  </div>
-                  <button
-                    onClick={cyclePreview}
-                    className="w-full mt-2 py-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
-                  >
-                    Ver mais ↓
-                  </button>
-                </>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Preview do conteúdo - nível 3 (expandido completo) */}
         {previewLevel === 'expanded' && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
             <div className="px-4 pb-3 pt-1 border-t border-purple-500/20">
@@ -954,7 +916,7 @@ function ArtifactCard({
                 onClick={cyclePreview}
                 className="w-full mt-2 py-1 text-xs text-white/40 hover:text-white/60 transition-colors"
               >
-                Recolher ↑
+                Fechar ↑
               </button>
             </div>
           </motion.div>
@@ -1395,67 +1357,96 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
         )}
       </div>
 
-      {/* Mobile Drawer Overlay */}
+      {/* Mobile Drawer Overlay - opaco */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 md:hidden"
+          className="fixed inset-0 bg-slate-950/95 z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer - slide de baixo */}
       <div
-        className={`fixed bottom-0 left-0 right-0 bg-slate-900 rounded-t-2xl border-t border-white/10 transition-transform duration-300 z-50 md:hidden ${
+        className={`fixed bottom-0 left-0 right-0 bg-slate-900 rounded-t-3xl border-t border-white/10 transition-transform duration-300 ease-out z-50 md:hidden flex flex-col ${
           isSidebarOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
-        style={{ maxHeight: '85vh' }}
+        style={{ maxHeight: '80vh' }}
       >
-        {/* Handle */}
-        <div className="flex justify-center py-2">
-          <div className="w-12 h-1 bg-white/20 rounded-full" />
+        {/* Handle para arrastar */}
+        <div className="flex justify-center pt-3 pb-2">
+          <div className="w-10 h-1 bg-white/30 rounded-full" />
         </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 pb-3 border-b border-white/10">
+        {/* Header compacto */}
+        <div className="flex items-center justify-between px-4 pb-2 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-purple-400" />
-            <h3 className="text-white font-semibold">Artefatos</h3>
-            <span className="text-white/40 text-sm">({filteredArtifacts.length})</span>
+            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <Layers className="w-4 h-4 text-purple-400" />
+            </div>
+            <div>
+              <h3 className="text-white font-semibold text-sm">Artefatos</h3>
+              <span className="text-white/40 text-xs">{filteredArtifacts.length} itens</span>
+            </div>
           </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-lg"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {artifacts.length > 0 && (
+              <button
+                onClick={clearArtifacts}
+                className="p-2 text-white/40 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
+                title="Limpar todos"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Busca mobile */}
-        <div className="px-4 py-2 border-b border-white/10">
+        {/* Busca mobile - mais compacta */}
+        <div className="px-3 py-2 border-b border-white/10">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
             <input
               type="text"
-              placeholder="Buscar artefatos..."
+              placeholder="Buscar..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 text-sm"
+              className="w-full pl-8 pr-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 text-sm"
             />
           </div>
         </div>
 
-        {/* Lista mobile */}
-        <div className="overflow-y-auto p-3 space-y-2" style={{ maxHeight: 'calc(85vh - 150px)' }}>
-          {filteredArtifacts.map((artifact) => (
-            <ArtifactCard
-              key={artifact.id}
-              artifact={artifact}
-              isSelected={selectedArtifactId === artifact.id}
-              onSelect={() => selectArtifact(artifact.id)}
-              onRemove={() => removeArtifact(artifact.id)}
-              onFullscreen={() => setFullscreenArtifact(artifact)}
-            />
-          ))}
+        {/* Lista mobile - com scroll */}
+        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+          {filteredArtifacts.length > 0 ? (
+            filteredArtifacts.map((artifact) => (
+              <ArtifactCard
+                key={artifact.id}
+                artifact={artifact}
+                isSelected={selectedArtifactId === artifact.id}
+                onSelect={() => selectArtifact(artifact.id)}
+                onRemove={() => removeArtifact(artifact.id)}
+                onFullscreen={() => setFullscreenArtifact(artifact)}
+              />
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Search className="w-6 h-6 text-white/20 mb-2" />
+              <p className="text-white/40 text-sm">Nenhum artefato</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer mobile */}
+        <div className="px-4 py-2 border-t border-white/10 bg-slate-900/80">
+          <p className="text-white/30 text-[10px] text-center">
+            Toque para selecionar • Deslize para fechar
+          </p>
         </div>
       </div>
     </>
@@ -1471,11 +1462,11 @@ export function ArtifactsFloatingButton() {
   return (
     <button
       onClick={toggleSidebar}
-      className="fixed bottom-24 right-4 z-40 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full shadow-lg hover:from-purple-700 hover:to-pink-700 transition-all hover:scale-105 md:hidden"
+      className="fixed bottom-20 right-3 z-40 flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full shadow-lg hover:from-purple-700 hover:to-pink-700 transition-all hover:scale-105 md:hidden"
     >
-      <Layers className="w-5 h-5" />
-      <span className="text-sm font-medium">Artefatos</span>
-      <span className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-xs">
+      <Layers className="w-4 h-4" />
+      <span className="text-xs font-medium">Artefatos</span>
+      <span className="w-4 h-4 bg-white/20 rounded-full flex items-center justify-center text-[10px]">
         {artifacts.length}
       </span>
     </button>
