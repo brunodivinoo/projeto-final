@@ -533,48 +533,53 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
     <div className={`my-4 ${isFullscreen ? 'fixed inset-0 z-50 bg-slate-900/95 p-8 overflow-hidden' : ''}`}>
       <div className={`bg-slate-800/50 border border-white/10 rounded-xl overflow-hidden ${isFullscreen ? 'h-full flex flex-col' : ''}`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 bg-slate-800/80 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-emerald-500" />
-            <span className="text-white/80 text-sm font-medium">
-              {title || 'Diagrama'}
-            </span>
-            {scale !== 1 && (
-              <span className="text-white/40 text-xs ml-2">
-                {Math.round(scale * 100)}%
+        <div className="flex items-center justify-between px-3 py-2.5 bg-slate-800/80 border-b border-white/10">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+              <span className="text-base">🔀</span>
+            </div>
+            <div className="min-w-0">
+              <span className="text-white/90 text-sm font-medium block truncate">
+                {title || 'Diagrama'}
               </span>
-            )}
+              <div className="flex items-center gap-2">
+                <span className="text-purple-400 text-xs font-medium">Fluxograma</span>
+                <span className="text-white/30 text-xs">Preview</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            {/* Zoom controls */}
-            <button
-              onClick={zoomOut}
-              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
-              title="Diminuir zoom (-)"
-            >
-              <ZoomOut className="w-4 h-4 text-white/60" />
-            </button>
-            <button
-              onClick={resetView}
-              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
-              title="Resetar visualização (0)"
-            >
-              <RotateCcw className="w-4 h-4 text-white/60" />
-            </button>
-            <button
-              onClick={zoomIn}
-              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
-              title="Aumentar zoom (+)"
-            >
-              <ZoomIn className="w-4 h-4 text-white/60" />
-            </button>
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            {/* Zoom controls - hidden em mobile para economizar espaço */}
+            <div className="hidden sm:flex items-center gap-0.5">
+              <button
+                onClick={zoomOut}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors active:bg-white/20"
+                title="Diminuir zoom (-)"
+              >
+                <ZoomOut className="w-4 h-4 text-white/60" />
+              </button>
+              <button
+                onClick={resetView}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors active:bg-white/20"
+                title="Resetar visualização (0)"
+              >
+                <RotateCcw className="w-4 h-4 text-white/60" />
+              </button>
+              <button
+                onClick={zoomIn}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors active:bg-white/20"
+                title="Aumentar zoom (+)"
+              >
+                <ZoomIn className="w-4 h-4 text-white/60" />
+              </button>
 
-            <div className="w-px h-4 bg-white/10 mx-1" />
+              <div className="w-px h-5 bg-white/10 mx-1" />
+            </div>
 
-            {/* Toggle modo interativo */}
+            {/* Toggle modo interativo - hidden em mobile */}
             <button
               onClick={() => setInteractiveMode(!interactiveMode)}
-              className={`p-1.5 rounded-lg transition-colors ${
+              className={`hidden sm:flex p-2 rounded-lg transition-colors ${
                 interactiveMode ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-white/10 text-white/60'
               }`}
               title={interactiveMode ? 'Desativar modo interativo' : 'Ativar modo interativo'}
@@ -582,11 +587,12 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
               <MousePointer2 className="w-4 h-4" />
             </button>
 
-            <div className="w-px h-4 bg-white/10 mx-1" />
+            <div className="hidden sm:block w-px h-5 bg-white/10 mx-1" />
 
+            {/* Copiar - hidden em mobile */}
             <button
               onClick={handleCopy}
-              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+              className="hidden sm:flex p-2 hover:bg-white/10 rounded-lg transition-colors active:bg-white/20"
               title="Copiar código"
             >
               {copied ? (
@@ -595,22 +601,26 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
                 <Copy className="w-4 h-4 text-white/60" />
               )}
             </button>
+
+            {/* Download - hidden em mobile */}
             <button
               onClick={handleDownload}
-              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+              className="hidden sm:flex p-2 hover:bg-white/10 rounded-lg transition-colors active:bg-white/20"
               title="Baixar SVG"
             >
               <Download className="w-4 h-4 text-white/60" />
             </button>
+
+            {/* Fullscreen - sempre visível com área maior para touch */}
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
-              title={isFullscreen ? 'Sair da tela cheia (ESC)' : 'Tela cheia'}
+              className="p-2.5 hover:bg-white/10 rounded-lg transition-colors active:bg-purple-500/20 ml-1"
+              title={isFullscreen ? 'Sair da tela cheia (ESC)' : 'Expandir diagrama'}
             >
               {isFullscreen ? (
-                <Minimize2 className="w-4 h-4 text-white/60" />
+                <Minimize2 className="w-5 h-5 text-white/70" />
               ) : (
-                <Maximize2 className="w-4 h-4 text-white/60" />
+                <Maximize2 className="w-5 h-5 text-white/70" />
               )}
             </button>
           </div>
