@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism'
-import { useArtifactsStore, detectArtifactType } from '@/stores/artifactsStore'
+import { useArtifactsStore, detectArtifactType, Question } from '@/stores/artifactsStore'
 
 // Importar MermaidDiagram dinamicamente para evitar SSR issues
 const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
@@ -73,6 +73,19 @@ const MedicalImageGallery = dynamic(() => import('./MedicalImageGallery'), {
   )
 })
 
+// Importar QuestionArtifactCard dinamicamente
+const QuestionArtifactCard = dynamic(() => import('./QuestionArtifactCard'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-[#1A2332] border border-white/10 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-white/40">
+        <div className="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full" />
+        <span>Carregando questão...</span>
+      </div>
+    </div>
+  )
+})
+
 interface ArtifactRendererProps {
   content: string
   userId?: string
@@ -96,6 +109,9 @@ const LAYERS_REGEX = /```layers:([^\n]*)\n([\s\S]*?)```/g
 
 // Regex para detectar tabelas de estadiamento
 const STAGING_REGEX = /```staging:([^\n]*)\n([\s\S]*?)```/g
+
+// Regex para detectar questões geradas pela IA (formato JSON)
+const QUESTION_REGEX = /```questao\n([\s\S]*?)```/g
 
 // ============================================================
 // DETECÇÃO E CONVERSÃO DE ASCII ART
@@ -329,10 +345,10 @@ function convertAsciiToLayers(text: string): string | null {
 }
 
 // Regex para detectar blocos de código que podem conter ASCII
-const CODE_BLOCK_REGEX = /```(?!mermaid|layers|staging|generate_image|artifact)(\w*)\n([\s\S]*?)```/g
+const CODE_BLOCK_REGEX = /```(?!mermaid|layers|staging|generate_image|artifact|questao)(\w*)\n([\s\S]*?)```/g
 
 interface Artifact {
-  type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii'
+  type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question'
   subtype?: string
   title?: string
   content: string
@@ -340,6 +356,7 @@ interface Artifact {
   endIndex: number
   originalAscii?: string  // Guarda o ASCII original para referência
   conversionType?: 'flowchart' | 'layers' | 'tree' | 'table' | 'generic'
+  questionData?: Question  // Dados estruturados da questão
 }
 
 // Função para extrair termos de busca de imagens do conteúdo
@@ -366,10 +383,11 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   // Combinar todas as regex em uma busca
   const allMatches: Array<{
     match: RegExpMatchArray
-    type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii'
+    type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question'
     asciiType?: 'flowchart' | 'layers' | 'tree' | 'table' | 'generic'
     convertedContent?: string
     originalAscii?: string
+    questionData?: Question
   }> = []
 
   // Buscar artefatos personalizados
@@ -401,6 +419,19 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   const stagingRegex = new RegExp(STAGING_REGEX.source, 'g')
   while ((match = stagingRegex.exec(content)) !== null) {
     allMatches.push({ match, type: 'staging' })
+  }
+
+  // Buscar questões geradas pela IA
+  const questionRegex = new RegExp(QUESTION_REGEX.source, 'g')
+  while ((match = questionRegex.exec(content)) !== null) {
+    try {
+      const questionJson = match[1].trim()
+      const questionData = JSON.parse(questionJson) as Question
+      allMatches.push({ match, type: 'question', questionData })
+    } catch {
+      // Se não for JSON válido, ignorar
+      console.warn('Failed to parse question JSON:', match[1])
+    }
   }
 
   // NOVO: Buscar blocos de código que podem conter ASCII art
@@ -484,7 +515,7 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
 
   // Processar matches
   for (const matchData of allMatches) {
-    const { match, type, asciiType, convertedContent, originalAscii } = matchData
+    const { match, type, asciiType, convertedContent, originalAscii, questionData } = matchData
     const startIndex = match.index ?? 0
     const endIndex = startIndex + match[0].length
 
@@ -527,6 +558,16 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
         content: match[2].trim(),
         startIndex,
         endIndex
+      }
+    } else if (type === 'question') {
+      // Questão gerada pela IA
+      artifact = {
+        type: 'question',
+        title: `Questão ${questionData?.numero || ''} - ${questionData?.disciplina || 'Medicina'}`,
+        content: match[1].trim(),
+        startIndex,
+        endIndex,
+        questionData: questionData
       }
     } else if (type === 'converted_ascii') {
       // ASCII convertido para visual
@@ -596,6 +637,8 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
         storeType = 'staging'
       } else if (artifact.type === 'mermaid') {
         storeType = 'flowchart'
+      } else if (artifact.type === 'question') {
+        storeType = 'question'
       } else {
         storeType = detectArtifactType(artifact.content) || 'diagram'
       }
@@ -606,7 +649,8 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
         content: artifact.content,
         messageId,
         metadata: {
-          subtype: artifact.subtype
+          subtype: artifact.subtype,
+          question: artifact.questionData
         }
       })
 
@@ -922,6 +966,17 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
               <MermaidDiagram
                 chart={part.content}
                 title={part.title || 'Diagrama Convertido'}
+              />
+            </div>
+          )
+        }
+
+        // Renderizar questões geradas pela IA
+        if (part.type === 'question' && part.questionData) {
+          return (
+            <div key={index} className="my-4">
+              <QuestionArtifactCard
+                question={part.questionData}
               />
             </div>
           )

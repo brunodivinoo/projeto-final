@@ -16,6 +16,53 @@ export type ArtifactType =
   | 'layers'
   | 'staging'
   | 'note'
+  | 'question' // NOVO: Questões geradas pela IA
+
+// Interface para alternativa de questão
+export interface QuestionAlternative {
+  letra: string
+  texto: string
+  correta: boolean
+}
+
+// Interface para análise de alternativa no gabarito
+export interface AlternativeAnalysis {
+  letra: string
+  analise: string
+}
+
+// Interface para gabarito comentado
+export interface QuestionFeedback {
+  resposta_correta: string
+  explicacao: string
+  analise_alternativas: AlternativeAnalysis[]
+  ponto_chave: string
+  pegadinha?: string
+  dica_memorizacao?: string
+  referencias: string[]
+}
+
+// Interface para questão
+export interface Question {
+  id?: string
+  numero: number
+  tipo: 'multipla_escolha' | 'certo_errado'
+  dificuldade: 'facil' | 'medio' | 'dificil' | 'muito_dificil'
+  banca_estilo?: string
+  disciplina: string
+  assunto: string
+  subassunto?: string
+  enunciado: string
+  caso_clinico?: string
+  imagem_url?: string
+  alternativas: QuestionAlternative[]
+  gabarito_comentado: QuestionFeedback
+  tags?: string[]
+  // Estado do usuário na sessão
+  resposta_usuario?: string
+  acertou?: boolean
+  mostrar_gabarito?: boolean
+}
 
 export interface Artifact {
   id: string
@@ -28,6 +75,8 @@ export interface Artifact {
     language?: string
     subtype?: string
     interactive?: boolean
+    // Metadados específicos para questões
+    question?: Question
   }
 }
 
@@ -196,7 +245,8 @@ export const ARTIFACT_ICONS: Record<ArtifactType, string> = {
   interactive: '🎯',
   layers: '🔬',
   staging: '📈',
-  note: '📝'
+  note: '📝',
+  question: '❓'
 }
 
 // Labels para cada tipo
@@ -214,5 +264,14 @@ export const ARTIFACT_LABELS: Record<ArtifactType, string> = {
   interactive: 'Interativo',
   layers: 'Camadas',
   staging: 'Estadiamento',
-  note: 'Nota'
+  note: 'Nota',
+  question: 'Questão'
+}
+
+// Cores para dificuldade de questões
+export const DIFFICULTY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+  facil: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Fácil' },
+  medio: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Médio' },
+  dificil: { bg: 'bg-orange-500/20', text: 'text-orange-400', label: 'Difícil' },
+  muito_dificil: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Muito Difícil' }
 }
