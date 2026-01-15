@@ -123,7 +123,7 @@ function getProxiedImageUrl(url: string): string {
   return `/api/medicina/imagens/proxy?url=${encodeURIComponent(url)}`
 }
 
-// Componente de imagem com tratamento de erro e retry
+// Componente de imagem com tratamento de erro robusto e retry inteligente
 interface ImageWithFallbackProps {
   src: string
   fallbackSrc?: string
@@ -143,6 +143,18 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
   const [retryCount, setRetryCount] = useState(0)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const imgRef = useRef<HTMLImageElement>(null)
+  const mountedRef = useRef(true)
+
+  // Cleanup ao desmontar
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     // Reset state when src changes
@@ -152,22 +164,26 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
     setRetryCount(0)
   }, [proxiedSrc])
 
-  // Timeout para loading - se não carregar em 10s, mostrar imagem mesmo assim
+  // Timeout para loading - 15s para dar tempo ao proxy
   useEffect(() => {
     if (isLoading) {
       timeoutRef.current = setTimeout(() => {
+        if (!mountedRef.current) return
+
         // Se ainda está loading após timeout, verificar se imagem tem dimensões
-        if (imgRef.current && (imgRef.current.naturalWidth > 0 || imgRef.current.complete)) {
+        if (imgRef.current && imgRef.current.naturalWidth > 0 && imgRef.current.complete) {
           setIsLoading(false)
-        } else if (proxiedFallback && currentSrc !== proxiedFallback && retryCount < 1) {
-          // Tentar fallback
+        } else if (proxiedFallback && currentSrc !== proxiedFallback && retryCount === 0) {
+          // Tentar fallback (URL completa ao invés de thumb)
           setCurrentSrc(proxiedFallback)
-          setRetryCount(prev => prev + 1)
+          setRetryCount(1)
         } else {
-          // Mostrar imagem mesmo com loading (pode ter carregado parcialmente)
+          // Timeout expirou sem carregar - marcar como erro
+          setHasError(true)
           setIsLoading(false)
+          onLoadError?.()
         }
-      }, 10000)
+      }, 15000)
     }
 
     return () => {
@@ -175,25 +191,31 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [isLoading, currentSrc, proxiedFallback, retryCount])
+  }, [isLoading, currentSrc, proxiedFallback, retryCount, onLoadError])
 
   const handleError = useCallback(() => {
+    if (!mountedRef.current) return
+
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
 
-    if (retryCount < 1 && proxiedFallback && currentSrc !== proxiedFallback) {
-      // Tentar fallback (usar URL completa ao invés de thumb)
+    // Estratégia de retry:
+    // 1. Tentar URL completa (fallback) se tiver e ainda não tentou
+    // 2. Tentar com cache bust
+    // 3. Desistir e mostrar erro
+
+    if (retryCount === 0 && proxiedFallback && currentSrc !== proxiedFallback) {
+      // Retry 1: Tentar URL completa ao invés de thumbnail
       setCurrentSrc(proxiedFallback)
-      setRetryCount(prev => prev + 1)
-    } else if (retryCount < 2) {
-      // Tentar adicionar query string para bypass de cache no proxy
-      const cacheBustUrl = currentSrc.includes('&_cb=')
-        ? currentSrc
-        : `${currentSrc}&_cb=${Date.now()}`
-      setCurrentSrc(cacheBustUrl)
-      setRetryCount(prev => prev + 1)
+      setRetryCount(1)
+    } else if (retryCount === 1) {
+      // Retry 2: Tentar com cache bust no proxy
+      const baseUrl = currentSrc.split('&_cb=')[0]
+      setCurrentSrc(`${baseUrl}&_cb=${Date.now()}`)
+      setRetryCount(2)
     } else {
+      // Desistir
       setHasError(true)
       setIsLoading(false)
       onLoadError?.()
@@ -201,12 +223,25 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
   }, [currentSrc, proxiedFallback, retryCount, onLoadError])
 
   const handleLoad = useCallback(() => {
+    if (!mountedRef.current) return
+
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
+
+    // Verificar se a imagem realmente carregou (não é placeholder 1x1)
+    if (imgRef.current) {
+      const { naturalWidth, naturalHeight } = imgRef.current
+      if (naturalWidth < 10 || naturalHeight < 10) {
+        // Imagem muito pequena, provavelmente erro
+        handleError()
+        return
+      }
+    }
+
     setIsLoading(false)
     setHasError(false)
-  }, [])
+  }, [handleError])
 
   if (hasError) {
     return (
@@ -234,6 +269,7 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
         onError={handleError}
         onLoad={handleLoad}
         referrerPolicy="no-referrer"
+        crossOrigin="anonymous"
       />
     </div>
   )
