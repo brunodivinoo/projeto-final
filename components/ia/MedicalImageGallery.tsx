@@ -570,20 +570,11 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
                 </span>
               )}
 
-              {/* Footer */}
-              <div className="flex items-center justify-between pt-3 border-t border-white/10">
+              {/* Footer - apenas licença */}
+              <div className="pt-3 border-t border-white/10">
                 <span className="text-white/40 text-xs">
                   {selectedImage.license}
                 </span>
-                <a
-                  href={selectedImage.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
-                >
-                  Ver fonte original
-                  <ExternalLink className="w-3 h-3" />
-                </a>
               </div>
             </div>
           </div>

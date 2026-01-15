@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Cache em memória para imagens (evita re-downloads)
-const imageCache = new Map<string, { data: Buffer; contentType: string; timestamp: number }>()
+const imageCache = new Map<string, { data: ArrayBuffer; contentType: string; timestamp: number }>()
 const CACHE_TTL = 60 * 60 * 1000 // 1 hora
 
 // Limpar cache antigo periodicamente
@@ -91,16 +91,15 @@ export async function GET(request: NextRequest) {
 
     const contentType = response.headers.get('content-type') || 'image/png'
     const arrayBuffer = await response.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
 
     // Salvar no cache
     imageCache.set(imageUrl, {
-      data: buffer,
+      data: arrayBuffer,
       contentType,
       timestamp: Date.now()
     })
 
-    return new NextResponse(buffer, {
+    return new NextResponse(arrayBuffer, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',

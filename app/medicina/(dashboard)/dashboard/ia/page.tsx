@@ -481,7 +481,7 @@ export default function IAPage() {
   // (gratuito agora tem 10 chats, então não bloqueia mais)
 
   return (
-    <div className={`h-[calc(100vh-8rem)] md:h-[calc(100vh-8rem)] flex transition-all duration-300 ${
+    <div className={`h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] flex flex-col md:flex-row transition-all duration-300 ${
       isArtifactsSidebarOpen && hasArtifacts && !isMobile ? 'mr-[420px]' : ''
     }`}>
       {/* MOBILE: Sidebar como Drawer sobreposto */}
@@ -649,7 +649,7 @@ export default function IAPage() {
       )}
 
       {/* Chat Principal */}
-      <div className="flex-1 flex flex-col relative">
+      <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
         {/* Header - Responsivo */}
         <div className="flex items-center justify-between p-3 md:p-4 border-b border-white/10">
           <div className="flex items-center gap-2 md:gap-3">
@@ -724,7 +724,7 @@ export default function IAPage() {
         {/* Chat Area - Responsivo */}
         <div
           ref={chatRef}
-          className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4"
+          className="flex-1 min-h-0 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4"
         >
           {mensagens.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4">
