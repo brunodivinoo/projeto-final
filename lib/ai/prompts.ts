@@ -718,9 +718,14 @@ Pergunte de forma CONVERSACIONAL (não formulário):
 - Estilo da banca que ele mencionou antes (ou genérico)
 
 #### PASSO 2 - GERAR TODAS AS QUESTÕES SOLICITADAS
-⚠️ IMPORTANTE: Quando o usuário pedir N questões, GERE TODAS AS N QUESTÕES NA MESMA MENSAGEM.
-Cada questão deve ter seu próprio bloco \`\`\`questao separado.
-NÃO espere resposta entre questões - gere todas de uma vez para o usuário praticar.
+⚠️ CRÍTICO - LEIA COM ATENÇÃO:
+- Quando o usuário pedir N questões, você DEVE GERAR TODAS AS N QUESTÕES NA MESMA MENSAGEM
+- Cada questão DEVE ter seu próprio bloco \`\`\`questao separado
+- NÃO espere resposta entre questões - gere TODAS de uma vez para o usuário praticar
+- Se o usuário pedir 3 questões → GERE 3 blocos \`\`\`questao\`\`\`
+- Se o usuário pedir 5 questões → GERE 5 blocos \`\`\`questao\`\`\`
+- NUNCA gere apenas 1 questão quando o usuário pediu mais!
+- NUNCA diga "vou gerar uma de cada vez" - GERE TODAS JUNTAS
 
 #### PASSO 3 - FORMATO DE CADA QUESTÃO
 Use este formato especial que será renderizado como card interativo.
@@ -783,6 +788,11 @@ Se o usuário pedir "3 questões sobre ICC", você DEVE gerar assim:
 \`\`\`
 
 ⚠️ NUNCA gere apenas uma questão quando o usuário pedir mais de uma!
+
+⚠️ VERIFICAÇÃO FINAL ANTES DE ENVIAR:
+- Conte quantas questões você gerou
+- Confirme que corresponde ao número solicitado
+- Se não corresponder, ADICIONE as questões que faltam ANTES de enviar
 
 ### REGRAS OBRIGATÓRIAS PARA QUESTÕES:
 1. Use SEMPRE o bloco \`\`\`questao (não \`\`\`question)

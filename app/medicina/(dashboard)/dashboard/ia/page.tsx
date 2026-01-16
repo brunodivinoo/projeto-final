@@ -721,10 +721,10 @@ export default function IAPage() {
           </div>
         )}
 
-        {/* Chat Area - Responsivo */}
+        {/* Chat Area - Responsivo e Compacto */}
         <div
           ref={chatRef}
-          className="flex-1 min-h-0 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4"
+          className="flex-1 min-h-0 overflow-y-auto p-2 md:p-3 space-y-2 md:space-y-3"
         >
           {mensagens.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4">
@@ -764,31 +764,31 @@ export default function IAPage() {
                   </div>
                 )}
 
-                {/* Mensagem com largura ajustada */}
-                <div className={`max-w-[85%] md:max-w-[80%] ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
+                {/* Mensagem com largura ajustada - mais compacta */}
+                <div className={`max-w-[90%] md:max-w-[85%] ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
                   {msg.thinking && (
-                    <div className="mb-2 p-2 md:p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                      <p className="text-amber-200 text-[10px] md:text-xs font-medium mb-1 flex items-center gap-1">
+                    <div className="mb-1.5 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                      <p className="text-amber-200 text-[10px] font-medium mb-0.5 flex items-center gap-1">
                         <Lightbulb className="w-3 h-3" /> Raciocínio
                       </p>
-                      <p className="text-amber-100/60 text-[10px] md:text-xs line-clamp-3">{msg.thinking}</p>
+                      <p className="text-amber-100/60 text-[10px] line-clamp-3">{msg.thinking}</p>
                     </div>
                   )}
 
-                  <div className={`rounded-xl md:rounded-2xl p-3 md:p-4 ${
+                  <div className={`rounded-lg md:rounded-xl p-2.5 md:p-3 ${
                     msg.tipo === 'usuario'
                       ? 'bg-emerald-500/20 text-white'
                       : 'bg-white/5 text-white/90 border border-white/5'
                   }`}>
                     {(msg.hasImage || msg.hasPdf) && msg.tipo === 'usuario' && (
-                      <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
+                      <div className="flex items-center gap-1.5 mb-1.5 pb-1.5 border-b border-white/10">
                         {msg.hasImage && (
-                          <span className="text-[10px] md:text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded flex items-center gap-1">
+                          <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded flex items-center gap-1">
                             <ImageIcon className="w-3 h-3" /> Imagem
                           </span>
                         )}
                         {msg.hasPdf && (
-                          <span className="text-[10px] md:text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded flex items-center gap-1">
+                          <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded flex items-center gap-1">
                             <FileUp className="w-3 h-3" /> PDF
                           </span>
                         )}
@@ -796,7 +796,7 @@ export default function IAPage() {
                     )}
 
                     {msg.tipo === 'ia' ? (
-                      <div className="prose prose-invert prose-sm max-w-none text-sm md:text-base">
+                      <div className="prose prose-invert prose-sm max-w-none text-xs md:text-sm">
                         <ArtifactRenderer
                           content={msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')}
                           userId={user?.id}
@@ -804,21 +804,21 @@ export default function IAPage() {
                         />
                       </div>
                     ) : (
-                      <p className="whitespace-pre-wrap text-sm md:text-base">{msg.conteudo}</p>
+                      <p className="whitespace-pre-wrap text-xs md:text-sm">{msg.conteudo}</p>
                     )}
                   </div>
 
                   {msg.tipo === 'ia' && msg.conteudo && (
-                    <div className="flex items-center gap-2 md:gap-3 mt-1 ml-2">
+                    <div className="flex items-center gap-2 mt-0.5 ml-1">
                       <button
                         onClick={() => copiarResposta(msg.id, msg.conteudo)}
-                        className="text-white/40 hover:text-white text-[10px] md:text-xs flex items-center gap-1"
+                        className="text-white/40 hover:text-white text-[10px] flex items-center gap-1"
                       >
                         {copiado === msg.id ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                         {copiado === msg.id ? 'Copiado!' : 'Copiar'}
                       </button>
                       {msg.tokens && (
-                        <span className="text-white/30 text-[10px] md:text-xs">
+                        <span className="text-white/30 text-[10px]">
                           {msg.tokens.toLocaleString()} tokens
                         </span>
                       )}

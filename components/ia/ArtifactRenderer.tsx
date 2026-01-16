@@ -502,45 +502,148 @@ function isCompleteQuestionJson(jsonStr: string): boolean {
   try {
     const parsed = JSON.parse(jsonStr.trim())
     // Verifica se tem os campos mínimos de uma questão
-    return !!(parsed.enunciado && parsed.alternativas && Array.isArray(parsed.alternativas))
+    const hasEnunciado = !!(parsed.enunciado && parsed.enunciado.length > 10)
+    const hasAlternativas = !!(parsed.alternativas && Array.isArray(parsed.alternativas) && parsed.alternativas.length >= 4)
+    const hasGabarito = !!(parsed.gabarito || parsed.gabarito_comentado)
+
+    // Precisa ter enunciado + alternativas. Gabarito é desejável mas não obrigatório
+    if (hasEnunciado && hasAlternativas) {
+      console.log('[ArtifactRenderer] JSON completo validado:', {
+        hasEnunciado,
+        alternativasCount: parsed.alternativas.length,
+        hasGabarito
+      })
+      return true
+    }
+    return false
   } catch {
     return false
   }
 }
 
-// Tenta reparar JSON incompleto de questão (para casos onde só falta fechar brackets)
-function tryRepairQuestionJson(jsonStr: string): string | null {
-  let repaired = jsonStr.trim()
-
-  // Se termina com vírgula, remover
-  while (repaired.endsWith(',')) {
-    repaired = repaired.slice(0, -1).trim()
+// Extrai um valor de string de um JSON parcial usando regex
+function extractJsonStringValue(json: string, key: string): string | null {
+  // Padrão para capturar valor de string, lidando com escapes
+  const pattern = new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)(?:"|$)`)
+  const match = json.match(pattern)
+  if (match && match[1]) {
+    try {
+      // Tentar decodificar escapes JSON
+      return JSON.parse(`"${match[1]}"`)
+    } catch {
+      // Fallback: decodificar manualmente escapes comuns
+      return match[1]
+        .replace(/\\n/g, '\n')
+        .replace(/\\r/g, '\r')
+        .replace(/\\t/g, '\t')
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, '\\')
+    }
   }
+  return null
+}
 
-  // Remover aspas ou texto parcial no final (ex: "texto incompleto)
-  // Detectar se termina no meio de uma string
-  const lastQuoteIndex = repaired.lastIndexOf('"')
-  if (lastQuoteIndex > 0) {
-    const afterLastQuote = repaired.substring(lastQuoteIndex + 1).trim()
-    // Se depois da última aspas não há : ou , ou ] ou }, pode ser string incompleta
-    if (afterLastQuote && !afterLastQuote.match(/^[:\],}]/)) {
-      // Fechar a string e remover
-      repaired = repaired.substring(0, lastQuoteIndex + 1)
+// Extrai alternativas de um JSON parcial
+function extractAlternativasFromPartial(json: string): Array<{ letra: string; texto: string }> {
+  const alternativas: Array<{ letra: string; texto: string }> = []
+
+  // Padrão para encontrar alternativas completas
+  const altPattern = /\{\s*"letra"\s*:\s*"([A-E])"\s*,\s*"texto"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g
+  let match
+  while ((match = altPattern.exec(json)) !== null) {
+    try {
+      const texto = JSON.parse(`"${match[2]}"`)
+      alternativas.push({ letra: match[1], texto })
+    } catch {
+      alternativas.push({
+        letra: match[1],
+        texto: match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+      })
     }
   }
 
-  // Se termina com vírgula após remoção, remover novamente
+  return alternativas
+}
+
+// Tenta reparar JSON incompleto de questão - versão robusta
+function tryRepairQuestionJson(jsonStr: string): string | null {
+  let repaired = jsonStr.trim()
+  console.log('[ArtifactRenderer] Iniciando reparo de JSON, tamanho:', repaired.length)
+
+  // =====================================================
+  // FASE 1: Detectar e corrigir strings truncadas
+  // =====================================================
+
+  // Contar aspas - se ímpar, temos uma string não fechada
+  const quoteCount = (repaired.match(/(?<!\\)"/g) || []).length
+  const hasUnclosedString = quoteCount % 2 !== 0
+
+  if (hasUnclosedString) {
+    console.log('[ArtifactRenderer] String não fechada detectada, corrigindo...')
+
+    // Encontrar a última aspas de abertura de string
+    let inString = false
+    let lastStringStart = -1
+    for (let i = 0; i < repaired.length; i++) {
+      if (repaired[i] === '"' && (i === 0 || repaired[i - 1] !== '\\')) {
+        if (!inString) {
+          lastStringStart = i
+        }
+        inString = !inString
+      }
+    }
+
+    // Se terminamos dentro de uma string, precisamos fechá-la
+    if (inString && lastStringStart > 0) {
+      // Truncar no último ponto/vírgula/espaço antes do final para ter conteúdo sensato
+      let truncateAt = repaired.length
+      for (let i = repaired.length - 1; i > lastStringStart; i--) {
+        const char = repaired[i]
+        if (char === '.' || char === ',' || char === ' ' || char === '\\') {
+          if (repaired[i - 1] !== '\\') { // Não truncar em escapes
+            truncateAt = i
+            break
+          }
+        }
+      }
+
+      // Fechar a string truncada
+      repaired = repaired.substring(0, truncateAt) + '"'
+      console.log('[ArtifactRenderer] String fechada na posição', truncateAt)
+    }
+  }
+
+  // =====================================================
+  // FASE 2: Limpar terminações problemáticas
+  // =====================================================
+
+  // Remover vírgulas, dois-pontos e caracteres órfãos no final
+  while (repaired.match(/[,:\s]+$/)) {
+    repaired = repaired.replace(/[,:\s]+$/, '')
+  }
+
+  // Se termina com uma chave de objeto sem valor, remover
+  const trailingKeyMatch = repaired.match(/,\s*"[^"]+"\s*:\s*$/)
+  if (trailingKeyMatch) {
+    repaired = repaired.substring(0, repaired.length - trailingKeyMatch[0].length)
+  }
+
+  // Remover vírgulas finais novamente após limpeza
   while (repaired.endsWith(',')) {
     repaired = repaired.slice(0, -1).trim()
   }
 
-  // Contar brackets abertos e fechar os que faltam
+  // =====================================================
+  // FASE 3: Balancear e fechar brackets
+  // =====================================================
+
   const openBraces = (repaired.match(/\{/g) || []).length
   const closeBraces = (repaired.match(/\}/g) || []).length
   const openBrackets = (repaired.match(/\[/g) || []).length
   const closeBrackets = (repaired.match(/\]/g) || []).length
 
-  // Adicionar brackets faltando
+  // Adicionar brackets faltando na ordem correta
+  // Primeiro fechar arrays, depois objetos
   for (let i = 0; i < openBrackets - closeBrackets; i++) {
     repaired += ']'
   }
@@ -548,45 +651,103 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
     repaired += '}'
   }
 
-  // Tentar parsear
+  // =====================================================
+  // FASE 4: Tentar parsear o JSON reparado
+  // =====================================================
+
   try {
     const parsed = JSON.parse(repaired)
-    if (parsed.enunciado && parsed.alternativas) {
-      console.log('[ArtifactRenderer] JSON reparado com sucesso, campos encontrados:', Object.keys(parsed))
+    if (parsed.enunciado && parsed.alternativas && parsed.alternativas.length >= 2) {
+      console.log('[ArtifactRenderer] JSON reparado com sucesso via fechamento de brackets')
       return repaired
     }
   } catch (e) {
-    // Tentar uma última vez removendo conteúdo problemático no final
-    console.log('[ArtifactRenderer] Tentando reparo agressivo do JSON...')
+    console.log('[ArtifactRenderer] Parse falhou após fechamento:', (e as Error).message?.substring(0, 100))
+  }
+
+  // =====================================================
+  // FASE 5: Extração manual de campos (fallback robusto)
+  // =====================================================
+
+  console.log('[ArtifactRenderer] Tentando extração manual de campos...')
+
+  // Extrair campos individualmente
+  const enunciado = extractJsonStringValue(jsonStr, 'enunciado')
+  const disciplina = extractJsonStringValue(jsonStr, 'disciplina')
+  const assunto = extractJsonStringValue(jsonStr, 'assunto')
+  const subassunto = extractJsonStringValue(jsonStr, 'subassunto')
+  const dificuldade = extractJsonStringValue(jsonStr, 'dificuldade')
+  const tipo = extractJsonStringValue(jsonStr, 'tipo')
+  const numero = extractJsonStringValue(jsonStr, 'numero')
+  const casoClinico = extractJsonStringValue(jsonStr, 'caso_clinico')
+  const gabarito = extractJsonStringValue(jsonStr, 'gabarito')
+  const gabaritoComentado = extractJsonStringValue(jsonStr, 'gabarito_comentado')
+  const alternativas = extractAlternativasFromPartial(jsonStr)
+
+  console.log('[ArtifactRenderer] Campos extraídos manualmente:', {
+    hasEnunciado: !!enunciado,
+    hasDisciplina: !!disciplina,
+    alternativasCount: alternativas.length,
+    hasGabarito: !!(gabarito || gabaritoComentado)
+  })
+
+  // Se temos enunciado e pelo menos algumas alternativas, reconstruir
+  if (enunciado && enunciado.length > 20 && alternativas.length >= 2) {
+    const reconstructed: Record<string, unknown> = {
+      enunciado
+    }
+
+    // Adicionar campos opcionais se existirem
+    if (disciplina) reconstructed.disciplina = disciplina
+    if (assunto) reconstructed.assunto = assunto
+    if (subassunto) reconstructed.subassunto = subassunto
+    if (dificuldade) reconstructed.dificuldade = dificuldade
+    if (tipo) reconstructed.tipo = tipo
+    if (numero) reconstructed.numero = numero
+    if (casoClinico) reconstructed.caso_clinico = casoClinico
+    if (alternativas.length > 0) reconstructed.alternativas = alternativas
+    if (gabarito) reconstructed.gabarito = gabarito
+    if (gabaritoComentado) reconstructed.gabarito_comentado = gabaritoComentado
+
+    const reconstructedJson = JSON.stringify(reconstructed)
+    console.log('[ArtifactRenderer] JSON reconstruído via extração manual, alternativas:', alternativas.length)
+    return reconstructedJson
+  }
+
+  // =====================================================
+  // FASE 6: Último recurso - truncamento progressivo
+  // =====================================================
+
+  console.log('[ArtifactRenderer] Tentando truncamento progressivo...')
+
+  // Tentar encontrar o maior substring válido
+  for (let cutoff = repaired.length - 1; cutoff > repaired.length * 0.5; cutoff--) {
+    let attempt = repaired.substring(0, cutoff)
+
+    // Limpar final
+    attempt = attempt.replace(/[,:\s"]+$/, '')
+
+    // Rebalancear brackets
+    const ob = (attempt.match(/\{/g) || []).length
+    const cb = (attempt.match(/\}/g) || []).length
+    const obrk = (attempt.match(/\[/g) || []).length
+    const cbrk = (attempt.match(/\]/g) || []).length
+
+    for (let i = 0; i < obrk - cbrk; i++) attempt += ']'
+    for (let i = 0; i < ob - cb; i++) attempt += '}'
+
     try {
-      // Encontrar último objeto/array completo
-      let lastValidIndex = repaired.length
-      for (let i = repaired.length - 1; i >= 0; i--) {
-        const testStr = repaired.substring(0, i + 1)
-        const openB = (testStr.match(/\{/g) || []).length
-        const closeB = (testStr.match(/\}/g) || []).length
-        const openArr = (testStr.match(/\[/g) || []).length
-        const closeArr = (testStr.match(/\]/g) || []).length
-
-        if (openB === closeB && openArr === closeArr) {
-          lastValidIndex = i + 1
-          break
-        }
-      }
-
-      if (lastValidIndex < repaired.length) {
-        const truncated = repaired.substring(0, lastValidIndex)
-        const parsed = JSON.parse(truncated)
-        if (parsed.enunciado && parsed.alternativas) {
-          console.log('[ArtifactRenderer] JSON reparado via truncamento')
-          return truncated
-        }
+      const parsed = JSON.parse(attempt)
+      if (parsed.enunciado && parsed.alternativas && parsed.alternativas.length >= 2) {
+        console.log('[ArtifactRenderer] JSON recuperado via truncamento em posição', cutoff)
+        return attempt
       }
     } catch {
-      // Ignorar
+      // Continuar tentando
     }
   }
 
+  console.log('[ArtifactRenderer] Todas as tentativas de reparo falharam')
   return null
 }
 
