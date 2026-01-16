@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   X,
   PanelRightClose,
-  PanelRightOpen,
   Trash2,
   Maximize2,
   Minimize2,
@@ -1428,16 +1427,16 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
         />
       )}
 
-      {/* Botão toggle quando sidebar está fechada */}
+      {/* Botão toggle discreto - estilo Claude */}
       {!isSidebarOpen && artifacts.length > 0 && (
         <button
           onClick={toggleSidebar}
-          className="fixed right-4 top-1/2 -translate-y-1/2 z-40 p-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-all hover:scale-105"
+          className="fixed right-3 top-20 z-40 p-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white rounded-md transition-all"
           title="Abrir artefatos"
         >
-          <PanelRightOpen className="w-5 h-5" />
+          <Layers className="w-4 h-4" />
           {artifacts.length > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white text-xs rounded-full flex items-center justify-center">
+            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-purple-500 text-white text-[10px] rounded-full flex items-center justify-center font-medium">
               {artifacts.length}
             </span>
           )}
