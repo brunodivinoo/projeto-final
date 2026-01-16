@@ -158,6 +158,11 @@ export default function IAPage() {
   // Carregar conversa específica
   const carregarConversa = useCallback(async (conversaId: string) => {
     if (!user) return
+
+    // Limpar artefatos ao trocar de conversa
+    clearArtifacts()
+    setCurrentConversa(conversaId)
+
     try {
       const response = await fetch(`/api/medicina/ia/chat?user_id=${user.id}&conversa_id=${conversaId}`)
       const data = await response.json()
@@ -179,7 +184,7 @@ export default function IAPage() {
       console.error('Erro ao carregar conversa:', error)
     }
     setShowConversas(false)
-  }, [user])
+  }, [user, clearArtifacts, setCurrentConversa])
 
   useEffect(() => {
     fetchUso()
@@ -435,8 +440,8 @@ export default function IAPage() {
     }
   }
 
-  // Limpar artefatos
-  const { clearArtifacts } = useArtifactsStore()
+  // Limpar artefatos e gerenciar conversa atual
+  const { clearArtifacts, setCurrentConversa } = useArtifactsStore()
 
   // Nova conversa
   const novaConversa = () => {
@@ -444,6 +449,7 @@ export default function IAPage() {
     setConversaAtual(null)
     setShowConversas(false)
     clearArtifacts() // Limpar artefatos ao iniciar nova conversa
+    setCurrentConversa(null)
   }
 
   // Deletar conversa
@@ -801,6 +807,7 @@ export default function IAPage() {
                           content={msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')}
                           userId={user?.id}
                           messageId={msg.id}
+                          conversaId={conversaAtual || undefined}
                         />
                       </div>
                     ) : (

@@ -1027,15 +1027,22 @@ function CategorySection({
 // Componente principal da Sidebar
 export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarProps) {
   const {
-    artifacts,
+    artifacts: allArtifacts,
     selectedArtifactId,
     isSidebarOpen,
     selectArtifact,
     removeArtifact,
     clearArtifacts,
     toggleSidebar,
-    setSidebarOpen
+    setSidebarOpen,
+    currentConversaId
   } = useArtifactsStore()
+
+  // Filtrar artefatos pela conversa atual
+  const artifacts = useMemo(() => {
+    if (!currentConversaId) return allArtifacts
+    return allArtifacts.filter(a => a.conversaId === currentConversaId || !a.conversaId)
+  }, [allArtifacts, currentConversaId])
 
   // Estados locais
   const [searchQuery, setSearchQuery] = useState('')

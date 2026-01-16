@@ -103,6 +103,7 @@ interface ArtifactRendererProps {
   content: string
   userId?: string
   messageId?: string
+  conversaId?: string  // ID da conversa para filtrar artefatos
 }
 
 // Regex para detectar artefatos no formato ```artifact:tipo:titulo
@@ -1168,7 +1169,7 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   return { parts, artifacts, hasIncompleteQuestion }
 }
 
-export default function ArtifactRenderer({ content, userId, messageId }: ArtifactRendererProps) {
+export default function ArtifactRenderer({ content, userId, messageId, conversaId }: ArtifactRendererProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { parts, artifacts, hasIncompleteQuestion } = useMemo(() => parseArtifacts(content), [content])
   const { addArtifact, artifacts: storeArtifacts } = useArtifactsStore()
@@ -1214,6 +1215,7 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
         title: artifact.title || 'Artefato',
         content: artifact.content,
         messageId,
+        conversaId,
         metadata: {
           subtype: artifact.subtype,
           question: artifact.questionData

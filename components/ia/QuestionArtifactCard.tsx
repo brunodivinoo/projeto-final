@@ -306,23 +306,26 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
           </svg>
         </button>
 
-        {/* Conteúdo do Gabarito - mais compacto */}
-        {expandedSection === 'gabarito' && (
+        {/* Conteúdo do Gabarito - mais compacto - com verificações null */}
+        {expandedSection === 'gabarito' && question.gabarito_comentado && (
           <div className="p-3 bg-emerald-500/5 border-t border-white/5 space-y-3">
             {/* Resposta correta e explicação */}
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
                 <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">
-                  Gabarito: {question.gabarito_comentado.resposta_correta}
+                  Gabarito: {question.gabarito_comentado.resposta_correta || '?'}
                 </span>
               </div>
-              <p className="text-white/70 text-xs leading-relaxed">
-                {question.gabarito_comentado.explicacao}
-              </p>
+              {question.gabarito_comentado.explicacao && (
+                <p className="text-white/70 text-xs leading-relaxed">
+                  {question.gabarito_comentado.explicacao}
+                </p>
+              )}
             </div>
 
-            {/* Análise das alternativas */}
-            {question.gabarito_comentado.analise_alternativas.length > 0 && (
+            {/* Análise das alternativas - só mostrar se existir e tiver itens */}
+            {question.gabarito_comentado.analise_alternativas &&
+             question.gabarito_comentado.analise_alternativas.length > 0 && (
               <div>
                 <button
                   onClick={() => setShowAlternativasAnalise(prev => !prev)}
@@ -352,16 +355,18 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
               </div>
             )}
 
-            {/* Ponto chave */}
-            <div className="p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-              <div className="flex items-center gap-1.5 mb-1">
-                <svg className="w-3 h-3 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <span className="text-yellow-400 text-[10px] font-semibold uppercase">Ponto-Chave</span>
+            {/* Ponto chave - só mostrar se existir */}
+            {question.gabarito_comentado.ponto_chave && (
+              <div className="p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <svg className="w-3 h-3 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span className="text-yellow-400 text-[10px] font-semibold uppercase">Ponto-Chave</span>
+                </div>
+                <p className="text-white/70 text-xs">{question.gabarito_comentado.ponto_chave}</p>
               </div>
-              <p className="text-white/70 text-xs">{question.gabarito_comentado.ponto_chave}</p>
-            </div>
+            )}
 
             {/* Pegadinha se houver */}
             {question.gabarito_comentado.pegadinha && (
@@ -389,8 +394,9 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
               </div>
             )}
 
-            {/* Referências */}
-            {question.gabarito_comentado.referencias.length > 0 && (
+            {/* Referências - só mostrar se existir e tiver itens */}
+            {question.gabarito_comentado.referencias &&
+             question.gabarito_comentado.referencias.length > 0 && (
               <div className="pt-2 border-t border-white/10">
                 <span className="text-white/40 text-[10px] font-medium uppercase tracking-wider">Referências:</span>
                 <div className="mt-1 flex flex-wrap gap-1">

@@ -40,41 +40,37 @@ export function useSmartScroll(options: UseSmartScrollOptions = {}): UseSmartScr
     return distanceFromBottom <= threshold
   }, [threshold])
 
-  // Handler de scroll do usuário
+  // Handler de scroll do usuário - versão menos agressiva
   const handleScroll = useCallback(() => {
     const container = containerRef.current
     if (!container) return
 
-    const currentScrollTop = container.scrollTop
-    const scrollingUp = currentScrollTop < lastScrollTopRef.current
-    lastScrollTopRef.current = currentScrollTop
+    const atBottom = checkIfAtBottom()
 
-    // Se usuário scrollou para cima, marcar como scroll manual
-    if (scrollingUp) {
+    // Simplesmente atualizar o estado - sem forçar comportamentos
+    setIsAtBottom(atBottom)
+
+    // Se não está no fundo, marcar como scroll manual
+    if (!atBottom) {
       setIsUserScrolling(true)
-      setIsAtBottom(false)
 
-      // Reset do timeout
+      // Reset do timeout - após 3s sem interação, libera auto-scroll
       if (userScrollTimeoutRef.current) {
         clearTimeout(userScrollTimeoutRef.current)
       }
 
-      // Após 2s sem scroll, verificar posição
       userScrollTimeoutRef.current = setTimeout(() => {
-        setIsUserScrolling(false)
-        setIsAtBottom(checkIfAtBottom())
-      }, 2000)
-    } else {
-      // Scrollou para baixo ou ficou parado
-      const atBottom = checkIfAtBottom()
-
-      if (atBottom) {
-        setIsUserScrolling(false)
-        setIsAtBottom(true)
-
-        if (userScrollTimeoutRef.current) {
-          clearTimeout(userScrollTimeoutRef.current)
+        // Só libera se realmente chegou no fundo
+        if (checkIfAtBottom()) {
+          setIsUserScrolling(false)
+          setIsAtBottom(true)
         }
+      }, 3000)
+    } else {
+      // Chegou no fundo naturalmente
+      setIsUserScrolling(false)
+      if (userScrollTimeoutRef.current) {
+        clearTimeout(userScrollTimeoutRef.current)
       }
     }
   }, [checkIfAtBottom])
@@ -108,24 +104,34 @@ export function useSmartScroll(options: UseSmartScrollOptions = {}): UseSmartScr
     }
   }, [handleScroll])
 
-  // Auto-scroll quando novo conteúdo é adicionado (via MutationObserver)
+  // Auto-scroll quando novo conteúdo é adicionado - versão suave
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
     const observer = new MutationObserver(() => {
-      // Só auto-scroll se usuário estiver no fundo e não estiver scrollando manualmente
+      // IMPORTANTE: Só auto-scroll se:
+      // 1. Usuário estava no fundo E
+      // 2. Não está scrollando manualmente
       if (isAtBottom && !isUserScrolling) {
-        requestAnimationFrame(() => {
-          container.scrollTop = container.scrollHeight
-        })
+        // Usar setTimeout para não interferir com o scroll do usuário
+        setTimeout(() => {
+          // Verificar novamente antes de scrollar
+          if (isAtBottom && !isUserScrolling) {
+            container.scrollTo({
+              top: container.scrollHeight,
+              behavior: 'auto' // 'auto' é mais suave que forçar scrollTop
+            })
+          }
+        }, 50)
       }
     })
 
     observer.observe(container, {
       childList: true,
-      subtree: true,
-      characterData: true
+      subtree: true
+      // REMOVER characterData para reduzir frequência de triggers
+      // characterData: true
     })
 
     return () => observer.disconnect()

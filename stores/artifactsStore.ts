@@ -70,6 +70,7 @@ export interface Artifact {
   title: string
   content: string
   messageId?: string
+  conversaId?: string  // ID da conversa para filtrar artefatos por chat
   createdAt: Date
   metadata?: {
     language?: string
@@ -86,17 +87,21 @@ interface ArtifactsState {
   selectedArtifactId: string | null
   isSidebarOpen: boolean
   isMobileDrawerOpen: boolean
+  currentConversaId: string | null  // Conversa atual para filtrar artefatos
 
   // Ações
   addArtifact: (artifact: Omit<Artifact, 'id' | 'createdAt'>) => string
   removeArtifact: (id: string) => void
   clearArtifacts: () => void
+  clearArtifactsForConversa: (conversaId: string) => void  // Limpar artefatos de uma conversa específica
+  setCurrentConversa: (conversaId: string | null) => void  // Definir conversa atual
   selectArtifact: (id: string | null) => void
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
   toggleMobileDrawer: () => void
   setMobileDrawerOpen: (open: boolean) => void
   getArtifactsByMessage: (messageId: string) => Artifact[]
+  getArtifactsForCurrentConversa: () => Artifact[]  // Obter artefatos da conversa atual
 }
 
 export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
@@ -105,6 +110,7 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
   selectedArtifactId: null,
   isSidebarOpen: false,
   isMobileDrawerOpen: false,
+  currentConversaId: null,
 
   // Adicionar artefato
   addArtifact: (artifact) => {
@@ -140,6 +146,19 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
     })
   },
 
+  // Limpar artefatos de uma conversa específica
+  clearArtifactsForConversa: (conversaId) => {
+    set((state) => ({
+      artifacts: state.artifacts.filter((a) => a.conversaId !== conversaId),
+      selectedArtifactId: null
+    }))
+  },
+
+  // Definir conversa atual
+  setCurrentConversa: (conversaId) => {
+    set({ currentConversaId: conversaId })
+  },
+
   // Selecionar artefato
   selectArtifact: (id) => {
     set({ selectedArtifactId: id })
@@ -170,6 +189,13 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
   // Obter artefatos por mensagem
   getArtifactsByMessage: (messageId) => {
     return get().artifacts.filter((a) => a.messageId === messageId)
+  },
+
+  // Obter artefatos apenas da conversa atual
+  getArtifactsForCurrentConversa: () => {
+    const state = get()
+    if (!state.currentConversaId) return state.artifacts
+    return state.artifacts.filter((a) => a.conversaId === state.currentConversaId || !a.conversaId)
   }
 }))
 
