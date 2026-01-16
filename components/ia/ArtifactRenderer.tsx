@@ -513,8 +513,25 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
   let repaired = jsonStr.trim()
 
   // Se termina com vírgula, remover
-  if (repaired.endsWith(',')) {
-    repaired = repaired.slice(0, -1)
+  while (repaired.endsWith(',')) {
+    repaired = repaired.slice(0, -1).trim()
+  }
+
+  // Remover aspas ou texto parcial no final (ex: "texto incompleto)
+  // Detectar se termina no meio de uma string
+  const lastQuoteIndex = repaired.lastIndexOf('"')
+  if (lastQuoteIndex > 0) {
+    const afterLastQuote = repaired.substring(lastQuoteIndex + 1).trim()
+    // Se depois da última aspas não há : ou , ou ] ou }, pode ser string incompleta
+    if (afterLastQuote && !afterLastQuote.match(/^[:\],}]/)) {
+      // Fechar a string e remover
+      repaired = repaired.substring(0, lastQuoteIndex + 1)
+    }
+  }
+
+  // Se termina com vírgula após remoção, remover novamente
+  while (repaired.endsWith(',')) {
+    repaired = repaired.slice(0, -1).trim()
   }
 
   // Contar brackets abertos e fechar os que faltam
@@ -535,10 +552,39 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
   try {
     const parsed = JSON.parse(repaired)
     if (parsed.enunciado && parsed.alternativas) {
+      console.log('[ArtifactRenderer] JSON reparado com sucesso, campos encontrados:', Object.keys(parsed))
       return repaired
     }
-  } catch {
-    // Ainda não é válido
+  } catch (e) {
+    // Tentar uma última vez removendo conteúdo problemático no final
+    console.log('[ArtifactRenderer] Tentando reparo agressivo do JSON...')
+    try {
+      // Encontrar último objeto/array completo
+      let lastValidIndex = repaired.length
+      for (let i = repaired.length - 1; i >= 0; i--) {
+        const testStr = repaired.substring(0, i + 1)
+        const openB = (testStr.match(/\{/g) || []).length
+        const closeB = (testStr.match(/\}/g) || []).length
+        const openArr = (testStr.match(/\[/g) || []).length
+        const closeArr = (testStr.match(/\]/g) || []).length
+
+        if (openB === closeB && openArr === closeArr) {
+          lastValidIndex = i + 1
+          break
+        }
+      }
+
+      if (lastValidIndex < repaired.length) {
+        const truncated = repaired.substring(0, lastValidIndex)
+        const parsed = JSON.parse(truncated)
+        if (parsed.enunciado && parsed.alternativas) {
+          console.log('[ArtifactRenderer] JSON reparado via truncamento')
+          return truncated
+        }
+      }
+    } catch {
+      // Ignorar
+    }
   }
 
   return null
@@ -882,8 +928,8 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
                       </ReactMarkdown>
                     )}
                     {segIndex < segments.length - 1 && (
-                      <div className="my-4">
-                        <QuestionStreamingSkeleton 
+                      <div className="my-2">
+                        <QuestionStreamingSkeleton
                           partialData={partialQuestionData || undefined}
                         />
                       </div>
@@ -1206,7 +1252,7 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
         // Renderizar questões geradas pela IA
         if (part.type === 'question' && part.questionData) {
           return (
-            <div key={index} className="my-4">
+            <div key={index} className="my-2">
               <QuestionArtifactCard
                 question={part.questionData}
               />
