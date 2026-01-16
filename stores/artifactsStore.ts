@@ -51,7 +51,8 @@ export interface Question {
   numero: number
   tipo: 'multipla_escolha' | 'certo_errado'
   dificuldade: 'facil' | 'medio' | 'dificil' | 'muito_dificil'
-  banca_estilo?: string
+  banca?: string  // Nome da banca (ex: REVALIDA, USP-RP)
+  banca_estilo?: string  // Estilo da banca para geração
   disciplina: string
   assunto: string
   subassunto?: string

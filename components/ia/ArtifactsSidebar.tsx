@@ -294,6 +294,23 @@ type ViewMode = 'list' | 'grid' | 'categories' | 'questions'
 // Tipo de filtro de status de questões
 type QuestionStatusFilter = 'all' | 'answered' | 'correct' | 'wrong' | 'pending'
 
+// Interface para categorias do banco
+interface Categoria {
+  id: string
+  user_id: string
+  tipo: 'disciplina' | 'assunto' | 'sub_assunto'
+  nome: string
+  parent_id: string | null
+  created_at: string
+}
+
+interface Banca {
+  id: string
+  user_id: string
+  nome: string
+  created_at: string
+}
+
 // Importar MermaidDiagram dinamicamente
 const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
   ssr: false,
@@ -1056,8 +1073,16 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
   const [questionStatusFilter, setQuestionStatusFilter] = useState<QuestionStatusFilter>('all')
   const [questionDisciplineFilter, setQuestionDisciplineFilter] = useState<string>('all')
   const [questionDifficultyFilter, setQuestionDifficultyFilter] = useState<string>('all')
+  const [questionBancaFilter, setQuestionBancaFilter] = useState<string>('all')
+  const [questionAssuntoFilter, setQuestionAssuntoFilter] = useState<string>('all')
   // Estado para navegação de questões uma por vez
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  // Estado para mostrar painel de filtros avançados
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  // Categorias carregadas do banco
+  const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [bancas, setBancas] = useState<Banca[]>([])
+  const [loadingCategorias, setLoadingCategorias] = useState(false)
 
   // Filtrar artefatos
   const filteredArtifacts = useMemo(() => {
@@ -1132,6 +1157,16 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
         return false
       }
 
+      // Filtro de assunto
+      if (questionAssuntoFilter !== 'all' && question.assunto !== questionAssuntoFilter) {
+        return false
+      }
+
+      // Filtro de banca
+      if (questionBancaFilter !== 'all' && question.banca !== questionBancaFilter) {
+        return false
+      }
+
       // Filtro de dificuldade
       if (questionDifficultyFilter !== 'all' && question.dificuldade !== questionDifficultyFilter) {
         return false
@@ -1139,7 +1174,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
 
       return true
     })
-  }, [questionArtifacts, searchQuery, questionStatusFilter, questionDisciplineFilter, questionDifficultyFilter])
+  }, [questionArtifacts, searchQuery, questionStatusFilter, questionDisciplineFilter, questionAssuntoFilter, questionBancaFilter, questionDifficultyFilter])
 
   // Extrair disciplinas e dificuldades únicas para filtros
   const uniqueDisciplines = useMemo(() => {
@@ -1179,10 +1214,79 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
     }
   }, [questionArtifacts.length, viewMode])
 
+  // Carregar categorias do banco quando userId está disponível
+  useEffect(() => {
+    const loadCategorias = async () => {
+      if (!userId) return
+      setLoadingCategorias(true)
+      try {
+        const response = await fetch(`/api/medicina/ia/categorias?user_id=${userId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setCategorias(data.categorias || [])
+          setBancas(data.bancas || [])
+        }
+      } catch (error) {
+        console.error('Erro ao carregar categorias:', error)
+      } finally {
+        setLoadingCategorias(false)
+      }
+    }
+    loadCategorias()
+  }, [userId])
+
+  // Extrair disciplinas únicas das categorias carregadas + das questões
+  const allDisciplinas = useMemo(() => {
+    const fromCategorias = categorias
+      .filter(c => c.tipo === 'disciplina')
+      .map(c => c.nome)
+    const fromQuestions = questionArtifacts
+      .map(a => a.metadata?.question?.disciplina)
+      .filter(Boolean) as string[]
+    return [...new Set([...fromCategorias, ...fromQuestions])].sort()
+  }, [categorias, questionArtifacts])
+
+  // Extrair assuntos baseados na disciplina selecionada (cascata)
+  const filteredAssuntos = useMemo(() => {
+    // Pegar o ID da disciplina selecionada
+    const disciplinaCategoria = categorias.find(
+      c => c.tipo === 'disciplina' && c.nome === questionDisciplineFilter
+    )
+
+    // Assuntos do banco vinculados à disciplina
+    const fromCategorias = categorias
+      .filter(c => c.tipo === 'assunto' && (
+        questionDisciplineFilter === 'all' || c.parent_id === disciplinaCategoria?.id
+      ))
+      .map(c => c.nome)
+
+    // Assuntos das questões filtrados pela disciplina
+    const fromQuestions = questionArtifacts
+      .filter(a => questionDisciplineFilter === 'all' || a.metadata?.question?.disciplina === questionDisciplineFilter)
+      .map(a => a.metadata?.question?.assunto)
+      .filter(Boolean) as string[]
+
+    return [...new Set([...fromCategorias, ...fromQuestions])].sort()
+  }, [categorias, questionArtifacts, questionDisciplineFilter])
+
+  // Extrair bancas únicas
+  const allBancas = useMemo(() => {
+    const fromDB = bancas.map(b => b.nome)
+    const fromQuestions = questionArtifacts
+      .map(a => a.metadata?.question?.banca)
+      .filter(Boolean) as string[]
+    return [...new Set([...fromDB, ...fromQuestions])].sort()
+  }, [bancas, questionArtifacts])
+
+  // Resetar assunto quando disciplina muda
+  useEffect(() => {
+    setQuestionAssuntoFilter('all')
+  }, [questionDisciplineFilter])
+
   // Resetar índice quando filtros de questão mudam ou quando há novas questões
   useEffect(() => {
     setCurrentQuestionIndex(0)
-  }, [questionStatusFilter, questionDisciplineFilter, questionDifficultyFilter, filteredQuestions.length])
+  }, [questionStatusFilter, questionDisciplineFilter, questionAssuntoFilter, questionBancaFilter, questionDifficultyFilter, filteredQuestions.length])
 
   // Navegação no fullscreen
   const currentFullscreenIndex = fullscreenArtifact
@@ -1468,50 +1572,37 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                   {/* Modo QUESTÕES */}
                   {viewMode === 'questions' && (
                     <div className="space-y-3">
-                      {/* Header com estatísticas */}
-                      <div className="bg-gradient-to-r from-emerald-500/10 to-green-500/10 rounded-xl p-3 border border-emerald-500/20">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <HelpCircle className="w-5 h-5 text-emerald-400" />
-                            <span className="text-white font-semibold">Questões</span>
-                          </div>
-                          <span className="text-emerald-400 text-sm font-medium">
-                            {questionStats.total} total
-                          </span>
-                        </div>
-
-                        {/* Estatísticas */}
-                        <div className="grid grid-cols-4 gap-2 text-center">
-                          <div className="bg-white/5 rounded-lg p-2">
-                            <Clock className="w-4 h-4 text-yellow-400 mx-auto mb-1" />
-                            <div className="text-white text-sm font-bold">{questionStats.pending}</div>
-                            <div className="text-white/40 text-[10px]">Pendentes</div>
-                          </div>
-                          <div className="bg-white/5 rounded-lg p-2">
-                            <CheckCircle className="w-4 h-4 text-green-400 mx-auto mb-1" />
-                            <div className="text-white text-sm font-bold">{questionStats.correct}</div>
-                            <div className="text-white/40 text-[10px]">Acertos</div>
-                          </div>
-                          <div className="bg-white/5 rounded-lg p-2">
-                            <XCircle className="w-4 h-4 text-red-400 mx-auto mb-1" />
-                            <div className="text-white text-sm font-bold">{questionStats.wrong}</div>
-                            <div className="text-white/40 text-[10px]">Erros</div>
-                          </div>
-                          <div className="bg-white/5 rounded-lg p-2">
-                            <div className="text-emerald-400 text-sm font-bold mx-auto mb-1">
-                              {questionStats.answered > 0
-                                ? Math.round((questionStats.correct / questionStats.answered) * 100)
-                                : 0}%
+                      {/* Header com estatísticas compactas */}
+                      <div className="bg-gradient-to-r from-emerald-500/10 to-green-500/10 rounded-lg p-2 border border-emerald-500/20">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-emerald-400 text-xs font-medium">
+                              {questionStats.total} questões
+                            </span>
+                            <div className="flex items-center gap-2 text-[10px]">
+                              <span className="flex items-center gap-0.5 text-green-400">
+                                <CheckCircle className="w-3 h-3" />{questionStats.correct}
+                              </span>
+                              <span className="flex items-center gap-0.5 text-red-400">
+                                <XCircle className="w-3 h-3" />{questionStats.wrong}
+                              </span>
+                              <span className="flex items-center gap-0.5 text-yellow-400">
+                                <Clock className="w-3 h-3" />{questionStats.pending}
+                              </span>
                             </div>
-                            <div className="text-white/40 text-[10px]">Taxa</div>
                           </div>
+                          <span className="text-emerald-400 text-xs font-bold">
+                            {questionStats.answered > 0
+                              ? Math.round((questionStats.correct / questionStats.answered) * 100)
+                              : 0}%
+                          </span>
                         </div>
                       </div>
 
-                      {/* Filtros de questões */}
-                      <div className="space-y-2">
+                      {/* Filtros de questões - linha única */}
+                      <div className="flex items-center gap-2">
                         {/* Filtro de status */}
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex gap-1">
                           {[
                             { value: 'all', label: 'Todas', icon: HelpCircle },
                             { value: 'pending', label: 'Pendentes', icon: Clock },
@@ -1521,99 +1612,159 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                             <button
                               key={filter.value}
                               onClick={() => setQuestionStatusFilter(filter.value as QuestionStatusFilter)}
-                              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors ${
+                              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors ${
                                 questionStatusFilter === filter.value
-                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                  : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                                  ? 'bg-emerald-500/20 text-emerald-400'
+                                  : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
                               }`}
+                              title={filter.label}
                             >
                               <filter.icon className="w-3 h-3" />
-                              {filter.label}
                             </button>
                           ))}
                         </div>
 
-                        {/* Filtro de disciplina */}
-                        {uniqueDisciplines.length > 1 && (
-                          <select
-                            value={questionDisciplineFilter}
-                            onChange={(e) => setQuestionDisciplineFilter(e.target.value)}
-                            className="w-full px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-xs focus:outline-none focus:border-emerald-500/50"
-                          >
-                            <option value="all">Todas as disciplinas</option>
-                            {uniqueDisciplines.map(d => (
-                              <option key={d} value={d}>{d}</option>
-                            ))}
-                          </select>
-                        )}
-
-                        {/* Filtro de dificuldade */}
-                        {uniqueDifficulties.length > 1 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            <button
-                              onClick={() => setQuestionDifficultyFilter('all')}
-                              className={`px-2 py-1 rounded-lg text-xs transition-colors ${
-                                questionDifficultyFilter === 'all'
-                                  ? 'bg-emerald-500/20 text-emerald-400'
-                                  : 'bg-white/5 text-white/60 hover:text-white'
-                              }`}
-                            >
-                              Todas
-                            </button>
-                            {uniqueDifficulties.map(d => (
-                              <button
-                                key={d}
-                                onClick={() => setQuestionDifficultyFilter(d)}
-                                className={`px-2 py-1 rounded-lg text-xs transition-colors ${
-                                  questionDifficultyFilter === d
-                                    ? d === 'facil' ? 'bg-green-500/20 text-green-400'
-                                    : d === 'medio' ? 'bg-yellow-500/20 text-yellow-400'
-                                    : d === 'dificil' ? 'bg-orange-500/20 text-orange-400'
-                                    : 'bg-red-500/20 text-red-400'
-                                    : 'bg-white/5 text-white/60 hover:text-white'
-                                }`}
-                              >
-                                {d === 'facil' ? 'Fácil' : d === 'medio' ? 'Médio' : d === 'dificil' ? 'Difícil' : 'Muito Difícil'}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                        {/* Botão Filtro Avançado */}
+                        <button
+                          onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                          className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors ml-auto ${
+                            showAdvancedFilters || questionDisciplineFilter !== 'all' || questionAssuntoFilter !== 'all' || questionBancaFilter !== 'all' || questionDifficultyFilter !== 'all'
+                              ? 'bg-purple-500/20 text-purple-400'
+                              : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          <Filter className="w-3 h-3" />
+                          Filtro
+                          {(questionDisciplineFilter !== 'all' || questionAssuntoFilter !== 'all' || questionBancaFilter !== 'all' || questionDifficultyFilter !== 'all') && (
+                            <span className="w-4 h-4 bg-purple-500 text-white rounded-full text-[8px] flex items-center justify-center">
+                              {[questionDisciplineFilter, questionAssuntoFilter, questionBancaFilter, questionDifficultyFilter].filter(f => f !== 'all').length}
+                            </span>
+                          )}
+                        </button>
                       </div>
 
-                      {/* Questão atual com navegação - UMA POR VEZ */}
+                      {/* Painel de Filtros Avançados em Cascata */}
+                      <AnimatePresence>
+                        {showAdvancedFilters && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="bg-slate-800/80 rounded-lg p-3 border border-white/10 space-y-3">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-white/70 text-xs font-medium">Filtros Avançados</span>
+                                {(questionDisciplineFilter !== 'all' || questionAssuntoFilter !== 'all' || questionBancaFilter !== 'all' || questionDifficultyFilter !== 'all') && (
+                                  <button
+                                    onClick={() => {
+                                      setQuestionDisciplineFilter('all')
+                                      setQuestionAssuntoFilter('all')
+                                      setQuestionBancaFilter('all')
+                                      setQuestionDifficultyFilter('all')
+                                    }}
+                                    className="text-[10px] text-purple-400 hover:underline"
+                                  >
+                                    Limpar tudo
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Disciplina */}
+                              <div>
+                                <label className="text-white/40 text-[10px] mb-1 block">Disciplina</label>
+                                <select
+                                  value={questionDisciplineFilter}
+                                  onChange={(e) => setQuestionDisciplineFilter(e.target.value)}
+                                  className="w-full px-2 py-1.5 bg-white/5 border border-white/10 rounded text-white text-xs focus:outline-none focus:border-purple-500/50"
+                                >
+                                  <option value="all">Todas as disciplinas</option>
+                                  {allDisciplinas.map(d => (
+                                    <option key={d} value={d}>{d}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Assunto (cascata - só mostra se tem disciplina ou assuntos disponíveis) */}
+                              {(filteredAssuntos.length > 0 || questionDisciplineFilter !== 'all') && (
+                                <div>
+                                  <label className="text-white/40 text-[10px] mb-1 block">
+                                    Assunto
+                                    {questionDisciplineFilter !== 'all' && (
+                                      <span className="text-purple-400 ml-1">({questionDisciplineFilter})</span>
+                                    )}
+                                  </label>
+                                  <select
+                                    value={questionAssuntoFilter}
+                                    onChange={(e) => setQuestionAssuntoFilter(e.target.value)}
+                                    className="w-full px-2 py-1.5 bg-white/5 border border-white/10 rounded text-white text-xs focus:outline-none focus:border-purple-500/50"
+                                  >
+                                    <option value="all">Todos os assuntos</option>
+                                    {filteredAssuntos.map(a => (
+                                      <option key={a} value={a}>{a}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
+
+                              {/* Banca */}
+                              {allBancas.length > 0 && (
+                                <div>
+                                  <label className="text-white/40 text-[10px] mb-1 block">Banca</label>
+                                  <select
+                                    value={questionBancaFilter}
+                                    onChange={(e) => setQuestionBancaFilter(e.target.value)}
+                                    className="w-full px-2 py-1.5 bg-white/5 border border-white/10 rounded text-white text-xs focus:outline-none focus:border-purple-500/50"
+                                  >
+                                    <option value="all">Todas as bancas</option>
+                                    {allBancas.map(b => (
+                                      <option key={b} value={b}>{b}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
+
+                              {/* Dificuldade */}
+                              <div>
+                                <label className="text-white/40 text-[10px] mb-1 block">Dificuldade</label>
+                                <div className="flex flex-wrap gap-1">
+                                  <button
+                                    onClick={() => setQuestionDifficultyFilter('all')}
+                                    className={`px-2 py-1 rounded text-[10px] transition-colors ${
+                                      questionDifficultyFilter === 'all'
+                                        ? 'bg-purple-500/20 text-purple-400'
+                                        : 'bg-white/5 text-white/50 hover:text-white'
+                                    }`}
+                                  >
+                                    Todas
+                                  </button>
+                                  {['facil', 'medio', 'dificil', 'muito_dificil'].map(d => (
+                                    <button
+                                      key={d}
+                                      onClick={() => setQuestionDifficultyFilter(d)}
+                                      className={`px-2 py-1 rounded text-[10px] transition-colors ${
+                                        questionDifficultyFilter === d
+                                          ? d === 'facil' ? 'bg-green-500/20 text-green-400'
+                                          : d === 'medio' ? 'bg-yellow-500/20 text-yellow-400'
+                                          : d === 'dificil' ? 'bg-orange-500/20 text-orange-400'
+                                          : 'bg-red-500/20 text-red-400'
+                                          : 'bg-white/5 text-white/50 hover:text-white'
+                                      }`}
+                                    >
+                                      {d === 'facil' ? 'Fácil' : d === 'medio' ? 'Médio' : d === 'dificil' ? 'Difícil' : 'Muito Difícil'}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Questão atual - SEM navegação no topo */}
                       {filteredQuestions.length > 0 ? (
-                        <div className="space-y-3">
-                          {/* Navegação superior */}
-                          <div className="flex items-center justify-between bg-white/5 rounded-lg p-2">
-                            <button
-                              onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
-                              disabled={currentQuestionIndex === 0}
-                              className={`p-2 rounded-lg transition-colors ${
-                                currentQuestionIndex === 0
-                                  ? 'text-white/20 cursor-not-allowed'
-                                  : 'text-white/60 hover:text-white hover:bg-white/10'
-                              }`}
-                            >
-                              <ChevronLeft className="w-5 h-5" />
-                            </button>
-
-                            <span className="text-white/70 text-sm font-medium">
-                              {currentQuestionIndex + 1} / {filteredQuestions.length}
-                            </span>
-
-                            <button
-                              onClick={() => setCurrentQuestionIndex(prev => Math.min(filteredQuestions.length - 1, prev + 1))}
-                              disabled={currentQuestionIndex >= filteredQuestions.length - 1}
-                              className={`p-2 rounded-lg transition-colors ${
-                                currentQuestionIndex >= filteredQuestions.length - 1
-                                  ? 'text-white/20 cursor-not-allowed'
-                                  : 'text-white/60 hover:text-white hover:bg-white/10'
-                              }`}
-                            >
-                              <ChevronRight className="w-5 h-5" />
-                            </button>
-                          </div>
-
+                        <div className="space-y-2">
                           {/* Questão atual */}
                           {(() => {
                             const currentArtifact = filteredQuestions[currentQuestionIndex]
@@ -1635,42 +1786,81 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                             )
                           })()}
 
-                          {/* Indicadores de navegação (dots) */}
-                          {filteredQuestions.length > 1 && filteredQuestions.length <= 10 && (
-                            <div className="flex justify-center gap-1.5 pt-2">
-                              {filteredQuestions.map((artifact, idx) => {
-                                const q = artifact.metadata?.question
-                                const isAnswered = q?.mostrar_gabarito || q?.resposta_usuario
-                                const isCorrect = q?.acertou
+                          {/* NAVEGAÇÃO ABAIXO DO CARD - apenas setas pequenas */}
+                          <div className="flex items-center justify-center gap-4 py-1">
+                            <button
+                              onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+                              disabled={currentQuestionIndex === 0}
+                              className={`p-1.5 rounded-full transition-colors ${
+                                currentQuestionIndex === 0
+                                  ? 'text-white/20 cursor-not-allowed'
+                                  : 'text-white/60 hover:text-white hover:bg-white/10'
+                              }`}
+                              title="Questão anterior"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
 
-                                return (
-                                  <button
-                                    key={artifact.id}
-                                    onClick={() => setCurrentQuestionIndex(idx)}
-                                    className={`h-2.5 rounded-full transition-all ${
-                                      idx === currentQuestionIndex
-                                        ? 'w-6 bg-emerald-500'
-                                        : isAnswered
-                                          ? isCorrect
-                                            ? 'w-2.5 bg-green-500/50'
-                                            : 'w-2.5 bg-red-500/50'
-                                          : 'w-2.5 bg-white/20 hover:bg-white/40'
-                                    }`}
-                                  />
-                                )
-                              })}
-                            </div>
-                          )}
+                            {/* Indicadores de navegação (dots) compactos */}
+                            {filteredQuestions.length > 1 && filteredQuestions.length <= 15 && (
+                              <div className="flex gap-1">
+                                {filteredQuestions.map((artifact, idx) => {
+                                  const q = artifact.metadata?.question
+                                  const isAnswered = q?.mostrar_gabarito || q?.resposta_usuario
+                                  const isCorrect = q?.acertou
+
+                                  return (
+                                    <button
+                                      key={artifact.id}
+                                      onClick={() => setCurrentQuestionIndex(idx)}
+                                      className={`h-1.5 rounded-full transition-all ${
+                                        idx === currentQuestionIndex
+                                          ? 'w-4 bg-emerald-500'
+                                          : isAnswered
+                                            ? isCorrect
+                                              ? 'w-1.5 bg-green-500/50'
+                                              : 'w-1.5 bg-red-500/50'
+                                            : 'w-1.5 bg-white/20 hover:bg-white/40'
+                                      }`}
+                                      title={`Questão ${idx + 1}`}
+                                    />
+                                  )
+                                })}
+                              </div>
+                            )}
+
+                            {/* Contador se muitas questões */}
+                            {filteredQuestions.length > 15 && (
+                              <span className="text-white/50 text-xs">
+                                {currentQuestionIndex + 1}/{filteredQuestions.length}
+                              </span>
+                            )}
+
+                            <button
+                              onClick={() => setCurrentQuestionIndex(prev => Math.min(filteredQuestions.length - 1, prev + 1))}
+                              disabled={currentQuestionIndex >= filteredQuestions.length - 1}
+                              className={`p-1.5 rounded-full transition-colors ${
+                                currentQuestionIndex >= filteredQuestions.length - 1
+                                  ? 'text-white/20 cursor-not-allowed'
+                                  : 'text-white/60 hover:text-white hover:bg-white/10'
+                              }`}
+                              title="Próxima questão"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center py-8 text-center">
                           <HelpCircle className="w-8 h-8 text-white/20 mb-2" />
                           <p className="text-white/40 text-sm">Nenhuma questão encontrada</p>
-                          {(questionStatusFilter !== 'all' || questionDisciplineFilter !== 'all' || questionDifficultyFilter !== 'all') && (
+                          {(questionStatusFilter !== 'all' || questionDisciplineFilter !== 'all' || questionAssuntoFilter !== 'all' || questionBancaFilter !== 'all' || questionDifficultyFilter !== 'all') && (
                             <button
                               onClick={() => {
                                 setQuestionStatusFilter('all')
                                 setQuestionDisciplineFilter('all')
+                                setQuestionAssuntoFilter('all')
+                                setQuestionBancaFilter('all')
                                 setQuestionDifficultyFilter('all')
                               }}
                               className="mt-2 text-emerald-400 text-sm hover:underline"
