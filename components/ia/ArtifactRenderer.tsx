@@ -1571,16 +1571,21 @@ export default function ArtifactRenderer({ content, userId, messageId, conversaI
         // Renderizar questões geradas pela IA
         if (part.type === 'question' && part.questionData) {
           // Encontrar o artefato correspondente na store para sincronização
+          // Busca melhorada: primeiro por messageId+numero, depois por enunciado
           const matchingArtifact = storeArtifacts.find(
             a => a.type === 'question' &&
                  a.messageId === messageId &&
                  a.metadata?.question?.numero === part.questionData?.numero
+          ) || storeArtifacts.find(
+            a => a.type === 'question' &&
+                 a.conversaId === conversaId &&
+                 a.metadata?.question?.enunciado === part.questionData?.enunciado
           )
 
           return (
             <div key={index} className="my-2">
               <QuestionArtifactCard
-                question={part.questionData}
+                question={matchingArtifact?.metadata?.question || part.questionData}
                 userId={userId}
                 conversaId={conversaId}
                 onAnswerSubmit={(questionId, answer, correct) => {

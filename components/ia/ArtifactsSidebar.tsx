@@ -1069,12 +1069,12 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
   const [fullscreenArtifact, setFullscreenArtifact] = useState<Artifact | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('list')
-  // Estados para filtros de questões
+  // Estados para filtros de questões - MULTI-SELEÇÃO (arrays ao invés de strings)
   const [questionStatusFilter, setQuestionStatusFilter] = useState<QuestionStatusFilter>('all')
-  const [questionDisciplineFilter, setQuestionDisciplineFilter] = useState<string>('all')
-  const [questionDifficultyFilter, setQuestionDifficultyFilter] = useState<string>('all')
-  const [questionBancaFilter, setQuestionBancaFilter] = useState<string>('all')
-  const [questionAssuntoFilter, setQuestionAssuntoFilter] = useState<string>('all')
+  const [questionDisciplineFilters, setQuestionDisciplineFilters] = useState<string[]>([])
+  const [questionDifficultyFilters, setQuestionDifficultyFilters] = useState<string[]>([])
+  const [questionBancaFilters, setQuestionBancaFilters] = useState<string[]>([])
+  const [questionAssuntoFilters, setQuestionAssuntoFilters] = useState<string[]>([])
   // Estado para navegação de questões uma por vez
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   // Estado para mostrar painel de filtros avançados
@@ -1127,7 +1127,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
     return artifacts.filter(a => a.type === 'question' && a.metadata?.question)
   }, [artifacts])
 
-  // Filtrar questões com filtros específicos
+  // Filtrar questões com filtros específicos - MULTI-SELEÇÃO
   const filteredQuestions = useMemo(() => {
     return questionArtifacts.filter(artifact => {
       const question = artifact.metadata?.question
@@ -1152,29 +1152,29 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
         if (questionStatusFilter === 'wrong' && question.acertou !== false) return false
       }
 
-      // Filtro de disciplina
-      if (questionDisciplineFilter !== 'all' && question.disciplina !== questionDisciplineFilter) {
+      // Filtro de disciplinas (multi-seleção)
+      if (questionDisciplineFilters.length > 0 && question.disciplina && !questionDisciplineFilters.includes(question.disciplina)) {
         return false
       }
 
-      // Filtro de assunto
-      if (questionAssuntoFilter !== 'all' && question.assunto !== questionAssuntoFilter) {
+      // Filtro de assuntos (multi-seleção)
+      if (questionAssuntoFilters.length > 0 && question.assunto && !questionAssuntoFilters.includes(question.assunto)) {
         return false
       }
 
-      // Filtro de banca
-      if (questionBancaFilter !== 'all' && question.banca !== questionBancaFilter) {
+      // Filtro de bancas (multi-seleção)
+      if (questionBancaFilters.length > 0 && question.banca && !questionBancaFilters.includes(question.banca)) {
         return false
       }
 
-      // Filtro de dificuldade
-      if (questionDifficultyFilter !== 'all' && question.dificuldade !== questionDifficultyFilter) {
+      // Filtro de dificuldades (multi-seleção)
+      if (questionDifficultyFilters.length > 0 && !questionDifficultyFilters.includes(question.dificuldade)) {
         return false
       }
 
       return true
     })
-  }, [questionArtifacts, searchQuery, questionStatusFilter, questionDisciplineFilter, questionAssuntoFilter, questionBancaFilter, questionDifficultyFilter])
+  }, [questionArtifacts, searchQuery, questionStatusFilter, questionDisciplineFilters, questionAssuntoFilters, questionBancaFilters, questionDifficultyFilters])
 
   // Extrair disciplinas e dificuldades únicas para filtros
   const uniqueDisciplines = useMemo(() => {
@@ -1208,9 +1208,10 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
   }, [questionArtifacts])
 
   // Quando há questões, alternar automaticamente para o modo questões
+  // Se estiver no modo questões mas não há questões, voltar para lista
   useEffect(() => {
-    if (questionArtifacts.length > 0 && viewMode === 'list') {
-      // Opcional: não forçar automaticamente, deixar o usuário escolher
+    if (questionArtifacts.length === 0 && viewMode === 'questions') {
+      setViewMode('list')
     }
   }, [questionArtifacts.length, viewMode])
 
@@ -1246,28 +1247,29 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
     return [...new Set([...fromCategorias, ...fromQuestions])].sort()
   }, [categorias, questionArtifacts])
 
-  // Extrair assuntos baseados na disciplina selecionada (cascata)
+  // Extrair assuntos baseados nas disciplinas selecionadas (cascata multi-seleção)
   const filteredAssuntos = useMemo(() => {
-    // Pegar o ID da disciplina selecionada
-    const disciplinaCategoria = categorias.find(
-      c => c.tipo === 'disciplina' && c.nome === questionDisciplineFilter
+    // Pegar os IDs das disciplinas selecionadas
+    const disciplinaCategorias = categorias.filter(
+      c => c.tipo === 'disciplina' && questionDisciplineFilters.includes(c.nome)
     )
+    const disciplinaIds = disciplinaCategorias.map(c => c.id)
 
-    // Assuntos do banco vinculados à disciplina
+    // Assuntos do banco vinculados às disciplinas selecionadas
     const fromCategorias = categorias
       .filter(c => c.tipo === 'assunto' && (
-        questionDisciplineFilter === 'all' || c.parent_id === disciplinaCategoria?.id
+        questionDisciplineFilters.length === 0 || (c.parent_id && disciplinaIds.includes(c.parent_id))
       ))
       .map(c => c.nome)
 
-    // Assuntos das questões filtrados pela disciplina
+    // Assuntos das questões filtrados pelas disciplinas
     const fromQuestions = questionArtifacts
-      .filter(a => questionDisciplineFilter === 'all' || a.metadata?.question?.disciplina === questionDisciplineFilter)
+      .filter(a => questionDisciplineFilters.length === 0 || (a.metadata?.question?.disciplina && questionDisciplineFilters.includes(a.metadata.question.disciplina)))
       .map(a => a.metadata?.question?.assunto)
       .filter(Boolean) as string[]
 
     return [...new Set([...fromCategorias, ...fromQuestions])].sort()
-  }, [categorias, questionArtifacts, questionDisciplineFilter])
+  }, [categorias, questionArtifacts, questionDisciplineFilters])
 
   // Extrair bancas únicas
   const allBancas = useMemo(() => {
@@ -1278,15 +1280,23 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
     return [...new Set([...fromDB, ...fromQuestions])].sort()
   }, [bancas, questionArtifacts])
 
-  // Resetar assunto quando disciplina muda
+  // Resetar assuntos quando disciplinas mudam
   useEffect(() => {
-    setQuestionAssuntoFilter('all')
-  }, [questionDisciplineFilter])
+    // Filtrar assuntos que ainda são válidos para as disciplinas selecionadas
+    if (questionAssuntoFilters.length > 0 && questionDisciplineFilters.length > 0) {
+      const validAssuntos = questionAssuntoFilters.filter(assunto =>
+        filteredAssuntos.includes(assunto)
+      )
+      if (validAssuntos.length !== questionAssuntoFilters.length) {
+        setQuestionAssuntoFilters(validAssuntos)
+      }
+    }
+  }, [questionDisciplineFilters, filteredAssuntos, questionAssuntoFilters])
 
   // Resetar índice quando filtros de questão mudam ou quando há novas questões
   useEffect(() => {
     setCurrentQuestionIndex(0)
-  }, [questionStatusFilter, questionDisciplineFilter, questionAssuntoFilter, questionBancaFilter, questionDifficultyFilter, filteredQuestions.length])
+  }, [questionStatusFilter, questionDisciplineFilters, questionAssuntoFilters, questionBancaFilters, questionDifficultyFilters, filteredQuestions.length])
 
   // Navegação no fullscreen
   const currentFullscreenIndex = fullscreenArtifact
@@ -1403,8 +1413,23 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                   />
                 </div>
 
-                {/* Botões de modo de visualização */}
+                {/* Botões de modo de visualização - Questões primeiro se houver */}
                 <div className="flex items-center bg-white/5 rounded-lg p-0.5">
+                  {/* Botão de Questões - PRIMEIRO se houver questões */}
+                  {questionArtifacts.length > 0 && (
+                    <button
+                      onClick={() => setViewMode('questions')}
+                      className={`p-1.5 rounded transition-colors relative ${
+                        viewMode === 'questions' ? 'bg-emerald-500/30 text-emerald-400' : 'text-white/40 hover:text-white'
+                      }`}
+                      title="Questões"
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">
+                        {questionArtifacts.length}
+                      </span>
+                    </button>
+                  )}
                   <button
                     onClick={() => setViewMode('list')}
                     className={`p-1.5 rounded transition-colors ${
@@ -1432,21 +1457,6 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                   >
                     <Folder className="w-4 h-4" />
                   </button>
-                  {/* Botão de Questões - só aparece se houver questões */}
-                  {questionArtifacts.length > 0 && (
-                    <button
-                      onClick={() => setViewMode('questions')}
-                      className={`p-1.5 rounded transition-colors relative ${
-                        viewMode === 'questions' ? 'bg-emerald-500/30 text-emerald-400' : 'text-white/40 hover:text-white'
-                      }`}
-                      title="Questões"
-                    >
-                      <HelpCircle className="w-4 h-4" />
-                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">
-                        {questionArtifacts.length}
-                      </span>
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -1628,22 +1638,22 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                         <button
                           onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                           className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors ml-auto ${
-                            showAdvancedFilters || questionDisciplineFilter !== 'all' || questionAssuntoFilter !== 'all' || questionBancaFilter !== 'all' || questionDifficultyFilter !== 'all'
+                            showAdvancedFilters || questionDisciplineFilters.length > 0 || questionAssuntoFilters.length > 0 || questionBancaFilters.length > 0 || questionDifficultyFilters.length > 0
                               ? 'bg-purple-500/20 text-purple-400'
                               : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
                           }`}
                         >
                           <Filter className="w-3 h-3" />
                           Filtro
-                          {(questionDisciplineFilter !== 'all' || questionAssuntoFilter !== 'all' || questionBancaFilter !== 'all' || questionDifficultyFilter !== 'all') && (
+                          {(questionDisciplineFilters.length > 0 || questionAssuntoFilters.length > 0 || questionBancaFilters.length > 0 || questionDifficultyFilters.length > 0) && (
                             <span className="w-4 h-4 bg-purple-500 text-white rounded-full text-[8px] flex items-center justify-center">
-                              {[questionDisciplineFilter, questionAssuntoFilter, questionBancaFilter, questionDifficultyFilter].filter(f => f !== 'all').length}
+                              {questionDisciplineFilters.length + questionAssuntoFilters.length + questionBancaFilters.length + questionDifficultyFilters.length}
                             </span>
                           )}
                         </button>
                       </div>
 
-                      {/* Painel de Filtros Avançados em Cascata */}
+                      {/* Painel de Filtros Avançados - MULTI-SELEÇÃO */}
                       <AnimatePresence>
                         {showAdvancedFilters && (
                           <motion.div
@@ -1656,13 +1666,13 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                             <div className="bg-slate-800/80 rounded-lg p-3 border border-white/10 space-y-3">
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-white/70 text-xs font-medium">Filtros Avançados</span>
-                                {(questionDisciplineFilter !== 'all' || questionAssuntoFilter !== 'all' || questionBancaFilter !== 'all' || questionDifficultyFilter !== 'all') && (
+                                {(questionDisciplineFilters.length > 0 || questionAssuntoFilters.length > 0 || questionBancaFilters.length > 0 || questionDifficultyFilters.length > 0) && (
                                   <button
                                     onClick={() => {
-                                      setQuestionDisciplineFilter('all')
-                                      setQuestionAssuntoFilter('all')
-                                      setQuestionBancaFilter('all')
-                                      setQuestionDifficultyFilter('all')
+                                      setQuestionDisciplineFilters([])
+                                      setQuestionAssuntoFilters([])
+                                      setQuestionBancaFilters([])
+                                      setQuestionDifficultyFilters([])
                                     }}
                                     className="text-[10px] text-purple-400 hover:underline"
                                   >
@@ -1671,90 +1681,148 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                                 )}
                               </div>
 
-                              {/* Disciplina */}
+                              {/* Disciplinas - MULTI-SELEÇÃO com chips */}
                               <div>
-                                <label className="text-white/40 text-[10px] mb-1 block">Disciplina</label>
+                                <label className="text-white/40 text-[10px] mb-1 block">
+                                  Disciplina {questionDisciplineFilters.length > 0 && `(${questionDisciplineFilters.length})`}
+                                </label>
+                                <div className="flex flex-wrap gap-1 mb-1.5">
+                                  {questionDisciplineFilters.map(d => (
+                                    <span key={d} className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded text-[10px]">
+                                      {d}
+                                      <button
+                                        onClick={() => setQuestionDisciplineFilters(prev => prev.filter(x => x !== d))}
+                                        className="hover:text-white"
+                                      >
+                                        ×
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
                                 <select
-                                  value={questionDisciplineFilter}
-                                  onChange={(e) => setQuestionDisciplineFilter(e.target.value)}
-                                  className="w-full px-2 py-1.5 bg-white/5 border border-white/10 rounded text-white text-xs focus:outline-none focus:border-purple-500/50"
+                                  value=""
+                                  onChange={(e) => {
+                                    if (e.target.value && !questionDisciplineFilters.includes(e.target.value)) {
+                                      setQuestionDisciplineFilters(prev => [...prev, e.target.value])
+                                    }
+                                  }}
+                                  className="w-full px-2 py-1.5 bg-slate-900 border border-white/10 rounded text-white text-xs focus:outline-none focus:border-purple-500/50 [&>option]:bg-slate-900 [&>option]:text-white"
                                 >
-                                  <option value="all">Todas as disciplinas</option>
-                                  {allDisciplinas.map(d => (
+                                  <option value="">+ Adicionar disciplina</option>
+                                  {allDisciplinas.filter(d => !questionDisciplineFilters.includes(d)).map(d => (
                                     <option key={d} value={d}>{d}</option>
                                   ))}
                                 </select>
                               </div>
 
-                              {/* Assunto (cascata - só mostra se tem disciplina ou assuntos disponíveis) */}
-                              {(filteredAssuntos.length > 0 || questionDisciplineFilter !== 'all') && (
+                              {/* Assuntos - MULTI-SELEÇÃO (cascata) */}
+                              {(filteredAssuntos.length > 0 || questionDisciplineFilters.length > 0) && (
                                 <div>
                                   <label className="text-white/40 text-[10px] mb-1 block">
-                                    Assunto
-                                    {questionDisciplineFilter !== 'all' && (
-                                      <span className="text-purple-400 ml-1">({questionDisciplineFilter})</span>
+                                    Assunto {questionAssuntoFilters.length > 0 && `(${questionAssuntoFilters.length})`}
+                                    {questionDisciplineFilters.length > 0 && (
+                                      <span className="text-purple-400 ml-1">
+                                        ({questionDisciplineFilters.length === 1 ? questionDisciplineFilters[0] : `${questionDisciplineFilters.length} selecionadas`})
+                                      </span>
                                     )}
                                   </label>
+                                  <div className="flex flex-wrap gap-1 mb-1.5">
+                                    {questionAssuntoFilters.map(a => (
+                                      <span key={a} className="inline-flex items-center gap-1 px-2 py-0.5 bg-cyan-500/20 text-cyan-300 rounded text-[10px]">
+                                        {a}
+                                        <button
+                                          onClick={() => setQuestionAssuntoFilters(prev => prev.filter(x => x !== a))}
+                                          className="hover:text-white"
+                                        >
+                                          ×
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
                                   <select
-                                    value={questionAssuntoFilter}
-                                    onChange={(e) => setQuestionAssuntoFilter(e.target.value)}
-                                    className="w-full px-2 py-1.5 bg-white/5 border border-white/10 rounded text-white text-xs focus:outline-none focus:border-purple-500/50"
+                                    value=""
+                                    onChange={(e) => {
+                                      if (e.target.value && !questionAssuntoFilters.includes(e.target.value)) {
+                                        setQuestionAssuntoFilters(prev => [...prev, e.target.value])
+                                      }
+                                    }}
+                                    className="w-full px-2 py-1.5 bg-slate-900 border border-white/10 rounded text-white text-xs focus:outline-none focus:border-purple-500/50 [&>option]:bg-slate-900 [&>option]:text-white"
                                   >
-                                    <option value="all">Todos os assuntos</option>
-                                    {filteredAssuntos.map(a => (
+                                    <option value="">+ Adicionar assunto</option>
+                                    {filteredAssuntos.filter(a => !questionAssuntoFilters.includes(a)).map(a => (
                                       <option key={a} value={a}>{a}</option>
                                     ))}
                                   </select>
                                 </div>
                               )}
 
-                              {/* Banca */}
+                              {/* Bancas - MULTI-SELEÇÃO */}
                               {allBancas.length > 0 && (
                                 <div>
-                                  <label className="text-white/40 text-[10px] mb-1 block">Banca</label>
+                                  <label className="text-white/40 text-[10px] mb-1 block">
+                                    Banca {questionBancaFilters.length > 0 && `(${questionBancaFilters.length})`}
+                                  </label>
+                                  <div className="flex flex-wrap gap-1 mb-1.5">
+                                    {questionBancaFilters.map(b => (
+                                      <span key={b} className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[10px]">
+                                        {b}
+                                        <button
+                                          onClick={() => setQuestionBancaFilters(prev => prev.filter(x => x !== b))}
+                                          className="hover:text-white"
+                                        >
+                                          ×
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
                                   <select
-                                    value={questionBancaFilter}
-                                    onChange={(e) => setQuestionBancaFilter(e.target.value)}
-                                    className="w-full px-2 py-1.5 bg-white/5 border border-white/10 rounded text-white text-xs focus:outline-none focus:border-purple-500/50"
+                                    value=""
+                                    onChange={(e) => {
+                                      if (e.target.value && !questionBancaFilters.includes(e.target.value)) {
+                                        setQuestionBancaFilters(prev => [...prev, e.target.value])
+                                      }
+                                    }}
+                                    className="w-full px-2 py-1.5 bg-slate-900 border border-white/10 rounded text-white text-xs focus:outline-none focus:border-purple-500/50 [&>option]:bg-slate-900 [&>option]:text-white"
                                   >
-                                    <option value="all">Todas as bancas</option>
-                                    {allBancas.map(b => (
+                                    <option value="">+ Adicionar banca</option>
+                                    {allBancas.filter(b => !questionBancaFilters.includes(b)).map(b => (
                                       <option key={b} value={b}>{b}</option>
                                     ))}
                                   </select>
                                 </div>
                               )}
 
-                              {/* Dificuldade */}
+                              {/* Dificuldade - MULTI-SELEÇÃO com botões toggle */}
                               <div>
-                                <label className="text-white/40 text-[10px] mb-1 block">Dificuldade</label>
+                                <label className="text-white/40 text-[10px] mb-1 block">
+                                  Dificuldade {questionDifficultyFilters.length > 0 && `(${questionDifficultyFilters.length})`}
+                                </label>
                                 <div className="flex flex-wrap gap-1">
-                                  <button
-                                    onClick={() => setQuestionDifficultyFilter('all')}
-                                    className={`px-2 py-1 rounded text-[10px] transition-colors ${
-                                      questionDifficultyFilter === 'all'
-                                        ? 'bg-purple-500/20 text-purple-400'
-                                        : 'bg-white/5 text-white/50 hover:text-white'
-                                    }`}
-                                  >
-                                    Todas
-                                  </button>
-                                  {['facil', 'medio', 'dificil', 'muito_dificil'].map(d => (
-                                    <button
-                                      key={d}
-                                      onClick={() => setQuestionDifficultyFilter(d)}
-                                      className={`px-2 py-1 rounded text-[10px] transition-colors ${
-                                        questionDifficultyFilter === d
-                                          ? d === 'facil' ? 'bg-green-500/20 text-green-400'
-                                          : d === 'medio' ? 'bg-yellow-500/20 text-yellow-400'
-                                          : d === 'dificil' ? 'bg-orange-500/20 text-orange-400'
-                                          : 'bg-red-500/20 text-red-400'
-                                          : 'bg-white/5 text-white/50 hover:text-white'
-                                      }`}
-                                    >
-                                      {d === 'facil' ? 'Fácil' : d === 'medio' ? 'Médio' : d === 'dificil' ? 'Difícil' : 'Muito Difícil'}
-                                    </button>
-                                  ))}
+                                  {['facil', 'medio', 'dificil', 'muito_dificil'].map(d => {
+                                    const isSelected = questionDifficultyFilters.includes(d)
+                                    return (
+                                      <button
+                                        key={d}
+                                        onClick={() => {
+                                          if (isSelected) {
+                                            setQuestionDifficultyFilters(prev => prev.filter(x => x !== d))
+                                          } else {
+                                            setQuestionDifficultyFilters(prev => [...prev, d])
+                                          }
+                                        }}
+                                        className={`px-2 py-1 rounded text-[10px] transition-colors ${
+                                          isSelected
+                                            ? d === 'facil' ? 'bg-green-500/30 text-green-400 ring-1 ring-green-500/50'
+                                            : d === 'medio' ? 'bg-yellow-500/30 text-yellow-400 ring-1 ring-yellow-500/50'
+                                            : d === 'dificil' ? 'bg-orange-500/30 text-orange-400 ring-1 ring-orange-500/50'
+                                            : 'bg-red-500/30 text-red-400 ring-1 ring-red-500/50'
+                                            : 'bg-white/5 text-white/50 hover:text-white'
+                                        }`}
+                                      >
+                                        {d === 'facil' ? 'Fácil' : d === 'medio' ? 'Médio' : d === 'dificil' ? 'Difícil' : 'Muito Difícil'}
+                                      </button>
+                                    )
+                                  })}
                                 </div>
                               </div>
                             </div>
@@ -1854,14 +1922,14 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                         <div className="flex flex-col items-center justify-center py-8 text-center">
                           <HelpCircle className="w-8 h-8 text-white/20 mb-2" />
                           <p className="text-white/40 text-sm">Nenhuma questão encontrada</p>
-                          {(questionStatusFilter !== 'all' || questionDisciplineFilter !== 'all' || questionAssuntoFilter !== 'all' || questionBancaFilter !== 'all' || questionDifficultyFilter !== 'all') && (
+                          {(questionStatusFilter !== 'all' || questionDisciplineFilters.length > 0 || questionAssuntoFilters.length > 0 || questionBancaFilters.length > 0 || questionDifficultyFilters.length > 0) && (
                             <button
                               onClick={() => {
                                 setQuestionStatusFilter('all')
-                                setQuestionDisciplineFilter('all')
-                                setQuestionAssuntoFilter('all')
-                                setQuestionBancaFilter('all')
-                                setQuestionDifficultyFilter('all')
+                                setQuestionDisciplineFilters([])
+                                setQuestionAssuntoFilters([])
+                                setQuestionBancaFilters([])
+                                setQuestionDifficultyFilters([])
                               }}
                               className="mt-2 text-emerald-400 text-sm hover:underline"
                             >
