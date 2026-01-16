@@ -86,6 +86,19 @@ const QuestionArtifactCard = dynamic(() => import('./QuestionArtifactCard'), {
   )
 })
 
+// Importar QuestionStreamingSkeleton dinamicamente para feedback visual durante geração
+const QuestionStreamingSkeleton = dynamic(() => import('./QuestionStreamingSkeleton'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-[#1A2332] border border-white/10 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-white/40">
+        <div className="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full" />
+        <span>Preparando questão...</span>
+      </div>
+    </div>
+  )
+})
+
 interface ArtifactRendererProps {
   content: string
   userId?: string
@@ -379,19 +392,108 @@ function removeImageSearchMarkers(content: string): string {
   return content.replace(IMAGE_SEARCH_REGEX, '')
 }
 
+// Interface para dados parciais extraídos de JSON incompleto
+interface PartialQuestionData {
+  disciplina?: string
+  assunto?: string
+  subassunto?: string
+  enunciado?: string
+  caso_clinico?: string
+  alternativasCount?: number
+  questionIndex?: number  // Índice da questão sendo gerada (1, 2, 3...)
+  totalExpected?: number  // Total esperado de questões
+}
+
+// Função para extrair dados parciais de um JSON incompleto de questão
+function extractPartialQuestionData(incompleteJson: string, fullContent?: string): PartialQuestionData {
+  const data: PartialQuestionData = {}
+
+  // Tentar extrair campos usando regex (funciona mesmo com JSON incompleto)
+  const disciplinaMatch = incompleteJson.match(/"disciplina"\s*:\s*"([^"]+)"/)
+  if (disciplinaMatch) data.disciplina = disciplinaMatch[1]
+
+  const assuntoMatch = incompleteJson.match(/"assunto"\s*:\s*"([^"]+)"/)
+  if (assuntoMatch) data.assunto = assuntoMatch[1]
+
+  const subassuntoMatch = incompleteJson.match(/"subassunto"\s*:\s*"([^"]+)"/)
+  if (subassuntoMatch) data.subassunto = subassuntoMatch[1]
+
+  const casoMatch = incompleteJson.match(/"caso_clinico"\s*:\s*"((?:[^"\\]|\\.)*)/)
+  if (casoMatch) {
+    // Decodificar escapes de JSON
+    try {
+      data.caso_clinico = JSON.parse(`"${casoMatch[1]}"`)
+    } catch {
+      data.caso_clinico = casoMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+    }
+  }
+
+  const enunciadoMatch = incompleteJson.match(/"enunciado"\s*:\s*"((?:[^"\\]|\\.)*)/)
+  if (enunciadoMatch) {
+    try {
+      data.enunciado = JSON.parse(`"${enunciadoMatch[1]}"`)
+    } catch {
+      data.enunciado = enunciadoMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+    }
+  }
+
+  // Contar quantas alternativas já foram geradas
+  const alternativasMatches = incompleteJson.match(/"letra"\s*:\s*"[A-E]"/g)
+  if (alternativasMatches) data.alternativasCount = alternativasMatches.length
+
+  // Se temos o conteúdo completo, contar questões já completas para determinar índice
+  if (fullContent) {
+    const completedQuestions = fullContent.match(/```quest(?:ao|ion)(?::[^\n]*)?\n[\s\S]*?```/g)
+    data.questionIndex = (completedQuestions?.length || 0) + 1
+
+    // Tentar detectar total esperado do contexto (ex: "3 questões")
+    const totalMatch = fullContent.match(/(\d+)\s*quest(?:ões|oes|ao|ion)/i)
+    if (totalMatch) {
+      data.totalExpected = parseInt(totalMatch[1])
+    }
+  }
+
+  return data
+}
+
+// Variável global para armazenar dados parciais da última questão sendo gerada
+let lastPartialQuestionData: PartialQuestionData | null = null
+
+// Função para obter dados parciais da questão atual
+export function getPartialQuestionData(): PartialQuestionData | null {
+  return lastPartialQuestionData
+}
+
 // Função para detectar e remover blocos de questão incompletos durante streaming
 // Isso evita mostrar o JSON bruto enquanto a questão está sendo gerada
+// Agora também extrai dados parciais para mostrar no skeleton
 function hideIncompleteQuestions(content: string): string {
   // Verifica se há um bloco de questão incompleto (iniciado mas não fechado)
   if (INCOMPLETE_QUESTION_REGEX.test(content)) {
     // Encontra o início do bloco incompleto
-    const match = content.match(/```quest(?:ao|ion)(?::[^\n]*)?\n[\s\S]*$/)
+    const match = content.match(/```quest(?:ao|ion)(?::[^\n]*)?\n([\s\S]*)$/)
     if (match && match.index !== undefined) {
-      // Remove o bloco incompleto e adiciona um indicador de carregamento
+      // Extrair dados parciais do JSON incompleto, passando o conteúdo completo para contexto
+      const incompleteJson = match[1] || ''
+      lastPartialQuestionData = extractPartialQuestionData(incompleteJson, content)
+
+      console.log('[ArtifactRenderer] Questão incompleta detectada, mostrando skeleton', {
+        hasEnunciado: !!lastPartialQuestionData.enunciado,
+        hasCasoClinico: !!lastPartialQuestionData.caso_clinico,
+        alternativasCount: lastPartialQuestionData.alternativasCount || 0,
+        questionIndex: lastPartialQuestionData.questionIndex,
+        jsonLength: incompleteJson.length
+      })
+
+      // Remove o bloco incompleto e adiciona um marcador especial
       const beforeBlock = content.substring(0, match.index)
-      return beforeBlock + '\n\n⏳ *Gerando questão...*\n'
+      // Usar marcador especial que será renderizado como skeleton
+      return beforeBlock + '\n\n[QUESTION_STREAMING_SKELETON]\n'
     }
   }
+
+  // Limpar dados parciais se não há questão incompleta
+  lastPartialQuestionData = null
   return content
 }
 
@@ -406,6 +508,42 @@ function isCompleteQuestionJson(jsonStr: string): boolean {
   }
 }
 
+// Tenta reparar JSON incompleto de questão (para casos onde só falta fechar brackets)
+function tryRepairQuestionJson(jsonStr: string): string | null {
+  let repaired = jsonStr.trim()
+
+  // Se termina com vírgula, remover
+  if (repaired.endsWith(',')) {
+    repaired = repaired.slice(0, -1)
+  }
+
+  // Contar brackets abertos e fechar os que faltam
+  const openBraces = (repaired.match(/\{/g) || []).length
+  const closeBraces = (repaired.match(/\}/g) || []).length
+  const openBrackets = (repaired.match(/\[/g) || []).length
+  const closeBrackets = (repaired.match(/\]/g) || []).length
+
+  // Adicionar brackets faltando
+  for (let i = 0; i < openBrackets - closeBrackets; i++) {
+    repaired += ']'
+  }
+  for (let i = 0; i < openBraces - closeBraces; i++) {
+    repaired += '}'
+  }
+
+  // Tentar parsear
+  try {
+    const parsed = JSON.parse(repaired)
+    if (parsed.enunciado && parsed.alternativas) {
+      return repaired
+    }
+  } catch {
+    // Ainda não é válido
+  }
+
+  return null
+}
+
 function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifacts: Artifact[]; hasIncompleteQuestion: boolean } {
   const artifacts: Artifact[] = []
   let lastIndex = 0
@@ -413,6 +551,17 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
 
   // Detectar se há questão incompleta para mostrar indicador de carregamento
   const hasIncompleteQuestion = INCOMPLETE_QUESTION_REGEX.test(content)
+
+  // Contar questões completas no conteúdo
+  const completedQuestions = content.match(/```quest(?:ao|ion)(?::[^\n]*)?\n[\s\S]*?```/g)
+  if (completedQuestions || hasIncompleteQuestion) {
+    console.log('[ArtifactRenderer] parseArtifacts:', {
+      contentLength: content.length,
+      completedQuestionsCount: completedQuestions?.length || 0,
+      hasIncompleteQuestion,
+      hasQuestionMarker: content.includes('```quest')
+    })
+  }
 
   // Processar conteúdo, escondendo blocos incompletos
   const processedContent = hideIncompleteQuestions(content)
@@ -458,19 +607,32 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
     allMatches.push({ match, type: 'staging' })
   }
 
-  // Buscar questões geradas pela IA (apenas COMPLETAS com JSON válido)
+  // Buscar questões geradas pela IA (COMPLETAS ou que podem ser reparadas)
   const questionRegex = new RegExp(QUESTION_REGEX.source, 'g')
   while ((match = questionRegex.exec(processedContent)) !== null) {
     try {
-      const questionJson = match[1].trim()
-      // Só adicionar se o JSON estiver completo e válido
-      if (isCompleteQuestionJson(questionJson)) {
-        const questionData = JSON.parse(questionJson) as Question
-        allMatches.push({ match, type: 'question', questionData })
+      let questionJson = match[1].trim()
+
+      // Primeiro tentar como está
+      if (!isCompleteQuestionJson(questionJson)) {
+        // Tentar reparar JSON incompleto
+        const repaired = tryRepairQuestionJson(questionJson)
+        if (repaired) {
+          questionJson = repaired
+          console.log('[ArtifactRenderer] JSON de questão reparado com sucesso')
+        } else {
+          // Não foi possível reparar, pular
+          console.log('[ArtifactRenderer] JSON de questão incompleto, aguardando mais dados...')
+          continue
+        }
       }
-    } catch {
-      // Se não for JSON válido, ignorar - está sendo gerado ainda
-      // Não mostrar warning durante streaming
+
+      const questionData = JSON.parse(questionJson) as Question
+      allMatches.push({ match, type: 'question', questionData })
+      console.log('[ArtifactRenderer] Questão parseada com sucesso:', questionData.disciplina, questionData.assunto)
+    } catch (error) {
+      // Se não for JSON válido, logar para debug
+      console.warn('[ArtifactRenderer] Erro ao parsear questão:', error)
     }
   }
 
@@ -699,10 +861,39 @@ export default function ArtifactRenderer({ content, userId, messageId }: Artifac
     })
   }, [artifacts, messageId, addArtifact, storeArtifacts])
 
+  // Obter dados parciais da questão sendo gerada
+  const partialQuestionData = useMemo(() => getPartialQuestionData(), [content])
+
   return (
     <div className="artifact-renderer">
       {parts.map((part, index) => {
         if (typeof part === 'string') {
+          // Verificar se é o marcador de skeleton de questão
+          if (part.includes('[QUESTION_STREAMING_SKELETON]')) {
+            // Dividir o texto e renderizar o skeleton no lugar do marcador
+            const segments = part.split('[QUESTION_STREAMING_SKELETON]')
+            return (
+              <div key={index}>
+                {segments.map((segment, segIndex) => (
+                  <div key={segIndex}>
+                    {segment.trim() && (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {removeImageSearchMarkers(segment)}
+                      </ReactMarkdown>
+                    )}
+                    {segIndex < segments.length - 1 && (
+                      <div className="my-4">
+                        <QuestionStreamingSkeleton 
+                          partialData={partialQuestionData || undefined}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          }
+
           // Remover marcadores IMAGE_SEARCH do texto antes de renderizar
           const cleanedPart = removeImageSearchMarkers(part)
 
