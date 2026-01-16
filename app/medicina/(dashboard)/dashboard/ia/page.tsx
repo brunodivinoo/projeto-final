@@ -11,7 +11,6 @@ import {
   BookOpen,
   FileText,
   Layers,
-  User,
   Bot,
   Crown,
   Plus,
@@ -761,7 +760,7 @@ export default function IAPage() {
             mensagens.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-2 md:gap-3 ${msg.tipo === 'usuario' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${msg.tipo === 'usuario' ? 'justify-end' : 'gap-2 md:gap-3 justify-start'}`}
               >
                 {/* Avatar - menor no mobile */}
                 {msg.tipo === 'ia' && (
@@ -770,11 +769,11 @@ export default function IAPage() {
                   </div>
                 )}
 
-                {/* Mensagem com largura diferenciada - usuário compacta, IA expande */}
+                {/* Mensagem com largura diferenciada - usuário compacta, IA expande total */}
                 <div className={`${
                   msg.tipo === 'usuario'
-                    ? 'max-w-[75%] md:max-w-[60%] lg:max-w-[50%]'
-                    : 'max-w-[98%] md:max-w-[95%] lg:max-w-[92%]'
+                    ? 'max-w-[80%] md:max-w-[55%] lg:max-w-[45%]'
+                    : 'max-w-full'
                 } ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
                   {msg.thinking && (
                     <div className="mb-1.5 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -837,11 +836,7 @@ export default function IAPage() {
                   )}
                 </div>
 
-                {msg.tipo === 'usuario' && (
-                  <div className="w-5 h-5 md:w-6 md:h-6 rounded-md bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-                    <User className="w-2.5 h-2.5 md:w-3 md:h-3 text-emerald-400" />
-                  </div>
-                )}
+                {/* Avatar do usuário removido - mensagem fica mais limpa */}
               </div>
             ))
           )}
