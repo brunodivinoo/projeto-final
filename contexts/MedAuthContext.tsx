@@ -35,6 +35,7 @@ export interface LimitesUsoMED {
   perguntas_ia_mes: number
   resumos_ia_mes: number
   flashcards_ia_mes: number
+  casos_clinicos_mes: number
   anotacoes_total: number
 }
 
@@ -68,7 +69,8 @@ export const LIMITES_PLANO = {
     exportar_pdf: false,
     marca_dagua: true,
     badge_ranking: '🆓',
-    historico_dias: 30
+    historico_dias: 30,
+    teoria_nivel: 'basico' as const
   },
   premium: {
     // R$60/mês
@@ -90,7 +92,8 @@ export const LIMITES_PLANO = {
     exportar_pdf: true,
     marca_dagua: true, // Com marca d'água
     badge_ranking: '💎',
-    historico_dias: 365
+    historico_dias: 365,
+    teoria_nivel: 'avancado' as const
   },
   residencia: {
     // R$150/mês
@@ -112,7 +115,8 @@ export const LIMITES_PLANO = {
     exportar_pdf: true,
     marca_dagua: false, // Limpo
     badge_ranking: '👑',
-    historico_dias: -1 // ilimitado
+    historico_dias: -1, // ilimitado
+    teoria_nivel: 'expert' as const
   }
 }
 
@@ -150,15 +154,15 @@ type MedAuthContextType = {
   loading: boolean
   profileLoading: boolean
   plano: 'gratuito' | 'premium' | 'residencia'
-  limitesPlano: typeof LIMITES_PLANO.gratuito
+  limitesPlano: typeof LIMITES_PLANO.gratuito | typeof LIMITES_PLANO.premium | typeof LIMITES_PLANO.residencia
   // Trial
   trialStatus: TrialStatus
   iniciarTrial: () => Promise<boolean>
   // Funções existentes
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
-  verificarLimite: (tipo: 'questoes_dia' | 'simulados_mes' | 'perguntas_ia_mes' | 'resumos_ia_mes' | 'flashcards_semana' | 'casos_clinicos_mes' | 'anotacoes_total') => { permitido: boolean; usado: number; limite: number }
-  incrementarUso: (tipo: 'questoes_dia' | 'simulados_mes' | 'perguntas_ia_mes' | 'resumos_ia_mes' | 'flashcards_semana' | 'casos_clinicos_mes' | 'anotacoes_total') => Promise<boolean>
+  verificarLimite: (tipo: 'questoes_dia' | 'simulados_mes' | 'perguntas_ia_mes' | 'resumos_ia_mes' | 'flashcards_ia_mes' | 'casos_clinicos_mes' | 'anotacoes_total') => { permitido: boolean; usado: number; limite: number }
+  incrementarUso: (tipo: 'questoes_dia' | 'simulados_mes' | 'perguntas_ia_mes' | 'resumos_ia_mes' | 'flashcards_ia_mes' | 'casos_clinicos_mes' | 'anotacoes_total') => Promise<boolean>
   // Verificações de funcionalidades
   podeUsarFuncionalidade: (funcionalidade: 'ia' | 'simulados' | 'flashcards' | 'casos_clinicos' | 'analise_exames' | 'voz' | 'biblioteca') => boolean
 }
@@ -296,6 +300,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
             perguntas_ia_mes: 0,
             resumos_ia_mes: 0,
             flashcards_ia_mes: 0,
+            casos_clinicos_mes: 0,
             anotacoes_total: 0
           })
           .select()
@@ -383,8 +388,10 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     return checks[func] ?? false
   }, [trialStatus.ativo, limitesPlano])
 
-  const verificarLimite = useCallback((tipo: 'questoes_dia' | 'simulados_mes' | 'perguntas_ia_mes' | 'resumos_ia_mes' | 'flashcards_semana' | 'casos_clinicos_mes' | 'anotacoes_total') => {
-    const limite = limitesPlano[tipo]
+  const verificarLimite = useCallback((tipo: 'questoes_dia' | 'simulados_mes' | 'perguntas_ia_mes' | 'resumos_ia_mes' | 'flashcards_ia_mes' | 'casos_clinicos_mes' | 'anotacoes_total') => {
+    // Mapear para o campo correto do limitesPlano (que usa flashcards_semana)
+    const tipoPlano = tipo === 'flashcards_ia_mes' ? 'flashcards_semana' : tipo
+    const limite = limitesPlano[tipoPlano as keyof typeof limitesPlano] as number
     const usado = limites?.[tipo] || 0
 
     // -1 significa ilimitado
@@ -399,7 +406,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [limitesPlano, limites])
 
-  const incrementarUso = useCallback(async (tipo: 'questoes_dia' | 'simulados_mes' | 'perguntas_ia_mes' | 'resumos_ia_mes' | 'flashcards_ia_mes' | 'anotacoes_total') => {
+  const incrementarUso = useCallback(async (tipo: 'questoes_dia' | 'simulados_mes' | 'perguntas_ia_mes' | 'resumos_ia_mes' | 'flashcards_ia_mes' | 'casos_clinicos_mes' | 'anotacoes_total') => {
     if (!user || !limites) return false
 
     const { permitido } = verificarLimite(tipo)

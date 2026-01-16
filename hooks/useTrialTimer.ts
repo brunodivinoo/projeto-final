@@ -79,7 +79,7 @@ export function useTrialTimer(): TrialTimerData {
 
   // Verificações
   const isTrialActive = plano === 'gratuito' && trialStatus.ativo && tempo.ms > 0
-  const isTrialExpired = plano === 'gratuito' && profile?.trial_started_at && tempo.ms <= 0
+  const isTrialExpired = plano === 'gratuito' && !!profile?.trial_started_at && tempo.ms <= 0
   const hasUsedTrial = profile?.trial_used === true
   const canStartTrial = plano === 'gratuito' && !profile?.trial_started_at && !profile?.trial_used
 

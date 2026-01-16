@@ -228,8 +228,8 @@ export function useFlashcardsMed() {
 
       // Verificar se pode usar funcionalidade
       if (!podeUsarFuncionalidade('flashcards')) {
-        const limite = verificarLimite('flashcards_semana')
-        setError(`Limite de flashcards atingido (${limite.usado}/${limite.limite} esta semana)`)
+        const limite = verificarLimite('flashcards_ia_mes')
+        setError(`Limite de flashcards atingido (${limite.usado}/${limite.limite} este mês)`)
         return null
       }
 
@@ -261,7 +261,7 @@ export function useFlashcardsMed() {
         if (insertError) throw insertError
 
         // Incrementar uso
-        await incrementarUso('flashcards_semana')
+        await incrementarUso('flashcards_ia_mes')
 
         setFlashcards(prev => [...prev, novoFlashcard])
         return novoFlashcard

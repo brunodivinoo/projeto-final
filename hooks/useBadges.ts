@@ -90,9 +90,9 @@ export function useBadges() {
 
       if (conquistadosRes.data) {
         const badgesConquistados = conquistadosRes.data
-          .filter(c => c.badges_med)
+          .filter(c => c.badges_med && !Array.isArray(c.badges_med))
           .map(c => ({
-            ...(c.badges_med as Badge),
+            ...(c.badges_med as unknown as Badge),
             conquistado_em: c.conquistado_em
           }))
         setMeusBadges(badgesConquistados)
@@ -132,26 +132,29 @@ export function useBadges() {
   // Buscar ranking geral (top 10)
   const fetchRankingGeral = useCallback(async (tipo: 'semana' | 'mes' | 'total' = 'semana') => {
     try {
-      const coluna = `pontos_${tipo}`
-
       const { data } = await supabase
         .from('ranking_med')
-        .select(`
-          user_id,
-          ${coluna},
-          profiles_med(nome, avatar_url)
-        `)
-        .order(coluna, { ascending: false })
+        .select('user_id, pontos_semana, pontos_mes, pontos_total, profiles_med(nome, avatar_url)')
+        .order(tipo === 'semana' ? 'pontos_semana' : tipo === 'mes' ? 'pontos_mes' : 'pontos_total', { ascending: false })
         .limit(10)
 
       if (data) {
-        const rankingFormatado = data.map((item, index) => ({
-          user_id: item.user_id,
-          nome: (item.profiles_med as { nome: string | null })?.nome || 'Anônimo',
-          avatar_url: (item.profiles_med as { avatar_url: string | null })?.avatar_url || null,
-          pontos: item[coluna] as number,
-          posicao: index + 1
-        }))
+        const rankingFormatado = data.map((item: Record<string, unknown>, index: number) => {
+          const pontos = tipo === 'semana'
+            ? item.pontos_semana
+            : tipo === 'mes'
+            ? item.pontos_mes
+            : item.pontos_total
+          const profile = item.profiles_med as { nome: string | null; avatar_url: string | null } | null
+
+          return {
+            user_id: item.user_id as string,
+            nome: profile?.nome || 'Anônimo',
+            avatar_url: profile?.avatar_url || null,
+            pontos: (pontos as number) || 0,
+            posicao: index + 1
+          }
+        })
         setRankingGeral(rankingFormatado)
       }
     } catch (error) {
