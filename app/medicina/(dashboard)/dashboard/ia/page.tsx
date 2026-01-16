@@ -771,7 +771,7 @@ export default function IAPage() {
                 )}
 
                 {/* Mensagem com largura ajustada - expande mais */}
-                <div className={`max-w-[95%] md:max-w-[90%] lg:max-w-[85%] ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
+                <div className={`max-w-[95%] md:max-w-[92%] lg:max-w-[88%] ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
                   {msg.thinking && (
                     <div className="mb-1.5 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
                       <p className="text-amber-200 text-[10px] font-medium mb-0.5 flex items-center gap-1">
