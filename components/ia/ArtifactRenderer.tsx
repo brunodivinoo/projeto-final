@@ -441,15 +441,33 @@ function extractPartialQuestionData(incompleteJson: string, fullContent?: string
   const alternativasMatches = incompleteJson.match(/"letra"\s*:\s*"[A-E]"/g)
   if (alternativasMatches) data.alternativasCount = alternativasMatches.length
 
-  // Se temos o conteúdo completo, contar questões já completas para determinar índice
-  if (fullContent) {
-    const completedQuestions = fullContent.match(/```quest(?:ao|ion)(?::[^\n]*)?\n[\s\S]*?```/g)
-    data.questionIndex = (completedQuestions?.length || 0) + 1
+  // Extrair número da questão do próprio JSON parcial (campo "numero")
+  const numeroMatch = incompleteJson.match(/"numero"\s*:\s*(\d+)/)
+  if (numeroMatch) {
+    data.questionIndex = parseInt(numeroMatch[1])
+  }
 
-    // Tentar detectar total esperado do contexto (ex: "3 questões")
-    const totalMatch = fullContent.match(/(\d+)\s*quest(?:ões|oes|ao|ion)/i)
-    if (totalMatch) {
-      data.totalExpected = parseInt(totalMatch[1])
+  // Se temos o conteúdo completo, usar para determinar índice e total
+  if (fullContent) {
+    // Primeiro, tentar extrair do formato "Questão X de Y"
+    const questaoDeMatch = fullContent.match(/quest[aã]o\s*(\d+)\s*de\s*(\d+)/i)
+    if (questaoDeMatch) {
+      data.questionIndex = parseInt(questaoDeMatch[1])
+      data.totalExpected = parseInt(questaoDeMatch[2])
+    } else {
+      // Fallback: contar questões completas + 1
+      if (!data.questionIndex) {
+        const completedQuestions = fullContent.match(/```quest(?:ao|ion)(?::[^\n]*)?\n[\s\S]*?```/g)
+        data.questionIndex = (completedQuestions?.length || 0) + 1
+      }
+
+      // Tentar detectar total esperado de múltiplas formas
+      // Formato: "criar N questões" ou "N questões sobre"
+      const totalMatch = fullContent.match(/(?:criar?|gerar?|fazer?|vou\s+criar?)\s*(\d+)\s*quest(?:ões|oes)/i)
+        || fullContent.match(/(\d+)\s*quest(?:ões|oes)\s+sobre/i)
+      if (totalMatch) {
+        data.totalExpected = parseInt(totalMatch[1])
+      }
     }
   }
 
@@ -816,31 +834,82 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
 
   // Buscar questões geradas pela IA (COMPLETAS ou que podem ser reparadas)
   const questionRegex = new RegExp(QUESTION_REGEX.source, 'g')
+  let questionMatchCount = 0
+
   while ((match = questionRegex.exec(processedContent)) !== null) {
+    questionMatchCount++
+    const jsonLength = match[1].length
+    console.log(`[ArtifactRenderer] ========== QUESTÃO #${questionMatchCount} ==========`)
+    console.log(`[ArtifactRenderer] Tamanho do JSON: ${jsonLength} chars`)
+
     try {
       let questionJson = match[1].trim()
 
+      // Log do início e final do JSON para debug
+      console.log('[ArtifactRenderer] Início:', questionJson.substring(0, 80).replace(/\n/g, ' '))
+      console.log('[ArtifactRenderer] Final:', questionJson.substring(Math.max(0, questionJson.length - 80)).replace(/\n/g, ' '))
+
+      // Verificar estrutura básica
+      const looksComplete = questionJson.endsWith('}')
+      const openBraces = (questionJson.match(/\{/g) || []).length
+      const closeBraces = (questionJson.match(/\}/g) || []).length
+      const hasBracketBalance = openBraces === closeBraces
+
+      console.log('[ArtifactRenderer] Termina com }:', looksComplete)
+      console.log('[ArtifactRenderer] Brackets: { =', openBraces, '} =', closeBraces, 'Balanceado:', hasBracketBalance)
+
       // Primeiro tentar como está
       if (!isCompleteQuestionJson(questionJson)) {
+        console.log('[ArtifactRenderer] JSON incompleto, tentando reparar...')
+
         // Tentar reparar JSON incompleto
         const repaired = tryRepairQuestionJson(questionJson)
         if (repaired) {
           questionJson = repaired
-          console.log('[ArtifactRenderer] JSON de questão reparado com sucesso')
+          console.log('[ArtifactRenderer] ✅ JSON reparado, novo tamanho:', repaired.length)
         } else {
           // Não foi possível reparar, pular
-          console.log('[ArtifactRenderer] JSON de questão incompleto, aguardando mais dados...')
+          console.log('[ArtifactRenderer] ❌ Reparo falhou, pulando questão')
           continue
         }
+      } else {
+        console.log('[ArtifactRenderer] ✅ JSON já está completo')
       }
 
       const questionData = JSON.parse(questionJson) as Question
+
+      // Garantir campos obrigatórios
+      if (!questionData.id) {
+        questionData.id = `q-${Date.now()}-${questionMatchCount}`
+      }
+      if (!questionData.numero) {
+        questionData.numero = questionMatchCount
+      }
+      if (!questionData.gabarito_comentado) {
+        questionData.gabarito_comentado = {
+          resposta_correta: 'A',
+          explicacao: 'Gabarito sendo processado...',
+          analise_alternativas: [],
+          ponto_chave: '',
+          referencias: []
+        }
+      }
+
       allMatches.push({ match, type: 'question', questionData })
-      console.log('[ArtifactRenderer] Questão parseada com sucesso:', questionData.disciplina, questionData.assunto)
+      console.log('[ArtifactRenderer] ✅ Questão adicionada:', {
+        numero: questionData.numero,
+        disciplina: questionData.disciplina,
+        assunto: questionData.assunto,
+        alternativas: questionData.alternativas?.length || 0
+      })
     } catch (error) {
-      // Se não for JSON válido, logar para debug
-      console.warn('[ArtifactRenderer] Erro ao parsear questão:', error)
+      console.error('[ArtifactRenderer] ❌ Erro ao parsear questão:', error)
+      console.error('[ArtifactRenderer] JSON problemático (500 chars):', match[1].substring(0, 500))
     }
+  }
+
+  if (questionMatchCount > 0) {
+    console.log(`[ArtifactRenderer] ========== TOTAL: ${questionMatchCount} questões processadas ==========`)
   }
 
   // NOVO: Buscar blocos de código que podem conter ASCII art

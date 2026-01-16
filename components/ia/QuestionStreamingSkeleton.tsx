@@ -96,9 +96,18 @@ export default function QuestionStreamingSkeleton({
       <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 bg-[#151D2B] border-b border-white/10">
         {/* Número da questão - mostra índice se disponível */}
         <span className="bg-emerald-500/20 text-emerald-400 font-bold text-xs px-2 py-0.5 rounded">
-          {partialData?.questionIndex ? `Q${partialData.questionIndex}` : 'Q?'}
-          {partialData?.totalExpected && partialData?.questionIndex && (
-            <span className="text-emerald-400/60 font-normal">/{partialData.totalExpected}</span>
+          {partialData?.questionIndex && partialData.questionIndex > 0 ? (
+            <>
+              <span>Q{partialData.questionIndex}</span>
+              {partialData?.totalExpected && partialData.totalExpected > 0 && (
+                <span className="text-emerald-400/60 font-normal">/{partialData.totalExpected}</span>
+              )}
+            </>
+          ) : (
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 border border-emerald-400/50 border-t-emerald-400 rounded-full animate-spin" />
+              Gerando
+            </span>
           )}
         </span>
 
