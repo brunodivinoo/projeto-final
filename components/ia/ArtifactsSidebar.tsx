@@ -346,6 +346,7 @@ const QuestionArtifactCard = dynamic(() => import('./QuestionArtifactCard'), {
 
 interface ArtifactsSidebarProps {
   className?: string
+  userId?: string
 }
 
 // Componente para renderizar conteúdo do artefato
@@ -1025,7 +1026,7 @@ function CategorySection({
 }
 
 // Componente principal da Sidebar
-export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarProps) {
+export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSidebarProps) {
   const {
     artifacts: allArtifacts,
     selectedArtifactId,
@@ -1580,7 +1581,11 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
 
                             return (
                               <div key={artifact.id} className="bg-slate-800/50 rounded-xl overflow-hidden border border-white/5">
-                                <QuestionArtifactCard question={question} />
+                                <QuestionArtifactCard
+                                  question={question}
+                                  userId={userId}
+                                  conversaId={currentConversaId || undefined}
+                                />
                               </div>
                             )
                           })}

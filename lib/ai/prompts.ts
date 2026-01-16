@@ -747,8 +747,8 @@ Clique na alternativa que você acha correta! Depois peça a próxima."
 IMPORTANTE: O usuário interage CLICANDO nas alternativas do card, não digitando.
 Não peça para o usuário digitar "A, B, C, D ou E" - ele clica diretamente no card.
 
-#### PASSO 3 - FORMATO JSON COMPACTO
-Use este formato simplificado para evitar truncamento:
+#### PASSO 3 - FORMATO JSON COM GABARITO COMPLETO
+Use este formato com análise de TODAS as alternativas:
 
 \`\`\`questao
 {
@@ -757,34 +757,43 @@ Use este formato simplificado para evitar truncamento:
   "dificuldade": "medio",
   "disciplina": "Cardiologia",
   "assunto": "Insuficiência Cardíaca",
-  "enunciado": "Paciente de 65 anos, hipertenso, apresenta dispneia progressiva, ortopneia e edema de MMII. Ao exame: estertores em bases, B3, refluxo hepatojugular. Qual o diagnóstico?",
+  "enunciado": "Paciente de 65 anos, hipertenso, apresenta dispneia progressiva há 3 meses, ortopneia e edema de MMII. Ao exame: estertores crepitantes em bases, B3 presente, refluxo hepatojugular e edema 3+/4+. Qual achado tem MAIOR especificidade para ICC?",
   "alternativas": [
-    {"letra": "A", "texto": "Pneumonia bilateral"},
-    {"letra": "B", "texto": "Insuficiência cardíaca descompensada"},
-    {"letra": "C", "texto": "DPOC exacerbada"},
-    {"letra": "D", "texto": "Tromboembolismo pulmonar"},
-    {"letra": "E", "texto": "Derrame pleural"}
+    {"letra": "A", "texto": "Estertores crepitantes em bases pulmonares"},
+    {"letra": "B", "texto": "Edema de membros inferiores"},
+    {"letra": "C", "texto": "Terceira bulha cardíaca (B3)"},
+    {"letra": "D", "texto": "Dispneia aos esforços"},
+    {"letra": "E", "texto": "Hipertensão arterial sistêmica"}
   ],
   "gabarito_comentado": {
-    "resposta_correta": "B",
-    "explicacao": "Quadro clássico de ICC: dispneia + ortopneia + edema + B3 + refluxo hepatojugular.",
-    "ponto_chave": "B3 = sobrecarga de volume = ICC!"
+    "resposta_correta": "C",
+    "explicacao_geral": "A B3 (terceira bulha) é o achado de exame físico com MAIOR ESPECIFICIDADE para ICC, indicando sobrecarga de volume e disfunção sistólica. Estertores e edema são sensíveis, mas pouco específicos (podem ocorrer em pneumonia, síndrome nefrótica, etc).",
+    "analise_alternativas": [
+      {"letra": "A", "correta": false, "analise": "INCORRETA. Estertores são SENSÍVEIS mas pouco específicos - podem ocorrer em pneumonia, fibrose pulmonar, SDRA."},
+      {"letra": "B", "correta": false, "analise": "INCORRETA. Edema de MMII é inespecífico - causas incluem insuficiência venosa, síndrome nefrótica, cirrose."},
+      {"letra": "C", "correta": true, "analise": "CORRETA. B3 indica sobrecarga de volume ventricular e tem alta especificidade (>90%) para ICC."},
+      {"letra": "D", "correta": false, "analise": "INCORRETA. Dispneia é muito inespecífica - causas pulmonares, anemia, obesidade."},
+      {"letra": "E", "correta": false, "analise": "INCORRETA. HAS é fator de risco para ICC, não um achado diagnóstico de ICC."}
+    ],
+    "ponto_chave": "B3 = alta especificidade para ICC! Estertores e edema = sensíveis, mas inespecíficos.",
+    "dica_memorizacao": "B3 = Bulha de Bomba ruim (ICC). É o som do sangue batendo numa câmara dilatada.",
+    "referencias": ["Harrison's Principles of Internal Medicine", "Diretriz de ICC - SBC 2021"]
   }
 }
 \`\`\`
 
-⚠️ CAMPOS OBRIGATÓRIOS APENAS:
-- numero, tipo, dificuldade, disciplina, assunto
-- enunciado (máximo 300 caracteres para casos simples, 500 para casos clínicos)
-- alternativas (5 opções, texto curto)
-- gabarito_comentado com: resposta_correta, explicacao (2-3 frases), ponto_chave
+⚠️ FORMATO DO GABARITO OBRIGATÓRIO:
+O gabarito_comentado DEVE SEMPRE conter:
+- resposta_correta: letra da alternativa correta
+- explicacao_geral: 2-3 frases explicando o raciocínio clínico
+- analise_alternativas: array com TODAS as 5 alternativas, cada uma com:
+  - letra, correta (boolean), analise (1-2 frases por que está certa ou errada)
+- ponto_chave: frase curta para memorização
+- dica_memorizacao: mnemônico ou associação
+- referencias: 1-2 referências bibliográficas
 
-⚠️ NÃO INCLUA (para manter JSON pequeno):
-- analise_alternativas (explique verbalmente se o usuário errar)
-- pegadinha (mencione apenas após a resposta)
-- dica_memorizacao (ofereça como bônus)
-- referencias (cite apenas se perguntado)
-- banca_estilo (desnecessário)
+⚠️ NÃO INCLUA nas alternativas:
+- "correta: true/false" (isso vai NO GABARITO, não nas alternativas)
 
 #### PASSO 4 - APÓS USUÁRIO PEDIR PRÓXIMA
 O usuário interage clicando no card de questão (não digitando).

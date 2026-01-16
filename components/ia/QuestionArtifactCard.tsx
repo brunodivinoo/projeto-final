@@ -2,19 +2,35 @@
 
 import { useState, useCallback } from 'react'
 import { Question, DIFFICULTY_COLORS } from '@/stores/artifactsStore'
-import { Scissors } from 'lucide-react'
+import { Scissors, CheckCircle, XCircle } from 'lucide-react'
 
 interface QuestionArtifactCardProps {
   question: Question
   onAnswerSubmit?: (questionId: string, answer: string, correct: boolean) => void
+  userId?: string
+  conversaId?: string
+  respostaAnterior?: {
+    resposta_usuario: string
+    acertou: boolean
+    tentativas: number
+  } | null
 }
 
-export default function QuestionArtifactCard({ question, onAnswerSubmit }: QuestionArtifactCardProps) {
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(question.resposta_usuario || null)
-  const [showFeedback, setShowFeedback] = useState(question.mostrar_gabarito || false)
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(question.acertou ?? null)
+export default function QuestionArtifactCard({
+  question,
+  onAnswerSubmit,
+  userId,
+  conversaId,
+  respostaAnterior
+}: QuestionArtifactCardProps) {
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(question.resposta_usuario || respostaAnterior?.resposta_usuario || null)
+  const [showFeedback, setShowFeedback] = useState(question.mostrar_gabarito || !!respostaAnterior)
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(question.acertou ?? respostaAnterior?.acertou ?? null)
   const [expandedSection, setExpandedSection] = useState<'gabarito' | null>(null)
-  const [showAlternativasAnalise, setShowAlternativasAnalise] = useState(false)
+  const [showAlternativasAnalise, setShowAlternativasAnalise] = useState(true) // Aberto por padrão
+  const [savedAnswer, setSavedAnswer] = useState(respostaAnterior)
+  const [startTime] = useState(Date.now())
+  const [isSaving, setIsSaving] = useState(false)
   // Estado para alternativas eliminadas (cortadas)
   const [eliminatedAlternatives, setEliminatedAlternatives] = useState<Set<string>>(new Set())
 
@@ -48,21 +64,55 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
     })
   }, [showFeedback, selectedAnswer])
 
-  const handleSubmitAnswer = useCallback(() => {
+  const handleSubmitAnswer = useCallback(async () => {
     if (!selectedAnswer || showFeedback) return
 
     // Buscar resposta correta do gabarito (não das alternativas para não vazar)
     const correctAnswerLetter = question.gabarito_comentado?.resposta_correta ||
       question.alternativas.find(a => a.correta)?.letra
     const correct = selectedAnswer === correctAnswerLetter
+    const tempoResposta = Math.round((Date.now() - startTime) / 1000)
 
     setIsCorrect(correct)
     setShowFeedback(true)
 
+    // Salvar no banco de dados
+    if (userId && conversaId) {
+      setIsSaving(true)
+      try {
+        await fetch('/api/medicina/ia/questoes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            conversa_id: conversaId,
+            enunciado: question.enunciado,
+            questao_numero: question.numero,
+            disciplina: question.disciplina,
+            assunto: question.assunto,
+            resposta_usuario: selectedAnswer,
+            resposta_correta: correctAnswerLetter,
+            acertou: correct,
+            tempo_resposta_segundos: tempoResposta
+          })
+        })
+
+        setSavedAnswer({
+          resposta_usuario: selectedAnswer,
+          acertou: correct,
+          tentativas: (savedAnswer?.tentativas || 0) + 1
+        })
+      } catch (error) {
+        console.error('Erro ao salvar resposta:', error)
+      } finally {
+        setIsSaving(false)
+      }
+    }
+
     if (onAnswerSubmit && question.id) {
       onAnswerSubmit(question.id, selectedAnswer, correct)
     }
-  }, [selectedAnswer, showFeedback, question, onAnswerSubmit])
+  }, [selectedAnswer, showFeedback, question, onAnswerSubmit, userId, conversaId, startTime, savedAnswer])
 
   const toggleSection = useCallback((section: 'gabarito') => {
     setExpandedSection(prev => prev === section ? null : section)
@@ -306,50 +356,84 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
           </svg>
         </button>
 
-        {/* Conteúdo do Gabarito - mais compacto - com verificações null */}
+        {/* Conteúdo do Gabarito - VERSÃO COMPLETA - com verificações null */}
         {expandedSection === 'gabarito' && question.gabarito_comentado && (
-          <div className="p-3 bg-emerald-500/5 border-t border-white/5 space-y-3">
-            {/* Resposta correta e explicação */}
-            <div>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">
-                  Gabarito: {question.gabarito_comentado.resposta_correta || '?'}
-                </span>
-              </div>
-              {question.gabarito_comentado.explicacao && (
-                <p className="text-white/70 text-xs leading-relaxed">
-                  {question.gabarito_comentado.explicacao}
-                </p>
-              )}
+          <div className="p-4 bg-emerald-500/5 border-t border-white/5 space-y-4">
+            {/* Resposta correta em destaque */}
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 text-sm font-bold">
+                Gabarito: {question.gabarito_comentado.resposta_correta || '?'}
+              </span>
             </div>
 
-            {/* Análise das alternativas - só mostrar se existir e tiver itens */}
+            {/* Explicação geral */}
+            {(question.gabarito_comentado.explicacao_geral || question.gabarito_comentado.explicacao) && (
+              <div className="p-3 bg-white/5 rounded-lg">
+                <p className="text-white/80 text-sm leading-relaxed">
+                  {question.gabarito_comentado.explicacao_geral || question.gabarito_comentado.explicacao}
+                </p>
+              </div>
+            )}
+
+            {/* Análise de cada alternativa - SEMPRE VISÍVEL COM DESTAQUE */}
             {question.gabarito_comentado.analise_alternativas &&
              question.gabarito_comentado.analise_alternativas.length > 0 && (
-              <div>
+              <div className="space-y-2">
                 <button
                   onClick={() => setShowAlternativasAnalise(prev => !prev)}
-                  className="flex items-center gap-1.5 text-white/60 hover:text-white/80 text-xs mb-1.5"
+                  className="w-full flex items-center justify-between text-white/60 hover:text-white/80 text-xs"
                 >
+                  <span className="flex items-center gap-1.5 font-semibold uppercase tracking-wider">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Análise de Cada Alternativa
+                  </span>
                   <svg
-                    className={`w-3 h-3 transition-transform ${showAlternativasAnalise ? 'rotate-90' : ''}`}
+                    className={`w-4 h-4 transition-transform ${showAlternativasAnalise ? 'rotate-180' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                  <span className="font-medium">Análise das Alternativas</span>
                 </button>
 
                 {showAlternativasAnalise && (
-                  <div className="space-y-1.5 pl-3">
-                    {question.gabarito_comentado.analise_alternativas.map((analise) => (
-                      <div key={analise.letra} className="text-xs">
-                        <span className="font-bold text-white/60">{analise.letra})</span>
-                        <span className="text-white/50 ml-1.5">{analise.analise}</span>
-                      </div>
-                    ))}
+                  <div className="space-y-2">
+                    {question.gabarito_comentado.analise_alternativas.map((analise) => {
+                      const isCorreta = analise.correta || analise.letra === question.gabarito_comentado?.resposta_correta
+                      return (
+                        <div
+                          key={analise.letra}
+                          className={`p-3 rounded-lg border ${
+                            isCorreta
+                              ? 'bg-green-500/10 border-green-500/30'
+                              : 'bg-red-500/5 border-red-500/20'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                              isCorreta
+                                ? 'bg-green-500 text-white'
+                                : 'bg-red-500/30 text-red-300'
+                            }`}>
+                              {analise.letra}
+                            </span>
+                            <div className="flex-1">
+                              <p className={`text-xs font-medium mb-1 ${
+                                isCorreta ? 'text-green-400' : 'text-red-400'
+                              }`}>
+                                {isCorreta ? '✓ CORRETA' : '✗ INCORRETA'}
+                              </p>
+                              <p className="text-white/70 text-sm leading-relaxed">
+                                {analise.analise}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -357,55 +441,52 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
 
             {/* Ponto chave - só mostrar se existir */}
             {question.gabarito_comentado.ponto_chave && (
-              <div className="p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <svg className="w-3 h-3 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <span className="text-yellow-400 text-[10px] font-semibold uppercase">Ponto-Chave</span>
+              <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-yellow-400 text-lg">🎯</span>
+                  <span className="text-yellow-400 text-xs font-semibold uppercase">Ponto-Chave</span>
                 </div>
-                <p className="text-white/70 text-xs">{question.gabarito_comentado.ponto_chave}</p>
-              </div>
-            )}
-
-            {/* Pegadinha se houver */}
-            {question.gabarito_comentado.pegadinha && (
-              <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <svg className="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <span className="text-red-400 text-[10px] font-semibold uppercase">Pegadinha</span>
-                </div>
-                <p className="text-white/70 text-xs">{question.gabarito_comentado.pegadinha}</p>
+                <p className="text-white/80 text-sm">{question.gabarito_comentado.ponto_chave}</p>
               </div>
             )}
 
             {/* Dica de memorização se houver */}
             {question.gabarito_comentado.dica_memorizacao && (
-              <div className="p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <svg className="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                  <span className="text-purple-400 text-[10px] font-semibold uppercase">Dica de Memorização</span>
+              <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-purple-400 text-lg">💡</span>
+                  <span className="text-purple-400 text-xs font-semibold uppercase">Dica de Memorização</span>
                 </div>
-                <p className="text-white/70 text-xs">{question.gabarito_comentado.dica_memorizacao}</p>
+                <p className="text-white/80 text-sm">{question.gabarito_comentado.dica_memorizacao}</p>
+              </div>
+            )}
+
+            {/* Pegadinha se houver */}
+            {question.gabarito_comentado.pegadinha && (
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-red-400 text-lg">⚠️</span>
+                  <span className="text-red-400 text-xs font-semibold uppercase">Pegadinha</span>
+                </div>
+                <p className="text-white/80 text-sm">{question.gabarito_comentado.pegadinha}</p>
               </div>
             )}
 
             {/* Referências - só mostrar se existir e tiver itens */}
             {question.gabarito_comentado.referencias &&
              question.gabarito_comentado.referencias.length > 0 && (
-              <div className="pt-2 border-t border-white/10">
-                <span className="text-white/40 text-[10px] font-medium uppercase tracking-wider">Referências:</span>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {question.gabarito_comentado.referencias.map((ref, i) => (
-                    <span key={i} className="text-[10px] text-white/50 bg-white/5 px-1.5 py-0.5 rounded">
-                      {ref}
-                    </span>
-                  ))}
+              <div className="pt-3 border-t border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-white/40 text-lg">📚</span>
+                  <span className="text-white/40 text-xs font-semibold uppercase">Referências</span>
                 </div>
+                <ul className="space-y-1">
+                  {question.gabarito_comentado.referencias.map((ref, i) => (
+                    <li key={i} className="text-white/50 text-xs pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-white/30">
+                      {ref}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 

@@ -1041,7 +1041,7 @@ export default function IAPage() {
       </div>
 
       {/* Sidebar de Artefatos */}
-      <ArtifactsSidebar />
+      <ArtifactsSidebar userId={user?.id} />
     </div>
   )
 }

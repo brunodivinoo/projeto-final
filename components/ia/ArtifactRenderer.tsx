@@ -1574,6 +1574,8 @@ export default function ArtifactRenderer({ content, userId, messageId, conversaI
             <div key={index} className="my-2">
               <QuestionArtifactCard
                 question={part.questionData}
+                userId={userId}
+                conversaId={conversaId}
               />
             </div>
           )

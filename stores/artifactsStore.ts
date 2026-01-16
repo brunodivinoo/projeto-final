@@ -28,18 +28,21 @@ export interface QuestionAlternative {
 // Interface para análise de alternativa no gabarito
 export interface AlternativeAnalysis {
   letra: string
+  texto_resumido?: string
+  correta?: boolean
   analise: string
 }
 
 // Interface para gabarito comentado
 export interface QuestionFeedback {
   resposta_correta: string
-  explicacao: string
-  analise_alternativas: AlternativeAnalysis[]
-  ponto_chave: string
+  explicacao?: string
+  explicacao_geral?: string  // Nova - explicação mais detalhada
+  analise_alternativas?: AlternativeAnalysis[]
+  ponto_chave?: string
   pegadinha?: string
   dica_memorizacao?: string
-  referencias: string[]
+  referencias?: string[]
 }
 
 // Interface para questão
@@ -102,6 +105,7 @@ interface ArtifactsState {
   setMobileDrawerOpen: (open: boolean) => void
   getArtifactsByMessage: (messageId: string) => Artifact[]
   getArtifactsForCurrentConversa: () => Artifact[]  // Obter artefatos da conversa atual
+  updateQuestionAnswer: (artifactId: string, resposta: string, acertou: boolean) => void  // Sincronizar resposta
 }
 
 export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
@@ -196,6 +200,29 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
     const state = get()
     if (!state.currentConversaId) return state.artifacts
     return state.artifacts.filter((a) => a.conversaId === state.currentConversaId || !a.conversaId)
+  },
+
+  // Atualizar estado de questão respondida (sincronização chat <-> sidebar)
+  updateQuestionAnswer: (artifactId, resposta, acertou) => {
+    set((state) => ({
+      artifacts: state.artifacts.map((artifact) => {
+        if (artifact.id === artifactId && artifact.type === 'question' && artifact.metadata?.question) {
+          return {
+            ...artifact,
+            metadata: {
+              ...artifact.metadata,
+              question: {
+                ...artifact.metadata.question,
+                resposta_usuario: resposta,
+                acertou: acertou,
+                mostrar_gabarito: true
+              }
+            }
+          }
+        }
+        return artifact
+      })
+    }))
   }
 }))
 
