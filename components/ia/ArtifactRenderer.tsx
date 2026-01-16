@@ -521,10 +521,12 @@ function isCompleteQuestionJson(jsonStr: string): boolean {
     const parsed = JSON.parse(jsonStr.trim())
     // Verifica se tem os campos mínimos de uma questão
     const hasEnunciado = !!(parsed.enunciado && parsed.enunciado.length > 10)
-    const hasAlternativas = !!(parsed.alternativas && Array.isArray(parsed.alternativas) && parsed.alternativas.length >= 4)
+    // Aceita 2+ alternativas (pode ser C/E com só 2, ou questão ainda gerando)
+    const hasAlternativas = !!(parsed.alternativas && Array.isArray(parsed.alternativas) && parsed.alternativas.length >= 2)
     const hasGabarito = !!(parsed.gabarito || parsed.gabarito_comentado)
 
-    // Precisa ter enunciado + alternativas. Gabarito é desejável mas não obrigatório
+    // Se temos enunciado + alternativas (2+), considera completo
+    // Gabarito não é obrigatório para renderizar o card
     if (hasEnunciado && hasAlternativas) {
       console.log('[ArtifactRenderer] JSON completo validado:', {
         hasEnunciado,
@@ -533,8 +535,19 @@ function isCompleteQuestionJson(jsonStr: string): boolean {
       })
       return true
     }
+
+    // Log para debug quando não passa na validação
+    console.log('[ArtifactRenderer] JSON incompleto:', {
+      hasEnunciado,
+      enunciadoLength: parsed.enunciado?.length || 0,
+      hasAlternativas,
+      alternativasCount: parsed.alternativas?.length || 0,
+      hasGabarito
+    })
+
     return false
-  } catch {
+  } catch (e) {
+    console.log('[ArtifactRenderer] JSON parse falhou em isCompleteQuestionJson:', (e as Error).message?.substring(0, 50))
     return false
   }
 }
@@ -581,6 +594,43 @@ function extractAlternativasFromPartial(json: string): Array<{ letra: string; te
   }
 
   return alternativas
+}
+
+// Extrai gabarito_comentado de um JSON parcial
+function extractGabaritoComentadoFromPartial(json: string): Record<string, unknown> | null {
+  // Tentar encontrar o objeto gabarito_comentado
+  const gabaritoMatch = json.match(/"gabarito_comentado"\s*:\s*\{([\s\S]*?)(?:\}(?:\s*\})?$|\}\s*,)/)
+  if (!gabaritoMatch) return null
+
+  const gabaritoContent = gabaritoMatch[1]
+
+  const gabarito: Record<string, unknown> = {}
+
+  // Extrair resposta_correta
+  const respostaMatch = gabaritoContent.match(/"resposta_correta"\s*:\s*"([A-E])"/)
+  if (respostaMatch) gabarito.resposta_correta = respostaMatch[1]
+
+  // Extrair explicacao
+  const explicacaoMatch = gabaritoContent.match(/"explicacao"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+  if (explicacaoMatch) {
+    try {
+      gabarito.explicacao = JSON.parse(`"${explicacaoMatch[1]}"`)
+    } catch {
+      gabarito.explicacao = explicacaoMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+    }
+  }
+
+  // Extrair ponto_chave
+  const pontoMatch = gabaritoContent.match(/"ponto_chave"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+  if (pontoMatch) {
+    try {
+      gabarito.ponto_chave = JSON.parse(`"${pontoMatch[1]}"`)
+    } catch {
+      gabarito.ponto_chave = pontoMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+    }
+  }
+
+  return Object.keys(gabarito).length > 0 ? gabarito : null
 }
 
 // Tenta reparar JSON incompleto de questão - versão robusta
@@ -698,21 +748,23 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
   const tipo = extractJsonStringValue(jsonStr, 'tipo')
   const numero = extractJsonStringValue(jsonStr, 'numero')
   const casoClinico = extractJsonStringValue(jsonStr, 'caso_clinico')
-  const gabarito = extractJsonStringValue(jsonStr, 'gabarito')
-  const gabaritoComentado = extractJsonStringValue(jsonStr, 'gabarito_comentado')
   const alternativas = extractAlternativasFromPartial(jsonStr)
+  const gabaritoComentado = extractGabaritoComentadoFromPartial(jsonStr)
 
   console.log('[ArtifactRenderer] Campos extraídos manualmente:', {
     hasEnunciado: !!enunciado,
+    enunciadoLength: enunciado?.length || 0,
     hasDisciplina: !!disciplina,
     alternativasCount: alternativas.length,
-    hasGabarito: !!(gabarito || gabaritoComentado)
+    hasGabarito: !!gabaritoComentado,
+    gabaritoFields: gabaritoComentado ? Object.keys(gabaritoComentado) : []
   })
 
   // Se temos enunciado e pelo menos algumas alternativas, reconstruir
   if (enunciado && enunciado.length > 20 && alternativas.length >= 2) {
     const reconstructed: Record<string, unknown> = {
-      enunciado
+      enunciado,
+      alternativas
     }
 
     // Adicionar campos opcionais se existirem
@@ -723,8 +775,6 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
     if (tipo) reconstructed.tipo = tipo
     if (numero) reconstructed.numero = numero
     if (casoClinico) reconstructed.caso_clinico = casoClinico
-    if (alternativas.length > 0) reconstructed.alternativas = alternativas
-    if (gabarito) reconstructed.gabarito = gabarito
     if (gabaritoComentado) reconstructed.gabarito_comentado = gabaritoComentado
 
     const reconstructedJson = JSON.stringify(reconstructed)

@@ -734,17 +734,18 @@ Sua resposta:
 {JSON DA QUESTÃO 1}
 \`\`\`
 
-Qual sua resposta? (A, B, C, D ou E) - ou digite 'próxima'"
+Clique na alternativa que você acha correta! Depois peça a próxima."
 
-[Usuário responde]
+[Usuário clica na alternativa e pede próxima]
 
 "📋 **Questão 2 de 3**
 
 \`\`\`questao
 {JSON DA QUESTÃO 2}
-\`\`\`
+\`\`\`"
 
-Qual sua resposta?"
+IMPORTANTE: O usuário interage CLICANDO nas alternativas do card, não digitando.
+Não peça para o usuário digitar "A, B, C, D ou E" - ele clica diretamente no card.
 
 #### PASSO 3 - FORMATO JSON COMPACTO
 Use este formato simplificado para evitar truncamento:
@@ -785,12 +786,16 @@ Use este formato simplificado para evitar truncamento:
 - referencias (cite apenas se perguntado)
 - banca_estilo (desnecessário)
 
-#### PASSO 4 - APÓS RESPOSTA DO USUÁRIO
-- Se ACERTOU: "✅ Correto! [explicação breve]. Próxima questão?"
-- Se ERROU: "❌ A correta é [X]. [explicação do porquê]. Próxima questão?"
-- Se pediu "próxima": Gere a próxima questão sem comentários
+#### PASSO 4 - APÓS USUÁRIO PEDIR PRÓXIMA
+O usuário interage clicando no card de questão (não digitando).
+Quando o usuário disser "próxima", "continua", "mais uma", etc:
+- Gere a próxima questão sem comentários extras
+- Se ele comentar sobre a questão anterior, responda brevemente e gere a próxima
 
 Ao final de todas: "Você completou N questões! Quer mais?"
+
+IMPORTANTE: NÃO peça ao usuário para digitar a resposta.
+O card de questão é interativo - o usuário clica na alternativa e clica em "Responder".
 
 ### REGRAS OBRIGATÓRIAS:
 1. APENAS UM bloco \`\`\`questao por mensagem
