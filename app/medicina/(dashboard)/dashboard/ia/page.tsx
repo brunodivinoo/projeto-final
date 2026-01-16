@@ -85,7 +85,7 @@ interface UsoIA {
 }
 
 export default function IAPage() {
-  const { user, plano } = useMedAuth()
+  const { user, plano, trialStatus } = useMedAuth()
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -811,6 +811,12 @@ export default function IAPage() {
                           userId={user?.id}
                           messageId={msg.id}
                           conversaId={conversaAtual || undefined}
+                          planoUsuario={plano}
+                          trialAtivo={trialStatus.ativo}
+                          onUpgradeClick={() => {
+                            // Redirecionar para página de planos
+                            window.location.href = '/medicina/planos'
+                          }}
                         />
                       </div>
                     ) : (

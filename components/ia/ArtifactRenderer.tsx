@@ -99,11 +99,17 @@ const QuestionStreamingSkeleton = dynamic(() => import('./QuestionStreamingSkele
   )
 })
 
+export type PlanoUsuario = 'gratuito' | 'premium' | 'residencia'
+
 interface ArtifactRendererProps {
   content: string
   userId?: string
   messageId?: string
   conversaId?: string  // ID da conversa para filtrar artefatos
+  // Props para blur no gabarito
+  planoUsuario?: PlanoUsuario
+  trialAtivo?: boolean
+  onUpgradeClick?: () => void
 }
 
 // Regex para detectar artefatos no formato ```artifact:tipo:titulo
@@ -1198,7 +1204,15 @@ function getQuestionHashSyncRenderer(enunciado: string): string {
   return hashCacheRenderer[enunciado] || ''
 }
 
-export default function ArtifactRenderer({ content, userId, messageId, conversaId }: ArtifactRendererProps) {
+export default function ArtifactRenderer({
+  content,
+  userId,
+  messageId,
+  conversaId,
+  planoUsuario = 'gratuito',
+  trialAtivo = false,
+  onUpgradeClick
+}: ArtifactRendererProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { parts, artifacts, hasIncompleteQuestion } = useMemo(() => parseArtifacts(content), [content])
   const { addArtifact, artifacts: storeArtifacts, updateQuestionAnswer } = useArtifactsStore()
@@ -1669,6 +1683,9 @@ export default function ArtifactRenderer({ content, userId, messageId, conversaI
                 userId={userId}
                 conversaId={conversaId}
                 respostaAnterior={respostaAnterior}
+                planoUsuario={planoUsuario}
+                trialAtivo={trialAtivo}
+                onUpgradeClick={onUpgradeClick}
                 onAnswerSubmit={async (questionId, answer, correct) => {
                   // Sincronizar com a store de artefatos
                   if (matchingArtifact) {

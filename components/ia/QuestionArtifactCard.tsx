@@ -2,7 +2,9 @@
 
 import { useState, useCallback } from 'react'
 import { Question, DIFFICULTY_COLORS } from '@/stores/artifactsStore'
-import { Scissors, CheckCircle, XCircle } from 'lucide-react'
+import { Scissors, Lock, Sparkles } from 'lucide-react'
+
+export type PlanoUsuario = 'gratuito' | 'premium' | 'residencia'
 
 interface QuestionArtifactCardProps {
   question: Question
@@ -14,6 +16,10 @@ interface QuestionArtifactCardProps {
     acertou: boolean
     tentativas: number
   } | null
+  // Para controle de blur no gabarito
+  planoUsuario?: PlanoUsuario
+  trialAtivo?: boolean
+  onUpgradeClick?: () => void
 }
 
 export default function QuestionArtifactCard({
@@ -21,9 +27,16 @@ export default function QuestionArtifactCard({
   onAnswerSubmit,
   userId,
   conversaId,
-  respostaAnterior
+  respostaAnterior,
+  planoUsuario = 'gratuito',
+  trialAtivo = false,
+  onUpgradeClick
 }: QuestionArtifactCardProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(question.resposta_usuario || respostaAnterior?.resposta_usuario || null)
+
+  // Determinar se deve aplicar blur no gabarito
+  // Blur para usuários gratuitos SEM trial ativo
+  const deveBlurGabarito = planoUsuario === 'gratuito' && !trialAtivo
   const [showFeedback, setShowFeedback] = useState(question.mostrar_gabarito || !!respostaAnterior)
   const [isCorrect, setIsCorrect] = useState<boolean | null>(question.acertou ?? respostaAnterior?.acertou ?? null)
   const [expandedSection, setExpandedSection] = useState<'gabarito' | null>(null)
@@ -358,148 +371,186 @@ export default function QuestionArtifactCard({
 
         {/* Conteúdo do Gabarito - VERSÃO COMPLETA - com verificações null */}
         {expandedSection === 'gabarito' && question.gabarito_comentado && (
-          <div className="p-4 bg-emerald-500/5 border-t border-white/5 space-y-4">
-            {/* Resposta correta em destaque */}
+          <div className="p-4 bg-emerald-500/5 border-t border-white/5 space-y-4 relative">
+            {/* Resposta correta em destaque - SEMPRE VISÍVEL */}
             <div className="flex items-center gap-2">
               <span className="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 text-sm font-bold">
                 Gabarito: {question.gabarito_comentado.resposta_correta || '?'}
               </span>
+              {deveBlurGabarito && (
+                <span className="px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 text-xs font-medium flex items-center gap-1">
+                  <Lock className="w-3 h-3" />
+                  Comentário Premium
+                </span>
+              )}
             </div>
 
-            {/* Explicação geral */}
-            {(question.gabarito_comentado.explicacao_geral || question.gabarito_comentado.explicacao) && (
-              <div className="p-3 bg-white/5 rounded-lg">
-                <p className="text-white/80 text-sm leading-relaxed">
-                  {question.gabarito_comentado.explicacao_geral || question.gabarito_comentado.explicacao}
-                </p>
-              </div>
-            )}
+            {/* Container com blur para usuários FREE */}
+            <div className={`relative ${deveBlurGabarito ? 'select-none' : ''}`}>
+              {/* Conteúdo que pode ter blur */}
+              <div className={`space-y-4 ${deveBlurGabarito ? 'blur-[6px] pointer-events-none' : ''}`}>
+                {/* Explicação geral */}
+                {(question.gabarito_comentado.explicacao_geral || question.gabarito_comentado.explicacao) && (
+                  <div className="p-3 bg-white/5 rounded-lg">
+                    <p className="text-white/80 text-sm leading-relaxed">
+                      {question.gabarito_comentado.explicacao_geral || question.gabarito_comentado.explicacao}
+                    </p>
+                  </div>
+                )}
 
-            {/* Análise de cada alternativa - SEMPRE VISÍVEL COM DESTAQUE */}
-            {question.gabarito_comentado.analise_alternativas &&
-             question.gabarito_comentado.analise_alternativas.length > 0 && (
-              <div className="space-y-2">
-                <button
-                  onClick={() => setShowAlternativasAnalise(prev => !prev)}
-                  className="w-full flex items-center justify-between text-white/60 hover:text-white/80 text-xs"
-                >
-                  <span className="flex items-center gap-1.5 font-semibold uppercase tracking-wider">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Análise de Cada Alternativa
-                  </span>
-                  <svg
-                    className={`w-4 h-4 transition-transform ${showAlternativasAnalise ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {showAlternativasAnalise && (
+                {/* Análise de cada alternativa - SEMPRE VISÍVEL COM DESTAQUE */}
+                {question.gabarito_comentado.analise_alternativas &&
+                 question.gabarito_comentado.analise_alternativas.length > 0 && (
                   <div className="space-y-2">
-                    {question.gabarito_comentado.analise_alternativas.map((analise) => {
-                      const isCorreta = analise.correta || analise.letra === question.gabarito_comentado?.resposta_correta
-                      return (
-                        <div
-                          key={analise.letra}
-                          className={`p-3 rounded-lg border ${
-                            isCorreta
-                              ? 'bg-green-500/10 border-green-500/30'
-                              : 'bg-red-500/5 border-red-500/20'
-                          }`}
-                        >
-                          <div className="flex items-start gap-2">
-                            <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                              isCorreta
-                                ? 'bg-green-500 text-white'
-                                : 'bg-red-500/30 text-red-300'
-                            }`}>
-                              {analise.letra}
-                            </span>
-                            <div className="flex-1">
-                              <p className={`text-xs font-medium mb-1 ${
-                                isCorreta ? 'text-green-400' : 'text-red-400'
-                              }`}>
-                                {isCorreta ? '✓ CORRETA' : '✗ INCORRETA'}
-                              </p>
-                              <p className="text-white/70 text-sm leading-relaxed">
-                                {analise.analise}
-                              </p>
+                    <button
+                      onClick={() => !deveBlurGabarito && setShowAlternativasAnalise(prev => !prev)}
+                      className="w-full flex items-center justify-between text-white/60 hover:text-white/80 text-xs"
+                    >
+                      <span className="flex items-center gap-1.5 font-semibold uppercase tracking-wider">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Análise de Cada Alternativa
+                      </span>
+                      <svg
+                        className={`w-4 h-4 transition-transform ${showAlternativasAnalise ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {showAlternativasAnalise && (
+                      <div className="space-y-2">
+                        {question.gabarito_comentado.analise_alternativas.map((analise) => {
+                          const isCorreta = analise.correta || analise.letra === question.gabarito_comentado?.resposta_correta
+                          return (
+                            <div
+                              key={analise.letra}
+                              className={`p-3 rounded-lg border ${
+                                isCorreta
+                                  ? 'bg-green-500/10 border-green-500/30'
+                                  : 'bg-red-500/5 border-red-500/20'
+                              }`}
+                            >
+                              <div className="flex items-start gap-2">
+                                <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                  isCorreta
+                                    ? 'bg-green-500 text-white'
+                                    : 'bg-red-500/30 text-red-300'
+                                }`}>
+                                  {analise.letra}
+                                </span>
+                                <div className="flex-1">
+                                  <p className={`text-xs font-medium mb-1 ${
+                                    isCorreta ? 'text-green-400' : 'text-red-400'
+                                  }`}>
+                                    {isCorreta ? '✓ CORRETA' : '✗ INCORRETA'}
+                                  </p>
+                                  <p className="text-white/70 text-sm leading-relaxed">
+                                    {analise.analise}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                      )
-                    })}
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Ponto chave - só mostrar se existir */}
+                {question.gabarito_comentado.ponto_chave && (
+                  <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-yellow-400 text-lg">🎯</span>
+                      <span className="text-yellow-400 text-xs font-semibold uppercase">Ponto-Chave</span>
+                    </div>
+                    <p className="text-white/80 text-sm">{question.gabarito_comentado.ponto_chave}</p>
+                  </div>
+                )}
+
+                {/* Dica de memorização se houver */}
+                {question.gabarito_comentado.dica_memorizacao && (
+                  <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-purple-400 text-lg">💡</span>
+                      <span className="text-purple-400 text-xs font-semibold uppercase">Dica de Memorização</span>
+                    </div>
+                    <p className="text-white/80 text-sm">{question.gabarito_comentado.dica_memorizacao}</p>
+                  </div>
+                )}
+
+                {/* Pegadinha se houver */}
+                {question.gabarito_comentado.pegadinha && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-red-400 text-lg">⚠️</span>
+                      <span className="text-red-400 text-xs font-semibold uppercase">Pegadinha</span>
+                    </div>
+                    <p className="text-white/80 text-sm">{question.gabarito_comentado.pegadinha}</p>
+                  </div>
+                )}
+
+                {/* Referências - só mostrar se existir e tiver itens */}
+                {question.gabarito_comentado.referencias &&
+                 question.gabarito_comentado.referencias.length > 0 && (
+                  <div className="pt-3 border-t border-white/10">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-white/40 text-lg">📚</span>
+                      <span className="text-white/40 text-xs font-semibold uppercase">Referências</span>
+                    </div>
+                    <ul className="space-y-1">
+                      {question.gabarito_comentado.referencias.map((ref, i) => (
+                        <li key={i} className="text-white/50 text-xs pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-white/30">
+                          {ref}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Tags */}
+                {question.tags && question.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-2">
+                    {question.tags.map((tag, i) => (
+                      <span key={i} className="text-[10px] text-emerald-400/70 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
+                        #{tag}
+                      </span>
+                    ))}
                   </div>
                 )}
               </div>
-            )}
 
-            {/* Ponto chave - só mostrar se existir */}
-            {question.gabarito_comentado.ponto_chave && (
-              <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-yellow-400 text-lg">🎯</span>
-                  <span className="text-yellow-400 text-xs font-semibold uppercase">Ponto-Chave</span>
+              {/* Overlay de upgrade para usuários FREE */}
+              {deveBlurGabarito && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-transparent via-[#1A2332]/50 to-[#1A2332]/80">
+                  <div className="text-center p-6 max-w-sm">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/30">
+                      <Sparkles className="w-7 h-7 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-lg mb-2">
+                      Gabarito Comentado Premium
+                    </h3>
+                    <p className="text-white/60 text-sm mb-4">
+                      Tenha acesso a explicações detalhadas, análise de cada alternativa, dicas de memorização e muito mais!
+                    </p>
+                    <button
+                      onClick={onUpgradeClick}
+                      className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold text-sm rounded-lg transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40"
+                    >
+                      Desbloquear Agora
+                    </button>
+                    <p className="text-white/40 text-xs mt-3">
+                      Ou ative seu trial de 4h grátis
+                    </p>
+                  </div>
                 </div>
-                <p className="text-white/80 text-sm">{question.gabarito_comentado.ponto_chave}</p>
-              </div>
-            )}
-
-            {/* Dica de memorização se houver */}
-            {question.gabarito_comentado.dica_memorizacao && (
-              <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-purple-400 text-lg">💡</span>
-                  <span className="text-purple-400 text-xs font-semibold uppercase">Dica de Memorização</span>
-                </div>
-                <p className="text-white/80 text-sm">{question.gabarito_comentado.dica_memorizacao}</p>
-              </div>
-            )}
-
-            {/* Pegadinha se houver */}
-            {question.gabarito_comentado.pegadinha && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-red-400 text-lg">⚠️</span>
-                  <span className="text-red-400 text-xs font-semibold uppercase">Pegadinha</span>
-                </div>
-                <p className="text-white/80 text-sm">{question.gabarito_comentado.pegadinha}</p>
-              </div>
-            )}
-
-            {/* Referências - só mostrar se existir e tiver itens */}
-            {question.gabarito_comentado.referencias &&
-             question.gabarito_comentado.referencias.length > 0 && (
-              <div className="pt-3 border-t border-white/10">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-white/40 text-lg">📚</span>
-                  <span className="text-white/40 text-xs font-semibold uppercase">Referências</span>
-                </div>
-                <ul className="space-y-1">
-                  {question.gabarito_comentado.referencias.map((ref, i) => (
-                    <li key={i} className="text-white/50 text-xs pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-white/30">
-                      {ref}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Tags */}
-            {question.tags && question.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 pt-2">
-                {question.tags.map((tag, i) => (
-                  <span key={i} className="text-[10px] text-emerald-400/70 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </div>
