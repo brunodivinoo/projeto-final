@@ -127,8 +127,35 @@ const STAGING_REGEX = /```staging:([^\n]*)\n([\s\S]*?)```/g
 // Aceita: ```questao, ```question, ```question:Disciplina/Assunto
 const QUESTION_REGEX = /```quest(?:ao|ion)(?::[^\n]*)?\n([\s\S]*?)```/g
 
-// Regex para detectar questões INCOMPLETAS durante streaming (sem o ``` final)
-const INCOMPLETE_QUESTION_REGEX = /```quest(?:ao|ion)(?::[^\n]*)?\n[\s\S]*$/
+// Objeto para detectar questões INCOMPLETAS durante streaming (sem o ``` final)
+// CORREÇÃO: O regex antigo usava [\s\S]*$ que capturava tudo até o final do texto,
+// ignorando completamente qualquer ``` de fechamento. Agora usamos uma função
+// que verifica CORRETAMENTE se existe um fechamento válido.
+const INCOMPLETE_QUESTION_REGEX = {
+  test: (content: string): boolean => {
+    // Encontrar todas as aberturas de bloco ```questao ou ```question
+    const openMatches = [...content.matchAll(/```quest(?:ao|ion)(?::[^\n]*)?\n/g)]
+    if (openMatches.length === 0) return false
+
+    // Para cada abertura, verificar se existe um fechamento correspondente
+    for (const openMatch of openMatches) {
+      const startIndex = openMatch.index! + openMatch[0].length
+      const afterOpen = content.substring(startIndex)
+
+      // Procurar por ``` que NÃO seja seguido de "quest" (fechamento válido)
+      const closeMatch = afterOpen.match(/^([\s\S]*?)```(?!quest)/)
+
+      // Se não encontrou fechamento, esta questão está incompleta
+      if (!closeMatch) {
+        console.log('[INCOMPLETE_QUESTION_REGEX] Questão incompleta detectada, posição:', openMatch.index)
+        return true
+      }
+    }
+
+    // Todas as questões têm fechamento válido
+    return false
+  }
+}
 
 // ============================================================
 // DETECÇÃO E CONVERSÃO DE ASCII ART
@@ -488,25 +515,35 @@ export function getPartialQuestionData(): PartialQuestionData | null {
 function hideIncompleteQuestions(content: string): string {
   // Verifica se há um bloco de questão incompleto (iniciado mas não fechado)
   if (INCOMPLETE_QUESTION_REGEX.test(content)) {
-    // Encontra o início do bloco incompleto
-    const match = content.match(/```quest(?:ao|ion)(?::[^\n]*)?\n([\s\S]*)$/)
-    if (match && match.index !== undefined) {
-      // Extrair dados parciais do JSON incompleto, passando o conteúdo completo para contexto
-      const incompleteJson = match[1] || ''
-      lastPartialQuestionData = extractPartialQuestionData(incompleteJson, content)
+    // Encontrar a ÚLTIMA abertura de bloco que NÃO tem fechamento
+    const openMatches = [...content.matchAll(/```quest(?:ao|ion)(?::[^\n]*)?\n/g)]
 
-      console.log('[ArtifactRenderer] Questão incompleta detectada, mostrando skeleton', {
-        hasEnunciado: !!lastPartialQuestionData.enunciado,
-        hasCasoClinico: !!lastPartialQuestionData.caso_clinico,
-        alternativasCount: lastPartialQuestionData.alternativasCount || 0,
-        questionIndex: lastPartialQuestionData.questionIndex,
-        jsonLength: incompleteJson.length
-      })
+    for (let i = openMatches.length - 1; i >= 0; i--) {
+      const openMatch = openMatches[i]
+      const startIndex = openMatch.index! + openMatch[0].length
+      const afterOpen = content.substring(startIndex)
 
-      // Remove o bloco incompleto e adiciona um marcador especial
-      const beforeBlock = content.substring(0, match.index)
-      // Usar marcador especial que será renderizado como skeleton
-      return beforeBlock + '\n\n[QUESTION_STREAMING_SKELETON]\n'
+      // Verificar se este bloco específico tem fechamento
+      const closeMatch = afterOpen.match(/^([\s\S]*?)```(?!quest)/)
+
+      if (!closeMatch) {
+        // Este é o bloco incompleto - extrair dados parciais
+        const incompleteJson = afterOpen
+        lastPartialQuestionData = extractPartialQuestionData(incompleteJson, content)
+
+        console.log('[ArtifactRenderer] Questão incompleta detectada, mostrando skeleton', {
+          hasEnunciado: !!lastPartialQuestionData.enunciado,
+          hasCasoClinico: !!lastPartialQuestionData.caso_clinico,
+          alternativasCount: lastPartialQuestionData.alternativasCount || 0,
+          questionIndex: lastPartialQuestionData.questionIndex,
+          jsonLength: incompleteJson.length
+        })
+
+        // Remove o bloco incompleto e adiciona um marcador especial
+        const beforeBlock = content.substring(0, openMatch.index)
+        // Usar marcador especial que será renderizado como skeleton
+        return beforeBlock + '\n\n[QUESTION_STREAMING_SKELETON]\n'
+      }
     }
   }
 
