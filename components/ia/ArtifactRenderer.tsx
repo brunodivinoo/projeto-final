@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useEffect, useRef } from 'react'
+import { useMemo, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -1169,11 +1169,82 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   return { parts, artifacts, hasIncompleteQuestion }
 }
 
+// Cache de hashes calculados pelo servidor
+const hashCacheRenderer: Record<string, string> = {}
+
+// Função assíncrona para obter hash via API (MD5 real)
+async function getQuestionHashRenderer(enunciado: string): Promise<string> {
+  if (hashCacheRenderer[enunciado]) return hashCacheRenderer[enunciado]
+
+  try {
+    const response = await fetch('/api/medicina/ia/questoes/hash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enunciado })
+    })
+    if (response.ok) {
+      const data = await response.json()
+      hashCacheRenderer[enunciado] = data.hash
+      return data.hash
+    }
+  } catch (error) {
+    console.error('Erro ao calcular hash:', error)
+  }
+  return ''
+}
+
+// Versão síncrona que usa o cache
+function getQuestionHashSyncRenderer(enunciado: string): string {
+  return hashCacheRenderer[enunciado] || ''
+}
+
 export default function ArtifactRenderer({ content, userId, messageId, conversaId }: ArtifactRendererProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { parts, artifacts, hasIncompleteQuestion } = useMemo(() => parseArtifacts(content), [content])
   const { addArtifact, artifacts: storeArtifacts, updateQuestionAnswer } = useArtifactsStore()
   const addedArtifactsRef = useRef<Set<string>>(new Set())
+
+  // Cache de respostas anteriores para este componente
+  const [respostasCache, setRespostasCache] = useState<Record<string, {
+    resposta_usuario: string
+    acertou: boolean
+    tentativas: number
+  }>>({})
+  const loadedRespostasRef = useRef(false)
+
+  // Carregar respostas do banco na montagem do componente
+  useEffect(() => {
+    const loadRespostas = async () => {
+      if (!userId || !conversaId || loadedRespostasRef.current) return
+      loadedRespostasRef.current = true
+
+      try {
+        const response = await fetch(`/api/medicina/ia/questoes?user_id=${userId}&conversa_id=${conversaId}`)
+        if (response.ok) {
+          const data = await response.json()
+          const respostasMap: Record<string, { resposta_usuario: string; acertou: boolean; tentativas: number }> = {}
+          for (const r of data.respostas || []) {
+            respostasMap[r.questao_hash] = {
+              resposta_usuario: r.resposta_usuario,
+              acertou: r.acertou,
+              tentativas: r.tentativas || 1
+            }
+          }
+          setRespostasCache(respostasMap)
+
+          // Pré-calcular hashes para questões que temos
+          for (const artifact of artifacts) {
+            if (artifact.type === 'question' && artifact.questionData?.enunciado) {
+              await getQuestionHashRenderer(artifact.questionData.enunciado)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao carregar respostas:', error)
+      }
+    }
+    loadRespostas()
+  }, [userId, conversaId, artifacts])
 
   // Extrair termos de busca de imagens médicas reais
   const imageSearchTerms = useMemo(() => extractImageSearchTerms(content), [content])
@@ -1582,16 +1653,34 @@ export default function ArtifactRenderer({ content, userId, messageId, conversaI
                  a.metadata?.question?.enunciado === part.questionData?.enunciado
           )
 
+          // Buscar resposta anterior do cache (pelo hash se disponível)
+          const questionHash = part.questionData.enunciado ? getQuestionHashSyncRenderer(part.questionData.enunciado) : ''
+          const respostaAnterior = questionHash ? respostasCache[questionHash] : undefined
+
+          // Se não temos hash ainda, tentar calcular em background
+          if (part.questionData.enunciado && !questionHash) {
+            getQuestionHashRenderer(part.questionData.enunciado)
+          }
+
           return (
             <div key={index} className="my-2">
               <QuestionArtifactCard
                 question={matchingArtifact?.metadata?.question || part.questionData}
                 userId={userId}
                 conversaId={conversaId}
-                onAnswerSubmit={(questionId, answer, correct) => {
+                respostaAnterior={respostaAnterior}
+                onAnswerSubmit={async (questionId, answer, correct) => {
                   // Sincronizar com a store de artefatos
                   if (matchingArtifact) {
                     updateQuestionAnswer(matchingArtifact.id, answer, correct)
+                  }
+                  // Atualizar cache local
+                  const hash = await getQuestionHashRenderer(part.questionData?.enunciado || '')
+                  if (hash) {
+                    setRespostasCache(prev => ({
+                      ...prev,
+                      [hash]: { resposta_usuario: answer, acertou: correct, tentativas: (prev[hash]?.tentativas || 0) + 1 }
+                    }))
                   }
                 }}
               />

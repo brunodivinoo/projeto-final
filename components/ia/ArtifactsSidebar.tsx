@@ -294,6 +294,35 @@ type ViewMode = 'list' | 'grid' | 'categories' | 'questions'
 // Tipo de filtro de status de questões
 type QuestionStatusFilter = 'all' | 'answered' | 'correct' | 'wrong' | 'pending'
 
+// Cache de hashes calculados pelo servidor
+const hashCache: Record<string, string> = {}
+
+// Função assíncrona para obter hash via API (MD5 real)
+async function getQuestionHash(enunciado: string): Promise<string> {
+  if (hashCache[enunciado]) return hashCache[enunciado]
+
+  try {
+    const response = await fetch('/api/medicina/ia/questoes/hash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enunciado })
+    })
+    if (response.ok) {
+      const data = await response.json()
+      hashCache[enunciado] = data.hash
+      return data.hash
+    }
+  } catch (error) {
+    console.error('Erro ao calcular hash:', error)
+  }
+  return ''
+}
+
+// Versão síncrona que usa o cache (para render)
+function getQuestionHashSync(enunciado: string): string {
+  return hashCache[enunciado] || ''
+}
+
 // Interface para categorias do banco
 interface Categoria {
   id: string
@@ -1083,6 +1112,13 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [bancas, setBancas] = useState<Banca[]>([])
   const [loadingCategorias, setLoadingCategorias] = useState(false)
+  // Respostas anteriores carregadas do banco (para persistência)
+  const [respostasAnteriores, setRespostasAnteriores] = useState<Record<string, {
+    resposta_usuario: string
+    acertou: boolean
+    tentativas: number
+  }>>({})
+  const [loadingRespostas, setLoadingRespostas] = useState(false)
 
   // Filtrar artefatos
   const filteredArtifacts = useMemo(() => {
@@ -1235,6 +1271,51 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
     }
     loadCategorias()
   }, [userId])
+
+  // Carregar respostas anteriores do banco quando conversa muda
+  useEffect(() => {
+    const loadRespostas = async () => {
+      if (!userId || !currentConversaId) {
+        setRespostasAnteriores({})
+        return
+      }
+      setLoadingRespostas(true)
+      try {
+        const response = await fetch(`/api/medicina/ia/questoes?user_id=${userId}&conversa_id=${currentConversaId}`)
+        if (response.ok) {
+          const data = await response.json()
+          // Indexar por questao_hash para busca rápida
+          const respostasMap: Record<string, { resposta_usuario: string; acertou: boolean; tentativas: number }> = {}
+          for (const r of data.respostas || []) {
+            respostasMap[r.questao_hash] = {
+              resposta_usuario: r.resposta_usuario,
+              acertou: r.acertou,
+              tentativas: r.tentativas || 1
+            }
+          }
+          setRespostasAnteriores(respostasMap)
+
+          // Calcular hashes para todas as questões atuais e atualizar store
+          for (const artifact of questionArtifacts) {
+            const question = artifact.metadata?.question
+            if (question?.enunciado && !question.resposta_usuario) {
+              const hash = await getQuestionHash(question.enunciado)
+              const resposta = respostasMap[hash]
+              if (resposta) {
+                // Atualizar na store
+                updateQuestionAnswer(artifact.id, resposta.resposta_usuario, resposta.acertou)
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao carregar respostas:', error)
+      } finally {
+        setLoadingRespostas(false)
+      }
+    }
+    loadRespostas()
+  }, [userId, currentConversaId, questionArtifacts.length, updateQuestionAnswer])
 
   // Extrair disciplinas únicas das categorias carregadas + das questões
   const allDisciplinas = useMemo(() => {
@@ -1839,15 +1920,37 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                             const question = currentArtifact?.metadata?.question
                             if (!question) return null
 
+                            // Buscar resposta anterior pelo hash do cache
+                            const questionHash = question.enunciado ? getQuestionHashSync(question.enunciado) : ''
+                            const respostaAnterior = questionHash ? respostasAnteriores[questionHash] : undefined
+
+                            // Se não temos hash ainda, tentar calcular e atualizar
+                            if (question.enunciado && !questionHash) {
+                              getQuestionHash(question.enunciado).then(hash => {
+                                if (hash && respostasAnteriores[hash] && !question.resposta_usuario) {
+                                  updateQuestionAnswer(currentArtifact.id, respostasAnteriores[hash].resposta_usuario, respostasAnteriores[hash].acertou)
+                                }
+                              })
+                            }
+
                             return (
                               <div className="bg-slate-800/50 rounded-xl overflow-hidden border border-white/5">
                                 <QuestionArtifactCard
                                   question={question}
                                   userId={userId}
                                   conversaId={currentConversaId || undefined}
-                                  onAnswerSubmit={(qId, answer, correct) => {
+                                  respostaAnterior={respostaAnterior}
+                                  onAnswerSubmit={async (qId, answer, correct) => {
                                     // Sincronizar com a store
                                     updateQuestionAnswer(currentArtifact.id, answer, correct)
+                                    // Atualizar o cache local também
+                                    const hash = await getQuestionHash(question.enunciado || '')
+                                    if (hash) {
+                                      setRespostasAnteriores(prev => ({
+                                        ...prev,
+                                        [hash]: { resposta_usuario: answer, acertou: correct, tentativas: (prev[hash]?.tentativas || 0) + 1 }
+                                      }))
+                                    }
                                   }}
                                 />
                               </div>
