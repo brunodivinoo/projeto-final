@@ -110,9 +110,12 @@ const LAYERS_REGEX = /```layers:([^\n]*)\n([\s\S]*?)```/g
 // Regex para detectar tabelas de estadiamento
 const STAGING_REGEX = /```staging:([^\n]*)\n([\s\S]*?)```/g
 
-// Regex para detectar questões geradas pela IA (formato JSON)
+// Regex para detectar questões geradas pela IA (formato JSON) - COMPLETAS
 // Aceita: ```questao, ```question, ```question:Disciplina/Assunto
 const QUESTION_REGEX = /```quest(?:ao|ion)(?::[^\n]*)?\n([\s\S]*?)```/g
+
+// Regex para detectar questões INCOMPLETAS durante streaming (sem o ``` final)
+const INCOMPLETE_QUESTION_REGEX = /```quest(?:ao|ion)(?::[^\n]*)?\n[\s\S]*$/
 
 // ============================================================
 // DETECÇÃO E CONVERSÃO DE ASCII ART
@@ -376,10 +379,43 @@ function removeImageSearchMarkers(content: string): string {
   return content.replace(IMAGE_SEARCH_REGEX, '')
 }
 
-function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifacts: Artifact[] } {
+// Função para detectar e remover blocos de questão incompletos durante streaming
+// Isso evita mostrar o JSON bruto enquanto a questão está sendo gerada
+function hideIncompleteQuestions(content: string): string {
+  // Verifica se há um bloco de questão incompleto (iniciado mas não fechado)
+  if (INCOMPLETE_QUESTION_REGEX.test(content)) {
+    // Encontra o início do bloco incompleto
+    const match = content.match(/```quest(?:ao|ion)(?::[^\n]*)?\n[\s\S]*$/)
+    if (match && match.index !== undefined) {
+      // Remove o bloco incompleto e adiciona um indicador de carregamento
+      const beforeBlock = content.substring(0, match.index)
+      return beforeBlock + '\n\n⏳ *Gerando questão...*\n'
+    }
+  }
+  return content
+}
+
+// Verifica se um bloco de questão JSON está completo e válido
+function isCompleteQuestionJson(jsonStr: string): boolean {
+  try {
+    const parsed = JSON.parse(jsonStr.trim())
+    // Verifica se tem os campos mínimos de uma questão
+    return !!(parsed.enunciado && parsed.alternativas && Array.isArray(parsed.alternativas))
+  } catch {
+    return false
+  }
+}
+
+function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifacts: Artifact[]; hasIncompleteQuestion: boolean } {
   const artifacts: Artifact[] = []
   let lastIndex = 0
   const parts: (string | Artifact)[] = []
+
+  // Detectar se há questão incompleta para mostrar indicador de carregamento
+  const hasIncompleteQuestion = INCOMPLETE_QUESTION_REGEX.test(content)
+
+  // Processar conteúdo, escondendo blocos incompletos
+  const processedContent = hideIncompleteQuestions(content)
 
   // Combinar todas as regex em uma busca
   const allMatches: Array<{
@@ -394,50 +430,53 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   // Buscar artefatos personalizados
   let match
   const artifactRegex = new RegExp(ARTIFACT_REGEX.source, 'g')
-  while ((match = artifactRegex.exec(content)) !== null) {
+  while ((match = artifactRegex.exec(processedContent)) !== null) {
     allMatches.push({ match, type: 'artifact' })
   }
 
   // Buscar blocos Mermaid padrão
   const mermaidRegex = new RegExp(MERMAID_REGEX.source, 'g')
-  while ((match = mermaidRegex.exec(content)) !== null) {
+  while ((match = mermaidRegex.exec(processedContent)) !== null) {
     allMatches.push({ match, type: 'mermaid' })
   }
 
   // Buscar solicitações de geração de imagem
   const imageRegex = new RegExp(IMAGE_GEN_REGEX.source, 'g')
-  while ((match = imageRegex.exec(content)) !== null) {
+  while ((match = imageRegex.exec(processedContent)) !== null) {
     allMatches.push({ match, type: 'image_request' })
   }
 
   // Buscar diagramas de camadas (layers)
   const layersRegex = new RegExp(LAYERS_REGEX.source, 'g')
-  while ((match = layersRegex.exec(content)) !== null) {
+  while ((match = layersRegex.exec(processedContent)) !== null) {
     allMatches.push({ match, type: 'layers' })
   }
 
   // Buscar tabelas de estadiamento
   const stagingRegex = new RegExp(STAGING_REGEX.source, 'g')
-  while ((match = stagingRegex.exec(content)) !== null) {
+  while ((match = stagingRegex.exec(processedContent)) !== null) {
     allMatches.push({ match, type: 'staging' })
   }
 
-  // Buscar questões geradas pela IA
+  // Buscar questões geradas pela IA (apenas COMPLETAS com JSON válido)
   const questionRegex = new RegExp(QUESTION_REGEX.source, 'g')
-  while ((match = questionRegex.exec(content)) !== null) {
+  while ((match = questionRegex.exec(processedContent)) !== null) {
     try {
       const questionJson = match[1].trim()
-      const questionData = JSON.parse(questionJson) as Question
-      allMatches.push({ match, type: 'question', questionData })
+      // Só adicionar se o JSON estiver completo e válido
+      if (isCompleteQuestionJson(questionJson)) {
+        const questionData = JSON.parse(questionJson) as Question
+        allMatches.push({ match, type: 'question', questionData })
+      }
     } catch {
-      // Se não for JSON válido, ignorar
-      console.warn('Failed to parse question JSON:', match[1])
+      // Se não for JSON válido, ignorar - está sendo gerado ainda
+      // Não mostrar warning durante streaming
     }
   }
 
   // NOVO: Buscar blocos de código que podem conter ASCII art
   const codeBlockRegex = new RegExp(CODE_BLOCK_REGEX.source, 'g')
-  while ((match = codeBlockRegex.exec(content)) !== null) {
+  while ((match = codeBlockRegex.exec(processedContent)) !== null) {
     const codeContent = match[2]
     const asciiDetection = detectAsciiArt(codeContent)
 
@@ -466,7 +505,7 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
 
   // NOVO: Também detectar ASCII fora de blocos de código (texto livre)
   // Procurar por padrões de ASCII art que não estão em blocos de código
-  const textWithoutCodeBlocks = content.replace(/```[\s\S]*?```/g, '')
+  const textWithoutCodeBlocks = processedContent.replace(/```[\s\S]*?```/g, '')
   const asciiInTextDetection = detectAsciiArt(textWithoutCodeBlocks)
 
   // Se detectou ASCII significativo fora de blocos de código
@@ -474,9 +513,9 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
     // Encontrar o bloco de ASCII no texto original
     const asciiBlockPattern = /(?:^|\n)((?:[\s]*[┌┐└┘├┤┬┴┼─│═║╔╗╚╝╠╣╦╩╬|+].*\n?){3,})/gm
     let asciiMatch
-    while ((asciiMatch = asciiBlockPattern.exec(content)) !== null) {
+    while ((asciiMatch = asciiBlockPattern.exec(processedContent)) !== null) {
       // Verificar se não está dentro de um bloco de código
-      const beforeMatch = content.substring(0, asciiMatch.index)
+      const beforeMatch = processedContent.substring(0, asciiMatch.index)
       const codeBlocksBeforeCount = (beforeMatch.match(/```/g) || []).length
       if (codeBlocksBeforeCount % 2 === 0) {
         // Não está dentro de um bloco de código
@@ -496,7 +535,7 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
             // Criar um match sintético
             const syntheticMatch = [asciiContent] as RegExpMatchArray
             syntheticMatch.index = asciiMatch.index + (asciiMatch[0].indexOf(asciiContent))
-            syntheticMatch.input = content
+            syntheticMatch.input = processedContent
 
             allMatches.push({
               match: syntheticMatch,
@@ -522,7 +561,7 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
 
     // Adicionar texto antes do artefato
     if (startIndex > lastIndex) {
-      parts.push(content.substring(lastIndex, startIndex))
+      parts.push(processedContent.substring(lastIndex, startIndex))
     }
 
     let artifact: Artifact
@@ -597,15 +636,16 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   }
 
   // Adicionar texto restante
-  if (lastIndex < content.length) {
-    parts.push(content.substring(lastIndex))
+  if (lastIndex < processedContent.length) {
+    parts.push(processedContent.substring(lastIndex))
   }
 
-  return { parts, artifacts }
+  return { parts, artifacts, hasIncompleteQuestion }
 }
 
 export default function ArtifactRenderer({ content, userId, messageId }: ArtifactRendererProps) {
-  const { parts, artifacts } = useMemo(() => parseArtifacts(content), [content])
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { parts, artifacts, hasIncompleteQuestion } = useMemo(() => parseArtifacts(content), [content])
   const { addArtifact, artifacts: storeArtifacts } = useArtifactsStore()
   const addedArtifactsRef = useRef<Set<string>>(new Set())
 

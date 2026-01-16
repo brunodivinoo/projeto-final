@@ -18,12 +18,14 @@ import {
   ChevronUp,
   Filter,
   Layers,
-  Eye,
-  EyeOff,
   Grid3X3,
   List,
   FolderOpen,
-  Folder
+  Folder,
+  HelpCircle,
+  CheckCircle,
+  XCircle,
+  Clock
 } from 'lucide-react'
 import { useArtifactsStore, ARTIFACT_ICONS, ARTIFACT_LABELS, type Artifact, type ArtifactType } from '@/stores/artifactsStore'
 import dynamic from 'next/dynamic'
@@ -254,6 +256,12 @@ function PreviewDiagramCard({ content, title, onExpand }: { content: string; tit
 
 // Categorias de artefatos
 const ARTIFACT_CATEGORIES: Record<string, { label: string; icon: string; types: ArtifactType[]; color: string }> = {
+  questions: {
+    label: 'Questões',
+    icon: '❓',
+    types: ['question'],
+    color: 'from-emerald-500 to-green-500'
+  },
   visual: {
     label: 'Visualizações',
     icon: '📊',
@@ -281,7 +289,10 @@ const ARTIFACT_CATEGORIES: Record<string, { label: string; icon: string; types: 
 }
 
 // Tipo de view da sidebar
-type ViewMode = 'list' | 'grid' | 'categories'
+type ViewMode = 'list' | 'grid' | 'categories' | 'questions'
+
+// Tipo de filtro de status de questões
+type QuestionStatusFilter = 'all' | 'answered' | 'correct' | 'wrong' | 'pending'
 
 // Importar MermaidDiagram dinamicamente
 const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
@@ -315,6 +326,16 @@ const LayeredDiagram = dynamic(() => import('./LayeredDiagram'), {
 
 // Importar StagingTable dinamicamente
 const StagingTable = dynamic(() => import('./StagingTable'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-48">
+      <div className="animate-spin w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full" />
+    </div>
+  )
+})
+
+// Importar QuestionArtifactCard dinamicamente
+const QuestionArtifactCard = dynamic(() => import('./QuestionArtifactCard'), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-48">
@@ -1022,6 +1043,10 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
   const [fullscreenArtifact, setFullscreenArtifact] = useState<Artifact | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('list')
+  // Estados para filtros de questões
+  const [questionStatusFilter, setQuestionStatusFilter] = useState<QuestionStatusFilter>('all')
+  const [questionDisciplineFilter, setQuestionDisciplineFilter] = useState<string>('all')
+  const [questionDifficultyFilter, setQuestionDifficultyFilter] = useState<string>('all')
 
   // Filtrar artefatos
   const filteredArtifacts = useMemo(() => {
@@ -1060,6 +1085,88 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
 
     return grouped
   }, [filteredArtifacts])
+
+  // Filtrar e obter apenas questões
+  const questionArtifacts = useMemo(() => {
+    return artifacts.filter(a => a.type === 'question' && a.metadata?.question)
+  }, [artifacts])
+
+  // Filtrar questões com filtros específicos
+  const filteredQuestions = useMemo(() => {
+    return questionArtifacts.filter(artifact => {
+      const question = artifact.metadata?.question
+      if (!question) return false
+
+      // Filtro de busca
+      if (searchQuery) {
+        const search = searchQuery.toLowerCase()
+        const matchesSearch =
+          artifact.title.toLowerCase().includes(search) ||
+          question.enunciado?.toLowerCase().includes(search) ||
+          question.disciplina?.toLowerCase().includes(search) ||
+          question.assunto?.toLowerCase().includes(search)
+        if (!matchesSearch) return false
+      }
+
+      // Filtro de status
+      if (questionStatusFilter !== 'all') {
+        if (questionStatusFilter === 'pending' && question.resposta_usuario) return false
+        if (questionStatusFilter === 'answered' && !question.resposta_usuario) return false
+        if (questionStatusFilter === 'correct' && question.acertou !== true) return false
+        if (questionStatusFilter === 'wrong' && question.acertou !== false) return false
+      }
+
+      // Filtro de disciplina
+      if (questionDisciplineFilter !== 'all' && question.disciplina !== questionDisciplineFilter) {
+        return false
+      }
+
+      // Filtro de dificuldade
+      if (questionDifficultyFilter !== 'all' && question.dificuldade !== questionDifficultyFilter) {
+        return false
+      }
+
+      return true
+    })
+  }, [questionArtifacts, searchQuery, questionStatusFilter, questionDisciplineFilter, questionDifficultyFilter])
+
+  // Extrair disciplinas e dificuldades únicas para filtros
+  const uniqueDisciplines = useMemo(() => {
+    const disciplines = new Set<string>()
+    questionArtifacts.forEach(a => {
+      if (a.metadata?.question?.disciplina) {
+        disciplines.add(a.metadata.question.disciplina)
+      }
+    })
+    return Array.from(disciplines).sort()
+  }, [questionArtifacts])
+
+  const uniqueDifficulties = useMemo(() => {
+    const difficulties = new Set<string>()
+    questionArtifacts.forEach(a => {
+      if (a.metadata?.question?.dificuldade) {
+        difficulties.add(a.metadata.question.dificuldade)
+      }
+    })
+    return Array.from(difficulties)
+  }, [questionArtifacts])
+
+  // Estatísticas de questões
+  const questionStats = useMemo(() => {
+    const total = questionArtifacts.length
+    const answered = questionArtifacts.filter(a => a.metadata?.question?.resposta_usuario).length
+    const correct = questionArtifacts.filter(a => a.metadata?.question?.acertou === true).length
+    const wrong = questionArtifacts.filter(a => a.metadata?.question?.acertou === false).length
+    const pending = total - answered
+    return { total, answered, correct, wrong, pending }
+  }, [questionArtifacts])
+
+  // Quando há questões, alternar automaticamente para o modo questões
+  useEffect(() => {
+    if (questionArtifacts.length > 0 && viewMode === 'list') {
+      // Opcional: não forçar automaticamente, deixar o usuário escolher
+    }
+  }, [questionArtifacts.length, viewMode])
 
   // Navegação no fullscreen
   const currentFullscreenIndex = fullscreenArtifact
@@ -1205,6 +1312,21 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
                   >
                     <Folder className="w-4 h-4" />
                   </button>
+                  {/* Botão de Questões - só aparece se houver questões */}
+                  {questionArtifacts.length > 0 && (
+                    <button
+                      onClick={() => setViewMode('questions')}
+                      className={`p-1.5 rounded transition-colors relative ${
+                        viewMode === 'questions' ? 'bg-emerald-500/30 text-emerald-400' : 'text-white/40 hover:text-white'
+                      }`}
+                      title="Questões"
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">
+                        {questionArtifacts.length}
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1326,6 +1448,156 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
                       )}
                     </div>
                   )}
+
+                  {/* Modo QUESTÕES */}
+                  {viewMode === 'questions' && (
+                    <div className="space-y-3">
+                      {/* Header com estatísticas */}
+                      <div className="bg-gradient-to-r from-emerald-500/10 to-green-500/10 rounded-xl p-3 border border-emerald-500/20">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <HelpCircle className="w-5 h-5 text-emerald-400" />
+                            <span className="text-white font-semibold">Questões</span>
+                          </div>
+                          <span className="text-emerald-400 text-sm font-medium">
+                            {questionStats.total} total
+                          </span>
+                        </div>
+
+                        {/* Estatísticas */}
+                        <div className="grid grid-cols-4 gap-2 text-center">
+                          <div className="bg-white/5 rounded-lg p-2">
+                            <Clock className="w-4 h-4 text-yellow-400 mx-auto mb-1" />
+                            <div className="text-white text-sm font-bold">{questionStats.pending}</div>
+                            <div className="text-white/40 text-[10px]">Pendentes</div>
+                          </div>
+                          <div className="bg-white/5 rounded-lg p-2">
+                            <CheckCircle className="w-4 h-4 text-green-400 mx-auto mb-1" />
+                            <div className="text-white text-sm font-bold">{questionStats.correct}</div>
+                            <div className="text-white/40 text-[10px]">Acertos</div>
+                          </div>
+                          <div className="bg-white/5 rounded-lg p-2">
+                            <XCircle className="w-4 h-4 text-red-400 mx-auto mb-1" />
+                            <div className="text-white text-sm font-bold">{questionStats.wrong}</div>
+                            <div className="text-white/40 text-[10px]">Erros</div>
+                          </div>
+                          <div className="bg-white/5 rounded-lg p-2">
+                            <div className="text-emerald-400 text-sm font-bold mx-auto mb-1">
+                              {questionStats.answered > 0
+                                ? Math.round((questionStats.correct / questionStats.answered) * 100)
+                                : 0}%
+                            </div>
+                            <div className="text-white/40 text-[10px]">Taxa</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Filtros de questões */}
+                      <div className="space-y-2">
+                        {/* Filtro de status */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { value: 'all', label: 'Todas', icon: HelpCircle },
+                            { value: 'pending', label: 'Pendentes', icon: Clock },
+                            { value: 'correct', label: 'Acertos', icon: CheckCircle },
+                            { value: 'wrong', label: 'Erros', icon: XCircle }
+                          ].map(filter => (
+                            <button
+                              key={filter.value}
+                              onClick={() => setQuestionStatusFilter(filter.value as QuestionStatusFilter)}
+                              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors ${
+                                questionStatusFilter === filter.value
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                  : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                              }`}
+                            >
+                              <filter.icon className="w-3 h-3" />
+                              {filter.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Filtro de disciplina */}
+                        {uniqueDisciplines.length > 1 && (
+                          <select
+                            value={questionDisciplineFilter}
+                            onChange={(e) => setQuestionDisciplineFilter(e.target.value)}
+                            className="w-full px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-xs focus:outline-none focus:border-emerald-500/50"
+                          >
+                            <option value="all">Todas as disciplinas</option>
+                            {uniqueDisciplines.map(d => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
+                        )}
+
+                        {/* Filtro de dificuldade */}
+                        {uniqueDifficulties.length > 1 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            <button
+                              onClick={() => setQuestionDifficultyFilter('all')}
+                              className={`px-2 py-1 rounded-lg text-xs transition-colors ${
+                                questionDifficultyFilter === 'all'
+                                  ? 'bg-emerald-500/20 text-emerald-400'
+                                  : 'bg-white/5 text-white/60 hover:text-white'
+                              }`}
+                            >
+                              Todas
+                            </button>
+                            {uniqueDifficulties.map(d => (
+                              <button
+                                key={d}
+                                onClick={() => setQuestionDifficultyFilter(d)}
+                                className={`px-2 py-1 rounded-lg text-xs transition-colors ${
+                                  questionDifficultyFilter === d
+                                    ? d === 'facil' ? 'bg-green-500/20 text-green-400'
+                                    : d === 'medio' ? 'bg-yellow-500/20 text-yellow-400'
+                                    : d === 'dificil' ? 'bg-orange-500/20 text-orange-400'
+                                    : 'bg-red-500/20 text-red-400'
+                                    : 'bg-white/5 text-white/60 hover:text-white'
+                                }`}
+                              >
+                                {d === 'facil' ? 'Fácil' : d === 'medio' ? 'Médio' : d === 'dificil' ? 'Difícil' : 'Muito Difícil'}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Lista de questões */}
+                      {filteredQuestions.length > 0 ? (
+                        <div className="space-y-3">
+                          {filteredQuestions.map((artifact) => {
+                            const question = artifact.metadata?.question
+                            if (!question) return null
+
+                            return (
+                              <div key={artifact.id} className="bg-slate-800/50 rounded-xl overflow-hidden border border-white/5">
+                                <QuestionArtifactCard question={question} />
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <HelpCircle className="w-8 h-8 text-white/20 mb-2" />
+                          <p className="text-white/40 text-sm">Nenhuma questão encontrada</p>
+                          {(questionStatusFilter !== 'all' || questionDisciplineFilter !== 'all' || questionDifficultyFilter !== 'all') && (
+                            <button
+                              onClick={() => {
+                                setQuestionStatusFilter('all')
+                                setQuestionDisciplineFilter('all')
+                                setQuestionDifficultyFilter('all')
+                              }}
+                              className="mt-2 text-emerald-400 text-sm hover:underline"
+                            >
+                              Limpar filtros
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-40 text-center">
@@ -1351,6 +1623,7 @@ export default function ArtifactsSidebar({ className = '' }: ArtifactsSidebarPro
                 {viewMode === 'list' && 'Clique para preview • 👁 para expandir • ⛶ para tela cheia'}
                 {viewMode === 'grid' && 'Hover para ações • Clique para selecionar'}
                 {viewMode === 'categories' && 'Clique nas categorias para expandir/recolher'}
+                {viewMode === 'questions' && 'Use ✂️ para eliminar alternativas • Filtre por status ou dificuldade'}
               </p>
             </div>
           </>

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { Question, DIFFICULTY_COLORS } from '@/stores/artifactsStore'
+import { Scissors } from 'lucide-react'
 
 interface QuestionArtifactCardProps {
   question: Question
@@ -14,14 +15,38 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
   const [isCorrect, setIsCorrect] = useState<boolean | null>(question.acertou ?? null)
   const [expandedSection, setExpandedSection] = useState<'gabarito' | null>(null)
   const [showAlternativasAnalise, setShowAlternativasAnalise] = useState(false)
+  // Estado para alternativas eliminadas (cortadas)
+  const [eliminatedAlternatives, setEliminatedAlternatives] = useState<Set<string>>(new Set())
 
   const isCertoErrado = question.tipo === 'certo_errado'
   const difficultyConfig = DIFFICULTY_COLORS[question.dificuldade] || DIFFICULTY_COLORS.medio
 
   const handleSelectAnswer = useCallback((letra: string) => {
     if (showFeedback) return
+    // Não permitir selecionar alternativa eliminada
+    if (eliminatedAlternatives.has(letra)) return
     setSelectedAnswer(letra)
-  }, [showFeedback])
+  }, [showFeedback, eliminatedAlternatives])
+
+  // Função para eliminar/restaurar alternativa (tesoura)
+  const handleEliminateAlternative = useCallback((letra: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (showFeedback) return
+
+    setEliminatedAlternatives(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(letra)) {
+        newSet.delete(letra)
+      } else {
+        newSet.add(letra)
+        // Se a alternativa selecionada foi eliminada, desmarcar
+        if (selectedAnswer === letra) {
+          setSelectedAnswer(null)
+        }
+      }
+      return newSet
+    })
+  }, [showFeedback, selectedAnswer])
 
   const handleSubmitAnswer = useCallback(() => {
     if (!selectedAnswer || showFeedback) return
@@ -46,7 +71,6 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
   // Resposta correta vem do gabarito_comentado (não das alternativas)
   const correctAnswerLetter = question.gabarito_comentado?.resposta_correta ||
     question.alternativas.find(a => a.correta)?.letra
-  const correctAnswer = question.alternativas.find(a => a.letra === correctAnswerLetter)
 
   return (
     <div className="bg-[#1A2332] border border-white/10 rounded-xl overflow-hidden shadow-lg">
@@ -152,6 +176,7 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
             // Usar correctAnswerLetter do gabarito (não alt.correta que pode não existir)
             const isCorrectAlt = alt.letra === correctAnswerLetter
             const showResultStyles = showFeedback
+            const isEliminated = eliminatedAlternatives.has(alt.letra)
 
             let containerClasses = 'border-white/10 hover:border-white/20 hover:bg-white/5'
             let circleClasses = 'border-white/30 text-white/50'
@@ -164,35 +189,55 @@ export default function QuestionArtifactCard({ question, onAnswerSubmit }: Quest
                 containerClasses = 'border-red-500/50 bg-red-500/10'
                 circleClasses = 'bg-red-500 text-white border-red-500'
               }
+            } else if (isEliminated) {
+              // Estilo para alternativa eliminada (cortada)
+              containerClasses = 'border-white/5 bg-white/5 opacity-50'
+              circleClasses = 'border-white/20 text-white/30 line-through'
             } else if (isSelected) {
               containerClasses = 'border-emerald-500/50 bg-emerald-500/10'
               circleClasses = 'bg-emerald-500 text-white border-emerald-500'
             }
 
             return (
-              <button
-                key={alt.letra}
-                onClick={() => handleSelectAnswer(alt.letra)}
-                disabled={showFeedback}
-                className={`w-full flex items-start gap-3 p-3.5 rounded-xl border-2 transition-all duration-200 text-left ${containerClasses} ${showFeedback ? 'cursor-default' : 'cursor-pointer'}`}
-              >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm border-2 transition-all ${circleClasses}`}>
-                  {showResultStyles && isCorrectAlt ? (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : showResultStyles && isSelected && !isCorrectAlt ? (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  ) : (
-                    alt.letra
-                  )}
-                </div>
-                <span className={`text-sm pt-1 ${isSelected || (showResultStyles && isCorrectAlt) ? 'text-white font-medium' : 'text-white/70'}`}>
-                  {alt.texto}
-                </span>
-              </button>
+              <div key={alt.letra} className="relative group">
+                <button
+                  onClick={() => handleSelectAnswer(alt.letra)}
+                  disabled={showFeedback || isEliminated}
+                  className={`w-full flex items-start gap-3 p-3.5 rounded-xl border-2 transition-all duration-200 text-left ${containerClasses} ${showFeedback ? 'cursor-default' : isEliminated ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm border-2 transition-all ${circleClasses}`}>
+                    {showResultStyles && isCorrectAlt ? (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : showResultStyles && isSelected && !isCorrectAlt ? (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    ) : (
+                      alt.letra
+                    )}
+                  </div>
+                  <span className={`flex-1 text-sm pt-1 ${isEliminated ? 'line-through text-white/40' : isSelected || (showResultStyles && isCorrectAlt) ? 'text-white font-medium' : 'text-white/70'}`}>
+                    {alt.texto}
+                  </span>
+                </button>
+
+                {/* Botão de tesoura para eliminar alternativa */}
+                {!showFeedback && (
+                  <button
+                    onClick={(e) => handleEliminateAlternative(alt.letra, e)}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all ${
+                      isEliminated
+                        ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'
+                        : 'bg-white/5 text-white/30 hover:bg-white/10 hover:text-white/60 opacity-0 group-hover:opacity-100'
+                    }`}
+                    title={isEliminated ? 'Restaurar alternativa' : 'Eliminar alternativa'}
+                  >
+                    <Scissors className={`w-4 h-4 ${isEliminated ? 'rotate-45' : ''} transition-transform`} />
+                  </button>
+                )}
+              </div>
             )
           })}
         </div>
