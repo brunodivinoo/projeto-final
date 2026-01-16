@@ -1036,7 +1036,8 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
     clearArtifacts,
     toggleSidebar,
     setSidebarOpen,
-    currentConversaId
+    currentConversaId,
+    updateQuestionAnswer
   } = useArtifactsStore()
 
   // Filtrar artefatos pela conversa atual
@@ -1055,6 +1056,8 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
   const [questionStatusFilter, setQuestionStatusFilter] = useState<QuestionStatusFilter>('all')
   const [questionDisciplineFilter, setQuestionDisciplineFilter] = useState<string>('all')
   const [questionDifficultyFilter, setQuestionDifficultyFilter] = useState<string>('all')
+  // Estado para navegação de questões uma por vez
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
 
   // Filtrar artefatos
   const filteredArtifacts = useMemo(() => {
@@ -1175,6 +1178,11 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
       // Opcional: não forçar automaticamente, deixar o usuário escolher
     }
   }, [questionArtifacts.length, viewMode])
+
+  // Resetar índice quando filtros de questão mudam ou quando há novas questões
+  useEffect(() => {
+    setCurrentQuestionIndex(0)
+  }, [questionStatusFilter, questionDisciplineFilter, questionDifficultyFilter, filteredQuestions.length])
 
   // Navegação no fullscreen
   const currentFullscreenIndex = fullscreenArtifact
@@ -1572,23 +1580,87 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                         )}
                       </div>
 
-                      {/* Lista de questões */}
+                      {/* Questão atual com navegação - UMA POR VEZ */}
                       {filteredQuestions.length > 0 ? (
                         <div className="space-y-3">
-                          {filteredQuestions.map((artifact) => {
-                            const question = artifact.metadata?.question
+                          {/* Navegação superior */}
+                          <div className="flex items-center justify-between bg-white/5 rounded-lg p-2">
+                            <button
+                              onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+                              disabled={currentQuestionIndex === 0}
+                              className={`p-2 rounded-lg transition-colors ${
+                                currentQuestionIndex === 0
+                                  ? 'text-white/20 cursor-not-allowed'
+                                  : 'text-white/60 hover:text-white hover:bg-white/10'
+                              }`}
+                            >
+                              <ChevronLeft className="w-5 h-5" />
+                            </button>
+
+                            <span className="text-white/70 text-sm font-medium">
+                              {currentQuestionIndex + 1} / {filteredQuestions.length}
+                            </span>
+
+                            <button
+                              onClick={() => setCurrentQuestionIndex(prev => Math.min(filteredQuestions.length - 1, prev + 1))}
+                              disabled={currentQuestionIndex >= filteredQuestions.length - 1}
+                              className={`p-2 rounded-lg transition-colors ${
+                                currentQuestionIndex >= filteredQuestions.length - 1
+                                  ? 'text-white/20 cursor-not-allowed'
+                                  : 'text-white/60 hover:text-white hover:bg-white/10'
+                              }`}
+                            >
+                              <ChevronRight className="w-5 h-5" />
+                            </button>
+                          </div>
+
+                          {/* Questão atual */}
+                          {(() => {
+                            const currentArtifact = filteredQuestions[currentQuestionIndex]
+                            const question = currentArtifact?.metadata?.question
                             if (!question) return null
 
                             return (
-                              <div key={artifact.id} className="bg-slate-800/50 rounded-xl overflow-hidden border border-white/5">
+                              <div className="bg-slate-800/50 rounded-xl overflow-hidden border border-white/5">
                                 <QuestionArtifactCard
                                   question={question}
                                   userId={userId}
                                   conversaId={currentConversaId || undefined}
+                                  onAnswerSubmit={(qId, answer, correct) => {
+                                    // Sincronizar com a store
+                                    updateQuestionAnswer(currentArtifact.id, answer, correct)
+                                  }}
                                 />
                               </div>
                             )
-                          })}
+                          })()}
+
+                          {/* Indicadores de navegação (dots) */}
+                          {filteredQuestions.length > 1 && filteredQuestions.length <= 10 && (
+                            <div className="flex justify-center gap-1.5 pt-2">
+                              {filteredQuestions.map((artifact, idx) => {
+                                const q = artifact.metadata?.question
+                                const isAnswered = q?.mostrar_gabarito || q?.resposta_usuario
+                                const isCorrect = q?.acertou
+
+                                return (
+                                  <button
+                                    key={artifact.id}
+                                    onClick={() => setCurrentQuestionIndex(idx)}
+                                    className={`h-2.5 rounded-full transition-all ${
+                                      idx === currentQuestionIndex
+                                        ? 'w-6 bg-emerald-500'
+                                        : isAnswered
+                                          ? isCorrect
+                                            ? 'w-2.5 bg-green-500/50'
+                                            : 'w-2.5 bg-red-500/50'
+                                          : 'w-2.5 bg-white/20 hover:bg-white/40'
+                                    }`}
+                                  />
+                                )
+                              })}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center py-8 text-center">

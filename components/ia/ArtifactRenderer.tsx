@@ -1172,7 +1172,7 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
 export default function ArtifactRenderer({ content, userId, messageId, conversaId }: ArtifactRendererProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { parts, artifacts, hasIncompleteQuestion } = useMemo(() => parseArtifacts(content), [content])
-  const { addArtifact, artifacts: storeArtifacts } = useArtifactsStore()
+  const { addArtifact, artifacts: storeArtifacts, updateQuestionAnswer } = useArtifactsStore()
   const addedArtifactsRef = useRef<Set<string>>(new Set())
 
   // Extrair termos de busca de imagens médicas reais
@@ -1570,12 +1570,25 @@ export default function ArtifactRenderer({ content, userId, messageId, conversaI
 
         // Renderizar questões geradas pela IA
         if (part.type === 'question' && part.questionData) {
+          // Encontrar o artefato correspondente na store para sincronização
+          const matchingArtifact = storeArtifacts.find(
+            a => a.type === 'question' &&
+                 a.messageId === messageId &&
+                 a.metadata?.question?.numero === part.questionData?.numero
+          )
+
           return (
             <div key={index} className="my-2">
               <QuestionArtifactCard
                 question={part.questionData}
                 userId={userId}
                 conversaId={conversaId}
+                onAnswerSubmit={(questionId, answer, correct) => {
+                  // Sincronizar com a store de artefatos
+                  if (matchingArtifact) {
+                    updateQuestionAnswer(matchingArtifact.id, answer, correct)
+                  }
+                }}
               />
             </div>
           )
