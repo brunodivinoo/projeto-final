@@ -131,6 +131,9 @@ export default function IAPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
+  // Gerenciar artefatos por conversa
+  const { clearArtifacts, setCurrentConversa } = useArtifactsStore()
+
   // Buscar uso
   const fetchUso = useCallback(async () => {
     if (!user) return
@@ -439,9 +442,6 @@ export default function IAPage() {
       abortControllerRef.current = null
     }
   }
-
-  // Limpar artefatos e gerenciar conversa atual
-  const { clearArtifacts, setCurrentConversa } = useArtifactsStore()
 
   // Nova conversa
   const novaConversa = () => {
