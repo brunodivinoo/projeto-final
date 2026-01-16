@@ -770,8 +770,12 @@ export default function IAPage() {
                   </div>
                 )}
 
-                {/* Mensagem com largura ajustada - expande mais */}
-                <div className={`max-w-[95%] md:max-w-[92%] lg:max-w-[88%] ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
+                {/* Mensagem com largura diferenciada - usuário compacta, IA expande */}
+                <div className={`${
+                  msg.tipo === 'usuario'
+                    ? 'max-w-[75%] md:max-w-[60%] lg:max-w-[50%]'
+                    : 'max-w-[98%] md:max-w-[95%] lg:max-w-[92%]'
+                } ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
                   {msg.thinking && (
                     <div className="mb-1.5 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
                       <p className="text-amber-200 text-[10px] font-medium mb-0.5 flex items-center gap-1">
@@ -834,8 +838,8 @@ export default function IAPage() {
                 </div>
 
                 {msg.tipo === 'usuario' && (
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-                    <User className="w-3 h-3 md:w-5 md:h-5 text-emerald-400" />
+                  <div className="w-5 h-5 md:w-6 md:h-6 rounded-md bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                    <User className="w-2.5 h-2.5 md:w-3 md:h-3 text-emerald-400" />
                   </div>
                 )}
               </div>
