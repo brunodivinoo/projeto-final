@@ -656,44 +656,44 @@ export default function IAPage() {
 
       {/* Chat Principal */}
       <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
-        {/* Header - Responsivo */}
-        <div className="flex items-center justify-between p-3 md:p-4 border-b border-white/10">
+        {/* Header - Compacto */}
+        <div className="flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-white/10">
           <div className="flex items-center gap-2 md:gap-3">
             {/* Botão menu/conversas */}
             <button
               onClick={() => setShowConversas(!showConversas)}
-              className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+              className="p-1.5 hover:bg-white/5 rounded-lg transition-colors"
             >
               {isMobile ? (
-                <Menu className="w-5 h-5 text-white/60" />
+                <Menu className="w-4 h-4 text-white/60" />
               ) : (
-                <MessageSquare className="w-5 h-5 text-white/60" />
+                <MessageSquare className="w-4 h-4 text-white/60" />
               )}
             </button>
 
-            {/* Logo e info */}
-            <div className="flex items-center gap-2 md:gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-                <Brain className="w-4 h-4 md:w-6 md:h-6 text-white" />
+            {/* Logo e info - Compacto */}
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                <Brain className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
               </div>
               <div>
-                <h1 className="text-sm md:text-lg font-bold text-white">PREPARAMED IA</h1>
-                <p className="text-white/60 text-[10px] md:text-xs hidden sm:block">
+                <h1 className="text-xs md:text-sm font-bold text-white">PREPARAMED IA</h1>
+                <p className="text-white/50 text-[9px] md:text-[10px] hidden sm:block">
                   {isResidencia ? 'Claude Opus | Ilimitado' : `Gemini Flash | ${uso?.uso_mes.chats || 0}/100`}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 md:gap-2">
-            {isResidencia && <Crown className="w-4 h-4 md:w-5 md:h-5 text-amber-400" />}
+          <div className="flex items-center gap-1">
+            {isResidencia && <Crown className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-400" />}
             <button
               onClick={() => setShowOpcoes(!showOpcoes)}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`p-1.5 rounded-lg transition-colors ${
                 showOpcoes ? 'bg-purple-500/20 text-purple-400' : 'text-white/40 hover:text-white hover:bg-white/5'
               }`}
             >
-              <Settings className="w-4 h-4 md:w-5 md:h-5" />
+              <Settings className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
           </div>
         </div>
@@ -733,12 +733,12 @@ export default function IAPage() {
           className="flex-1 min-h-0 overflow-y-auto p-2 md:p-3 space-y-2 md:space-y-3"
         >
           {mensagens.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-4">
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 flex items-center justify-center mb-4 md:mb-6">
-                <Brain className="w-8 h-8 md:w-10 md:h-10 text-purple-400" />
+            <div className="h-full flex flex-col items-center justify-center text-center p-4 max-w-4xl mx-auto w-full">
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 flex items-center justify-center mb-3 md:mb-4">
+                <Brain className="w-7 h-7 md:w-8 md:h-8 text-purple-400" />
               </div>
-              <h2 className="text-xl md:text-2xl font-bold text-white mb-2">Como posso ajudar?</h2>
-              <p className="text-white/60 mb-6 md:mb-8 max-w-md text-sm md:text-base">
+              <h2 className="text-lg md:text-xl font-bold text-white mb-1.5">Como posso ajudar?</h2>
+              <p className="text-white/60 mb-4 md:mb-6 max-w-md text-xs md:text-sm">
                 {isResidencia
                   ? 'Tire dúvidas, analise imagens, PDFs e use busca na web para informações atualizadas.'
                   : 'Tire dúvidas sobre medicina, peça explicações de conceitos ou ajuda com questões.'}
@@ -770,8 +770,8 @@ export default function IAPage() {
                   </div>
                 )}
 
-                {/* Mensagem com largura ajustada - mais compacta */}
-                <div className={`max-w-[90%] md:max-w-[85%] ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
+                {/* Mensagem com largura ajustada - expande mais */}
+                <div className={`max-w-[95%] md:max-w-[90%] lg:max-w-[85%] ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
                   {msg.thinking && (
                     <div className="mb-1.5 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
                       <p className="text-amber-200 text-[10px] font-medium mb-0.5 flex items-center gap-1">
@@ -883,8 +883,8 @@ export default function IAPage() {
           </div>
         )}
 
-        {/* Input Area - REDESENHADO (Problema 1) */}
-        <div className="p-2 md:p-4 border-t border-white/10 bg-slate-900/50">
+        {/* Input Area - Compacto */}
+        <div className="px-2 md:px-3 py-2 border-t border-white/10 bg-slate-900/50">
           <div className="relative">
             {/* Container do input com borda visual */}
             <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-purple-500/50 focus-within:border-purple-500/30 transition-all">
@@ -936,7 +936,7 @@ export default function IAPage() {
                 placeholder="Digite sua pergunta..."
                 disabled={loading}
                 rows={1}
-                className="w-full bg-transparent py-3 md:py-4 px-3 md:px-5 text-white placeholder-white/40 focus:outline-none disabled:opacity-50 resize-none min-h-[48px] md:min-h-[56px] max-h-[120px] md:max-h-[160px] text-sm"
+                className="w-full bg-transparent py-2.5 md:py-3 px-3 md:px-4 text-white placeholder-white/40 focus:outline-none disabled:opacity-50 resize-none min-h-[40px] md:min-h-[44px] max-h-[100px] md:max-h-[140px] text-sm"
                 style={{ height: 'auto' }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement
@@ -1033,8 +1033,8 @@ export default function IAPage() {
             </div>
           </div>
 
-          {/* Dica de atalho - mais discreta */}
-          <p className="text-center text-white/30 text-[10px] mt-2">
+          {/* Dica de atalho - minimal */}
+          <p className="text-center text-white/20 text-[9px] mt-1">
             Enter para enviar • Shift+Enter para nova linha
           </p>
         </div>
