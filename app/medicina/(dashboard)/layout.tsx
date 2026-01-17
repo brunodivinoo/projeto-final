@@ -23,7 +23,8 @@ import {
   X,
   Stethoscope,
   Crown,
-  ChevronUp
+  ChevronUp,
+  Sparkles
 } from 'lucide-react'
 
 const menuItems = [
@@ -32,6 +33,7 @@ const menuItems = [
   { href: '/medicina/dashboard/biblioteca', label: 'Biblioteca', icon: BookOpen },
   { href: '/medicina/dashboard/anotacoes', label: 'Anotações', icon: PenTool },
   { href: '/medicina/dashboard/simulados', label: 'Simulados', icon: ClipboardList },
+  { href: '/medicina/dashboard/flashcards', label: 'Flashcards', icon: Sparkles },
   { href: '/medicina/dashboard/ia', label: 'IA Tutora', icon: Brain },
   { href: '/medicina/dashboard/forum', label: 'Fórum', icon: MessageSquare },
   { href: '/medicina/dashboard/estatisticas', label: 'Estatísticas', icon: BarChart3 },

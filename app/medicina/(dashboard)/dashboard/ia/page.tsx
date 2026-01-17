@@ -35,6 +35,7 @@ import { useSmartScroll } from '@/hooks/useSmartScroll'
 import { useArtifactsStore } from '@/stores/artifactsStore'
 import { VoiceButton } from '@/components/medicina/VoiceButton'
 import { ExamAnalyzerModal } from '@/components/medicina/ExamAnalyzer'
+import { ChatModeSelector, ChatModeIntro, useChatMode, MODE_PROMPTS, type ChatMode } from '@/components/medicina/ChatModes'
 
 // Hook para obter o estado da sidebar de artefatos
 const useArtifactsSidebar = () => {
@@ -108,6 +109,9 @@ export default function IAPage() {
   const [imagemTipo, setImagemTipo] = useState<string | null>(null)
   const [pdfBase64, setPdfBase64] = useState<string | null>(null)
   const [showExamAnalyzer, setShowExamAnalyzer] = useState(false)
+
+  // Modo de chat (Chat Livre, Caso Clínico, Tutor, Questões)
+  const { modo: chatMode, trocarModo, mostrarIntro, iniciarModo, getSystemPrompt } = useChatMode()
 
   // Smart scroll - permite scroll manual durante streaming
   const { containerRef: chatRef, isAtBottom, scrollToBottom } = useSmartScroll({
@@ -311,7 +315,9 @@ export default function IAPage() {
           pdf_base64: pdfBase64,
           use_web_search: useWebSearch,
           use_extended_thinking: useExtendedThinking,
-          thinking_budget: 8000
+          thinking_budget: 8000,
+          chat_mode: chatMode,
+          system_prompt_extra: getSystemPrompt()
         }),
         signal: abortControllerRef.current.signal
       })
@@ -738,28 +744,45 @@ export default function IAPage() {
         >
           {mensagens.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4 max-w-4xl mx-auto w-full">
-              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 flex items-center justify-center mb-3 md:mb-4">
-                <Brain className="w-7 h-7 md:w-8 md:h-8 text-purple-400" />
+              {/* Seletor de Modo */}
+              <div className="mb-6 w-full max-w-xl">
+                <ChatModeSelector
+                  modoAtual={chatMode}
+                  onChange={trocarModo}
+                  variant="pills"
+                  className="justify-center"
+                />
               </div>
-              <h2 className="text-lg md:text-xl font-bold text-white mb-1.5">Como posso ajudar?</h2>
-              <p className="text-white/60 mb-4 md:mb-6 max-w-md text-xs md:text-sm">
-                {isResidencia
-                  ? 'Tire dúvidas, analise imagens, PDFs e use busca na web para informações atualizadas.'
-                  : 'Tire dúvidas sobre medicina, peça explicações de conceitos ou ajuda com questões.'}
-              </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 w-full max-w-xl">
-                {sugestoes.map((sugestao, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setInput(sugestao.texto)}
-                    className="flex items-center gap-2 md:gap-3 p-3 md:p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-left border border-white/5 hover:border-white/10"
-                  >
-                    <sugestao.icon className={`w-4 h-4 md:w-5 md:h-5 ${sugestao.cor} flex-shrink-0`} />
-                    <span className="text-white/80 text-xs md:text-sm">{sugestao.texto}</span>
-                  </button>
-                ))}
-              </div>
+              {/* Intro do modo ou sugestões */}
+              {mostrarIntro ? (
+                <ChatModeIntro modo={chatMode} onStart={iniciarModo} />
+              ) : (
+                <>
+                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 flex items-center justify-center mb-3 md:mb-4">
+                    <Brain className="w-7 h-7 md:w-8 md:h-8 text-purple-400" />
+                  </div>
+                  <h2 className="text-lg md:text-xl font-bold text-white mb-1.5">Como posso ajudar?</h2>
+                  <p className="text-white/60 mb-4 md:mb-6 max-w-md text-xs md:text-sm">
+                    {isResidencia
+                      ? 'Tire dúvidas, analise imagens, PDFs e use busca na web para informações atualizadas.'
+                      : 'Tire dúvidas sobre medicina, peça explicações de conceitos ou ajuda com questões.'}
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 w-full max-w-xl">
+                    {sugestoes.map((sugestao, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setInput(sugestao.texto)}
+                        className="flex items-center gap-2 md:gap-3 p-3 md:p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-left border border-white/5 hover:border-white/10"
+                      >
+                        <sugestao.icon className={`w-4 h-4 md:w-5 md:h-5 ${sugestao.cor} flex-shrink-0`} />
+                        <span className="text-white/80 text-xs md:text-sm">{sugestao.texto}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             mensagens.map((msg) => (
