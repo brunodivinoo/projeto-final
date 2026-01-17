@@ -110,8 +110,17 @@ export default function IAPage() {
   const [pdfBase64, setPdfBase64] = useState<string | null>(null)
   const [showExamAnalyzer, setShowExamAnalyzer] = useState(false)
 
+  // Gerenciar artefatos por conversa e modo de chat
+  const { clearArtifacts, setCurrentConversa, setCurrentChatMode } = useArtifactsStore()
+
   // Modo de chat (Chat Livre, Caso Clínico, Tutor, Questões)
-  const { modo: chatMode, trocarModo, mostrarIntro, iniciarModo, getSystemPrompt } = useChatMode()
+  const { modo: chatMode, trocarModo: trocarModoBase, mostrarIntro, iniciarModo, getSystemPrompt } = useChatMode()
+
+  // Wrapper para trocar modo e sincronizar com store de artefatos
+  const trocarModo = useCallback((novoModo: ChatMode) => {
+    trocarModoBase(novoModo)
+    setCurrentChatMode(novoModo)
+  }, [trocarModoBase, setCurrentChatMode])
 
   // Smart scroll - permite scroll manual durante streaming
   const { containerRef: chatRef, isAtBottom, scrollToBottom } = useSmartScroll({
@@ -138,9 +147,6 @@ export default function IAPage() {
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
-
-  // Gerenciar artefatos por conversa
-  const { clearArtifacts, setCurrentConversa } = useArtifactsStore()
 
   // Buscar uso
   const fetchUso = useCallback(async () => {
@@ -839,6 +845,7 @@ export default function IAPage() {
                           userId={user?.id}
                           messageId={msg.id}
                           conversaId={conversaAtual || undefined}
+                          chatMode={chatMode}
                           planoUsuario={plano}
                           trialAtivo={trialStatus.ativo}
                           onUpgradeClick={() => {

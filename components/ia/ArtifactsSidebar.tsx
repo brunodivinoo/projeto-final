@@ -26,7 +26,7 @@ import {
   XCircle,
   Clock
 } from 'lucide-react'
-import { useArtifactsStore, ARTIFACT_ICONS, ARTIFACT_LABELS, type Artifact, type ArtifactType } from '@/stores/artifactsStore'
+import { useArtifactsStore, ARTIFACT_ICONS, ARTIFACT_LABELS, CHAT_MODE_CONFIG, type Artifact, type ArtifactType, type ChatModeType } from '@/stores/artifactsStore'
 import dynamic from 'next/dynamic'
 
 // Funções auxiliares para extrair informações do JSON
@@ -874,7 +874,14 @@ function ArtifactCard({
         {/* Info */}
         <div className="relative p-2">
           <h4 className="text-white text-sm font-medium truncate">{artifact.title}</h4>
-          <span className="text-white/40 text-xs">{ARTIFACT_LABELS[artifact.type]}</span>
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className="text-white/40 text-xs">{ARTIFACT_LABELS[artifact.type]}</span>
+            {artifact.chatMode && artifact.chatMode !== 'chat' && (
+              <span className={`text-[9px] px-1 py-0.5 rounded ${CHAT_MODE_CONFIG[artifact.chatMode].bgColor} ${CHAT_MODE_CONFIG[artifact.chatMode].color}`}>
+                {CHAT_MODE_CONFIG[artifact.chatMode].icon}
+              </span>
+            )}
+          </div>
         </div>
       </motion.div>
     )
@@ -923,6 +930,13 @@ function ArtifactCard({
             }`}>
               {ARTIFACT_LABELS[artifact.type]}
             </span>
+            {/* Indicador de modo de chat */}
+            {artifact.chatMode && artifact.chatMode !== 'chat' && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5 ${CHAT_MODE_CONFIG[artifact.chatMode].bgColor} ${CHAT_MODE_CONFIG[artifact.chatMode].color}`}>
+                <span>{CHAT_MODE_CONFIG[artifact.chatMode].icon}</span>
+                <span className="hidden sm:inline">{CHAT_MODE_CONFIG[artifact.chatMode].label}</span>
+              </span>
+            )}
             {/* Indicador de preview level */}
             {previewLevel !== 'collapsed' && (
               <span className="text-xs text-white/30">
@@ -1082,14 +1096,27 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
     toggleSidebar,
     setSidebarOpen,
     currentConversaId,
+    chatModeFilter,
+    setChatModeFilter,
     updateQuestionAnswer
   } = useArtifactsStore()
 
-  // Filtrar artefatos pela conversa atual
+  // Filtrar artefatos pela conversa atual e modo de chat
   const artifacts = useMemo(() => {
-    if (!currentConversaId) return allArtifacts
-    return allArtifacts.filter(a => a.conversaId === currentConversaId || !a.conversaId)
-  }, [allArtifacts, currentConversaId])
+    let filtered = allArtifacts
+
+    // Filtrar por conversa
+    if (currentConversaId) {
+      filtered = filtered.filter(a => a.conversaId === currentConversaId || !a.conversaId)
+    }
+
+    // Filtrar por modo de chat
+    if (chatModeFilter !== 'all') {
+      filtered = filtered.filter(a => a.chatMode === chatModeFilter)
+    }
+
+    return filtered
+  }, [allArtifacts, currentConversaId, chatModeFilter])
 
   // Estados locais
   const [searchQuery, setSearchQuery] = useState('')
@@ -1538,6 +1565,41 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                     <Folder className="w-4 h-4" />
                   </button>
                 </div>
+              </div>
+
+              {/* Filtro por modo de chat */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  onClick={() => setChatModeFilter('all')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    chatModeFilter === 'all'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Todos
+                </button>
+                {(['chat', 'caso_clinico', 'tutor', 'questoes'] as ChatModeType[]).map(mode => {
+                  const config = CHAT_MODE_CONFIG[mode]
+                  const count = allArtifacts.filter(a => a.chatMode === mode).length
+                  if (count === 0) return null
+                  return (
+                    <button
+                      key={mode}
+                      onClick={() => setChatModeFilter(mode)}
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
+                        chatModeFilter === mode
+                          ? `${config.bgColor} ${config.color}`
+                          : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
+                      }`}
+                      title={config.description}
+                    >
+                      <span>{config.icon}</span>
+                      <span className="hidden sm:inline">{config.label}</span>
+                      <span className="px-1 bg-black/20 rounded text-[10px]">{count}</span>
+                    </button>
+                  )
+                })}
               </div>
 
               {/* Toggle filtros */}

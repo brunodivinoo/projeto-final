@@ -1,5 +1,8 @@
 import { create } from 'zustand'
 
+// Tipos de modos de chat
+export type ChatModeType = 'chat' | 'caso_clinico' | 'tutor' | 'questoes'
+
 // Tipos de artefatos suportados
 export type ArtifactType =
   | 'diagram'
@@ -75,6 +78,7 @@ export interface Artifact {
   content: string
   messageId?: string
   conversaId?: string  // ID da conversa para filtrar artefatos por chat
+  chatMode?: ChatModeType  // Modo do chat que gerou o artefato
   createdAt: Date
   metadata?: {
     language?: string
@@ -92,6 +96,8 @@ interface ArtifactsState {
   isSidebarOpen: boolean
   isMobileDrawerOpen: boolean
   currentConversaId: string | null  // Conversa atual para filtrar artefatos
+  currentChatMode: ChatModeType | null  // Modo de chat atual para filtrar artefatos
+  chatModeFilter: ChatModeType | 'all'  // Filtro por modo de chat na sidebar
 
   // Ações
   addArtifact: (artifact: Omit<Artifact, 'id' | 'createdAt'>) => string
@@ -99,6 +105,8 @@ interface ArtifactsState {
   clearArtifacts: () => void
   clearArtifactsForConversa: (conversaId: string) => void  // Limpar artefatos de uma conversa específica
   setCurrentConversa: (conversaId: string | null) => void  // Definir conversa atual
+  setCurrentChatMode: (mode: ChatModeType | null) => void  // Definir modo de chat atual
+  setChatModeFilter: (filter: ChatModeType | 'all') => void  // Definir filtro por modo de chat
   selectArtifact: (id: string | null) => void
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
@@ -106,6 +114,7 @@ interface ArtifactsState {
   setMobileDrawerOpen: (open: boolean) => void
   getArtifactsByMessage: (messageId: string) => Artifact[]
   getArtifactsForCurrentConversa: () => Artifact[]  // Obter artefatos da conversa atual
+  getArtifactsByChatMode: (mode: ChatModeType) => Artifact[]  // Obter artefatos por modo
   updateQuestionAnswer: (artifactId: string, resposta: string, acertou: boolean) => void  // Sincronizar resposta
 }
 
@@ -116,6 +125,8 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
   isSidebarOpen: false,
   isMobileDrawerOpen: false,
   currentConversaId: null,
+  currentChatMode: null,
+  chatModeFilter: 'all',
 
   // Adicionar artefato
   addArtifact: (artifact) => {
@@ -164,6 +175,16 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
     set({ currentConversaId: conversaId })
   },
 
+  // Definir modo de chat atual
+  setCurrentChatMode: (mode) => {
+    set({ currentChatMode: mode })
+  },
+
+  // Definir filtro por modo de chat
+  setChatModeFilter: (filter) => {
+    set({ chatModeFilter: filter })
+  },
+
   // Selecionar artefato
   selectArtifact: (id) => {
     set({ selectedArtifactId: id })
@@ -201,6 +222,11 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
     const state = get()
     if (!state.currentConversaId) return state.artifacts
     return state.artifacts.filter((a) => a.conversaId === state.currentConversaId || !a.conversaId)
+  },
+
+  // Obter artefatos por modo de chat
+  getArtifactsByChatMode: (mode) => {
+    return get().artifacts.filter((a) => a.chatMode === mode)
   },
 
   // Atualizar estado de questão respondida (sincronização chat <-> sidebar)
@@ -328,4 +354,36 @@ export const DIFFICULTY_COLORS: Record<string, { bg: string; text: string; label
   medio: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Médio' },
   dificil: { bg: 'bg-orange-500/20', text: 'text-orange-400', label: 'Difícil' },
   muito_dificil: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Muito Difícil' }
+}
+
+// Labels e cores para modos de chat
+export const CHAT_MODE_CONFIG: Record<ChatModeType, { label: string; icon: string; color: string; bgColor: string; description: string }> = {
+  chat: {
+    label: 'Chat Livre',
+    icon: '💬',
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/20',
+    description: 'Dúvidas gerais'
+  },
+  caso_clinico: {
+    label: 'Caso Clínico',
+    icon: '🏥',
+    color: 'text-emerald-400',
+    bgColor: 'bg-emerald-500/20',
+    description: 'Prática clínica'
+  },
+  tutor: {
+    label: 'Modo Tutor',
+    icon: '🎓',
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-500/20',
+    description: 'Aprendizado guiado'
+  },
+  questoes: {
+    label: 'Questões',
+    icon: '📝',
+    color: 'text-amber-400',
+    bgColor: 'bg-amber-500/20',
+    description: 'Questões de prova'
+  }
 }

@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism'
-import { useArtifactsStore, detectArtifactType, Question } from '@/stores/artifactsStore'
+import { useArtifactsStore, detectArtifactType, Question, type ChatModeType } from '@/stores/artifactsStore'
 
 // Importar MermaidDiagram dinamicamente para evitar SSR issues
 const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
@@ -106,6 +106,7 @@ interface ArtifactRendererProps {
   userId?: string
   messageId?: string
   conversaId?: string  // ID da conversa para filtrar artefatos
+  chatMode?: ChatModeType  // Modo de chat atual (chat, caso_clinico, tutor, questoes)
   // Props para blur no gabarito
   planoUsuario?: PlanoUsuario
   trialAtivo?: boolean
@@ -1209,6 +1210,7 @@ export default function ArtifactRenderer({
   userId,
   messageId,
   conversaId,
+  chatMode,
   planoUsuario = 'gratuito',
   trialAtivo = false,
   onUpgradeClick
@@ -1301,6 +1303,7 @@ export default function ArtifactRenderer({
         content: artifact.content,
         messageId,
         conversaId,
+        chatMode,
         metadata: {
           subtype: artifact.subtype,
           question: artifact.questionData
@@ -1309,7 +1312,7 @@ export default function ArtifactRenderer({
 
       addedArtifactsRef.current.add(artifactKey)
     })
-  }, [artifacts, messageId, addArtifact, storeArtifacts])
+  }, [artifacts, messageId, conversaId, chatMode, addArtifact, storeArtifacts])
 
   // Obter dados parciais da questão sendo gerada
   const partialQuestionData = useMemo(() => getPartialQuestionData(), [content])
