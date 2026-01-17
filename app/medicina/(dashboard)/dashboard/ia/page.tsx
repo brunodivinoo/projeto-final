@@ -25,12 +25,16 @@ import {
   Zap,
   ChevronDown,
   Menu,
-  Square
+  Square,
+  Stethoscope,
+  Mic
 } from 'lucide-react'
 import ArtifactRenderer from '@/components/ia/ArtifactRenderer'
 import ArtifactsSidebar from '@/components/ia/ArtifactsSidebar'
 import { useSmartScroll } from '@/hooks/useSmartScroll'
 import { useArtifactsStore } from '@/stores/artifactsStore'
+import { VoiceButton } from '@/components/medicina/VoiceButton'
+import { ExamAnalyzerModal } from '@/components/medicina/ExamAnalyzer'
 
 // Hook para obter o estado da sidebar de artefatos
 const useArtifactsSidebar = () => {
@@ -103,6 +107,7 @@ export default function IAPage() {
   const [imagemBase64, setImagemBase64] = useState<string | null>(null)
   const [imagemTipo, setImagemTipo] = useState<string | null>(null)
   const [pdfBase64, setPdfBase64] = useState<string | null>(null)
+  const [showExamAnalyzer, setShowExamAnalyzer] = useState(false)
 
   // Smart scroll - permite scroll manual durante streaming
   const { containerRef: chatRef, isAtBottom, scrollToBottom } = useSmartScroll({
@@ -1014,6 +1019,24 @@ export default function IAPage() {
                       >
                         <Zap className="w-4 h-4" />
                       </button>
+
+                      {/* Separador */}
+                      <div className="w-px h-4 bg-white/10 mx-0.5 md:mx-1" />
+
+                      {/* Botão Análise de Exames */}
+                      <button
+                        onClick={() => setShowExamAnalyzer(true)}
+                        className="p-1.5 md:p-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                        title="Analisar Exame"
+                      >
+                        <Stethoscope className="w-4 h-4" />
+                      </button>
+
+                      {/* Botão de Voz */}
+                      <VoiceButton
+                        onTranscription={(text) => setInput(prev => prev + ' ' + text)}
+                        variant="compact"
+                      />
                     </>
                   )}
                 </div>
@@ -1047,6 +1070,23 @@ export default function IAPage() {
 
       {/* Sidebar de Artefatos */}
       <ArtifactsSidebar userId={user?.id} />
+
+      {/* Modal de Análise de Exames */}
+      <ExamAnalyzerModal
+        isOpen={showExamAnalyzer}
+        onClose={() => setShowExamAnalyzer(false)}
+        onAnalysis={(analysis) => {
+          // Adicionar análise como mensagem no chat
+          const novoId = Date.now().toString()
+          setMensagens(prev => [...prev, {
+            id: novoId,
+            tipo: 'system' as const,
+            conteudo: `📋 **Análise de Exame:**\n\n${analysis}`,
+            timestamp: new Date()
+          }])
+          setShowExamAnalyzer(false)
+        }}
+      />
     </div>
   )
 }

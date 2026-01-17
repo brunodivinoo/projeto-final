@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { MedAuthProvider, useMedAuth } from '@/contexts/MedAuthContext'
+import { TrialBanner } from '@/components/medicina/TrialBanner'
+import { UpgradeModal } from '@/components/medicina/UpgradeModal'
+import { useUpgradePrompt } from '@/hooks/useUpgradePrompt'
+import { BadgeMiniWidget } from '@/components/medicina/BadgeDisplay'
 import {
   LayoutDashboard,
   FileText,
@@ -36,8 +40,17 @@ const menuItems = [
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, profile, plano, loading, signOut } = useMedAuth()
+  const { user, profile, plano, loading, signOut, trialStatus } = useMedAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Hook para modais de upgrade
+  const {
+    showModal,
+    modalTipo,
+    modalFeature,
+    conquista,
+    fecharModal
+  } = useUpgradePrompt()
 
   useEffect(() => {
     if (!loading && !user) {
@@ -165,6 +178,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
+          {/* Badges Mini Widget */}
+          <div className="mx-3 mb-3 p-3 bg-white/5 rounded-lg border border-white/10">
+            <BadgeMiniWidget />
+          </div>
+
           {/* User Profile */}
           <div className="border-t border-white/10 p-4">
             <div className="flex items-center gap-3 mb-3">
@@ -222,6 +240,21 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       >
         <ChevronUp className="w-6 h-6" />
       </button>
+
+      {/* Trial Banner - Mostra quando trial está ativo */}
+      {trialStatus.ativo && (
+        <TrialBanner />
+      )}
+
+      {/* Upgrade Modal - Mostra quando há necessidade de upgrade */}
+      {showModal && (
+        <UpgradeModal
+          tipo={modalTipo}
+          feature={modalFeature}
+          conquista={conquista || undefined}
+          onClose={fecharModal}
+        />
+      )}
     </div>
   )
 }
