@@ -210,31 +210,20 @@ export async function POST(request: NextRequest) {
     })) || []
 
     // Escolher modelo e fazer streaming
-    if (plano === 'residencia') {
-      // CLAUDE - Plano Residência
-      return await streamClaude({
-        historico,
-        mensagem,
-        conversa_id: conversaAtual,
-        user_id,
-        imagem_base64,
-        imagem_tipo,
-        pdf_base64,
-        use_web_search,
-        use_extended_thinking,
-        thinking_budget
-      })
-    } else {
-      // GEMINI - Plano Premium
-      return await streamGemini({
-        historico,
-        mensagem,
-        conversa_id: conversaAtual,
-        user_id,
-        imagem_base64,
-        imagem_tipo
-      })
-    }
+    // Premium = Sonnet | Residência = Opus (ambos Claude)
+    return await streamClaude({
+      historico,
+      mensagem,
+      conversa_id: conversaAtual,
+      user_id,
+      plano, // Passar plano para escolher modelo
+      imagem_base64,
+      imagem_tipo,
+      pdf_base64,
+      use_web_search,
+      use_extended_thinking,
+      thinking_budget
+    })
   } catch (error) {
     console.error('Erro na API de chat:', error)
     return NextResponse.json(
@@ -253,6 +242,7 @@ interface StreamClaudeParams {
   mensagem: string
   conversa_id: string
   user_id: string
+  plano?: string
   imagem_base64?: string
   imagem_tipo?: string
   pdf_base64?: string

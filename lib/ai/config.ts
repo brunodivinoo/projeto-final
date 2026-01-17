@@ -17,14 +17,15 @@ export const MODELOS = {
 }
 
 // Selecionar modelo baseado no plano
+// Premium = Sonnet | Residência = Opus
 export function getModeloParaPlano(plano: PlanoIA): string {
   switch (plano) {
     case 'residencia':
       return MODELOS.claude.opus
     case 'premium':
-      return MODELOS.gemini.flash
+      return MODELOS.claude.sonnet // Sonnet para Premium
     default:
-      return MODELOS.gemini.flash
+      return MODELOS.claude.sonnet
   }
 }
 

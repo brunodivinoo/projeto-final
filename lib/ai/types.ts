@@ -20,48 +20,50 @@ export interface LimitesPlanoIA {
   prompt_cache_ttl: number // em segundos
 }
 
+// LIMITES ATUALIZADOS - Janeiro 2026
+// FREE: R$0 (só trial 4h) | PREMIUM: R$60 (Sonnet) | RESIDÊNCIA: R$150 (Opus)
 export const LIMITES_IA: Record<PlanoIA, LimitesPlanoIA> = {
   gratuito: {
-    chats_mes: 10, // 10 chats grátis para teste
-    resumos_mes: 3,
-    flashcards_mes: 20,
+    chats_mes: 0, // Apenas no trial de 4h
+    resumos_mes: 0,
+    flashcards_mes: 0,
     imagens_mes: 0,
     web_search: false,
     vision: false,
     pdf_support: false,
     extended_thinking: false,
-    max_tokens_resposta: 2048,
+    max_tokens_resposta: 0,
     modelo: 'gemini',
-    context_window: 100000,
+    context_window: 0,
     prompt_cache_ttl: 0
   },
   premium: {
-    chats_mes: 100,
-    resumos_mes: 50,
-    flashcards_mes: 500,
+    chats_mes: 100, // Sonnet 4
+    resumos_mes: 10,
+    flashcards_mes: 120, // 30/semana
     imagens_mes: 0,
     web_search: false,
     vision: false,
     pdf_support: false,
     extended_thinking: false,
-    max_tokens_resposta: 4096,
-    modelo: 'gemini',
+    max_tokens_resposta: 8192,
+    modelo: 'claude', // Sonnet
     context_window: 200000,
-    prompt_cache_ttl: 300 // 5 minutos
+    prompt_cache_ttl: 300
   },
   residencia: {
-    chats_mes: -1, // ilimitado
+    chats_mes: -1, // Opus - ilimitado
     resumos_mes: -1,
     flashcards_mes: -1,
-    imagens_mes: 100,
+    imagens_mes: -1,
     web_search: true,
     vision: true,
     pdf_support: true,
     extended_thinking: true,
     max_tokens_resposta: 16384,
-    modelo: 'claude',
-    context_window: 1000000, // 1M tokens
-    prompt_cache_ttl: 3600 // 1 hora
+    modelo: 'claude', // Opus
+    context_window: 1000000,
+    prompt_cache_ttl: 3600
   }
 }
 
