@@ -29,7 +29,9 @@ export async function verificarAdminPorId(
       .single()
 
     if (error || !data) return false
-    return isAdmin(data.email)
+    const profile = data as { email: string | null } | null
+    if (!profile) return false
+    return isAdmin(profile.email)
   } catch {
     return false
   }
