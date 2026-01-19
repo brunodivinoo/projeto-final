@@ -14,7 +14,10 @@ import {
   Eye,
   RefreshCw,
   AlertCircle,
-  FileText
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare
 } from 'lucide-react'
 import { PERIODOS_OPCOES } from '@/lib/admin/periodos'
 import { useMedAuth } from '@/contexts/MedAuthContext'
@@ -58,6 +61,12 @@ interface LogEntry {
 interface QuestaoGerada {
   id: string
   preview: string
+  enunciado?: string
+  alternativas?: { letra: string; texto: string }[]
+  gabarito?: string
+  explicacao?: string
+  comentario_ia?: string
+  expandido?: boolean
 }
 
 export function QuestaoGenerator() {
@@ -69,11 +78,23 @@ export function QuestaoGenerator() {
   const [subAssuntos, setSubAssuntos] = useState<SubAssunto[]>([])
   const [loadingDados, setLoadingDados] = useState(true)
 
+  // Tipos de questão para medicina
+  const TIPOS_QUESTAO = [
+    { value: 'multipla_escolha', label: 'Múltipla Escolha', descricao: 'Questão tradicional com 5 alternativas' },
+    { value: 'caso_clinico', label: 'Caso Clínico', descricao: 'Questão baseada em cenário clínico' },
+    { value: 'imagem', label: 'Com Imagem', descricao: 'Questão com análise de imagem (RX, ECG, etc)' },
+    { value: 'afirmativa', label: 'Afirmativa V/F', descricao: 'Questões com afirmativas verdadeiro/falso' },
+    { value: 'associacao', label: 'Associação de Colunas', descricao: 'Relacionar conceitos entre colunas' },
+    { value: 'sequencia', label: 'Sequência', descricao: 'Ordenar passos de procedimento ou diagnóstico' },
+    { value: 'lacuna', label: 'Preencher Lacunas', descricao: 'Completar texto com termos corretos' },
+    { value: 'multipla_resposta', label: 'Múltipla Resposta', descricao: 'Mais de uma alternativa correta' }
+  ]
+
   // Estados de seleção
-  const [disciplinaSelecionada, setDisciplinaSelecionada] = useState<string>('')
+  const [disciplinasSelecionadas, setDisciplinasSelecionadas] = useState<string[]>([])
   const [assuntosSelecionados, setAssuntosSelecionados] = useState<string[]>([])
   const [periodosSelecionados, setPeriodosSelecionados] = useState<number[]>([])
-  const [tipoQuestao, setTipoQuestao] = useState<'multipla_escolha' | 'caso_clinico'>('multipla_escolha')
+  const [tiposQuestaoSelecionados, setTiposQuestaoSelecionados] = useState<string[]>(['multipla_escolha'])
   const [quantidadePorAssunto, setQuantidadePorAssunto] = useState(3)
 
   // Estados de geração
@@ -100,15 +121,17 @@ export function QuestaoGenerator() {
     }
   }
 
-  // Função para carregar assuntos (reutilizável)
+  // Função para carregar assuntos de múltiplas disciplinas
   const carregarAssuntos = async () => {
-    if (!disciplinaSelecionada) return
+    if (disciplinasSelecionadas.length === 0) return
     try {
-      const res = await fetch(`/api/medicina/admin/disciplinas/assuntos?disciplina_id=${disciplinaSelecionada}`)
-      const data = await res.json()
-      if (data.assuntos) {
-        setAssuntos(data.assuntos)
-      }
+      // Carregar assuntos de todas as disciplinas selecionadas
+      const promises = disciplinasSelecionadas.map(id =>
+        fetch(`/api/medicina/admin/disciplinas/assuntos?disciplina_id=${id}`).then(res => res.json())
+      )
+      const results = await Promise.all(promises)
+      const todosAssuntos = results.flatMap(data => data.assuntos || [])
+      setAssuntos(todosAssuntos)
     } catch (error) {
       console.error('Erro ao carregar assuntos:', error)
     }
@@ -117,7 +140,7 @@ export function QuestaoGenerator() {
   // Callback quando conteúdo é criado pela IA
   const handleConteudoCriado = () => {
     carregarDisciplinas()
-    if (disciplinaSelecionada) {
+    if (disciplinasSelecionadas.length > 0) {
       carregarAssuntos()
     }
   }
@@ -127,30 +150,30 @@ export function QuestaoGenerator() {
     carregarDisciplinas()
   }, [])
 
-  // Carregar assuntos quando disciplina muda
+  // Carregar assuntos quando disciplinas mudam
   useEffect(() => {
-    if (!disciplinaSelecionada) {
+    if (disciplinasSelecionadas.length === 0) {
       setAssuntos([])
       setAssuntosSelecionados([])
       return
     }
 
     carregarAssuntos()
-  }, [disciplinaSelecionada])
+  }, [disciplinasSelecionadas])
 
   // Auto-scroll dos logs
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [logs])
 
-  const disciplinaAtual = disciplinas.find(d => d.id === disciplinaSelecionada)
-  const assuntosFiltrados = assuntos.filter(a => a.disciplina_id === disciplinaSelecionada)
+  const disciplinasAtuais = disciplinas.filter(d => disciplinasSelecionadas.includes(d.id))
+  const assuntosFiltrados = assuntos.filter(a => disciplinasSelecionadas.includes(a.disciplina_id))
 
-  const totalEstimado = assuntosSelecionados.length * periodosSelecionados.length * quantidadePorAssunto
+  const totalEstimado = assuntosSelecionados.length * periodosSelecionados.length * tiposQuestaoSelecionados.length * quantidadePorAssunto
 
   const iniciarGeracao = async () => {
-    if (!disciplinaSelecionada || assuntosSelecionados.length === 0 || periodosSelecionados.length === 0) {
-      alert('Selecione disciplina, assuntos e períodos')
+    if (disciplinasSelecionadas.length === 0 || assuntosSelecionados.length === 0 || periodosSelecionados.length === 0 || tiposQuestaoSelecionados.length === 0) {
+      alert('Selecione disciplinas, assuntos, períodos e tipos de questão')
       return
     }
 
@@ -170,8 +193,16 @@ export function QuestaoGenerator() {
       .map(a => ({
         id: a.id,
         nome: a.nome,
+        disciplina_id: a.disciplina_id,
         sub_assuntos: subAssuntos.filter(s => s.assunto_id === a.id)
       }))
+
+    // Agrupar assuntos por disciplina
+    const disciplinasInfo = disciplinasAtuais.map(d => ({
+      id: d.id,
+      nome: d.nome,
+      assuntos: assuntosCompletos.filter(a => a.disciplina_id === d.id)
+    }))
 
     try {
       const response = await fetch('/api/medicina/admin/questoes/gerar', {
@@ -179,12 +210,10 @@ export function QuestaoGenerator() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: user.id,
-          disciplina_id: disciplinaSelecionada,
-          disciplina_nome: disciplinaAtual?.nome,
-          assuntos: assuntosCompletos,
+          disciplinas: disciplinasInfo,
           periodos: periodosSelecionados,
           quantidade_por_assunto: quantidadePorAssunto,
-          tipo_questao: tipoQuestao
+          tipos_questao: tiposQuestaoSelecionados
         }),
         signal: abortControllerRef.current.signal
       })
@@ -259,6 +288,47 @@ export function QuestaoGenerator() {
     }
   }
 
+  const toggleExpandirQuestao = async (questaoId: string) => {
+    const questao = questoesGeradas.find(q => q.id === questaoId)
+    if (!questao) return
+
+    // Se já está expandido, apenas colapsar
+    if (questao.expandido) {
+      setQuestoesGeradas(prev =>
+        prev.map(q => q.id === questaoId ? { ...q, expandido: false } : q)
+      )
+      return
+    }
+
+    // Se ainda não tem os dados, buscar
+    if (!questao.enunciado) {
+      try {
+        const res = await fetch(`/api/medicina/admin/questoes/${questaoId}`)
+        const data = await res.json()
+        if (data.questao) {
+          setQuestoesGeradas(prev =>
+            prev.map(q => q.id === questaoId ? {
+              ...q,
+              expandido: true,
+              enunciado: data.questao.enunciado,
+              alternativas: data.questao.alternativas,
+              gabarito: data.questao.gabarito,
+              explicacao: data.questao.explicacao,
+              comentario_ia: data.questao.comentario_ia
+            } : q)
+          )
+        }
+      } catch (error) {
+        console.error('Erro ao buscar questão:', error)
+      }
+    } else {
+      // Já tem os dados, apenas expandir
+      setQuestoesGeradas(prev =>
+        prev.map(q => q.id === questaoId ? { ...q, expandido: true } : q)
+      )
+    }
+  }
+
   const selecionarTodosAssuntos = () => {
     setAssuntosSelecionados(assuntosFiltrados.map(a => a.id))
   }
@@ -288,7 +358,7 @@ export function QuestaoGenerator() {
       {/* Sugestões com IA - Opus 4.5 */}
       <SugestaoConteudoIA
         disciplinas={disciplinas}
-        disciplinaSelecionada={disciplinaSelecionada}
+        disciplinaSelecionada={disciplinasSelecionadas[0] || ''}
         onConteudoCriado={handleConteudoCriado}
       />
 
@@ -299,42 +369,123 @@ export function QuestaoGenerator() {
           Configurar Geração de Questões
         </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Disciplina */}
+        <div className="grid grid-cols-1 gap-6">
+          {/* Disciplinas - Multi-select */}
           <div>
-            <label className="block text-white/70 text-sm mb-2">Disciplina</label>
-            <select
-              value={disciplinaSelecionada}
-              onChange={(e) => {
-                setDisciplinaSelecionada(e.target.value)
-                setAssuntosSelecionados([])
-              }}
-              className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
-              disabled={gerando}
-            >
-              <option value="">Selecione uma disciplina</option>
-              {disciplinas.map(d => (
-                <option key={d.id} value={d.id}>{d.nome}</option>
-              ))}
-            </select>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-white/70 text-sm flex items-center gap-2">
+                <BookOpen className="w-4 h-4" />
+                Disciplinas ({disciplinasSelecionadas.length} selecionadas)
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setDisciplinasSelecionadas(disciplinas.map(d => d.id))}
+                  className="text-xs text-cyan-400 hover:text-cyan-300"
+                  disabled={gerando}
+                >
+                  Selecionar todas
+                </button>
+                <span className="text-white/30">|</span>
+                <button
+                  onClick={() => {
+                    setDisciplinasSelecionadas([])
+                    setAssuntosSelecionados([])
+                  }}
+                  className="text-xs text-white/40 hover:text-white/60"
+                  disabled={gerando}
+                >
+                  Limpar
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-3 bg-white/5 rounded-lg border border-white/10">
+              {disciplinas.length === 0 ? (
+                <p className="text-white/40 text-sm col-span-full">Nenhuma disciplina cadastrada</p>
+              ) : (
+                disciplinas.map(d => (
+                  <label key={d.id} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={disciplinasSelecionadas.includes(d.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setDisciplinasSelecionadas(prev => [...prev, d.id])
+                        } else {
+                          setDisciplinasSelecionadas(prev => prev.filter(id => id !== d.id))
+                          // Remover assuntos dessa disciplina
+                          const assuntosRemover = assuntos.filter(a => a.disciplina_id === d.id).map(a => a.id)
+                          setAssuntosSelecionados(prev => prev.filter(id => !assuntosRemover.includes(id)))
+                        }
+                      }}
+                      disabled={gerando}
+                      className="rounded text-cyan-500 bg-white/10 border-white/20 focus:ring-cyan-500"
+                    />
+                    <span className="text-white/80 text-sm truncate">{d.nome}</span>
+                  </label>
+                ))
+              )}
+            </div>
           </div>
 
-          {/* Tipo de Questão */}
+          {/* Tipos de Questão - Multi-select */}
           <div>
-            <label className="block text-white/70 text-sm mb-2">Tipo de Questão</label>
-            <select
-              value={tipoQuestao}
-              onChange={(e) => setTipoQuestao(e.target.value as 'multipla_escolha' | 'caso_clinico')}
-              className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
-              disabled={gerando}
-            >
-              <option value="multipla_escolha">Múltipla Escolha</option>
-              <option value="caso_clinico">Caso Clínico</option>
-            </select>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-white/70 text-sm flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Tipos de Questão ({tiposQuestaoSelecionados.length} selecionados)
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setTiposQuestaoSelecionados(TIPOS_QUESTAO.map(t => t.value))}
+                  className="text-xs text-cyan-400 hover:text-cyan-300"
+                  disabled={gerando}
+                >
+                  Selecionar todos
+                </button>
+                <span className="text-white/30">|</span>
+                <button
+                  onClick={() => setTiposQuestaoSelecionados(['multipla_escolha'])}
+                  className="text-xs text-white/40 hover:text-white/60"
+                  disabled={gerando}
+                >
+                  Apenas básico
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+              {TIPOS_QUESTAO.map(tipo => (
+                <label
+                  key={tipo.value}
+                  className={`flex items-start gap-2 cursor-pointer p-3 rounded-lg border transition-all ${
+                    tiposQuestaoSelecionados.includes(tipo.value)
+                      ? 'bg-purple-500/20 border-purple-500/50'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={tiposQuestaoSelecionados.includes(tipo.value)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setTiposQuestaoSelecionados(prev => [...prev, tipo.value])
+                      } else {
+                        setTiposQuestaoSelecionados(prev => prev.filter(v => v !== tipo.value))
+                      }
+                    }}
+                    disabled={gerando}
+                    className="rounded text-purple-500 bg-white/10 border-white/20 focus:ring-purple-500 mt-0.5"
+                  />
+                  <div>
+                    <span className="text-white/90 text-sm font-medium">{tipo.label}</span>
+                    <p className="text-white/50 text-xs mt-0.5">{tipo.descricao}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Assuntos */}
-          {disciplinaSelecionada && (
+          {disciplinasSelecionadas.length > 0 && (
             <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-2">
                 <label className="text-white/70 text-sm">
@@ -461,7 +612,7 @@ export function QuestaoGenerator() {
               <p className="text-white/60 text-sm">Total estimado de questões:</p>
               <p className="text-3xl font-bold text-cyan-400">{totalEstimado}</p>
               <p className="text-white/40 text-xs mt-1">
-                {assuntosSelecionados.length} assuntos × {periodosSelecionados.length} períodos × {quantidadePorAssunto} questões
+                {assuntosSelecionados.length} assuntos × {periodosSelecionados.length} períodos × {tiposQuestaoSelecionados.length} tipos × {quantidadePorAssunto} questões
               </p>
             </div>
           </div>
@@ -471,7 +622,7 @@ export function QuestaoGenerator() {
         <div className="flex gap-4 mt-6 pt-6 border-t border-white/10">
           <button
             onClick={iniciarGeracao}
-            disabled={gerando || !disciplinaSelecionada || assuntosSelecionados.length === 0 || periodosSelecionados.length === 0}
+            disabled={gerando || disciplinasSelecionadas.length === 0 || assuntosSelecionados.length === 0 || periodosSelecionados.length === 0 || tiposQuestaoSelecionados.length === 0}
             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold rounded-lg hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {gerando ? (
@@ -561,28 +712,102 @@ export function QuestaoGenerator() {
             <FileText className="w-5 h-5 text-emerald-400" />
             Questões Geradas ({questoesGeradas.length})
           </h2>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="space-y-3 max-h-[600px] overflow-y-auto">
             {questoesGeradas.map((q, i) => (
-              <div key={q.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:border-white/20 transition-colors">
-                <span className="text-white/80 text-sm truncate flex-1 mr-4">
-                  <span className="text-cyan-400 font-medium">#{i + 1}</span> - {q.preview}
-                </span>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => window.open(`/medicina/admin/questoes/${q.id}`, '_blank')}
-                    className="p-2 text-white/40 hover:text-cyan-400 transition-colors"
-                    title="Visualizar"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => excluirQuestao(q.id)}
-                    className="p-2 text-white/40 hover:text-red-400 transition-colors"
-                    title="Excluir"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+              <div key={q.id} className="bg-white/5 rounded-lg border border-white/10 hover:border-white/20 transition-colors overflow-hidden">
+                {/* Header da questão - clicável */}
+                <button
+                  onClick={() => toggleExpandirQuestao(q.id)}
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-white/5 transition-colors"
+                >
+                  <span className="text-white/80 text-sm flex-1 mr-4">
+                    <span className="text-cyan-400 font-medium">#{i + 1}</span> - {q.preview}
+                  </span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {q.expandido ? (
+                      <ChevronUp className="w-5 h-5 text-white/40" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-white/40" />
+                    )}
+                  </div>
+                </button>
+
+                {/* Conteúdo expandido */}
+                {q.expandido && (
+                  <div className="px-4 pb-4 border-t border-white/10">
+                    {/* Enunciado */}
+                    {q.enunciado ? (
+                      <div className="space-y-4 mt-4">
+                        <div>
+                          <h4 className="text-cyan-400 text-sm font-medium mb-2">Enunciado:</h4>
+                          <p className="text-white/80 text-sm whitespace-pre-wrap bg-black/20 p-3 rounded-lg">
+                            {q.enunciado}
+                          </p>
+                        </div>
+
+                        {/* Alternativas */}
+                        {q.alternativas && q.alternativas.length > 0 && (
+                          <div>
+                            <h4 className="text-cyan-400 text-sm font-medium mb-2">Alternativas:</h4>
+                            <div className="space-y-2">
+                              {q.alternativas.map((alt, idx) => (
+                                <div
+                                  key={idx}
+                                  className={`p-2 rounded-lg text-sm ${
+                                    alt.letra === q.gabarito
+                                      ? 'bg-green-500/20 border border-green-500/40 text-green-300'
+                                      : 'bg-white/5 text-white/70'
+                                  }`}
+                                >
+                                  <span className="font-medium">{alt.letra})</span> {alt.texto}
+                                  {alt.letra === q.gabarito && (
+                                    <span className="ml-2 text-green-400 font-medium">(Gabarito)</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Gabarito Comentado */}
+                        {(q.explicacao || q.comentario_ia) && (
+                          <div>
+                            <h4 className="text-emerald-400 text-sm font-medium mb-2 flex items-center gap-2">
+                              <MessageSquare className="w-4 h-4" />
+                              Gabarito Comentado:
+                            </h4>
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-white/80 text-sm whitespace-pre-wrap">
+                              {q.comentario_ia || q.explicacao || 'Sem comentário disponível'}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Botões de ação */}
+                        <div className="flex items-center gap-2 pt-2 border-t border-white/10">
+                          <button
+                            onClick={() => window.open(`/medicina/admin/questoes/${q.id}`, '_blank')}
+                            className="flex items-center gap-2 px-3 py-2 text-xs bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                            Abrir em nova aba
+                          </button>
+                          <button
+                            onClick={() => excluirQuestao(q.id)}
+                            className="flex items-center gap-2 px-3 py-2 text-xs bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Excluir
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
+                        <span className="ml-2 text-white/60 text-sm">Carregando questão...</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

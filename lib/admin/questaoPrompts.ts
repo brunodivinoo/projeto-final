@@ -4,7 +4,16 @@
 import { LIVROS_POR_DISCIPLINA } from './livrosFonte'
 import { PERIODOS_DIFICULDADE } from './periodos'
 
-export type TipoQuestao = 'multipla_escolha' | 'verdadeiro_falso' | 'caso_clinico'
+export type TipoQuestao =
+  | 'multipla_escolha'
+  | 'verdadeiro_falso'
+  | 'caso_clinico'
+  | 'imagem'
+  | 'afirmativa'
+  | 'associacao'
+  | 'sequencia'
+  | 'lacuna'
+  | 'multipla_resposta'
 
 export interface GerarQuestaoParams {
   disciplina: string
@@ -43,39 +52,141 @@ export function buildPromptQuestao(params: GerarQuestaoParams): string {
   const periodoInfo = PERIODOS_DIFICULDADE[periodo]
   const livrosRecomendados = LIVROS_POR_DISCIPLINA[disciplina] || ['Harrison', 'Guyton']
 
-  const tipoTexto = tipoQuestao === 'multipla_escolha'
-    ? 'múltipla escolha'
-    : tipoQuestao === 'verdadeiro_falso'
-      ? 'verdadeiro ou falso'
-      : 'caso clínico'
-
-  const estruturaAlternativas = tipoQuestao !== 'verdadeiro_falso'
-    ? `[
+  const tiposDescricao: Record<string, { texto: string; estrutura: string; regras: string }> = {
+    multipla_escolha: {
+      texto: 'múltipla escolha',
+      estrutura: `[
     {"letra": "A", "texto": "...", "correta": false},
     {"letra": "B", "texto": "...", "correta": true},
     {"letra": "C", "texto": "...", "correta": false},
     {"letra": "D", "texto": "...", "correta": false},
     {"letra": "E", "texto": "...", "correta": false}
-  ]`
-    : `[
-    {"letra": "V", "texto": "Verdadeiro", "correta": true ou false},
-    {"letra": "F", "texto": "Falso", "correta": true ou false}
-  ]`
-
-  const regrasEstrutura = tipoQuestao === 'multipla_escolha'
-    ? `- Enunciado claro e objetivo
+  ]`,
+      regras: `- Enunciado claro e objetivo
 - 5 alternativas (A, B, C, D, E)
 - Apenas UMA alternativa correta
 - Distratores plausíveis mas claramente incorretos
 - Evitar "todas as alternativas" ou "nenhuma das alternativas"`
-    : tipoQuestao === 'verdadeiro_falso'
-      ? `- Afirmação clara e objetiva
-- Resposta: Verdadeiro ou Falso
-- Sem ambiguidade`
-      : `- Caso clínico realista e detalhado
-- Dados relevantes do paciente (idade, sexo, queixa, história, exame físico, exames)
+    },
+    caso_clinico: {
+      texto: 'caso clínico',
+      estrutura: `[
+    {"letra": "A", "texto": "...", "correta": false},
+    {"letra": "B", "texto": "...", "correta": true},
+    {"letra": "C", "texto": "...", "correta": false},
+    {"letra": "D", "texto": "...", "correta": false},
+    {"letra": "E", "texto": "...", "correta": false}
+  ]`,
+      regras: `- Caso clínico realista e detalhado (mínimo 150 palavras)
+- Dados relevantes do paciente: idade, sexo, queixa principal, história da doença atual, antecedentes
+- Exame físico pertinente e exames complementares quando necessário
 - 5 alternativas sobre diagnóstico, conduta ou tratamento
 - Apenas UMA alternativa correta`
+    },
+    imagem: {
+      texto: 'questão com análise de imagem',
+      estrutura: `[
+    {"letra": "A", "texto": "...", "correta": false},
+    {"letra": "B", "texto": "...", "correta": true},
+    {"letra": "C", "texto": "...", "correta": false},
+    {"letra": "D", "texto": "...", "correta": false},
+    {"letra": "E", "texto": "...", "correta": false}
+  ]`,
+      regras: `- Descreva detalhadamente a imagem que acompanharia a questão (RX, ECG, dermatoscopia, etc.)
+- No campo "descricao_imagem" explique o que a imagem mostraria
+- Inclua achados normais e anormais que seriam visíveis
+- 5 alternativas sobre interpretação da imagem
+- Apenas UMA alternativa correta`
+    },
+    afirmativa: {
+      texto: 'afirmativas verdadeiro/falso',
+      estrutura: `[
+    {"letra": "I", "texto": "Afirmativa 1...", "correta": true},
+    {"letra": "II", "texto": "Afirmativa 2...", "correta": false},
+    {"letra": "III", "texto": "Afirmativa 3...", "correta": true},
+    {"letra": "IV", "texto": "Afirmativa 4...", "correta": false}
+  ]`,
+      regras: `- Apresente 4 afirmativas relacionadas ao tema
+- Cada afirmativa pode ser verdadeira ou falsa
+- Ao final, pergunte quais afirmativas estão corretas
+- Alternativas finais: (A) I e II, (B) II e III, (C) I e III, (D) II e IV, (E) I, III e IV
+- Marque a alternativa correta baseada nas afirmativas`
+    },
+    associacao: {
+      texto: 'associação de colunas',
+      estrutura: `[
+    {"letra": "1-A", "texto": "Item 1 corresponde a A", "correta": true},
+    {"letra": "2-B", "texto": "Item 2 corresponde a B", "correta": true},
+    {"letra": "3-C", "texto": "Item 3 corresponde a C", "correta": true},
+    {"letra": "4-D", "texto": "Item 4 corresponde a D", "correta": true}
+  ]`,
+      regras: `- Apresente duas colunas para associação
+- Coluna 1: conceitos, doenças, medicamentos, etc.
+- Coluna 2: características, mecanismos, indicações, etc.
+- 4 a 5 itens em cada coluna
+- O aluno deve relacionar corretamente os itens`
+    },
+    sequencia: {
+      texto: 'sequência/ordenação',
+      estrutura: `[
+    {"letra": "1", "texto": "Primeiro passo...", "correta": true},
+    {"letra": "2", "texto": "Segundo passo...", "correta": true},
+    {"letra": "3", "texto": "Terceiro passo...", "correta": true},
+    {"letra": "4", "texto": "Quarto passo...", "correta": true},
+    {"letra": "5", "texto": "Quinto passo...", "correta": true}
+  ]`,
+      regras: `- Apresente passos de um procedimento, algoritmo diagnóstico ou terapêutico
+- Os passos devem estar em ordem aleatória no enunciado
+- O aluno deve ordená-los corretamente
+- Indique a sequência correta no gabarito
+- Pode ser: ACLS, ATLS, procedimentos cirúrgicos, raciocínio clínico, etc.`
+    },
+    lacuna: {
+      texto: 'preencher lacunas',
+      estrutura: `[
+    {"letra": "A", "texto": "termo1, termo2, termo3", "correta": false},
+    {"letra": "B", "texto": "termo1, termo2, termo3", "correta": true},
+    {"letra": "C", "texto": "termo1, termo2, termo3", "correta": false},
+    {"letra": "D", "texto": "termo1, termo2, termo3", "correta": false},
+    {"letra": "E", "texto": "termo1, termo2, termo3", "correta": false}
+  ]`,
+      regras: `- Texto com 2-4 lacunas (indicadas por _____)
+- Lacunas devem testar conceitos importantes
+- 5 alternativas com combinações de termos
+- Apenas UMA combinação correta
+- Evitar lacunas que aceitem múltiplas respostas corretas`
+    },
+    multipla_resposta: {
+      texto: 'múltipla resposta (mais de uma correta)',
+      estrutura: `[
+    {"letra": "A", "texto": "...", "correta": true},
+    {"letra": "B", "texto": "...", "correta": true},
+    {"letra": "C", "texto": "...", "correta": false},
+    {"letra": "D", "texto": "...", "correta": true},
+    {"letra": "E", "texto": "...", "correta": false}
+  ]`,
+      regras: `- Enunciado deve indicar "marque TODAS as alternativas corretas"
+- 5 alternativas (A, B, C, D, E)
+- 2 a 4 alternativas podem estar corretas
+- No gabarito, liste todas as corretas (ex: "A, B, D")
+- Explique por que cada uma está correta ou incorreta`
+    },
+    verdadeiro_falso: {
+      texto: 'verdadeiro ou falso',
+      estrutura: `[
+    {"letra": "V", "texto": "Verdadeiro", "correta": true ou false},
+    {"letra": "F", "texto": "Falso", "correta": true ou false}
+  ]`,
+      regras: `- Afirmação clara e objetiva
+- Resposta: Verdadeiro ou Falso
+- Sem ambiguidade`
+    }
+  }
+
+  const tipoInfo = tiposDescricao[tipoQuestao] || tiposDescricao.multipla_escolha
+  const tipoTexto = tipoInfo.texto
+  const estruturaAlternativas = tipoInfo.estrutura
+  const regrasEstrutura = tipoInfo.regras
 
   return `Você é um professor de medicina especialista em ${disciplina}, com vasta experiência em elaboração de questões para provas de faculdade e concursos de residência médica no Brasil.
 
