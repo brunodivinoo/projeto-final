@@ -11,7 +11,9 @@ const ADMIN_EMAILS = ['brunodivinoa@gmail.com']
  */
 export function isAdmin(email: string | null | undefined): boolean {
   if (!email) return false
-  return ADMIN_EMAILS.includes(email.toLowerCase())
+  // Normalizar email: trim + lowercase
+  const normalizedEmail = email.trim().toLowerCase()
+  return ADMIN_EMAILS.some(adminEmail => adminEmail.toLowerCase() === normalizedEmail)
 }
 
 /**
