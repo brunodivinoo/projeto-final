@@ -20,8 +20,10 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
-  Check
+  Check,
+  Lock
 } from 'lucide-react'
+import { GabaritoBlur, UpgradeFeedback } from '@/components/medicina/questoes/GabaritoBlur'
 
 interface Alternativa {
   letra: string
@@ -208,7 +210,10 @@ function MultiSelectDropdown({
 }
 
 export default function QuestoesPage() {
-  const { user, plano, limitesPlano, limites } = useMedAuth()
+  const { user, plano, limitesPlano, limites, trialStatus } = useMedAuth()
+
+  // Verificar se deve aplicar blur no gabarito (FREE sem trial ativo)
+  const deveBlurGabarito = plano === 'gratuito' && !trialStatus?.ativo
   const [questoes, setQuestoes] = useState<Questao[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -823,13 +828,18 @@ export default function QuestoesPage() {
                             const isSelected = respostaSelecionada === alt.letra || respostaAnterior?.resposta_selecionada === alt.letra
                             const isCorreta = alt.letra === questao.gabarito
                             const mostrarResultado = jaRespondeu
+                            // Se deve blur, nao revelar qual e a correta
+                            const mostrarCorreta = mostrarResultado && !deveBlurGabarito
 
                             let bgClass = 'bg-white/5 hover:bg-white/10 border-white/10'
                             if (mostrarResultado) {
-                              if (isCorreta) {
+                              if (mostrarCorreta && isCorreta) {
                                 bgClass = 'bg-green-500/20 border-green-500/50'
-                              } else if (isSelected && !isCorreta) {
+                              } else if (isSelected && !isCorreta && mostrarCorreta) {
                                 bgClass = 'bg-red-500/20 border-red-500/50'
+                              } else if (isSelected && deveBlurGabarito) {
+                                // Resposta selecionada mas com blur - nao revela se esta certa
+                                bgClass = 'bg-blue-500/20 border-blue-500/50'
                               }
                             } else if (isSelected) {
                               bgClass = 'bg-emerald-500/20 border-emerald-500/50'
@@ -852,22 +862,27 @@ export default function QuestoesPage() {
                                 }`}
                               >
                                 <span className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
-                                  mostrarResultado && isCorreta
+                                  mostrarCorreta && isCorreta
                                     ? 'bg-green-500 text-white'
-                                    : mostrarResultado && isSelected && !isCorreta
+                                    : mostrarCorreta && isSelected && !isCorreta
                                     ? 'bg-red-500 text-white'
                                     : isSelected
-                                    ? 'bg-emerald-500 text-white'
+                                    ? deveBlurGabarito && jaRespondeu
+                                      ? 'bg-blue-500 text-white'
+                                      : 'bg-emerald-500 text-white'
                                     : 'bg-white/10 text-white/60'
                                 }`}>
                                   {alt.letra}
                                 </span>
                                 <span className="text-white/80 text-left flex-1">{alt.texto}</span>
-                                {mostrarResultado && isCorreta && (
+                                {mostrarCorreta && isCorreta && (
                                   <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
                                 )}
-                                {mostrarResultado && isSelected && !isCorreta && (
+                                {mostrarCorreta && isSelected && !isCorreta && (
                                   <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                                )}
+                                {deveBlurGabarito && jaRespondeu && isSelected && (
+                                  <Lock className="w-5 h-5 text-blue-400 flex-shrink-0" />
                                 )}
                               </button>
                             )
@@ -885,12 +900,17 @@ export default function QuestoesPage() {
                           </button>
                         )}
 
+                        {/* Feedback para usuario FREE sem trial */}
+                        <UpgradeFeedback show={jaRespondeu && deveBlurGabarito} />
+
                         {/* Comentario/Explicacao */}
                         {jaRespondeu && (questao.explicacao || questao.comentario_ia) && (
-                          <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                            <h5 className="text-blue-400 font-medium mb-2">Explicacao:</h5>
-                            <p className="text-white/80 whitespace-pre-wrap">{questao.explicacao || questao.comentario_ia}</p>
-                          </div>
+                          <GabaritoBlur mostrarBlur={deveBlurGabarito} tipo="explicacao">
+                            <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                              <h5 className="text-blue-400 font-medium mb-2">Explicacao:</h5>
+                              <p className="text-white/80 whitespace-pre-wrap">{questao.explicacao || questao.comentario_ia}</p>
+                            </div>
+                          </GabaritoBlur>
                         )}
                       </>
                     )}

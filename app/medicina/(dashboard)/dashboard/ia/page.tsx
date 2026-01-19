@@ -27,7 +27,6 @@ import {
   Menu,
   Square,
   Stethoscope,
-  Mic
 } from 'lucide-react'
 import ArtifactRenderer from '@/components/ia/ArtifactRenderer'
 import ArtifactsSidebar from '@/components/ia/ArtifactsSidebar'
@@ -35,7 +34,9 @@ import { useSmartScroll } from '@/hooks/useSmartScroll'
 import { useArtifactsStore } from '@/stores/artifactsStore'
 import { VoiceButton } from '@/components/medicina/VoiceButton'
 import { ExamAnalyzerModal } from '@/components/medicina/ExamAnalyzer'
-import { ChatModeSelector, ChatModeIntro, useChatMode, MODE_PROMPTS, type ChatMode } from '@/components/medicina/ChatModes'
+import { ChatModeSelector, ChatModeIntro, useChatMode, type ChatMode } from '@/components/medicina/ChatModes'
+import { ChatTabs } from '@/components/medicina/ia/ChatTabs'
+import { useChatModeStore, ChatMode as StoreChatMode } from '@/lib/stores/chatModeStore'
 
 // Hook para obter o estado da sidebar de artefatos
 const useArtifactsSidebar = () => {
@@ -113,14 +114,38 @@ export default function IAPage() {
   // Gerenciar artefatos por conversa e modo de chat
   const { clearArtifacts, setCurrentConversa, setCurrentChatMode } = useArtifactsStore()
 
+  // Store de modos com abas separadas
+  const {
+    setCurrentMode: setStoreMode,
+    activeConversationByMode,
+    setActiveConversation,
+    setConversations
+  } = useChatModeStore()
+
   // Modo de chat (Chat Livre, Caso Clínico, Tutor, Questões)
   const { modo: chatMode, trocarModo: trocarModoBase, mostrarIntro, iniciarModo, getSystemPrompt } = useChatMode()
 
-  // Wrapper para trocar modo e sincronizar com store de artefatos
+  // Wrapper para trocar modo e sincronizar com store de artefatos e store de modos
   const trocarModo = useCallback((novoModo: ChatMode) => {
     trocarModoBase(novoModo)
     setCurrentChatMode(novoModo)
-  }, [trocarModoBase, setCurrentChatMode])
+    // Sincronizar com store de modos
+    setStoreMode(novoModo as StoreChatMode)
+    // Limpar mensagens ao trocar de modo
+    setMensagens([])
+    // Carregar conversa ativa do modo se existir
+    const conversaDoModo = activeConversationByMode[novoModo as StoreChatMode]
+    if (conversaDoModo) {
+      setConversaAtual(conversaDoModo)
+    } else {
+      setConversaAtual(null)
+    }
+  }, [trocarModoBase, setCurrentChatMode, setStoreMode, activeConversationByMode])
+
+  // Handler para troca via ChatTabs
+  const handleModeChangeFromTabs = useCallback((mode: StoreChatMode) => {
+    trocarModo(mode as ChatMode)
+  }, [trocarModo])
 
   // Smart scroll - permite scroll manual durante streaming
   const { containerRef: chatRef, isAtBottom, scrollToBottom } = useSmartScroll({
@@ -160,17 +185,19 @@ export default function IAPage() {
     }
   }, [user])
 
-  // Buscar conversas
+  // Buscar conversas filtradas por modo
   const fetchConversas = useCallback(async () => {
     if (!user) return
     try {
-      const response = await fetch(`/api/medicina/ia/chat?user_id=${user.id}`)
+      const response = await fetch(`/api/medicina/ia/chat?user_id=${user.id}&modo=${chatMode}`)
       const data = await response.json()
       setConversas(data.conversas || [])
+      // Atualizar cache na store
+      setConversations(chatMode as StoreChatMode, data.conversas || [])
     } catch (error) {
       console.error('Erro ao buscar conversas:', error)
     }
-  }, [user])
+  }, [user, chatMode, setConversations])
 
   // Carregar conversa específica
   const carregarConversa = useCallback(async (conversaId: string) => {
@@ -196,12 +223,14 @@ export default function IAPage() {
         }))
         setMensagens(msgs)
         setConversaAtual(conversaId)
+        // Atualizar store de modos
+        setActiveConversation(chatMode as StoreChatMode, conversaId)
       }
     } catch (error) {
       console.error('Erro ao carregar conversa:', error)
     }
     setShowConversas(false)
-  }, [user, clearArtifacts, setCurrentConversa])
+  }, [user, clearArtifacts, setCurrentConversa, chatMode, setActiveConversation])
 
   useEffect(() => {
     fetchUso()
@@ -316,6 +345,7 @@ export default function IAPage() {
           user_id: user.id,
           mensagem: mensagemUsuario,
           conversa_id: conversaAtual,
+          modo: chatMode, // Incluir modo da conversa
           imagem_base64: imagemBase64,
           imagem_tipo: imagemTipo,
           pdf_base64: pdfBase64,
@@ -466,6 +496,8 @@ export default function IAPage() {
     setShowConversas(false)
     clearArtifacts() // Limpar artefatos ao iniciar nova conversa
     setCurrentConversa(null)
+    // Atualizar store de modos
+    setActiveConversation(chatMode as StoreChatMode, null)
   }
 
   // Deletar conversa
@@ -672,6 +704,9 @@ export default function IAPage() {
 
       {/* Chat Principal */}
       <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
+        {/* Abas de Modo */}
+        <ChatTabs onModeChange={handleModeChangeFromTabs} />
+
         {/* Header - Compacto */}
         <div className="flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-white/10">
           <div className="flex items-center gap-2 md:gap-3">

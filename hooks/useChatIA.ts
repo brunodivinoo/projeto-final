@@ -1,13 +1,15 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useMedAuth } from '@/contexts/MedAuthContext'
+import { ChatMode } from '@/lib/stores/chatModeStore'
 
 export interface Conversa {
   id: string
   user_id: string
   titulo: string
-  ultima_mensagem: string | null
-  total_mensagens: number
+  modo: ChatMode
+  modelo: string
+  tokens_usados: number
   created_at: string
   updated_at: string
 }
@@ -15,11 +17,16 @@ export interface Conversa {
 export interface Mensagem {
   id: string
   conversa_id: string
-  user_id: string
-  tipo: 'user' | 'assistant'
-  conteudo: string
-  tokens_usados: number
+  role: 'user' | 'assistant'
+  content: string
+  tokens: number
+  has_image: boolean
+  has_pdf: boolean
   created_at: string
+}
+
+interface UseChatIAOptions {
+  modo?: ChatMode
 }
 
 interface ChatData {
@@ -34,13 +41,23 @@ interface ChatData {
 interface ChatActions {
   carregarConversas: () => Promise<void>
   selecionarConversa: (conversaId: string) => Promise<void>
-  enviarMensagem: (mensagem: string) => Promise<Mensagem | null>
+  enviarMensagem: (mensagem: string, opcoes?: {
+    imagem_base64?: string
+    imagem_tipo?: string
+    pdf_base64?: string
+  }) => Promise<void>
   novaConversa: () => void
   deletarConversa: (conversaId: string) => Promise<boolean>
+  limparErro: () => void
 }
 
-export function useChatIA(): ChatData & ChatActions {
-  const { user } = useAuth()
+// URL base da API de medicina
+const API_BASE = '/api/medicina/ia/chat'
+
+export function useChatIA(options: UseChatIAOptions = {}): ChatData & ChatActions {
+  const { user } = useMedAuth()
+  const { modo = 'chat' } = options
+
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [conversaAtual, setConversaAtual] = useState<Conversa | null>(null)
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
@@ -48,148 +65,239 @@ export function useChatIA(): ChatData & ChatActions {
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Carregar conversas
+  // Carregar conversas do modo atual
   const carregarConversas = useCallback(async () => {
-    if (!user?.id) return
+    if (!user?.id) {
+      setLoading(false)
+      return
+    }
 
     setLoading(true)
+    setError(null)
+
     try {
-      const res = await fetch(`/api/ia/chat?user_id=${user.id}`)
+      const res = await fetch(`${API_BASE}?user_id=${user.id}&modo=${modo}`)
       const data = await res.json()
 
-      if (data.error) throw new Error(data.error)
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro ao carregar conversas')
+      }
+
       setConversas(data.conversas || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar conversas')
+      const message = err instanceof Error ? err.message : 'Erro ao carregar conversas'
+      setError(message)
+      console.error('Erro ao carregar conversas:', err)
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [user?.id, modo])
 
-  // Carregar ao montar
+  // Carregar conversas quando montar ou modo mudar
   useEffect(() => {
     carregarConversas()
   }, [carregarConversas])
 
   // Selecionar conversa e carregar mensagens
-  const selecionarConversa = async (conversaId: string) => {
+  const selecionarConversa = useCallback(async (conversaId: string) => {
     if (!user?.id) return
 
     setLoading(true)
+    setError(null)
+
     try {
-      const res = await fetch(`/api/ia/chat?user_id=${user.id}&conversa_id=${conversaId}`)
+      const res = await fetch(`${API_BASE}?user_id=${user.id}&conversa_id=${conversaId}`)
       const data = await res.json()
 
-      if (data.error) throw new Error(data.error)
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro ao carregar mensagens')
+      }
 
-      const conversa = conversas.find(c => c.id === conversaId)
-      setConversaAtual(conversa || null)
+      const conversa = conversas.find(c => c.id === conversaId) ?? data.conversa ?? null
+      setConversaAtual(conversa)
       setMensagens(data.mensagens || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar mensagens')
+      const message = err instanceof Error ? err.message : 'Erro ao carregar mensagens'
+      setError(message)
+      console.error('Erro ao carregar mensagens:', err)
     } finally {
       setLoading(false)
     }
-  }
+  }, [user?.id, conversas])
 
-  // Enviar mensagem
-  const enviarMensagem = async (mensagem: string): Promise<Mensagem | null> => {
-    if (!user?.id || !mensagem.trim()) return null
+  // Enviar mensagem com streaming
+  const enviarMensagem = useCallback(async (
+    mensagem: string,
+    opcoes?: {
+      imagem_base64?: string
+      imagem_tipo?: string
+      pdf_base64?: string
+    }
+  ) => {
+    if (!user?.id || !mensagem.trim()) return
 
     setEnviando(true)
     setError(null)
 
-    // Adicionar mensagem do usuário otimisticamente
-    const msgTemp: Mensagem = {
-      id: `temp-${Date.now()}`,
-      conversa_id: conversaAtual?.id || '',
-      user_id: user.id,
-      tipo: 'user',
-      conteudo: mensagem,
-      tokens_usados: 0,
+    // Adicionar mensagem do usuario otimisticamente
+    const msgUsuario: Mensagem = {
+      id: `temp-user-${Date.now()}`,
+      conversa_id: conversaAtual?.id ?? '',
+      role: 'user',
+      content: mensagem,
+      tokens: 0,
+      has_image: !!opcoes?.imagem_base64,
+      has_pdf: !!opcoes?.pdf_base64,
       created_at: new Date().toISOString()
     }
-    setMensagens(prev => [...prev, msgTemp])
+    setMensagens(prev => [...prev, msgUsuario])
+
+    // Adicionar placeholder da resposta
+    const msgIATemp: Mensagem = {
+      id: `temp-assistant-${Date.now()}`,
+      conversa_id: conversaAtual?.id ?? '',
+      role: 'assistant',
+      content: '',
+      tokens: 0,
+      has_image: false,
+      has_pdf: false,
+      created_at: new Date().toISOString()
+    }
+    setMensagens(prev => [...prev, msgIATemp])
 
     try {
-      const res = await fetch('/api/ia/chat', {
+      const res = await fetch(API_BASE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: user.id,
           conversa_id: conversaAtual?.id,
-          mensagem
+          mensagem,
+          modo,
+          ...opcoes
         })
       })
 
-      const data = await res.json()
-
-      if (!res.ok || data.error) {
-        // Remover mensagem temporária em caso de erro
-        setMensagens(prev => prev.filter(m => m.id !== msgTemp.id))
-        throw new Error(data.error || 'Erro ao enviar mensagem')
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Erro ao enviar mensagem')
       }
 
-      // Atualizar conversa atual se era nova
-      if (!conversaAtual && data.conversa_id) {
-        const novaConversaObj: Conversa = {
-          id: data.conversa_id,
+      // Processar streaming
+      const reader = res.body?.getReader()
+      const decoder = new TextDecoder()
+      let fullResponse = ''
+      let novaConversaId = conversaAtual?.id
+
+      if (reader) {
+        let buffer = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() ?? ''
+
+          for (const line of lines) {
+            const trimmedLine = line.trim()
+            if (trimmedLine.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(trimmedLine.slice(6))
+
+                if (data.type === 'text') {
+                  fullResponse += data.content
+                  // Atualizar mensagem da IA em tempo real
+                  setMensagens(prev => prev.map(m =>
+                    m.id === msgIATemp.id
+                      ? { ...m, content: fullResponse }
+                      : m
+                  ))
+                } else if (data.type === 'done') {
+                  novaConversaId = data.conversa_id
+                  // Atualizar tokens
+                  setMensagens(prev => prev.map(m =>
+                    m.id === msgIATemp.id
+                      ? { ...m, tokens: (data.tokens?.input ?? 0) + (data.tokens?.output ?? 0) }
+                      : m
+                  ))
+                } else if (data.type === 'error') {
+                  throw new Error(data.error)
+                }
+              } catch (parseError) {
+                // Ignorar erros de parsing de chunks incompletos
+                if (!(parseError instanceof SyntaxError)) {
+                  console.error('Erro no processamento:', parseError)
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Atualizar IDs e conversa
+      if (novaConversaId && !conversaAtual) {
+        const novaConversa: Conversa = {
+          id: novaConversaId,
           user_id: user.id,
-          titulo: mensagem.substring(0, 50),
-          ultima_mensagem: data.resposta?.substring(0, 100) || null,
-          total_mensagens: 2,
+          titulo: mensagem.substring(0, 50) + (mensagem.length > 50 ? '...' : ''),
+          modo,
+          modelo: 'claude',
+          tokens_usados: 0,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
-        setConversaAtual(novaConversaObj)
-        setConversas(prev => [novaConversaObj, ...prev])
+        setConversaAtual(novaConversa)
+        setConversas(prev => [novaConversa, ...prev])
       }
 
-      // Adicionar resposta da IA
-      const msgIA: Mensagem = {
-        id: data.mensagem_id,
-        conversa_id: data.conversa_id,
-        user_id: user.id,
-        tipo: 'assistant',
-        conteudo: data.resposta,
-        tokens_usados: 0,
-        created_at: new Date().toISOString()
-      }
+      // Atualizar IDs das mensagens temporarias
+      setMensagens(prev => prev.map(m => {
+        if (m.id === msgUsuario.id) {
+          return { ...m, id: `user-${Date.now()}`, conversa_id: novaConversaId ?? '' }
+        }
+        if (m.id === msgIATemp.id) {
+          return { ...m, id: `assistant-${Date.now()}`, conversa_id: novaConversaId ?? '' }
+        }
+        return m
+      }))
 
-      // Atualizar mensagem temp com ID real e adicionar resposta
-      setMensagens(prev => {
-        const updated = prev.map(m =>
-          m.id === msgTemp.id ? { ...m, id: `user-${Date.now()}`, conversa_id: data.conversa_id } : m
-        )
-        return [...updated, msgIA]
-      })
-
-      return msgIA
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao enviar mensagem')
-      return null
+      const message = err instanceof Error ? err.message : 'Erro ao enviar mensagem'
+      setError(message)
+
+      // Remover mensagens temporarias em caso de erro
+      setMensagens(prev => prev.filter(m =>
+        m.id !== msgUsuario.id && m.id !== msgIATemp.id
+      ))
+
+      console.error('Erro ao enviar mensagem:', err)
     } finally {
       setEnviando(false)
     }
-  }
+  }, [user?.id, conversaAtual, modo])
 
   // Nova conversa
-  const novaConversa = () => {
+  const novaConversa = useCallback(() => {
     setConversaAtual(null)
     setMensagens([])
     setError(null)
-  }
+  }, [])
 
   // Deletar conversa
-  const deletarConversa = async (conversaId: string): Promise<boolean> => {
+  const deletarConversa = useCallback(async (conversaId: string): Promise<boolean> => {
     if (!user?.id) return false
 
     try {
-      const res = await fetch(`/api/ia/chat?conversa_id=${conversaId}&user_id=${user.id}`, {
-        method: 'DELETE'
-      })
+      const res = await fetch(
+        `${API_BASE}?conversa_id=${conversaId}&user_id=${user.id}`,
+        { method: 'DELETE' }
+      )
 
-      if (!res.ok) throw new Error('Erro ao deletar')
+      if (!res.ok) {
+        throw new Error('Erro ao deletar conversa')
+      }
 
       setConversas(prev => prev.filter(c => c.id !== conversaId))
 
@@ -199,10 +307,16 @@ export function useChatIA(): ChatData & ChatActions {
       }
 
       return true
-    } catch {
+    } catch (err) {
+      console.error('Erro ao deletar conversa:', err)
       return false
     }
-  }
+  }, [user?.id, conversaAtual])
+
+  // Limpar erro
+  const limparErro = useCallback(() => {
+    setError(null)
+  }, [])
 
   return {
     conversas,
@@ -215,6 +329,7 @@ export function useChatIA(): ChatData & ChatActions {
     selecionarConversa,
     enviarMensagem,
     novaConversa,
-    deletarConversa
+    deletarConversa,
+    limparErro
   }
 }

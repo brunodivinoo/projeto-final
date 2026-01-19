@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
       user_id,
       mensagem,
       conversa_id,
+      modo = 'chat', // Modo de chat: chat, caso_clinico, tutor, questoes
       imagem_base64,
       imagem_tipo,
       pdf_base64,
@@ -172,7 +173,8 @@ export async function POST(request: NextRequest) {
         .insert({
           user_id,
           titulo: mensagem.substring(0, 50) + (mensagem.length > 50 ? '...' : ''),
-          modelo: plano === 'residencia' ? 'claude' : 'gemini'
+          modelo: plano === 'residencia' ? 'claude' : 'gemini',
+          modo: modo // Salvar modo da conversa
         })
         .select()
         .single()
@@ -321,12 +323,17 @@ async function streamClaude(params: StreamClaudeParams) {
     })
   }
 
+  // Selecionar modelo baseado no plano
+  // Premium = Sonnet (mais barato), Residência = Opus (mais capaz)
+  const modeloSelecionado = params.plano === 'residencia' ? MODELOS.claude.opus : MODELOS.claude.sonnet
+  const systemPrompt = params.plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
+
   // Configurar parâmetros
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const streamParams: any = {
-    model: MODELOS.claude.opus,
+    model: modeloSelecionado,
     max_tokens: use_extended_thinking ? 16000 : 8192,
-    system: SYSTEM_PROMPT_RESIDENCIA,
+    system: systemPrompt,
     messages,
     stream: true,
     tools: tools.length > 0 ? tools : undefined
@@ -443,7 +450,7 @@ async function streamClaude(params: StreamClaudeParams) {
           .eq('id', conversa_id)
 
         // Incrementar uso
-        const custo = calcularCusto(MODELOS.claude.opus, tokensInput, tokensOutput)
+        const custo = calcularCusto(modeloSelecionado, tokensInput, tokensOutput)
         await incrementarUsoIA(user_id, 'chats', 1, tokensInput, tokensOutput, custo)
 
         // Enviar metadados finais
@@ -607,6 +614,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const user_id = searchParams.get('user_id')
     const conversa_id = searchParams.get('conversa_id')
+    const modo = searchParams.get('modo') // Filtrar por modo (chat, caso_clinico, tutor, questoes)
 
     if (!user_id) {
       return NextResponse.json({ error: 'user_id é obrigatório' }, { status: 400 })
@@ -634,13 +642,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ conversa, mensagens })
     }
 
-    // Listar todas as conversas do usuário
-    const { data: conversas } = await supabase
+    // Listar conversas do usuário (filtradas por modo se especificado)
+    let query = supabase
       .from('conversas_ia_med')
       .select('*')
       .eq('user_id', user_id)
       .order('updated_at', { ascending: false })
       .limit(50)
+
+    // Aplicar filtro de modo se especificado
+    if (modo) {
+      query = query.eq('modo', modo)
+    }
+
+    const { data: conversas } = await query
 
     return NextResponse.json({ conversas })
   } catch (error) {
