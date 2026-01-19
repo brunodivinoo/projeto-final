@@ -2,6 +2,9 @@
 # IMPORTANTE: Usar caminho específico para não ignorar app/medicina
 /Medicina/
 
+# Ignorar pasta de questões (arquivos JSON grandes)
+/Questoes-para-subir/
+
 # Ignorar scripts de desenvolvimento
 /scripts/
 /check-tables.js
