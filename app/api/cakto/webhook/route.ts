@@ -14,12 +14,24 @@ type PlanoLegacy = 'FREE' | 'ESTUDA_PRO'
 
 // Mapear valor do pedido para plano
 // Ajuste os valores conforme os produtos cadastrados no Cakto
-function mapearValorParaPlano(valorCentavos: number): PlanoUnificado {
+function mapearValorParaPlano(valorCentavos: number, productName?: string): PlanoUnificado {
   const valorReais = valorCentavos / 100
 
-  // R$140+ = Residência (R$150)
+  // Primeiro, tentar identificar pelo nome do produto (mais confiável)
+  if (productName) {
+    const nomeLower = productName.toLowerCase()
+    if (nomeLower.includes('residencia') || nomeLower.includes('residência')) {
+      return 'residencia'
+    }
+    if (nomeLower.includes('premium')) {
+      return 'premium'
+    }
+  }
+
+  // Fallback: identificar pelo valor
+  // R$140+ = Residência (R$149,90)
   if (valorReais >= 140) return 'residencia'
-  // R$50+ = Premium (R$60)
+  // R$50+ = Premium (R$59,90)
   if (valorReais >= 50) return 'premium'
   // Padrão = gratuito (não deveria chegar aqui em compra aprovada)
   return 'gratuito'
@@ -79,15 +91,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
-    const data = JSON.parse(payload)
-    const event = data.event
-    const order = data.data?.order as CaktoOrder | undefined
-    const subscription = data.data?.subscription as CaktoSubscription | undefined
+    const body = JSON.parse(payload)
+    const event = body.event
+
+    // O Cakto envia os dados diretamente em body.data (não em body.data.order)
+    // Converter para o formato esperado pelo nosso código
+    const rawData = body.data
+
+    const order: CaktoOrder | undefined = rawData ? {
+      id: rawData.id,
+      refId: rawData.refId,
+      status: rawData.status,
+      amount: rawData.amount, // Já vem em centavos
+      customer: {
+        email: rawData.customer?.email,
+        name: rawData.customer?.name,
+        phone: rawData.customer?.phone,
+        document: rawData.customer?.docNumber
+      },
+      utm_content: rawData.utm_content,
+      product_id: rawData.product?.id,
+      product_name: rawData.product?.name
+    } : undefined
+
+    const subscription: CaktoSubscription | undefined = rawData?.subscription ? {
+      id: rawData.subscription.id,
+      status: rawData.subscription.status,
+      nextBillingDate: rawData.subscription.next_payment_date
+    } : undefined
 
     console.log(`[Cakto Webhook] Evento recebido: ${event}`, {
       order_id: order?.id,
       amount: order?.amount,
-      email: order?.customer?.email
+      email: order?.customer?.email,
+      product_name: order?.product_name
     })
 
     // Processar eventos
@@ -143,8 +180,8 @@ async function handlePurchaseApproved(order?: CaktoOrder, subscription?: CaktoSu
   const email = order.customer.email
   const userId = order.utm_content // userId passado via UTM
 
-  // Determinar plano baseado no valor
-  const planoUnificado = mapearValorParaPlano(order.amount)
+  // Determinar plano baseado no valor e nome do produto
+  const planoUnificado = mapearValorParaPlano(order.amount, order.product_name)
   const planoLegacy = planoParaLegacy(planoUnificado)
 
   console.log(`[Cakto] Compra aprovada para: ${email}`, {
