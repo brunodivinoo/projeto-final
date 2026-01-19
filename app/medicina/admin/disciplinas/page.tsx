@@ -60,31 +60,40 @@ export default function AdminDisciplinasPage() {
   }, [])
 
   async function loadDisciplinas() {
-    
-    const { data: disciplinasData, error } = await supabase
-      .from('disciplinas_med')
-      .select('*')
-      .order('nome')
+    try {
+      const { data: disciplinasData, error } = await supabase
+        .from('disciplinas_med')
+        .select('*')
+        .order('nome')
 
-    if (error) {
+      if (error) {
+        console.error('Erro ao carregar disciplinas:', error)
+        setDisciplinas([])
+      } else {
+        // Contar assuntos por disciplina
+        const disciplinasComContagem = await Promise.all(
+          (disciplinasData || []).map(async (d) => {
+            try {
+              const { count } = await supabase
+                .from('assuntos_med')
+                .select('*', { count: 'exact', head: true })
+                .eq('disciplina_id', d.id)
+
+              return { ...d, assuntos_count: count || 0 }
+            } catch {
+              return { ...d, assuntos_count: 0 }
+            }
+          })
+        )
+
+        setDisciplinas(disciplinasComContagem)
+      }
+    } catch (error) {
       console.error('Erro ao carregar disciplinas:', error)
-    } else {
-      // Contar assuntos por disciplina
-      const disciplinasComContagem = await Promise.all(
-        (disciplinasData || []).map(async (d) => {
-          const { count } = await supabase
-            .from('assuntos_med')
-            .select('*', { count: 'exact', head: true })
-            .eq('disciplina_id', d.id)
-
-          return { ...d, assuntos_count: count || 0 }
-        })
-      )
-
-      setDisciplinas(disciplinasComContagem)
+      setDisciplinas([])
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   async function loadAssuntos(disciplinaId: string) {

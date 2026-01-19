@@ -90,12 +90,20 @@ export default function AdminQuestoesPage() {
   }, [filtros, paginaAtual])
 
   async function loadDisciplinas() {
-        const { data } = await supabase
-      .from('disciplinas_med')
-      .select('id, nome')
-      .order('nome')
+    try {
+      const { data, error } = await supabase
+        .from('disciplinas_med')
+        .select('id, nome')
+        .order('nome')
 
-    setDisciplinas(data || [])
+      if (error) {
+        console.error('Erro ao carregar disciplinas:', error)
+      }
+      setDisciplinas(data || [])
+    } catch (error) {
+      console.error('Erro ao carregar disciplinas:', error)
+      setDisciplinas([])
+    }
   }
 
   async function expandQuestao(id: string) {
@@ -123,74 +131,83 @@ export default function AdminQuestoesPage() {
   async function loadQuestoes() {
     setLoading(true)
 
-    let query = supabase
-      .from('questoes_med')
-      .select(`
-        id,
-        enunciado,
-        disciplina_id,
-        assunto_id,
-        subassunto_id,
-        dificuldade,
-        periodo_dificuldade,
-        gerado_por_ia,
-        revisado,
-        created_at,
-        disciplinas_med(nome),
-        assuntos_med(nome)
-      `, { count: 'exact' })
+    try {
+      let query = supabase
+        .from('questoes_med')
+        .select(`
+          id,
+          enunciado,
+          disciplina_id,
+          assunto_id,
+          subassunto_id,
+          dificuldade,
+          periodo_dificuldade,
+          gerado_por_ia,
+          revisado,
+          created_at,
+          disciplinas_med(nome),
+          assuntos_med(nome)
+        `, { count: 'exact' })
 
-    // Aplicar filtros
-    if (filtros.busca) {
-      query = query.ilike('enunciado', `%${filtros.busca}%`)
-    }
-    if (filtros.disciplina) {
-      query = query.eq('disciplina_id', filtros.disciplina)
-    }
-    if (filtros.geradoIA === 'sim') {
-      query = query.eq('gerado_por_ia', true)
-    } else if (filtros.geradoIA === 'nao') {
-      query = query.eq('gerado_por_ia', false)
-    }
-    if (filtros.revisado === 'sim') {
-      query = query.eq('revisado', true)
-    } else if (filtros.revisado === 'nao') {
-      query = query.eq('revisado', false)
-    }
-    if (filtros.periodo) {
-      query = query.eq('periodo_dificuldade', parseInt(filtros.periodo))
-    }
+      // Aplicar filtros
+      if (filtros.busca) {
+        query = query.ilike('enunciado', `%${filtros.busca}%`)
+      }
+      if (filtros.disciplina) {
+        query = query.eq('disciplina_id', filtros.disciplina)
+      }
+      if (filtros.geradoIA === 'sim') {
+        query = query.eq('gerado_por_ia', true)
+      } else if (filtros.geradoIA === 'nao') {
+        query = query.eq('gerado_por_ia', false)
+      }
+      if (filtros.revisado === 'sim') {
+        query = query.eq('revisado', true)
+      } else if (filtros.revisado === 'nao') {
+        query = query.eq('revisado', false)
+      }
+      if (filtros.periodo) {
+        query = query.eq('periodo_dificuldade', parseInt(filtros.periodo))
+      }
 
-    // Paginação
-    const from = (paginaAtual - 1) * porPagina
-    const to = from + porPagina - 1
+      // Paginação
+      const from = (paginaAtual - 1) * porPagina
+      const to = from + porPagina - 1
 
-    const { data, count, error } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to)
+      const { data, count, error } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to)
 
-    if (error) {
+      if (error) {
+        console.error('Erro ao carregar questões:', error)
+        setQuestoes([])
+        setTotal(0)
+      } else {
+        // Mapear dados para extrair nomes dos relacionamentos
+        const questoesMapeadas = (data || []).map((q: Record<string, unknown>) => ({
+          id: q.id as string,
+          enunciado: q.enunciado as string,
+          disciplina_id: q.disciplina_id as string,
+          assunto_id: q.assunto_id as string,
+          subassunto_id: q.subassunto_id as string | undefined,
+          dificuldade: q.dificuldade as string,
+          periodo_dificuldade: q.periodo_dificuldade as number | undefined,
+          gerado_por_ia: q.gerado_por_ia as boolean,
+          revisado: q.revisado as boolean,
+          created_at: q.created_at as string,
+          disciplina_nome: (q.disciplinas_med as { nome: string } | null)?.nome,
+          assunto_nome: (q.assuntos_med as { nome: string } | null)?.nome
+        }))
+        setQuestoes(questoesMapeadas)
+        setTotal(count || 0)
+      }
+    } catch (error) {
       console.error('Erro ao carregar questões:', error)
-    } else {
-      // Mapear dados para extrair nomes dos relacionamentos
-      const questoesMapeadas = (data || []).map((q: Record<string, unknown>) => ({
-        id: q.id as string,
-        enunciado: q.enunciado as string,
-        disciplina_id: q.disciplina_id as string,
-        assunto_id: q.assunto_id as string,
-        subassunto_id: q.subassunto_id as string | undefined,
-        dificuldade: q.dificuldade as string,
-        periodo_dificuldade: q.periodo_dificuldade as number | undefined,
-        gerado_por_ia: q.gerado_por_ia as boolean,
-        revisado: q.revisado as boolean,
-        created_at: q.created_at as string,
-        disciplina_nome: (q.disciplinas_med as { nome: string } | null)?.nome,
-        assunto_nome: (q.assuntos_med as { nome: string } | null)?.nome
-      }))
-      setQuestoes(questoesMapeadas)
-      setTotal(count || 0)
+      setQuestoes([])
+      setTotal(0)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   async function toggleRevisado(id: string, atual: boolean) {

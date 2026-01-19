@@ -81,40 +81,52 @@ export default function AdminDashboardPage() {
   }, [])
 
   async function loadMonitoramento() {
-    // Carregar feedbacks recentes
-    const { data: feedbacksData } = await supabase
-      .from('feedback_med')
-      .select(`
-        id,
-        tipo,
-        titulo,
-        descricao,
-        status,
-        created_at,
-        usuario:profiles_med!user_id(nome, email)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(20)
+    try {
+      // Carregar feedbacks recentes
+      const { data: feedbacksData, error: feedbackError } = await supabase
+        .from('feedback_med')
+        .select(`
+          id,
+          tipo,
+          titulo,
+          descricao,
+          status,
+          created_at,
+          usuario:profiles_med!user_id(nome, email)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(20)
 
-    if (feedbacksData) {
-      // Transformar dados do Supabase para o formato esperado
-      // O join retorna array, precisamos extrair o primeiro elemento
-      const feedbacksFormatados = feedbacksData.map(f => ({
-        ...f,
-        usuario: Array.isArray(f.usuario) ? (f.usuario[0] || null) : f.usuario
-      }))
-      setFeedbacks(feedbacksFormatados as Feedback[])
+      if (feedbackError) {
+        console.error('Erro ao carregar feedbacks:', feedbackError)
+      } else if (feedbacksData) {
+        // Transformar dados do Supabase para o formato esperado
+        // O join retorna array, precisamos extrair o primeiro elemento
+        const feedbacksFormatados = feedbacksData.map(f => ({
+          ...f,
+          usuario: Array.isArray(f.usuario) ? (f.usuario[0] || null) : f.usuario
+        }))
+        setFeedbacks(feedbacksFormatados as Feedback[])
+      }
+    } catch (error) {
+      console.error('Erro ao carregar feedbacks:', error)
     }
 
-    // Carregar erros recentes
-    const { data: errosData } = await supabase
-      .from('error_logs_med')
-      .select('id, error_type, error_message, pagina, created_at')
-      .order('created_at', { ascending: false })
-      .limit(20)
+    try {
+      // Carregar erros recentes
+      const { data: errosData, error: errosError } = await supabase
+        .from('error_logs_med')
+        .select('id, error_type, error_message, pagina, created_at')
+        .order('created_at', { ascending: false })
+        .limit(20)
 
-    if (errosData) {
-      setErros(errosData)
+      if (errosError) {
+        console.error('Erro ao carregar erros:', errosError)
+      } else if (errosData) {
+        setErros(errosData)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar erros:', error)
     }
   }
 
@@ -132,111 +144,101 @@ export default function AdminDashboardPage() {
   }
 
   async function loadStats() {
-    
+    const hoje = new Date().toISOString().split('T')[0]
+
     try {
-      // Total de questões
-      const { count: totalQuestoes } = await supabase
-        .from('questoes_med')
-        .select('*', { count: 'exact', head: true })
+      // Carregar cada estatística individualmente com tratamento de erro
+      let totalQuestoes = 0
+      let questoesIA = 0
+      let questoesRevisadas = 0
+      let questoesPendentes = 0
+      let totalDisciplinas = 0
+      let totalAssuntos = 0
+      let totalFeedbacks = 0
+      let feedbacksPendentesCount = 0
+      let totalErros = 0
+      let errosHoje = 0
+      let ultimasGeracoes: Array<{ id: string; created_at: string; quantidade: number; status: string; disciplina_id?: string }> = []
 
-      // Questões geradas por IA
-      const { count: questoesIA } = await supabase
-        .from('questoes_med')
-        .select('*', { count: 'exact', head: true })
-        .eq('gerado_por_ia', true)
+      // Queries principais - executar em paralelo
+      const results = await Promise.allSettled([
+        supabase.from('questoes_med').select('*', { count: 'exact', head: true }),
+        supabase.from('questoes_med').select('*', { count: 'exact', head: true }).eq('gerado_por_ia', true),
+        supabase.from('questoes_med').select('*', { count: 'exact', head: true }).eq('revisado', true),
+        supabase.from('questoes_med').select('*', { count: 'exact', head: true }).eq('gerado_por_ia', true).eq('revisado', false),
+        supabase.from('disciplinas_med').select('*', { count: 'exact', head: true }),
+        supabase.from('assuntos_med').select('*', { count: 'exact', head: true }),
+        supabase.from('feedback_med').select('*', { count: 'exact', head: true }),
+        supabase.from('feedback_med').select('*', { count: 'exact', head: true }).eq('status', 'pendente'),
+        supabase.from('error_logs_med').select('*', { count: 'exact', head: true }),
+        supabase.from('error_logs_med').select('*', { count: 'exact', head: true }).gte('created_at', hoje),
+        supabase.from('admin_geracao_logs_med').select('id, created_at, quantidade, status, disciplina_id').order('created_at', { ascending: false }).limit(5)
+      ])
 
-      // Questões revisadas
-      const { count: questoesRevisadas } = await supabase
-        .from('questoes_med')
-        .select('*', { count: 'exact', head: true })
-        .eq('revisado', true)
+      // Extrair valores com segurança
+      if (results[0].status === 'fulfilled') totalQuestoes = results[0].value.count || 0
+      if (results[1].status === 'fulfilled') questoesIA = results[1].value.count || 0
+      if (results[2].status === 'fulfilled') questoesRevisadas = results[2].value.count || 0
+      if (results[3].status === 'fulfilled') questoesPendentes = results[3].value.count || 0
+      if (results[4].status === 'fulfilled') totalDisciplinas = results[4].value.count || 0
+      if (results[5].status === 'fulfilled') totalAssuntos = results[5].value.count || 0
+      if (results[6].status === 'fulfilled') totalFeedbacks = results[6].value.count || 0
+      if (results[7].status === 'fulfilled') feedbacksPendentesCount = results[7].value.count || 0
+      if (results[8].status === 'fulfilled') totalErros = results[8].value.count || 0
+      if (results[9].status === 'fulfilled') errosHoje = results[9].value.count || 0
+      if (results[10].status === 'fulfilled') ultimasGeracoes = results[10].value.data || []
 
-      // Questões pendentes de revisão (IA não revisadas)
-      const { count: questoesPendentes } = await supabase
-        .from('questoes_med')
-        .select('*', { count: 'exact', head: true })
-        .eq('gerado_por_ia', true)
-        .eq('revisado', false)
-
-      // Total de disciplinas
-      const { count: totalDisciplinas } = await supabase
-        .from('disciplinas_med')
-        .select('*', { count: 'exact', head: true })
-
-      // Total de assuntos
-      const { count: totalAssuntos } = await supabase
-        .from('assuntos_med')
-        .select('*', { count: 'exact', head: true })
-
-      // Total de feedbacks
-      const { count: totalFeedbacks } = await supabase
-        .from('feedback_med')
-        .select('*', { count: 'exact', head: true })
-
-      // Feedbacks pendentes
-      const { count: feedbacksPendentes } = await supabase
-        .from('feedback_med')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pendente')
-
-      // Total de erros
-      const { count: totalErros } = await supabase
-        .from('error_logs_med')
-        .select('*', { count: 'exact', head: true })
-
-      // Erros de hoje
-      const hoje = new Date().toISOString().split('T')[0]
-      const { count: errosHoje } = await supabase
-        .from('error_logs_med')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', hoje)
-
-      // Últimas gerações (do log)
-      const { data: ultimasGeracoes } = await supabase
-        .from('admin_geracao_logs_med')
-        .select(`
-          id,
-          created_at,
-          quantidade,
-          status,
-          disciplina_id
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5)
-
-      // Buscar nomes das disciplinas
-      const disciplinaIds = ultimasGeracoes?.map(g => g.disciplina_id).filter(Boolean) || []
+      // Buscar nomes das disciplinas das gerações
+      const disciplinaIds = ultimasGeracoes.map(g => g.disciplina_id).filter(Boolean) as string[]
       const disciplinasMap: Record<string, string> = {}
 
       if (disciplinaIds.length > 0) {
-        const { data: disciplinas } = await supabase
-          .from('disciplinas_med')
-          .select('id, nome')
-          .in('id', disciplinaIds)
+        try {
+          const { data: disciplinas } = await supabase
+            .from('disciplinas_med')
+            .select('id, nome')
+            .in('id', disciplinaIds)
 
-        disciplinas?.forEach(d => {
-          disciplinasMap[d.id] = d.nome
-        })
+          disciplinas?.forEach(d => {
+            disciplinasMap[d.id] = d.nome
+          })
+        } catch {
+          // Ignorar erro
+        }
       }
 
       setStats({
-        totalQuestoes: totalQuestoes || 0,
-        questoesIA: questoesIA || 0,
-        questoesRevisadas: questoesRevisadas || 0,
-        questoesPendentes: questoesPendentes || 0,
-        totalDisciplinas: totalDisciplinas || 0,
-        totalAssuntos: totalAssuntos || 0,
-        totalFeedbacks: totalFeedbacks || 0,
-        feedbacksPendentes: feedbacksPendentes || 0,
-        totalErros: totalErros || 0,
-        errosHoje: errosHoje || 0,
-        ultimasGeracoes: (ultimasGeracoes || []).map(g => ({
+        totalQuestoes,
+        questoesIA,
+        questoesRevisadas,
+        questoesPendentes,
+        totalDisciplinas,
+        totalAssuntos,
+        totalFeedbacks,
+        feedbacksPendentes: feedbacksPendentesCount,
+        totalErros,
+        errosHoje,
+        ultimasGeracoes: ultimasGeracoes.map(g => ({
           ...g,
           disciplina_nome: g.disciplina_id ? disciplinasMap[g.disciplina_id] : undefined
         }))
       })
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error)
+      // Definir stats vazio para não ficar loading infinito
+      setStats({
+        totalQuestoes: 0,
+        questoesIA: 0,
+        questoesRevisadas: 0,
+        questoesPendentes: 0,
+        totalDisciplinas: 0,
+        totalAssuntos: 0,
+        totalFeedbacks: 0,
+        feedbacksPendentes: 0,
+        totalErros: 0,
+        errosHoje: 0,
+        ultimasGeracoes: []
+      })
     } finally {
       setLoading(false)
     }

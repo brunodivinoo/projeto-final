@@ -80,117 +80,141 @@ export default function AdminHistoricoPage() {
   async function loadQuestoesRecentes() {
     setLoadingQuestoes(true)
 
-    const { data, error } = await supabase
-      .from('questoes_med')
-      .select(`
-        id,
-        enunciado,
-        tipo_questao,
-        alternativas,
-        resposta_correta,
-        gabarito_comentado,
-        referencia_abnt,
-        periodo_dificuldade,
-        created_at,
-        disciplinas_med(nome),
-        assuntos_med(nome)
-      `)
-      .eq('gerado_por_ia', true)
-      .order('created_at', { ascending: false })
-      .limit(50)
+    try {
+      const { data, error } = await supabase
+        .from('questoes_med')
+        .select(`
+          id,
+          enunciado,
+          tipo_questao,
+          alternativas,
+          resposta_correta,
+          gabarito_comentado,
+          referencia_abnt,
+          periodo_dificuldade,
+          created_at,
+          disciplinas_med(nome),
+          assuntos_med(nome)
+        `)
+        .eq('gerado_por_ia', true)
+        .order('created_at', { ascending: false })
+        .limit(50)
 
-    if (!error && data) {
-      const questoesFormatadas = data.map((q: Record<string, unknown>) => ({
-        id: q.id as string,
-        enunciado: q.enunciado as string,
-        tipo_questao: q.tipo_questao as string | undefined,
-        alternativas: q.alternativas as Alternativa[] | undefined,
-        resposta_correta: q.resposta_correta as string | undefined,
-        gabarito_comentado: q.gabarito_comentado as string | undefined,
-        referencia_abnt: q.referencia_abnt as string | undefined,
-        periodo_dificuldade: q.periodo_dificuldade as number | undefined,
-        created_at: q.created_at as string,
-        disciplina_nome: (q.disciplinas_med as { nome: string } | null)?.nome,
-        assunto_nome: (q.assuntos_med as { nome: string } | null)?.nome
-      }))
-      setQuestoesRecentes(questoesFormatadas)
+      if (error) {
+        console.error('Erro ao carregar questões recentes:', error)
+        setQuestoesRecentes([])
+      } else if (data) {
+        const questoesFormatadas = data.map((q: Record<string, unknown>) => ({
+          id: q.id as string,
+          enunciado: q.enunciado as string,
+          tipo_questao: q.tipo_questao as string | undefined,
+          alternativas: q.alternativas as Alternativa[] | undefined,
+          resposta_correta: q.resposta_correta as string | undefined,
+          gabarito_comentado: q.gabarito_comentado as string | undefined,
+          referencia_abnt: q.referencia_abnt as string | undefined,
+          periodo_dificuldade: q.periodo_dificuldade as number | undefined,
+          created_at: q.created_at as string,
+          disciplina_nome: (q.disciplinas_med as { nome: string } | null)?.nome,
+          assunto_nome: (q.assuntos_med as { nome: string } | null)?.nome
+        }))
+        setQuestoesRecentes(questoesFormatadas)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar questões recentes:', error)
+      setQuestoesRecentes([])
+    } finally {
+      setLoadingQuestoes(false)
     }
-
-    setLoadingQuestoes(false)
   }
 
   async function loadLogs() {
     setLoading(true)
 
-    let query = supabase
-      .from('admin_geracao_logs_med')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100)
+    try {
+      let query = supabase
+        .from('admin_geracao_logs_med')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100)
 
-    if (filtros.status) {
-      query = query.eq('status', filtros.status)
-    }
+      if (filtros.status) {
+        query = query.eq('status', filtros.status)
+      }
 
-    const { data, error } = await query
+      const { data, error } = await query
 
-    if (error) {
+      if (error) {
+        console.error('Erro ao carregar logs:', error)
+        setLogs([])
+        setStats({ total: 0, sucesso: 0, erro: 0, questoesGeradas: 0 })
+        setLoading(false)
+        return
+      }
+
+      // Buscar nomes das disciplinas e assuntos
+      const disciplinaIds = [...new Set((data || []).map(l => l.disciplina_id).filter(Boolean))]
+      const assuntoIds = [...new Set((data || []).map(l => l.assunto_id).filter(Boolean))]
+
+      const disciplinasMap: Record<string, string> = {}
+      const assuntosMap: Record<string, string> = {}
+
+      if (disciplinaIds.length > 0) {
+        try {
+          const { data: disciplinas } = await supabase
+            .from('disciplinas_med')
+            .select('id, nome')
+            .in('id', disciplinaIds)
+
+          disciplinas?.forEach(d => {
+            disciplinasMap[d.id] = d.nome
+          })
+        } catch {
+          // Ignorar erro
+        }
+      }
+
+      if (assuntoIds.length > 0) {
+        try {
+          const { data: assuntos } = await supabase
+            .from('assuntos_med')
+            .select('id, nome')
+            .in('id', assuntoIds)
+
+          assuntos?.forEach(a => {
+            assuntosMap[a.id] = a.nome
+          })
+        } catch {
+          // Ignorar erro
+        }
+      }
+
+      const logsComNomes = (data || []).map(log => ({
+        ...log,
+        disciplina_nome: log.disciplina_id ? disciplinasMap[log.disciplina_id] : undefined,
+        assunto_nome: log.assunto_id ? assuntosMap[log.assunto_id] : undefined
+      }))
+
+      setLogs(logsComNomes)
+
+      // Calcular estatísticas
+      const totalLogs = logsComNomes.length
+      const sucesso = logsComNomes.filter(l => l.status === 'concluido').length
+      const erroCount = logsComNomes.filter(l => l.status === 'erro').length
+      const questoesGeradas = logsComNomes.reduce((acc, l) => acc + (l.questoes_sucesso || l.quantidade || 0), 0)
+
+      setStats({
+        total: totalLogs,
+        sucesso,
+        erro: erroCount,
+        questoesGeradas
+      })
+    } catch (error) {
       console.error('Erro ao carregar logs:', error)
+      setLogs([])
+      setStats({ total: 0, sucesso: 0, erro: 0, questoesGeradas: 0 })
+    } finally {
       setLoading(false)
-      return
     }
-
-    // Buscar nomes das disciplinas e assuntos
-    const disciplinaIds = [...new Set((data || []).map(l => l.disciplina_id).filter(Boolean))]
-    const assuntoIds = [...new Set((data || []).map(l => l.assunto_id).filter(Boolean))]
-
-    const disciplinasMap: Record<string, string> = {}
-    const assuntosMap: Record<string, string> = {}
-
-    if (disciplinaIds.length > 0) {
-      const { data: disciplinas } = await supabase
-        .from('disciplinas_med')
-        .select('id, nome')
-        .in('id', disciplinaIds)
-
-      disciplinas?.forEach(d => {
-        disciplinasMap[d.id] = d.nome
-      })
-    }
-
-    if (assuntoIds.length > 0) {
-      const { data: assuntos } = await supabase
-        .from('assuntos_med')
-        .select('id, nome')
-        .in('id', assuntoIds)
-
-      assuntos?.forEach(a => {
-        assuntosMap[a.id] = a.nome
-      })
-    }
-
-    const logsComNomes = (data || []).map(log => ({
-      ...log,
-      disciplina_nome: log.disciplina_id ? disciplinasMap[log.disciplina_id] : undefined,
-      assunto_nome: log.assunto_id ? assuntosMap[log.assunto_id] : undefined
-    }))
-
-    setLogs(logsComNomes)
-
-    // Calcular estatísticas
-    const totalLogs = logsComNomes.length
-    const sucesso = logsComNomes.filter(l => l.status === 'concluido').length
-    const erro = logsComNomes.filter(l => l.status === 'erro').length
-    const questoesGeradas = logsComNomes.reduce((acc, l) => acc + (l.questoes_sucesso || l.quantidade || 0), 0)
-
-    setStats({
-      total: totalLogs,
-      sucesso,
-      erro,
-      questoesGeradas
-    })
-
-    setLoading(false)
   }
 
   function getStatusIcon(status: string) {
