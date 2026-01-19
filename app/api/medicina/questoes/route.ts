@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const bancas = searchParams.get('bancas')?.split(',').filter(Boolean) || []
     const anos = searchParams.get('anos')?.split(',').filter(Boolean).map(a => parseInt(a)) || []
     const dificuldades = searchParams.get('dificuldades')?.split(',').filter(Boolean).map(d => parseInt(d)) || []
+    const periodos = searchParams.get('periodos')?.split(',').filter(Boolean).map(p => parseInt(p)) || []
 
     // Suporte para filtros únicos (retrocompatibilidade)
     const disciplinaId = searchParams.get('disciplinaId')
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
         instituicao,
         prova,
         dificuldade,
+        periodo_dificuldade,
         total_respostas,
         total_acertos,
         comentario_ia,
@@ -84,6 +86,11 @@ export async function GET(request: NextRequest) {
       query = query.in('dificuldade', dificuldades)
     } else if (dificuldade) {
       query = query.eq('dificuldade', parseInt(dificuldade))
+    }
+
+    // Filtrar por período
+    if (periodos.length > 0) {
+      query = query.in('periodo_dificuldade', periodos)
     }
 
     // Filtrar não respondidas ou erradas

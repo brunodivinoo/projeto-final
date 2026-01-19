@@ -27,6 +27,37 @@ body {
   color: var(--foreground);
 }
 
+/* ================================================
+   SELECT/DROPDOWN - Tema escuro
+   ================================================ */
+/* Estilizar options dentro de selects em temas escuros */
+select option {
+  background-color: #1e293b;
+  color: #ffffff;
+  padding: 8px 12px;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+  background-color: #334155;
+  color: #ffffff;
+}
+
+/* Firefox específico */
+@-moz-document url-prefix() {
+  select option {
+    background-color: #1e293b;
+    color: #ffffff;
+  }
+}
+
+/* Webkit (Chrome, Safari, Edge) - dropdown aberto */
+select:focus option {
+  background-color: #1e293b;
+  color: #ffffff;
+}
+
 /* Scrollbar customizada */
 ::-webkit-scrollbar {
   width: 8px;

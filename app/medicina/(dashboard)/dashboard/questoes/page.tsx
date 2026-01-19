@@ -40,6 +40,7 @@ interface Questao {
   banca: string | null
   ano: number | null
   dificuldade: number
+  periodo_dificuldade: number | null
   disciplina: { id: string, nome: string } | null
   assunto: { id: string, nome: string } | null
 }
@@ -230,7 +231,7 @@ export default function QuestoesPage() {
   const [assuntosSelecionados, setAssuntosSelecionados] = useState<string[]>([])
   const [bancasSelecionadas, setBancasSelecionadas] = useState<string[]>([])
   const [anosSelecionados, setAnosSelecionados] = useState<string[]>([])
-  const [dificuldadesSelecionadas, setDificuldadesSelecionadas] = useState<string[]>([])
+  const [periodosSelecionados, setPeriodosSelecionados] = useState<string[]>([])
   const [naoRespondidas, setNaoRespondidas] = useState(false)
   const [erradas, setErradas] = useState(false)
 
@@ -259,20 +260,36 @@ export default function QuestoesPage() {
     { id: '2018', nome: '2018' }
   ]
 
-  const dificuldadesOpcoes = [
-    { id: '1', nome: 'Muito Facil' },
-    { id: '2', nome: 'Facil' },
-    { id: '3', nome: 'Medio' },
-    { id: '4', nome: 'Dificil' },
-    { id: '5', nome: 'Muito Dificil' }
+  // Períodos do curso de medicina (1º ao 12º)
+  const periodosOpcoes = [
+    { id: '1', nome: '1º Período' },
+    { id: '2', nome: '2º Período' },
+    { id: '3', nome: '3º Período' },
+    { id: '4', nome: '4º Período' },
+    { id: '5', nome: '5º Período' },
+    { id: '6', nome: '6º Período' },
+    { id: '7', nome: '7º Período' },
+    { id: '8', nome: '8º Período' },
+    { id: '9', nome: '9º Período' },
+    { id: '10', nome: '10º Período' },
+    { id: '11', nome: '11º Período' },
+    { id: '12', nome: '12º Período' }
   ]
 
-  const dificuldadesInfo: Record<string, { label: string; cor: string }> = {
-    '1': { label: 'Muito Facil', cor: 'text-green-400 bg-green-500/20' },
-    '2': { label: 'Facil', cor: 'text-emerald-400 bg-emerald-500/20' },
-    '3': { label: 'Medio', cor: 'text-yellow-400 bg-yellow-500/20' },
-    '4': { label: 'Dificil', cor: 'text-orange-400 bg-orange-500/20' },
-    '5': { label: 'Muito Dificil', cor: 'text-red-400 bg-red-500/20' }
+  // Cores por período (gradiente do básico ao avançado)
+  const periodosInfo: Record<string, { label: string; cor: string }> = {
+    '1': { label: '1º Período', cor: 'text-green-400 bg-green-500/20' },
+    '2': { label: '2º Período', cor: 'text-green-400 bg-green-500/20' },
+    '3': { label: '3º Período', cor: 'text-emerald-400 bg-emerald-500/20' },
+    '4': { label: '4º Período', cor: 'text-emerald-400 bg-emerald-500/20' },
+    '5': { label: '5º Período', cor: 'text-teal-400 bg-teal-500/20' },
+    '6': { label: '6º Período', cor: 'text-cyan-400 bg-cyan-500/20' },
+    '7': { label: '7º Período', cor: 'text-blue-400 bg-blue-500/20' },
+    '8': { label: '8º Período', cor: 'text-blue-400 bg-blue-500/20' },
+    '9': { label: '9º Período', cor: 'text-indigo-400 bg-indigo-500/20' },
+    '10': { label: '10º Período', cor: 'text-purple-400 bg-purple-500/20' },
+    '11': { label: '11º Período', cor: 'text-orange-400 bg-orange-500/20' },
+    '12': { label: '12º Período', cor: 'text-red-400 bg-red-500/20' }
   }
 
   // Carregar disciplinas, assuntos e bancas
@@ -353,8 +370,8 @@ export default function QuestoesPage() {
       if (anosSelecionados.length > 0) {
         params.set('anos', anosSelecionados.join(','))
       }
-      if (dificuldadesSelecionadas.length > 0) {
-        params.set('dificuldades', dificuldadesSelecionadas.join(','))
+      if (periodosSelecionados.length > 0) {
+        params.set('periodos', periodosSelecionados.join(','))
       }
       if (naoRespondidas) params.set('naoRespondidas', 'true')
       if (erradas) params.set('erradas', 'true')
@@ -394,14 +411,14 @@ export default function QuestoesPage() {
     } finally {
       setLoading(false)
     }
-  }, [user, disciplinasSelecionadas, assuntosSelecionados, bancasSelecionadas, anosSelecionados, dificuldadesSelecionadas, naoRespondidas, erradas, page])
+  }, [user, disciplinasSelecionadas, assuntosSelecionados, bancasSelecionadas, anosSelecionados, periodosSelecionados, naoRespondidas, erradas, page])
 
   const limparFiltros = () => {
     setDisciplinasSelecionadas([])
     setAssuntosSelecionados([])
     setBancasSelecionadas([])
     setAnosSelecionados([])
-    setDificuldadesSelecionadas([])
+    setPeriodosSelecionados([])
     setNaoRespondidas(false)
     setErradas(false)
     setPage(0)
@@ -412,7 +429,7 @@ export default function QuestoesPage() {
     assuntosSelecionados.length > 0 ||
     bancasSelecionadas.length > 0 ||
     anosSelecionados.length > 0 ||
-    dificuldadesSelecionadas.length > 0 ||
+    periodosSelecionados.length > 0 ||
     naoRespondidas ||
     erradas
 
@@ -468,8 +485,9 @@ export default function QuestoesPage() {
   const questoesLimite = limitesPlano.questoes_dia
   const podeResponder = questoesLimite === -1 || questoesUsadas < questoesLimite
 
-  const getDificuldadeInfo = (nivel: number) => {
-    return dificuldadesInfo[String(nivel)] || dificuldadesInfo['3']
+  const getPeriodoInfo = (periodo: number | null) => {
+    if (!periodo) return null
+    return periodosInfo[String(periodo)] || null
   }
 
   return (
@@ -563,11 +581,11 @@ export default function QuestoesPage() {
             />
 
             <MultiSelectDropdown
-              label="Dificuldade"
-              options={dificuldadesOpcoes}
-              selected={dificuldadesSelecionadas}
-              onChange={setDificuldadesSelecionadas}
-              placeholder="Todas as dificuldades"
+              label="Período"
+              options={periodosOpcoes}
+              selected={periodosSelecionados}
+              onChange={setPeriodosSelecionados}
+              placeholder="Todos os períodos"
             />
           </div>
 
@@ -624,9 +642,9 @@ export default function QuestoesPage() {
                       {anosSelecionados.length} ano(s)
                     </span>
                   )}
-                  {dificuldadesSelecionadas.length > 0 && (
-                    <span className="px-2 py-1 bg-orange-500/20 text-orange-400 rounded-full text-xs">
-                      {dificuldadesSelecionadas.length} dificuldade(s)
+                  {periodosSelecionados.length > 0 && (
+                    <span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded-full text-xs">
+                      {periodosSelecionados.length} período(s)
                     </span>
                   )}
                 </div>
@@ -686,7 +704,7 @@ export default function QuestoesPage() {
 
           {/* Lista de Questoes Expandidas */}
           {questoes.map((questao, index) => {
-            const dificuldade = getDificuldadeInfo(questao.dificuldade)
+            const periodo = getPeriodoInfo(questao.periodo_dificuldade)
             const jaRespondeu = questoesRespondidas.has(questao.id)
             const respostaAnterior = respostasUsuario[questao.id]
             const respostaSelecionada = respostasSelecionadas[questao.id]
@@ -721,9 +739,11 @@ export default function QuestoesPage() {
                             {questao.banca} {questao.ano && `${questao.ano}`}
                           </span>
                         )}
-                        <span className={`px-2 py-1 text-xs rounded-full ${dificuldade.cor}`}>
-                          {dificuldade.label}
-                        </span>
+                        {periodo && (
+                          <span className={`px-2 py-1 text-xs rounded-full ${periodo.cor}`}>
+                            {periodo.label}
+                          </span>
+                        )}
                         {jaRespondeu && (
                           <span className={`px-2 py-1 text-xs rounded-full flex items-center gap-1 ${
                             respostaAnterior?.acertou
