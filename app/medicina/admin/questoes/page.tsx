@@ -9,14 +9,10 @@ import {
   Filter,
   ChevronDown,
   CheckCircle,
-  XCircle,
-  Edit,
   Trash2,
-  Eye,
   Loader2,
   Sparkles,
   AlertTriangle,
-  BookOpen,
   Clock
 } from 'lucide-react'
 
@@ -31,8 +27,8 @@ interface Questao {
   gerado_por_ia: boolean
   revisado: boolean
   created_at: string
-  disciplinas_med?: { nome: string }
-  assuntos_med?: { nome: string }
+  disciplina_nome?: string
+  assunto_nome?: string
 }
 
 interface Disciplina {
@@ -124,7 +120,22 @@ export default function AdminQuestoesPage() {
     if (error) {
       console.error('Erro ao carregar questões:', error)
     } else {
-      setQuestoes(data || [])
+      // Mapear dados para extrair nomes dos relacionamentos
+      const questoesMapeadas = (data || []).map((q: Record<string, unknown>) => ({
+        id: q.id as string,
+        enunciado: q.enunciado as string,
+        disciplina_id: q.disciplina_id as string,
+        assunto_id: q.assunto_id as string,
+        subassunto_id: q.subassunto_id as string | undefined,
+        dificuldade: q.dificuldade as string,
+        periodo_dificuldade: q.periodo_dificuldade as number | undefined,
+        gerado_por_ia: q.gerado_por_ia as boolean,
+        revisado: q.revisado as boolean,
+        created_at: q.created_at as string,
+        disciplina_nome: (q.disciplinas_med as { nome: string } | null)?.nome,
+        assunto_nome: (q.assuntos_med as { nome: string } | null)?.nome
+      }))
+      setQuestoes(questoesMapeadas)
       setTotal(count || 0)
     }
     setLoading(false)
@@ -300,11 +311,11 @@ export default function AdminQuestoesPage() {
                     </p>
                     <div className="flex flex-wrap items-center gap-2 text-xs">
                       <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded">
-                        {(questao.disciplinas_med as { nome: string } | null)?.nome || 'Sem disciplina'}
+                        {questao.disciplina_nome || 'Sem disciplina'}
                       </span>
-                      {(questao.assuntos_med as { nome: string } | null)?.nome && (
+                      {questao.assunto_nome && (
                         <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded">
-                          {(questao.assuntos_med as { nome: string } | null)?.nome}
+                          {questao.assunto_nome}
                         </span>
                       )}
                       {questao.periodo_dificuldade && (
