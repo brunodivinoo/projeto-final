@@ -156,117 +156,211 @@ export default function MedicinaLandingPage() {
         {/* Pricing Section */}
         <section className="w-full py-20" id="planos">
           <div className="max-w-6xl mx-auto px-4 md:px-10">
-            <div className="text-center mb-16">
+            <div className="text-center mb-12">
+              {/* Urgência e escassez */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-full text-red-300 text-sm font-medium mb-6 animate-pulse">
+                <Clock className="w-4 h-4" />
+                🔥 Oferta por tempo limitado - Economize até 40%
+              </div>
               <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
-                Escolha seu plano
+                Invista no seu <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">futuro</span>
               </h2>
               <p className="text-emerald-200 text-lg max-w-2xl mx-auto">
-                Comece gratuitamente e evolua conforme sua necessidade
+                Milhares de estudantes já conquistaram sua vaga na residência. Você é o próximo!
               </p>
+              {/* Social proof */}
+              <div className="flex items-center justify-center gap-2 mt-4">
+                <div className="flex -space-x-2">
+                  {[1,2,3,4,5].map((i) => (
+                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 border-2 border-emerald-950 flex items-center justify-center">
+                      <Users className="w-4 h-4 text-white" />
+                    </div>
+                  ))}
+                </div>
+                <span className="text-emerald-300 text-sm ml-2">+2.847 alunos esta semana</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {/* Gratuito */}
-              <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
-                <h3 className="text-xl font-bold text-white mb-2">Gratuito</h3>
-                <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-4xl font-black text-white">R$0</span>
-                  <span className="text-emerald-300">/mês</span>
+              <div className="bg-white/5 rounded-2xl p-8 border border-white/10 hover:border-white/20 transition-all">
+                <div className="text-center mb-6">
+                  <span className="inline-block px-3 py-1 bg-white/10 rounded-full text-white/60 text-xs font-medium mb-4">
+                    BÁSICO
+                  </span>
+                  <h3 className="text-2xl font-bold text-white mb-2">Gratuito</h3>
+                  <div className="flex items-baseline justify-center gap-1 mb-2">
+                    <span className="text-5xl font-black text-white">R$0</span>
+                  </div>
+                  <p className="text-emerald-200/60 text-sm">Para sempre grátis</p>
                 </div>
-                <p className="text-emerald-200/80 text-sm mb-6">Para começar a estudar</p>
                 <Link
                   href="/medicina/cadastro"
-                  className="block w-full py-3 text-center bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors mb-6"
+                  className="block w-full py-3.5 text-center bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-all mb-6"
                 >
-                  Criar Conta Grátis
+                  Começar Grátis
                 </Link>
                 <ul className="space-y-3">
                   {[
                     '20 questões por dia',
                     '2 simulados por mês',
-                    'Teoria básica (1º ano)',
+                    'Teoria básica',
                     '10 anotações',
-                    'Fórum (apenas leitura)'
+                    'Estatísticas básicas'
                   ].map((item, i) => (
-                    <li key={i} className="flex items-start gap-3 text-emerald-200/80 text-sm">
-                      <Check className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                    <li key={i} className="flex items-start gap-3 text-emerald-200/70 text-sm">
+                      <Check className="w-5 h-5 text-emerald-500/50 flex-shrink-0" />
                       {item}
                     </li>
                   ))}
                 </ul>
               </div>
 
-              {/* Premium */}
-              <div className="bg-gradient-to-b from-emerald-500/20 to-teal-500/20 rounded-2xl p-8 border-2 border-emerald-500 relative transform md:-translate-y-4">
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full text-white text-sm font-bold">
-                  Mais Popular
+              {/* Premium - Destaque */}
+              <div className="relative bg-gradient-to-b from-emerald-500/30 via-emerald-500/20 to-teal-500/10 rounded-2xl p-8 border-2 border-emerald-400 transform md:-translate-y-6 md:scale-105 shadow-2xl shadow-emerald-500/20">
+                {/* Badges */}
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex gap-2">
+                  <span className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full text-white text-sm font-bold shadow-lg">
+                    ⭐ MAIS ESCOLHIDO
+                  </span>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Premium</h3>
-                <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-4xl font-black text-white">R$50</span>
-                  <span className="text-emerald-300">/mês</span>
+                <div className="absolute -right-2 top-8 rotate-12">
+                  <span className="px-3 py-1 bg-red-500 rounded-full text-white text-xs font-bold shadow-lg">
+                    -25%
+                  </span>
                 </div>
-                <p className="text-emerald-200/80 text-sm mb-6">Para estudar com tudo</p>
+
+                <div className="text-center mb-6 pt-2">
+                  <span className="inline-block px-3 py-1 bg-emerald-500/30 rounded-full text-emerald-300 text-xs font-medium mb-4">
+                    RECOMENDADO
+                  </span>
+                  <h3 className="text-2xl font-bold text-white mb-2">Premium</h3>
+                  {/* Preço com desconto */}
+                  <div className="mb-2">
+                    <span className="text-white/40 line-through text-lg">R$79,90</span>
+                  </div>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-white/60 text-xl">R$</span>
+                    <span className="text-5xl font-black text-white">59</span>
+                    <span className="text-white/60 text-xl">,90</span>
+                    <span className="text-emerald-300 text-sm">/mês</span>
+                  </div>
+                  <p className="text-emerald-300 text-sm mt-2 font-medium">
+                    💰 Economia de R$240/ano
+                  </p>
+                </div>
                 <Link
                   href="/medicina/cadastro?plano=premium"
-                  className="block w-full py-3 text-center bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-colors mb-6"
+                  className="block w-full py-4 text-center bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-xl hover:from-emerald-400 hover:to-teal-400 transition-all shadow-lg shadow-emerald-500/30 mb-6 text-lg"
                 >
-                  Assinar Premium
+                  🚀 Quero ser Premium
                 </Link>
                 <ul className="space-y-3">
                   {[
-                    'Questões ilimitadas',
-                    '10 simulados por mês',
-                    'Teoria completa (todos os anos)',
-                    '100 anotações',
-                    '100 perguntas IA/mês',
-                    '20 resumos IA/mês',
-                    'Exportar PDF/Word',
-                    'Fórum completo'
+                    { text: 'Questões ilimitadas', highlight: true },
+                    { text: '10 simulados por mês', highlight: false },
+                    { text: 'Teoria completa', highlight: false },
+                    { text: '100 anotações', highlight: false },
+                    { text: '100 perguntas IA/mês', highlight: true },
+                    { text: '50 resumos IA/mês', highlight: false },
+                    { text: 'Exportar PDF/Word', highlight: false },
+                    { text: 'Suporte por e-mail', highlight: false }
                   ].map((item, i) => (
-                    <li key={i} className="flex items-start gap-3 text-emerald-200/80 text-sm">
+                    <li key={i} className={`flex items-start gap-3 text-sm ${item.highlight ? 'text-white font-medium' : 'text-emerald-200/80'}`}>
                       <Check className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                      {item}
+                      {item.text}
                     </li>
                   ))}
                 </ul>
+                {/* Garantia */}
+                <div className="mt-6 pt-4 border-t border-emerald-500/30 text-center">
+                  <p className="text-emerald-300/80 text-xs flex items-center justify-center gap-1">
+                    <Award className="w-4 h-4" />
+                    7 dias de garantia ou seu dinheiro de volta
+                  </p>
+                </div>
               </div>
 
               {/* Residência */}
-              <div className="bg-white/5 rounded-2xl p-8 border border-white/10 relative">
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-amber-500 rounded-full text-white text-sm font-bold">
-                  Completo
+              <div className="relative bg-gradient-to-b from-amber-500/20 to-orange-500/10 rounded-2xl p-8 border border-amber-500/30 hover:border-amber-500/50 transition-all">
+                {/* Badge */}
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                  <span className="px-4 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full text-white text-sm font-bold shadow-lg">
+                    👑 COMPLETO
+                  </span>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Residência</h3>
-                <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-4xl font-black text-white">R$100</span>
-                  <span className="text-emerald-300">/mês</span>
+                <div className="absolute -right-2 top-8 rotate-12">
+                  <span className="px-3 py-1 bg-red-500 rounded-full text-white text-xs font-bold shadow-lg">
+                    -40%
+                  </span>
                 </div>
-                <p className="text-emerald-200/80 text-sm mb-6">Para quem quer garantir</p>
+
+                <div className="text-center mb-6 pt-2">
+                  <span className="inline-block px-3 py-1 bg-amber-500/30 rounded-full text-amber-300 text-xs font-medium mb-4">
+                    APROVAÇÃO GARANTIDA
+                  </span>
+                  <h3 className="text-2xl font-bold text-white mb-2">Residência</h3>
+                  {/* Preço com desconto */}
+                  <div className="mb-2">
+                    <span className="text-white/40 line-through text-lg">R$249,90</span>
+                  </div>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-white/60 text-xl">R$</span>
+                    <span className="text-5xl font-black text-white">149</span>
+                    <span className="text-white/60 text-xl">,90</span>
+                    <span className="text-amber-300 text-sm">/mês</span>
+                  </div>
+                  <p className="text-amber-300 text-sm mt-2 font-medium">
+                    💰 Economia de R$1.200/ano
+                  </p>
+                </div>
                 <Link
                   href="/medicina/cadastro?plano=residencia"
-                  className="block w-full py-3 text-center bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors mb-6"
+                  className="block w-full py-4 text-center bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/30 mb-6 text-lg"
                 >
-                  Assinar Residência
+                  👑 Garantir minha vaga
                 </Link>
                 <ul className="space-y-3">
                   {[
-                    'Tudo do Premium',
-                    'Simulados ilimitados',
-                    '200 questões por simulado',
-                    'IA ilimitada',
-                    'Teoria nível Expert',
-                    'Anotações ilimitadas',
-                    'Histórico ilimitado',
-                    'Destaque no fórum',
-                    'Suporte prioritário'
+                    { text: 'Tudo do Premium +', highlight: true },
+                    { text: 'Simulados ilimitados', highlight: true },
+                    { text: 'IA Tutora ilimitada', highlight: true },
+                    { text: 'Teoria nível Expert', highlight: false },
+                    { text: 'Anotações ilimitadas', highlight: false },
+                    { text: 'Flashcards ilimitados', highlight: false },
+                    { text: 'Histórico completo', highlight: false },
+                    { text: 'Suporte prioritário 24h', highlight: true },
+                    { text: 'Destaque no fórum', highlight: false }
                   ].map((item, i) => (
-                    <li key={i} className="flex items-start gap-3 text-emerald-200/80 text-sm">
-                      <Check className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                      {item}
+                    <li key={i} className={`flex items-start gap-3 text-sm ${item.highlight ? 'text-white font-medium' : 'text-amber-200/80'}`}>
+                      <Check className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                      {item.text}
                     </li>
                   ))}
                 </ul>
+                {/* Garantia */}
+                <div className="mt-6 pt-4 border-t border-amber-500/30 text-center">
+                  <p className="text-amber-300/80 text-xs flex items-center justify-center gap-1">
+                    <Award className="w-4 h-4" />
+                    7 dias de garantia ou seu dinheiro de volta
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Trust badges */}
+            <div className="flex flex-wrap items-center justify-center gap-6 mt-12 text-emerald-200/50 text-sm">
+              <div className="flex items-center gap-2">
+                <Check className="w-5 h-5 text-emerald-400" />
+                Pagamento seguro
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-5 h-5 text-emerald-400" />
+                Cancele quando quiser
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-5 h-5 text-emerald-400" />
+                Suporte humanizado
               </div>
             </div>
           </div>

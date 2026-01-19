@@ -37,6 +37,7 @@ const menuItems = [
   { href: '/medicina/dashboard/ia', label: 'IA Tutora', icon: Brain },
   { href: '/medicina/dashboard/forum', label: 'Fórum', icon: MessageSquare },
   { href: '/medicina/dashboard/estatisticas', label: 'Estatísticas', icon: BarChart3 },
+  { href: '/medicina/dashboard/assinatura', label: 'Meu Plano', icon: Crown, highlight: true },
 ]
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
@@ -148,12 +149,19 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                         flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
                         ${isActive
                           ? 'bg-emerald-500/20 text-emerald-400'
+                          : (item as { highlight?: boolean }).highlight
+                          ? 'text-amber-400 hover:bg-amber-500/10 hover:text-amber-300'
                           : 'text-white/60 hover:bg-white/5 hover:text-white'
                         }
                       `}
                     >
-                      <item.icon className="w-5 h-5" />
+                      <item.icon className={`w-5 h-5 ${(item as { highlight?: boolean }).highlight && !isActive ? 'text-amber-400' : ''}`} />
                       <span className="font-medium">{item.label}</span>
+                      {(item as { highlight?: boolean }).highlight && !isActive && (
+                        <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded font-bold">
+                          PRO
+                        </span>
+                      )}
                     </Link>
                   </li>
                 )
