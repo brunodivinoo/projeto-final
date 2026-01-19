@@ -145,7 +145,7 @@ export default function IAPage() {
   }, [])
 
   // Wrapper para trocar modo - com opção de manter conversa
-  const trocarModo = useCallback((novoModo: ChatMode, manterConversa: boolean = false) => {
+  const trocarModo = useCallback(async (novoModo: ChatMode, manterConversa: boolean = false) => {
     trocarModoBase(novoModo)
     setCurrentChatMode(novoModo)
     // Sincronizar filtro de artefatos com o modo atual
@@ -162,14 +162,11 @@ export default function IAPage() {
 
     // Limpar mensagens ao trocar de modo (comportamento padrão)
     setMensagens([])
-    // Carregar conversa ativa do modo se existir
-    const conversaDoModo = activeConversationByMode[novoModo as StoreChatMode]
-    if (conversaDoModo) {
-      setConversaAtual(conversaDoModo)
-    } else {
-      setConversaAtual(null)
-    }
-  }, [trocarModoBase, setCurrentChatMode, setChatModeFilter, setStoreMode, activeConversationByMode, conversaAtual, mensagens.length])
+    setConversaAtual(null)
+
+    // A conversa ativa do novo modo será carregada pelo useEffect que monitora activeConversationByMode
+    // Isso garante que as mensagens sejam efetivamente carregadas
+  }, [trocarModoBase, setCurrentChatMode, setChatModeFilter, setStoreMode, conversaAtual, mensagens.length])
 
   // Função específica para trocar modo dentro da conversa
   const trocarModoNaConversa = useCallback((novoModo: ChatMode) => {
@@ -266,6 +263,17 @@ export default function IAPage() {
     fetchUso()
     fetchConversas()
   }, [fetchUso, fetchConversas])
+
+  // Carregar conversa ativa automaticamente quando a página é carregada
+  // Isso garante que o histórico seja restaurado quando o usuário volta à página
+  useEffect(() => {
+    const conversaAtivaDoModo = activeConversationByMode[chatMode as StoreChatMode]
+
+    // Se há uma conversa ativa salva no localStorage e ainda não carregamos mensagens
+    if (conversaAtivaDoModo && mensagens.length === 0 && !loading) {
+      carregarConversa(conversaAtivaDoModo)
+    }
+  }, [activeConversationByMode, chatMode, mensagens.length, loading, carregarConversa])
 
   // Sincronizar filtro de artefatos quando o modo de chat muda
   useEffect(() => {
