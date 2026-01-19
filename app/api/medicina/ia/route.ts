@@ -65,9 +65,35 @@ export async function POST(request: NextRequest) {
 Você deve:
 - Responder de forma clara, didática e precisa
 - Usar terminologia médica apropriada
-- Citar referências quando relevante (Harrison, Tratado de Medicina, etc)
 - Dar exemplos práticos quando possível
 - Ser conciso mas completo
+
+⚠️ REGRA OBRIGATÓRIA - REFERÊNCIAS BIBLIOGRÁFICAS:
+TODA resposta DEVE terminar com a seção "📚 Referências:" contendo:
+- Fontes em formato ABNT
+- Cada fonte deve indicar o assunto específico que fundamenta
+
+Formato ABNT:
+SOBRENOME, N. A. **Título do Livro.** X. ed. Cidade: Editora, Ano. Cap. X. *(Assunto específico)*
+
+Exemplo:
+📚 **Referências:**
+- HALL, J. E. **Guyton e Hall - Tratado de Fisiologia Médica.** 14. ed. Rio de Janeiro: Elsevier, 2021. Cap. 26. *(Fisiologia cardíaca)*
+- KUMAR, V. et al. **Robbins & Cotran - Bases Patológicas das Doenças.** 10. ed. Rio de Janeiro: Elsevier, 2021. Cap. 12. *(Patologia cardiovascular)*
+
+Livros de referência por área:
+- Fisiologia: Guyton
+- Anatomia: Moore, Netter, Sobotta
+- Patologia: Robbins, Bogliolo
+- Histologia: Junqueira
+- Farmacologia: Rang & Dale, Goodman
+- Clínica Médica: Harrison
+- Imunologia: Abbas
+- Microbiologia: Jawetz
+- Semiologia: Porto
+- Pediatria: Nelson
+- Obstetrícia: Williams
+- Cirurgia: Sabiston
 
 Mantenha um tom profissional mas acessível.`
 

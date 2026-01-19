@@ -15,8 +15,36 @@ import {
   Loader2,
   ArrowRight,
   Database,
-  Zap
+  Zap,
+  MessageSquare,
+  Bug,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  X,
+  Eye
 } from 'lucide-react'
+
+interface Feedback {
+  id: string
+  tipo: string
+  titulo: string
+  descricao: string
+  status: string
+  created_at: string
+  usuario?: {
+    nome: string
+    email: string
+  } | null
+}
+
+interface ErrorLog {
+  id: string
+  error_type: string
+  error_message: string
+  pagina: string
+  created_at: string
+}
 
 interface DashboardStats {
   totalQuestoes: number
@@ -25,6 +53,10 @@ interface DashboardStats {
   questoesPendentes: number
   totalDisciplinas: number
   totalAssuntos: number
+  totalFeedbacks: number
+  feedbacksPendentes: number
+  totalErros: number
+  errosHoje: number
   ultimasGeracoes: Array<{
     id: string
     created_at: string
@@ -37,10 +69,61 @@ interface DashboardStats {
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([])
+  const [erros, setErros] = useState<ErrorLog[]>([])
+  const [showMonitoramento, setShowMonitoramento] = useState(false)
+  const [abaMonitoramento, setAbaMonitoramento] = useState<'feedbacks' | 'erros'>('feedbacks')
+  const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null)
 
   useEffect(() => {
     loadStats()
+    loadMonitoramento()
   }, [])
+
+  async function loadMonitoramento() {
+    // Carregar feedbacks recentes
+    const { data: feedbacksData } = await supabase
+      .from('feedback_med')
+      .select(`
+        id,
+        tipo,
+        titulo,
+        descricao,
+        status,
+        created_at,
+        usuario:profiles_med!user_id(nome, email)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(20)
+
+    if (feedbacksData) {
+      setFeedbacks(feedbacksData as Feedback[])
+    }
+
+    // Carregar erros recentes
+    const { data: errosData } = await supabase
+      .from('error_logs_med')
+      .select('id, error_type, error_message, pagina, created_at')
+      .order('created_at', { ascending: false })
+      .limit(20)
+
+    if (errosData) {
+      setErros(errosData)
+    }
+  }
+
+  async function atualizarStatusFeedback(id: string, novoStatus: string) {
+    const { error } = await supabase
+      .from('feedback_med')
+      .update({ status: novoStatus })
+      .eq('id', id)
+
+    if (!error) {
+      setFeedbacks(prev => prev.map(f =>
+        f.id === id ? { ...f, status: novoStatus } : f
+      ))
+    }
+  }
 
   async function loadStats() {
     
@@ -79,6 +162,29 @@ export default function AdminDashboardPage() {
         .from('assuntos_med')
         .select('*', { count: 'exact', head: true })
 
+      // Total de feedbacks
+      const { count: totalFeedbacks } = await supabase
+        .from('feedback_med')
+        .select('*', { count: 'exact', head: true })
+
+      // Feedbacks pendentes
+      const { count: feedbacksPendentes } = await supabase
+        .from('feedback_med')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pendente')
+
+      // Total de erros
+      const { count: totalErros } = await supabase
+        .from('error_logs_med')
+        .select('*', { count: 'exact', head: true })
+
+      // Erros de hoje
+      const hoje = new Date().toISOString().split('T')[0]
+      const { count: errosHoje } = await supabase
+        .from('error_logs_med')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', hoje)
+
       // Últimas gerações (do log)
       const { data: ultimasGeracoes } = await supabase
         .from('admin_geracao_logs_med')
@@ -114,6 +220,10 @@ export default function AdminDashboardPage() {
         questoesPendentes: questoesPendentes || 0,
         totalDisciplinas: totalDisciplinas || 0,
         totalAssuntos: totalAssuntos || 0,
+        totalFeedbacks: totalFeedbacks || 0,
+        feedbacksPendentes: feedbacksPendentes || 0,
+        totalErros: totalErros || 0,
+        errosHoje: errosHoje || 0,
         ultimasGeracoes: (ultimasGeracoes || []).map(g => ({
           ...g,
           disciplina_nome: g.disciplina_id ? disciplinasMap[g.disciplina_id] : undefined

@@ -212,11 +212,16 @@ ${subAssunto ? `- **Sub-assunto:** ${subAssunto}` : ''}
 ### 2. ESTRUTURA DA QUESTÃO
 ${regrasEstrutura}
 
-### 3. FONTES E REFERÊNCIAS
-Prioridade de fontes (USAR NESTA ORDEM):
+### 3. FONTES E REFERÊNCIAS (⚠️ OBRIGATÓRIO!)
+**LIVROS-FONTE QUE VOCÊ DEVE USAR (em ordem de prioridade):**
 ${livrosRecomendados.map((l, i) => `${i + 1}. ${l}`).join('\n')}
 
-⚠️ Artigos científicos APENAS se não houver informação nos livros-texto.
+**REGRAS DE CITAÇÃO - LEIA COM ATENÇÃO:**
+- O gabarito comentado DEVE citar EXPLICITAMENTE o livro-fonte usado (ex: "De acordo com o Guyton, Cap. 26...")
+- A referência ABNT deve ser COMPLETA e CORRETA (autor, título, edição, editora, ano, capítulo, páginas)
+- SEMPRE inclua capítulo e páginas específicas quando possível
+- NO FINAL do gabarito comentado, SEMPRE inclua a seção "**Fonte:**" com a referência completa
+- Artigos científicos APENAS se não houver informação nos livros-texto
 
 ### 4. FORMATO DE RESPOSTA (JSON)
 \`\`\`json
@@ -225,8 +230,8 @@ ${livrosRecomendados.map((l, i) => `${i + 1}. ${l}`).join('\n')}
   "tipo": "${tipoQuestao}",
   "alternativas": ${estruturaAlternativas},
   "resposta_correta": "B",
-  "gabarito_comentado": "Explicação DETALHADA e DIDÁTICA de por que a alternativa B está correta e por que as outras estão incorretas. Deve incluir: conceitos fundamentais, fisiopatologia quando aplicável, correlações clínicas, dicas para memorização. Mínimo 300 palavras.",
-  "referencia_abnt": "Referência completa no formato ABNT. Exemplo: HALL, John E. Guyton e Hall: Tratado de Fisiologia Médica. 14. ed. Rio de Janeiro: Elsevier, 2021. Cap. X, p. XX-XX.",
+  "gabarito_comentado": "VEJA O MODELO ABAIXO - DEVE SEGUIR EXATAMENTE ESTE FORMATO",
+  "referencia_abnt": "OBRIGATÓRIO: HALL, John E. Guyton e Hall: Tratado de Fisiologia Médica. 14. ed. Rio de Janeiro: Elsevier, 2021. Cap. X, p. XX-XX.",
   "fontes_consultadas": [
     {
       "tipo": "livro",
@@ -234,8 +239,8 @@ ${livrosRecomendados.map((l, i) => `${i + 1}. ${l}`).join('\n')}
       "autor": "John E. Hall",
       "edicao": "14ª edição",
       "ano": 2021,
-      "capitulo": "X",
-      "paginas": "XX-XX"
+      "capitulo": "26",
+      "paginas": "331-335"
     }
   ],
   "palavras_chave": ["palavra1", "palavra2", "palavra3"],
@@ -243,32 +248,31 @@ ${livrosRecomendados.map((l, i) => `${i + 1}. ${l}`).join('\n')}
 }
 \`\`\`
 
-## GABARITO COMENTADO - REQUISITOS
+## GABARITO COMENTADO - FORMATO OBRIGATÓRIO (SIGA ESTE MODELO!)
 
-O gabarito DEVE conter:
-1. **Por que a correta está certa** - Explicação completa com base científica
-2. **Por que cada errada está errada** - Análise de cada distrator
-3. **Conceito-chave** - O que o aluno precisa saber
-4. **Correlação clínica** - Quando aplicável, como isso aparece na prática
-5. **Dica de memorização** - Mnemônico ou associação útil
-6. **Referência ABNT** - Citação completa da fonte
+O gabarito DEVE seguir EXATAMENTE este formato:
 
-## EXEMPLO DE GABARITO BEM ELABORADO
+"A alternativa [X] está correta. De acordo com o [NOME DO LIVRO] (Cap. XX, p. XX-XX), [explicação detalhada do conceito com base científica do livro, explicando a fisiologia/patologia/anatomia envolvida].
 
-"A alternativa B está correta porque [explicação detalhada do conceito com base no livro-fonte].
+**Por que as outras estão incorretas:**
+- A) Incorreta porque [explicação detalhada].
+- B) Incorreta porque [explicação detalhada].
+- C) Incorreta porque [explicação detalhada].
+- D) Incorreta porque [explicação detalhada].
 
-A alternativa A está incorreta porque [explicação].
-A alternativa C está incorreta porque [explicação].
-A alternativa D está incorreta porque [explicação].
-A alternativa E está incorreta porque [explicação].
+**Conceito-chave:** [Resumo claro e direto do que o aluno PRECISA memorizar sobre este tema]
 
-**Conceito-chave:** [resumo do que precisa saber]
+**Correlação clínica:** [Como este conceito aparece na prática médica - dê exemplos de casos, doenças ou situações clínicas onde isso é relevante]
 
-**Correlação clínica:** [aplicação prática]
+**Dica de memorização:** [Mnemônico, associação visual, regra prática ou macete útil para lembrar do conceito]
 
-**Dica de memorização:** [mnemônico ou associação]
+**Fonte:** [NOME DO AUTOR]. [Título do Livro]. [Edição]. [Cidade]: [Editora], [Ano]. Cap. [X], p. [XX-XX]."
 
-**Referência:** HALL, John E. Guyton e Hall: Tratado de Fisiologia Médica. 14. ed. Rio de Janeiro: Elsevier, 2021. Cap. X, p. XX-XX."
+⚠️ **IMPORTANTE:**
+- O gabarito comentado deve ter MÍNIMO 400 palavras
+- DEVE citar o livro-fonte no início da explicação
+- DEVE terminar com a seção "**Fonte:**" formatada em ABNT
+- Cada seção (Conceito-chave, Correlação clínica, Dica de memorização, Fonte) é OBRIGATÓRIA
 
 ---
 

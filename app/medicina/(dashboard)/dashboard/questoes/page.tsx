@@ -41,6 +41,7 @@ interface Questao {
   ano: number | null
   dificuldade: number
   periodo_dificuldade: number | null
+  tipo_questao: string | null
   disciplina: { id: string, nome: string } | null
   assunto: { id: string, nome: string } | null
 }
@@ -232,8 +233,21 @@ export default function QuestoesPage() {
   const [bancasSelecionadas, setBancasSelecionadas] = useState<string[]>([])
   const [anosSelecionados, setAnosSelecionados] = useState<string[]>([])
   const [periodosSelecionados, setPeriodosSelecionados] = useState<string[]>([])
+  const [tipoQuestaoSelecionado, setTipoQuestaoSelecionado] = useState<string>('')
   const [naoRespondidas, setNaoRespondidas] = useState(false)
   const [erradas, setErradas] = useState(false)
+
+  // Tipos de questão disponíveis
+  const tiposQuestao = [
+    { id: 'multipla_escolha', nome: 'Múltipla Escolha' },
+    { id: 'caso_clinico', nome: 'Caso Clínico' },
+    { id: 'imagem', nome: 'Com Imagem' },
+    { id: 'verdadeiro_falso', nome: 'Afirmativa V/F' },
+    { id: 'associacao_colunas', nome: 'Associação de Colunas' },
+    { id: 'sequencia', nome: 'Sequência' },
+    { id: 'lacunas', nome: 'Preencher Lacunas' },
+    { id: 'multipla_resposta', nome: 'Múltipla Resposta' }
+  ]
 
   // Estado das questoes
   const [respostasUsuario, setRespostasUsuario] = useState<Record<string, RespostaUsuario>>({})
@@ -373,6 +387,9 @@ export default function QuestoesPage() {
       if (periodosSelecionados.length > 0) {
         params.set('periodos', periodosSelecionados.join(','))
       }
+      if (tipoQuestaoSelecionado) {
+        params.set('tiposQuestao', tipoQuestaoSelecionado)
+      }
       if (naoRespondidas) params.set('naoRespondidas', 'true')
       if (erradas) params.set('erradas', 'true')
 
@@ -411,7 +428,7 @@ export default function QuestoesPage() {
     } finally {
       setLoading(false)
     }
-  }, [user, disciplinasSelecionadas, assuntosSelecionados, bancasSelecionadas, anosSelecionados, periodosSelecionados, naoRespondidas, erradas, page])
+  }, [user, disciplinasSelecionadas, assuntosSelecionados, bancasSelecionadas, anosSelecionados, periodosSelecionados, tipoQuestaoSelecionado, naoRespondidas, erradas, page])
 
   const limparFiltros = () => {
     setDisciplinasSelecionadas([])
@@ -419,6 +436,7 @@ export default function QuestoesPage() {
     setBancasSelecionadas([])
     setAnosSelecionados([])
     setPeriodosSelecionados([])
+    setTipoQuestaoSelecionado('')
     setNaoRespondidas(false)
     setErradas(false)
     setPage(0)
@@ -430,6 +448,7 @@ export default function QuestoesPage() {
     bancasSelecionadas.length > 0 ||
     anosSelecionados.length > 0 ||
     periodosSelecionados.length > 0 ||
+    tipoQuestaoSelecionado !== '' ||
     naoRespondidas ||
     erradas
 
@@ -562,7 +581,7 @@ export default function QuestoesPage() {
             />
           </div>
 
-          {/* Linha 2: Bancas, Anos, Dificuldade */}
+          {/* Linha 2: Bancas, Anos, Período */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <MultiSelectDropdown
               label="Bancas"
@@ -587,6 +606,28 @@ export default function QuestoesPage() {
               onChange={setPeriodosSelecionados}
               placeholder="Todos os períodos"
             />
+          </div>
+
+          {/* Linha 3: Tipo de Questão */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="block text-white/60 text-sm mb-2">Tipo de Questão</label>
+              <div className="relative">
+                <select
+                  value={tipoQuestaoSelecionado}
+                  onChange={(e) => setTipoQuestaoSelecionado(e.target.value)}
+                  className="w-full appearance-none px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                >
+                  <option value="" className="bg-slate-800">Todos os tipos</option>
+                  {tiposQuestao.map(tipo => (
+                    <option key={tipo.id} value={tipo.id} className="bg-slate-800">
+                      {tipo.nome}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40 pointer-events-none" />
+              </div>
+            </div>
           </div>
 
           {/* Filtros extras */}
@@ -645,6 +686,11 @@ export default function QuestoesPage() {
                   {periodosSelecionados.length > 0 && (
                     <span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded-full text-xs">
                       {periodosSelecionados.length} período(s)
+                    </span>
+                  )}
+                  {tipoQuestaoSelecionado && (
+                    <span className="px-2 py-1 bg-pink-500/20 text-pink-400 rounded-full text-xs">
+                      {tiposQuestao.find(t => t.id === tipoQuestaoSelecionado)?.nome}
                     </span>
                   )}
                 </div>
@@ -742,6 +788,11 @@ export default function QuestoesPage() {
                         {periodo && (
                           <span className={`px-2 py-1 text-xs rounded-full ${periodo.cor}`}>
                             {periodo.label}
+                          </span>
+                        )}
+                        {questao.tipo_questao && questao.tipo_questao !== 'multipla_escolha' && (
+                          <span className="px-2 py-1 bg-pink-500/20 text-pink-400 text-xs rounded-full">
+                            {tiposQuestao.find(t => t.id === questao.tipo_questao)?.nome || questao.tipo_questao}
                           </span>
                         )}
                         {jaRespondeu && (

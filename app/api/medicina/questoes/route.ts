@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const anos = searchParams.get('anos')?.split(',').filter(Boolean).map(a => parseInt(a)) || []
     const dificuldades = searchParams.get('dificuldades')?.split(',').filter(Boolean).map(d => parseInt(d)) || []
     const periodos = searchParams.get('periodos')?.split(',').filter(Boolean).map(p => parseInt(p)) || []
+    const tiposQuestao = searchParams.get('tiposQuestao')?.split(',').filter(Boolean) || []
 
     // Suporte para filtros únicos (retrocompatibilidade)
     const disciplinaId = searchParams.get('disciplinaId')
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest) {
         prova,
         dificuldade,
         periodo_dificuldade,
+        tipo_questao,
         total_respostas,
         total_acertos,
         comentario_ia,
@@ -91,6 +93,11 @@ export async function GET(request: NextRequest) {
     // Filtrar por período
     if (periodos.length > 0) {
       query = query.in('periodo_dificuldade', periodos)
+    }
+
+    // Filtrar por tipo de questão
+    if (tiposQuestao.length > 0) {
+      query = query.in('tipo_questao', tiposQuestao)
     }
 
     // Filtrar não respondidas ou erradas

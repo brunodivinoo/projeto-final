@@ -8,17 +8,44 @@ import {
   Search,
   Filter,
   ChevronDown,
+  ChevronUp,
   CheckCircle,
   Trash2,
   Loader2,
   Sparkles,
   AlertTriangle,
-  Clock
+  Clock,
+  BookOpen,
+  X
 } from 'lucide-react'
+
+interface Alternativa {
+  letra: string
+  texto: string
+  correta?: boolean
+}
+
+interface FonteConsultada {
+  tipo: string
+  titulo: string
+  autor: string
+  edicao?: string
+  ano?: number
+  capitulo?: string
+  paginas?: string
+}
 
 interface Questao {
   id: string
   enunciado: string
+  tipo_questao?: string
+  alternativas?: Alternativa[]
+  resposta_correta?: string
+  gabarito_comentado?: string
+  referencia_abnt?: string
+  fontes_consultadas?: FonteConsultada[]
+  palavras_chave?: string[]
+  dica_estudo?: string
   disciplina_id: string
   assunto_id: string
   subassunto_id?: string
@@ -49,6 +76,9 @@ export default function AdminQuestoesPage() {
   })
   const [paginaAtual, setPaginaAtual] = useState(1)
   const [total, setTotal] = useState(0)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [questaoDetalhe, setQuestaoDetalhe] = useState<Questao | null>(null)
+  const [loadingDetalhe, setLoadingDetalhe] = useState(false)
   const porPagina = 20
 
   useEffect(() => {
@@ -68,9 +98,31 @@ export default function AdminQuestoesPage() {
     setDisciplinas(data || [])
   }
 
+  async function expandQuestao(id: string) {
+    if (expandedId === id) {
+      setExpandedId(null)
+      setQuestaoDetalhe(null)
+      return
+    }
+
+    setExpandedId(id)
+    setLoadingDetalhe(true)
+
+    const { data, error } = await supabase
+      .from('questoes_med')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (!error && data) {
+      setQuestaoDetalhe(data as Questao)
+    }
+    setLoadingDetalhe(false)
+  }
+
   async function loadQuestoes() {
     setLoading(true)
-    
+
     let query = supabase
       .from('questoes_med')
       .select(`
@@ -284,74 +336,201 @@ export default function AdminQuestoesPage() {
         ) : (
           <div className="divide-y divide-white/10">
             {questoes.map((questao) => (
-              <div key={questao.id} className="p-4 hover:bg-white/5 transition-colors">
-                <div className="flex items-start gap-4">
-                  {/* Status indicators */}
-                  <div className="flex flex-col items-center gap-1 pt-1">
-                    {questao.gerado_por_ia && (
-                      <span title="Gerado por IA" className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                      </span>
-                    )}
-                    {questao.revisado ? (
-                      <span title="Revisada" className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
-                        <CheckCircle className="w-3.5 h-3.5 text-green-400" />
-                      </span>
-                    ) : (
-                      <span title="Pendente revisão" className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                      </span>
-                    )}
-                  </div>
+              <div key={questao.id} className="hover:bg-white/5 transition-colors">
+                <div
+                  className="p-4 cursor-pointer"
+                  onClick={() => expandQuestao(questao.id)}
+                >
+                  <div className="flex items-start gap-4">
+                    {/* Status indicators */}
+                    <div className="flex flex-col items-center gap-1 pt-1">
+                      {questao.gerado_por_ia && (
+                        <span title="Gerado por IA" className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                        </span>
+                      )}
+                      {questao.revisado ? (
+                        <span title="Revisada" className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+                        </span>
+                      ) : (
+                        <span title="Pendente revisão" className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                        </span>
+                      )}
+                    </div>
 
-                  {/* Conteúdo */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm line-clamp-2 mb-2">
-                      {questao.enunciado}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded">
-                        {questao.disciplina_nome || 'Sem disciplina'}
-                      </span>
-                      {questao.assunto_nome && (
-                        <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded">
-                          {questao.assunto_nome}
+                    {/* Conteúdo */}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-white text-sm mb-2 ${expandedId === questao.id ? '' : 'line-clamp-2'}`}>
+                        {questao.enunciado}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded">
+                          {questao.disciplina_nome || 'Sem disciplina'}
                         </span>
-                      )}
-                      {questao.periodo_dificuldade && (
-                        <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-300 rounded">
-                          {questao.periodo_dificuldade}º período
+                        {questao.assunto_nome && (
+                          <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded">
+                            {questao.assunto_nome}
+                          </span>
+                        )}
+                        {questao.periodo_dificuldade && (
+                          <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-300 rounded">
+                            {questao.periodo_dificuldade}º período
+                          </span>
+                        )}
+                        <span className="text-white/40 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {new Date(questao.created_at).toLocaleDateString('pt-BR')}
                         </span>
-                      )}
-                      <span className="text-white/40 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(questao.created_at).toLocaleDateString('pt-BR')}
-                      </span>
+                      </div>
+                    </div>
+
+                    {/* Expandir/Contrair */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleRevisado(questao.id, questao.revisado)
+                        }}
+                        className={`p-2 rounded-lg transition-colors ${
+                          questao.revisado
+                            ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                            : 'bg-white/5 text-white/60 hover:bg-white/10'
+                        }`}
+                        title={questao.revisado ? 'Marcar como pendente' : 'Marcar como revisada'}
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deleteQuestao(questao.id)
+                        }}
+                        className="p-2 rounded-lg bg-white/5 text-red-400 hover:bg-red-500/20 transition-colors"
+                        title="Excluir"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <div className="p-2 text-white/40">
+                        {expandedId === questao.id ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </div>
                   </div>
-
-                  {/* Ações */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => toggleRevisado(questao.id, questao.revisado)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        questao.revisado
-                          ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                          : 'bg-white/5 text-white/60 hover:bg-white/10'
-                      }`}
-                      title={questao.revisado ? 'Marcar como pendente' : 'Marcar como revisada'}
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => deleteQuestao(questao.id)}
-                      className="p-2 rounded-lg bg-white/5 text-red-400 hover:bg-red-500/20 transition-colors"
-                      title="Excluir"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
                 </div>
+
+                {/* Detalhes expandidos */}
+                {expandedId === questao.id && (
+                  <div className="px-4 pb-4 border-t border-white/10 bg-white/5">
+                    {loadingDetalhe ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-cyan-500" />
+                      </div>
+                    ) : questaoDetalhe ? (
+                      <div className="pt-4 space-y-4">
+                        {/* Alternativas */}
+                        {questaoDetalhe.alternativas && questaoDetalhe.alternativas.length > 0 && (
+                          <div>
+                            <h4 className="text-white/60 text-sm font-medium mb-2">Alternativas:</h4>
+                            <div className="space-y-2">
+                              {questaoDetalhe.alternativas.map((alt, idx) => (
+                                <div
+                                  key={idx}
+                                  className={`p-3 rounded-lg ${
+                                    alt.correta || alt.letra === questaoDetalhe.resposta_correta
+                                      ? 'bg-green-500/20 border border-green-500/30'
+                                      : 'bg-white/5 border border-white/10'
+                                  }`}
+                                >
+                                  <span className={`font-bold ${
+                                    alt.correta || alt.letra === questaoDetalhe.resposta_correta
+                                      ? 'text-green-400'
+                                      : 'text-white/60'
+                                  }`}>
+                                    {alt.letra})
+                                  </span>
+                                  <span className="text-white ml-2">{alt.texto}</span>
+                                  {(alt.correta || alt.letra === questaoDetalhe.resposta_correta) && (
+                                    <span className="ml-2 text-xs text-green-400">(Correta)</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Gabarito Comentado */}
+                        {questaoDetalhe.gabarito_comentado && (
+                          <div>
+                            <h4 className="text-white/60 text-sm font-medium mb-2 flex items-center gap-2">
+                              <BookOpen className="w-4 h-4" />
+                              Gabarito Comentado:
+                            </h4>
+                            <div className="p-4 bg-slate-800/50 rounded-lg border border-white/10">
+                              <p className="text-white/90 whitespace-pre-wrap text-sm leading-relaxed">
+                                {questaoDetalhe.gabarito_comentado}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Referência ABNT */}
+                        {questaoDetalhe.referencia_abnt && (
+                          <div>
+                            <h4 className="text-white/60 text-sm font-medium mb-2">Referência (ABNT):</h4>
+                            <p className="text-cyan-300 text-sm italic">
+                              {questaoDetalhe.referencia_abnt}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Fontes Consultadas */}
+                        {questaoDetalhe.fontes_consultadas && questaoDetalhe.fontes_consultadas.length > 0 && (
+                          <div>
+                            <h4 className="text-white/60 text-sm font-medium mb-2">Fontes Consultadas:</h4>
+                            <ul className="space-y-1">
+                              {questaoDetalhe.fontes_consultadas.map((fonte, idx) => (
+                                <li key={idx} className="text-white/70 text-sm">
+                                  • {fonte.autor}. <span className="italic">{fonte.titulo}</span>
+                                  {fonte.edicao && ` (${fonte.edicao})`}
+                                  {fonte.capitulo && `, Cap. ${fonte.capitulo}`}
+                                  {fonte.paginas && `, p. ${fonte.paginas}`}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Dica de Estudo */}
+                        {questaoDetalhe.dica_estudo && (
+                          <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                            <h4 className="text-amber-400 text-sm font-medium mb-1">💡 Dica de Estudo:</h4>
+                            <p className="text-white/80 text-sm">{questaoDetalhe.dica_estudo}</p>
+                          </div>
+                        )}
+
+                        {/* Palavras-chave */}
+                        {questaoDetalhe.palavras_chave && questaoDetalhe.palavras_chave.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {questaoDetalhe.palavras_chave.map((pc, idx) => (
+                              <span key={idx} className="px-2 py-1 bg-white/10 text-white/60 rounded text-xs">
+                                #{pc}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="py-4 text-center text-white/40">
+                        Não foi possível carregar os detalhes
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -398,12 +398,19 @@ export function QuestaoGenerator() {
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-3 bg-white/5 rounded-lg border border-white/10">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-3 bg-slate-800/50 rounded-lg border border-white/10">
               {disciplinas.length === 0 ? (
                 <p className="text-white/40 text-sm col-span-full">Nenhuma disciplina cadastrada</p>
               ) : (
                 disciplinas.map(d => (
-                  <label key={d.id} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors">
+                  <label
+                    key={d.id}
+                    className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg transition-colors ${
+                      disciplinasSelecionadas.includes(d.id)
+                        ? 'bg-cyan-500/20 border border-cyan-500/30'
+                        : 'hover:bg-white/10 border border-transparent'
+                    }`}
+                  >
                     <input
                       type="checkbox"
                       checked={disciplinasSelecionadas.includes(d.id)}
@@ -418,9 +425,9 @@ export function QuestaoGenerator() {
                         }
                       }}
                       disabled={gerando}
-                      className="rounded text-cyan-500 bg-white/10 border-white/20 focus:ring-cyan-500"
+                      className="rounded text-cyan-500 bg-white/10 border-white/30 focus:ring-cyan-500 flex-shrink-0"
                     />
-                    <span className="text-white/80 text-sm truncate">{d.nome}</span>
+                    <span className="text-white text-sm">{d.nome}</span>
                   </label>
                 ))
               )}
@@ -509,12 +516,19 @@ export function QuestaoGenerator() {
                   </button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-3 bg-white/5 rounded-lg border border-white/10">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-3 bg-slate-800/50 rounded-lg border border-white/10">
                 {assuntosFiltrados.length === 0 ? (
                   <p className="text-white/40 text-sm col-span-full">Nenhum assunto cadastrado para esta disciplina</p>
                 ) : (
                   assuntosFiltrados.map(a => (
-                    <label key={a.id} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors">
+                    <label
+                      key={a.id}
+                      className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg transition-colors ${
+                        assuntosSelecionados.includes(a.id)
+                          ? 'bg-cyan-500/20 border border-cyan-500/30'
+                          : 'hover:bg-white/10 border border-transparent'
+                      }`}
+                    >
                       <input
                         type="checkbox"
                         checked={assuntosSelecionados.includes(a.id)}
@@ -526,9 +540,9 @@ export function QuestaoGenerator() {
                           }
                         }}
                         disabled={gerando}
-                        className="rounded text-cyan-500 bg-white/10 border-white/20 focus:ring-cyan-500"
+                        className="rounded text-cyan-500 bg-white/10 border-white/30 focus:ring-cyan-500 flex-shrink-0"
                       />
-                      <span className="text-white/80 text-sm truncate">{a.nome}</span>
+                      <span className="text-white text-sm">{a.nome}</span>
                     </label>
                   ))
                 )}
