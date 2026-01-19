@@ -1,20 +1,16 @@
-# Ignorar pastas de materiais de estudo
-Medicina/
+# Ignorar pasta de materiais de estudo (na raiz, não no app)
+# IMPORTANTE: Usar caminho específico para não ignorar app/medicina
+/Medicina/
 
 # Ignorar scripts de desenvolvimento
-scripts/
-check-tables.js
-criar-tabela-questoes.js
-test-db-access.js
-verificar-tabela.js
+/scripts/
+/check-tables.js
+/criar-tabela-questoes.js
+/test-db-access.js
+/verificar-tabela.js
 
 # Ignorar documentação
-docs/
-
-# Ignorar arquivos grandes
-*.pdf
-*.xlsx
-*.docx
+/docs/
 
 # Ignorar Claude settings
-.claude/
+/.claude/
