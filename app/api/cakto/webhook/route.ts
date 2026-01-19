@@ -2,6 +2,40 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { CAKTO_EVENTS, verifyWebhookSignature } from '@/lib/cakto'
 
+// =============================================
+// MAPEAMENTO DE PLANOS - UNIFICADO
+// =============================================
+// Nomenclatura padrão: gratuito | premium | residencia
+// Legacy (para manter compatibilidade): FREE | ESTUDA_PRO
+// =============================================
+
+type PlanoUnificado = 'gratuito' | 'premium' | 'residencia'
+type PlanoLegacy = 'FREE' | 'ESTUDA_PRO'
+
+// Mapear valor do pedido para plano
+// Ajuste os valores conforme os produtos cadastrados no Cakto
+function mapearValorParaPlano(valorCentavos: number): PlanoUnificado {
+  const valorReais = valorCentavos / 100
+
+  // R$140+ = Residência (R$150)
+  if (valorReais >= 140) return 'residencia'
+  // R$50+ = Premium (R$60)
+  if (valorReais >= 50) return 'premium'
+  // Padrão = gratuito (não deveria chegar aqui em compra aprovada)
+  return 'gratuito'
+}
+
+// Mapear plano unificado para legacy (para tabela profiles)
+function planoParaLegacy(plano: PlanoUnificado): PlanoLegacy {
+  switch (plano) {
+    case 'residencia':
+    case 'premium':
+      return 'ESTUDA_PRO' // Ambos são PRO no sistema legacy
+    default:
+      return 'FREE'
+  }
+}
+
 // Tipos para o webhook
 interface CaktoCustomer {
   email: string
@@ -14,9 +48,11 @@ interface CaktoOrder {
   id: string
   refId?: string
   status: string
-  amount: number
+  amount: number // em centavos
   customer: CaktoCustomer
   utm_content?: string
+  product_id?: string
+  product_name?: string
 }
 
 interface CaktoSubscription {
@@ -48,7 +84,11 @@ export async function POST(request: NextRequest) {
     const order = data.data?.order as CaktoOrder | undefined
     const subscription = data.data?.subscription as CaktoSubscription | undefined
 
-    console.log(`[Cakto Webhook] Evento recebido: ${event}`)
+    console.log(`[Cakto Webhook] Evento recebido: ${event}`, {
+      order_id: order?.id,
+      amount: order?.amount,
+      email: order?.customer?.email
+    })
 
     // Processar eventos
     switch (event) {
@@ -103,12 +143,21 @@ async function handlePurchaseApproved(order?: CaktoOrder, subscription?: CaktoSu
   const email = order.customer.email
   const userId = order.utm_content // userId passado via UTM
 
-  console.log(`[Cakto] Compra aprovada para: ${email}`)
+  // Determinar plano baseado no valor
+  const planoUnificado = mapearValorParaPlano(order.amount)
+  const planoLegacy = planoParaLegacy(planoUnificado)
+
+  console.log(`[Cakto] Compra aprovada para: ${email}`, {
+    valor: order.amount / 100,
+    plano_unificado: planoUnificado,
+    plano_legacy: planoLegacy
+  })
 
   // Buscar usuario pelo email ou userId
   let profileId = userId
 
   if (!profileId) {
+    // Tentar buscar na tabela profiles
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('id')
@@ -116,35 +165,62 @@ async function handlePurchaseApproved(order?: CaktoOrder, subscription?: CaktoSu
       .single()
 
     profileId = profile?.id
+
+    // Se não encontrou, tentar na tabela profiles_med
+    if (!profileId) {
+      const { data: profileMed } = await supabaseAdmin
+        .from('profiles_med')
+        .select('id')
+        .eq('email', email)
+        .single()
+
+      profileId = profileMed?.id
+    }
   }
 
   if (!profileId) {
     console.error(`[Cakto] Usuario nao encontrado: ${email}`)
     // Salvar para processamento posterior
-    await saveUnmatchedPayment(order, subscription)
+    await saveUnmatchedPayment(order, subscription, planoUnificado)
     return
   }
 
-  // Atualizar plano do usuario para PRO
-  const { error: updateError } = await supabaseAdmin
+  // =============================================
+  // ATUALIZAR AMBAS AS TABELAS (SINCRONIZAÇÃO)
+  // =============================================
+
+  // 1. Atualizar tabela profiles (sistema legacy)
+  const { error: updateLegacyError } = await supabaseAdmin
     .from('profiles')
     .update({
-      plano: 'ESTUDA_PRO',
+      plano: planoLegacy,
       updated_at: new Date().toISOString(),
     })
     .eq('id', profileId)
 
-  if (updateError) {
-    console.error('[Cakto] Erro ao atualizar plano:', updateError)
-    return
+  if (updateLegacyError) {
+    console.error('[Cakto] Erro ao atualizar profiles (legacy):', updateLegacyError)
   }
 
-  // Registrar assinatura
-  const { error: subError } = await supabaseAdmin
+  // 2. Atualizar tabela profiles_med (sistema PreparaMed)
+  const { error: updateMedError } = await supabaseAdmin
+    .from('profiles_med')
+    .update({
+      plano: planoUnificado,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', profileId)
+
+  if (updateMedError) {
+    console.error('[Cakto] Erro ao atualizar profiles_med:', updateMedError)
+  }
+
+  // 3. Registrar assinatura na tabela assinaturas (legacy)
+  await supabaseAdmin
     .from('assinaturas')
     .upsert({
       user_id: profileId,
-      plano: 'ESTUDA_PRO',
+      plano: planoLegacy,
       status: 'active',
       cakto_order_id: order.id,
       cakto_subscription_id: subscription?.id,
@@ -156,11 +232,25 @@ async function handlePurchaseApproved(order?: CaktoOrder, subscription?: CaktoSu
       onConflict: 'user_id'
     })
 
-  if (subError) {
-    console.error('[Cakto] Erro ao registrar assinatura:', subError)
-  }
+  // 4. Registrar assinatura na tabela assinaturas_med (PreparaMed)
+  await supabaseAdmin
+    .from('assinaturas_med')
+    .upsert({
+      user_id: profileId,
+      plano: planoUnificado,
+      status: 'ativa',
+      data_inicio: new Date().toISOString(),
+      proximo_pagamento: subscription?.nextBillingDate,
+      valor_mensal: order.amount / 100,
+      gateway: 'cakto',
+      gateway_subscription_id: subscription?.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }, {
+      onConflict: 'user_id'
+    })
 
-  console.log(`[Cakto] Usuario ${profileId} atualizado para ESTUDA_PRO`)
+  console.log(`[Cakto] Usuario ${profileId} atualizado para ${planoUnificado} (${planoLegacy})`)
 }
 
 // Processar renovacao de assinatura
@@ -178,12 +268,22 @@ async function handleSubscriptionRenewed(order?: CaktoOrder, subscription?: Cakt
 
   if (!profile?.id) return
 
-  // Atualizar assinatura
+  // Atualizar assinatura legacy
   await supabaseAdmin
     .from('assinaturas')
     .update({
       status: 'active',
       proxima_cobranca: subscription?.nextBillingDate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', profile.id)
+
+  // Atualizar assinatura_med
+  await supabaseAdmin
+    .from('assinaturas_med')
+    .update({
+      status: 'ativa',
+      proximo_pagamento: subscription?.nextBillingDate,
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', profile.id)
@@ -206,7 +306,11 @@ async function handleSubscriptionCanceled(order?: CaktoOrder) {
 
   if (!profile?.id) return
 
-  // Downgrade para FREE
+  // =============================================
+  // DOWNGRADE PARA GRATUITO EM AMBAS TABELAS
+  // =============================================
+
+  // 1. Downgrade em profiles (legacy)
   await supabaseAdmin
     .from('profiles')
     .update({
@@ -215,12 +319,31 @@ async function handleSubscriptionCanceled(order?: CaktoOrder) {
     })
     .eq('id', profile.id)
 
-  // Atualizar assinatura
+  // 2. Downgrade em profiles_med
+  await supabaseAdmin
+    .from('profiles_med')
+    .update({
+      plano: 'gratuito',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', profile.id)
+
+  // 3. Atualizar assinatura legacy
   await supabaseAdmin
     .from('assinaturas')
     .update({
       status: 'canceled',
       cancelada_em: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', profile.id)
+
+  // 4. Atualizar assinatura_med
+  await supabaseAdmin
+    .from('assinaturas_med')
+    .update({
+      status: 'cancelada',
+      data_fim: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', profile.id)
@@ -252,11 +375,23 @@ async function handleRenewalRefused(order?: CaktoOrder) {
     })
     .eq('user_id', profile.id)
 
+  await supabaseAdmin
+    .from('assinaturas_med')
+    .update({
+      status: 'pagamento_pendente',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', profile.id)
+
   console.log(`[Cakto] Falha na renovacao para: ${email}`)
 }
 
 // Salvar pagamento nao associado para processamento manual
-async function saveUnmatchedPayment(order: CaktoOrder, subscription?: CaktoSubscription) {
+async function saveUnmatchedPayment(
+  order: CaktoOrder,
+  subscription?: CaktoSubscription,
+  plano?: PlanoUnificado
+) {
   await supabaseAdmin
     .from('pagamentos_pendentes')
     .insert({
@@ -264,6 +399,7 @@ async function saveUnmatchedPayment(order: CaktoOrder, subscription?: CaktoSubsc
       cakto_order_id: order.id,
       cakto_subscription_id: subscription?.id,
       valor: order.amount,
+      plano_detectado: plano,
       payload: JSON.stringify({ order, subscription }),
       created_at: new Date().toISOString(),
     })

@@ -111,7 +111,7 @@ export default function IAPage() {
   const [showExamAnalyzer, setShowExamAnalyzer] = useState(false)
 
   // Gerenciar artefatos por conversa e modo de chat
-  const { clearArtifacts, setCurrentConversa, setCurrentChatMode } = useArtifactsStore()
+  const { clearArtifacts, setCurrentConversa, setCurrentChatMode, setChatModeFilter } = useArtifactsStore()
 
   // Store de modos com abas separadas
   const {
@@ -148,6 +148,8 @@ export default function IAPage() {
   const trocarModo = useCallback((novoModo: ChatMode, manterConversa: boolean = false) => {
     trocarModoBase(novoModo)
     setCurrentChatMode(novoModo)
+    // Sincronizar filtro de artefatos com o modo atual
+    setChatModeFilter(novoModo as StoreChatMode)
     // Sincronizar com store de modos
     setStoreMode(novoModo as StoreChatMode)
 
@@ -167,7 +169,7 @@ export default function IAPage() {
     } else {
       setConversaAtual(null)
     }
-  }, [trocarModoBase, setCurrentChatMode, setStoreMode, activeConversationByMode, conversaAtual, mensagens.length])
+  }, [trocarModoBase, setCurrentChatMode, setChatModeFilter, setStoreMode, activeConversationByMode, conversaAtual, mensagens.length])
 
   // Função específica para trocar modo dentro da conversa
   const trocarModoNaConversa = useCallback((novoModo: ChatMode) => {
@@ -264,6 +266,12 @@ export default function IAPage() {
     fetchUso()
     fetchConversas()
   }, [fetchUso, fetchConversas])
+
+  // Sincronizar filtro de artefatos quando o modo de chat muda
+  useEffect(() => {
+    setCurrentChatMode(chatMode)
+    setChatModeFilter(chatMode as StoreChatMode)
+  }, [chatMode, setCurrentChatMode, setChatModeFilter])
 
   // O scroll automático agora é gerenciado pelo hook useSmartScroll
   // Permite scroll manual durante streaming sem travar
