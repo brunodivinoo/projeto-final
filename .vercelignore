@@ -1,0 +1,20 @@
+# Ignorar pastas de materiais de estudo
+Medicina/
+
+# Ignorar scripts de desenvolvimento
+scripts/
+check-tables.js
+criar-tabela-questoes.js
+test-db-access.js
+verificar-tabela.js
+
+# Ignorar documentação
+docs/
+
+# Ignorar arquivos grandes
+*.pdf
+*.xlsx
+*.docx
+
+# Ignorar Claude settings
+.claude/

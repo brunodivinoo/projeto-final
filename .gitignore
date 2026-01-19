@@ -67,4 +67,15 @@ Thumbs.db
 # Vercel
 .vercel
 
-.vercel
+# Pasta de materiais de medicina (arquivos grandes - não pertence ao código)
+Medicina/
+
+# Scripts temporários
+scripts/
+check-tables.js
+criar-tabela-questoes.js
+test-db-access.js
+verificar-tabela.js
+
+# Documentação gerada
+docs/
