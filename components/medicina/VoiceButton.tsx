@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Mic, MicOff, Volume2, VolumeX, Loader2, AlertCircle } from 'lucide-react'
+import { Mic, MicOff, Volume2, VolumeX, Loader2, AlertCircle, Check } from 'lucide-react'
 import { useSpeech } from '@/hooks/useSpeech'
 
 interface VoiceButtonProps {
@@ -34,6 +34,8 @@ export function VoiceButton({
   } = useSpeech()
 
   const [recordingTime, setRecordingTime] = useState(0)
+  const [lastTranscription, setLastTranscription] = useState<string | null>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   // Timer de gravação
   useEffect(() => {
@@ -52,8 +54,16 @@ export function VoiceButton({
 
     if (isRecording) {
       const text = await stopRecording()
-      if (text) onTranscription(text)
+      if (text) {
+        setLastTranscription(text)
+        setShowSuccess(true)
+        onTranscription(text)
+        // Esconder sucesso após 3 segundos
+        setTimeout(() => setShowSuccess(false), 3000)
+      }
     } else {
+      setLastTranscription(null)
+      setShowSuccess(false)
       startRecording()
     }
   }
@@ -78,24 +88,44 @@ export function VoiceButton({
   if (variant === 'compact') {
     return (
       <div className={`flex items-center gap-1 ${className}`}>
-        <button
-          onClick={handleMicClick}
-          disabled={disabled || isTranscribing}
-          className={`p-2 rounded-lg transition-all ${
-            isRecording
-              ? 'bg-red-500 text-white animate-pulse'
-              : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
-          title={isRecording ? 'Parar gravação' : 'Gravar áudio'}
-        >
-          {isTranscribing ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : isRecording ? (
-            <MicOff className="w-4 h-4" />
-          ) : (
-            <Mic className="w-4 h-4" />
+        <div className="relative">
+          <button
+            onClick={handleMicClick}
+            disabled={disabled || isTranscribing}
+            className={`p-2 rounded-lg transition-all ${
+              isRecording
+                ? 'bg-red-500 text-white animate-pulse'
+                : showSuccess
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+            title={isRecording ? 'Parar gravação' : isTranscribing ? 'Transcrevendo...' : 'Gravar áudio'}
+          >
+            {isTranscribing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : showSuccess ? (
+              <Check className="w-4 h-4" />
+            ) : isRecording ? (
+              <MicOff className="w-4 h-4" />
+            ) : (
+              <Mic className="w-4 h-4" />
+            )}
+          </button>
+          {/* Indicador de gravação */}
+          {isRecording && (
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
           )}
-        </button>
+        </div>
+
+        {/* Toast de transcrição */}
+        {showSuccess && lastTranscription && (
+          <div className="absolute bottom-full mb-2 left-0 right-0 mx-auto max-w-xs bg-emerald-500/90 text-white text-xs px-3 py-2 rounded-lg shadow-lg z-50">
+            <div className="flex items-center gap-2">
+              <Check className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">&quot;{lastTranscription}&quot;</span>
+            </div>
+          </div>
+        )}
 
         {showSpeakButton && textToSpeak && (
           <button

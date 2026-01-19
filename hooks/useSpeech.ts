@@ -61,9 +61,19 @@ export function useSpeech() {
         const mimeType = mediaRecorderRef.current?.mimeType || 'audio/webm'
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType })
 
+        // Verificar se há áudio gravado
+        if (audioBlob.size < 100) {
+          setError('Gravação muito curta. Fale por mais tempo.')
+          setIsTranscribing(false)
+          resolve('')
+          return
+        }
+
+        console.log(`Áudio gravado: ${audioBlob.size} bytes, tipo: ${mimeType}`)
+
         // Converter para formato compatível se necessário
         const formData = new FormData()
-        const extension = mimeType.includes('webm') ? 'webm' : 'mp4'
+        const extension = mimeType.includes('webm') ? 'webm' : mimeType.includes('mp4') ? 'mp4' : 'wav'
         formData.append('audio', audioBlob, `audio.${extension}`)
 
         try {
@@ -72,15 +82,22 @@ export function useSpeech() {
             body: formData,
           })
 
+          const data = await response.json()
+
           if (!response.ok) {
-            throw new Error('Erro na transcrição')
+            throw new Error(data.error || 'Erro na transcrição')
           }
 
-          const data = await response.json()
-          resolve(data.text || '')
+          if (data.warning) {
+            setError(data.warning)
+          }
+
+          const text = data.text || ''
+          console.log(`Texto transcrito: "${text}"`)
+          resolve(text)
         } catch (err) {
           console.error('Erro na transcrição:', err)
-          setError('Erro ao transcrever áudio. Tente novamente.')
+          setError(err instanceof Error ? err.message : 'Erro ao transcrever áudio. Tente novamente.')
           resolve('')
         } finally {
           setIsTranscribing(false)
