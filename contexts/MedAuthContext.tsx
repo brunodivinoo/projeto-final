@@ -20,9 +20,10 @@ export interface ProfileMED {
   tempo_estudo_segundos: number
   created_at: string
   updated_at: string
-  // Campos de Trial
-  trial_started_at: string | null
-  trial_used: boolean
+  // Campos de Trial - TEMPO ATIVO (não corrido)
+  trial_started_at: string | null // Quando iniciou o trial
+  trial_used: boolean // Se já usou todo o trial
+  trial_tempo_usado_segundos: number // Tempo total usado em segundos (acumulativo)
 }
 
 export interface LimitesUsoMED {
@@ -137,13 +138,14 @@ export interface AssinaturaMED {
   proximo_pagamento: string | null
 }
 
-// Status do Trial
+// Status do Trial - TEMPO ATIVO
 export interface TrialStatus {
   ativo: boolean
   tempoRestante: number // em milissegundos
   tempoRestanteFormatado: string // "3h 45min"
   percentualUsado: number
   expirado: boolean
+  tempoUsadoSegundos: number // Total de segundos já usados
 }
 
 type MedAuthContextType = {
@@ -172,7 +174,8 @@ const defaultTrialStatus: TrialStatus = {
   tempoRestante: 0,
   tempoRestanteFormatado: '0h 0min',
   percentualUsado: 100,
-  expirado: true
+  expirado: true,
+  tempoUsadoSegundos: 0
 }
 
 const MedAuthContext = createContext<MedAuthContextType>({
@@ -208,39 +211,86 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
   const plano = profile?.plano || 'gratuito'
   const limitesPlano = LIMITES_PLANO[plano]
 
-  // Calcular status do trial
+  // Calcular status do trial - BASEADO EM TEMPO ATIVO
   const calcularTrialStatus = useCallback((): TrialStatus => {
+    const DURACAO_TRIAL_SEGUNDOS = 4 * 60 * 60 // 4 horas em segundos
+
     if (!profile || plano !== 'gratuito') {
-      return { ativo: false, tempoRestante: 0, tempoRestanteFormatado: '0h 0min', percentualUsado: 100, expirado: true }
+      return { ativo: false, tempoRestante: 0, tempoRestanteFormatado: '0h 0min', percentualUsado: 100, expirado: true, tempoUsadoSegundos: 0 }
     }
-    if (profile.trial_used || !profile.trial_started_at) {
-      return { ativo: false, tempoRestante: 0, tempoRestanteFormatado: '0h 0min', percentualUsado: 100, expirado: !profile.trial_started_at }
+
+    // Ainda não iniciou o trial
+    if (!profile.trial_started_at) {
+      return { ativo: false, tempoRestante: DURACAO_TRIAL_SEGUNDOS * 1000, tempoRestanteFormatado: '4h 0min', percentualUsado: 0, expirado: false, tempoUsadoSegundos: 0 }
     }
-    const inicio = new Date(profile.trial_started_at).getTime()
-    const duracao = 4 * 60 * 60 * 1000 // 4 horas
-    const agora = Date.now()
-    const restante = Math.max(0, inicio + duracao - agora)
-    if (restante <= 0) {
-      return { ativo: false, tempoRestante: 0, tempoRestanteFormatado: '0h 0min', percentualUsado: 100, expirado: true }
+
+    // Já usou todo o trial
+    if (profile.trial_used) {
+      return { ativo: false, tempoRestante: 0, tempoRestanteFormatado: '0h 0min', percentualUsado: 100, expirado: true, tempoUsadoSegundos: DURACAO_TRIAL_SEGUNDOS }
     }
-    const horas = Math.floor(restante / (60 * 60 * 1000))
-    const minutos = Math.floor((restante % (60 * 60 * 1000)) / (60 * 1000))
+
+    // Calcular tempo restante baseado no tempo USADO (não corrido)
+    const tempoUsado = profile.trial_tempo_usado_segundos || 0
+    const tempoRestanteSegundos = Math.max(0, DURACAO_TRIAL_SEGUNDOS - tempoUsado)
+
+    if (tempoRestanteSegundos <= 0) {
+      return { ativo: false, tempoRestante: 0, tempoRestanteFormatado: '0h 0min', percentualUsado: 100, expirado: true, tempoUsadoSegundos: tempoUsado }
+    }
+
+    const horas = Math.floor(tempoRestanteSegundos / 3600)
+    const minutos = Math.floor((tempoRestanteSegundos % 3600) / 60)
+
     return {
       ativo: true,
-      tempoRestante: restante,
+      tempoRestante: tempoRestanteSegundos * 1000, // Converter para ms
       tempoRestanteFormatado: `${horas}h ${minutos}min`,
-      percentualUsado: Math.round(((duracao - restante) / duracao) * 100),
-      expirado: false
+      percentualUsado: Math.round((tempoUsado / DURACAO_TRIAL_SEGUNDOS) * 100),
+      expirado: false,
+      tempoUsadoSegundos: tempoUsado
     }
   }, [profile, plano])
 
-  // Atualizar trial status periodicamente
+  // Atualizar trial status e incrementar tempo usado (heartbeat)
   useEffect(() => {
     const updateTrial = () => setTrialStatus(calcularTrialStatus())
     updateTrial()
-    const interval = setInterval(updateTrial, 60000) // A cada minuto
+
+    // Se trial ativo, incrementar tempo usado a cada minuto
+    const interval = setInterval(async () => {
+      updateTrial()
+
+      // Incrementar tempo usado se trial está ativo
+      const status = calcularTrialStatus()
+      if (status.ativo && user && profile?.trial_started_at && !profile?.trial_used) {
+        try {
+          const DURACAO_TRIAL_SEGUNDOS = 4 * 60 * 60
+          const novoTempoUsado = (profile.trial_tempo_usado_segundos || 0) + 60 // +1 minuto
+
+          // Verificar se acabou o trial
+          if (novoTempoUsado >= DURACAO_TRIAL_SEGUNDOS) {
+            // Marcar trial como usado
+            await supabase
+              .from('profiles_med')
+              .update({
+                trial_tempo_usado_segundos: DURACAO_TRIAL_SEGUNDOS,
+                trial_used: true
+              })
+              .eq('id', user.id)
+          } else {
+            // Apenas incrementar tempo
+            await supabase
+              .from('profiles_med')
+              .update({ trial_tempo_usado_segundos: novoTempoUsado })
+              .eq('id', user.id)
+          }
+        } catch (e) {
+          console.error('Erro ao atualizar tempo de trial:', e)
+        }
+      }
+    }, 60000) // A cada minuto
+
     return () => clearInterval(interval)
-  }, [calcularTrialStatus])
+  }, [calcularTrialStatus, user, profile])
 
   const fetchProfile = useCallback(async (userId: string, userEmail?: string, userName?: string, forceRefresh = false) => {
     if (fetchingRef.current) return

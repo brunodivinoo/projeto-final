@@ -29,38 +29,45 @@ export interface TrialTimerData {
   mostrarUrgencia: boolean
 }
 
+// Duração total do trial em segundos (4 horas)
+const DURACAO_TRIAL_SEGUNDOS = 4 * 60 * 60
+
 export function useTrialTimer(): TrialTimerData {
   const { profile, plano, trialStatus, iniciarTrial } = useMedAuth()
-  const [segundos, setSegundos] = useState(0)
+  const [tick, setTick] = useState(0)
 
-  // Atualizar a cada segundo quando trial ativo
+  // Atualizar a cada segundo quando trial ativo (para mostrar contagem)
   useEffect(() => {
     if (!trialStatus.ativo) return
 
     const interval = setInterval(() => {
-      setSegundos(s => s + 1) // Força re-render
+      setTick(t => t + 1) // Força re-render para atualizar display
     }, 1000)
 
     return () => clearInterval(interval)
   }, [trialStatus.ativo])
 
-  // Calcular tempo restante em tempo real
+  // Calcular tempo restante baseado no TEMPO USADO (não corrido)
   const calcularTempoRestante = useCallback(() => {
+    // Se não iniciou ou já usou todo o trial
     if (!profile?.trial_started_at || profile.trial_used) {
+      if (!profile?.trial_started_at) {
+        // Ainda pode iniciar - mostrar 4h completas
+        return { ms: DURACAO_TRIAL_SEGUNDOS * 1000, h: 4, m: 0, s: 0 }
+      }
       return { ms: 0, h: 0, m: 0, s: 0 }
     }
 
-    const inicio = new Date(profile.trial_started_at).getTime()
-    const duracao = 4 * 60 * 60 * 1000 // 4 horas
-    const agora = Date.now()
-    const restante = Math.max(0, inicio + duracao - agora)
+    // Calcular baseado no tempo USADO (acumulativo)
+    const tempoUsadoSegundos = profile.trial_tempo_usado_segundos || 0
+    const tempoRestanteSegundos = Math.max(0, DURACAO_TRIAL_SEGUNDOS - tempoUsadoSegundos)
 
-    const h = Math.floor(restante / (60 * 60 * 1000))
-    const m = Math.floor((restante % (60 * 60 * 1000)) / (60 * 1000))
-    const s = Math.floor((restante % (60 * 1000)) / 1000)
+    const h = Math.floor(tempoRestanteSegundos / 3600)
+    const m = Math.floor((tempoRestanteSegundos % 3600) / 60)
+    const s = tempoRestanteSegundos % 60
 
-    return { ms: restante, h, m, s }
-  }, [profile?.trial_started_at, profile?.trial_used, segundos])
+    return { ms: tempoRestanteSegundos * 1000, h, m, s }
+  }, [profile?.trial_started_at, profile?.trial_used, profile?.trial_tempo_usado_segundos, tick])
 
   const tempo = calcularTempoRestante()
 
@@ -78,15 +85,15 @@ export function useTrialTimer(): TrialTimerData {
   }, [tempo])
 
   // Verificações
-  const isTrialActive = plano === 'gratuito' && trialStatus.ativo && tempo.ms > 0
-  const isTrialExpired = plano === 'gratuito' && !!profile?.trial_started_at && tempo.ms <= 0
+  const isTrialActive = plano === 'gratuito' && !!profile?.trial_started_at && !profile?.trial_used && tempo.ms > 0
+  const isTrialExpired = plano === 'gratuito' && !!profile?.trial_started_at && (profile?.trial_used || tempo.ms <= 0)
   const hasUsedTrial = profile?.trial_used === true
   const canStartTrial = plano === 'gratuito' && !profile?.trial_started_at && !profile?.trial_used
 
   // Percentuais
-  const duracaoTotal = 4 * 60 * 60 * 1000
-  const percentualUsado = Math.round(((duracaoTotal - tempo.ms) / duracaoTotal) * 100)
-  const percentualRestante = 100 - percentualUsado
+  const tempoUsadoSegundos = profile?.trial_tempo_usado_segundos || 0
+  const percentualUsado = Math.round((tempoUsadoSegundos / DURACAO_TRIAL_SEGUNDOS) * 100)
+  const percentualRestante = Math.max(0, 100 - percentualUsado)
 
   // Cor da barra baseada no tempo restante
   const getCorBarra = () => {

@@ -114,20 +114,49 @@ export default function AssinaturaPage() {
   const [loading, setLoading] = useState(false)
   const [timeLeft, setTimeLeft] = useState({ hours: 23, minutes: 59, seconds: 59 })
 
-  // Countdown timer para urgência
+  // Countdown timer para urgência - PERSISTENTE no localStorage
   useEffect(() => {
+    const STORAGE_KEY = 'preparamed_oferta_expira'
+    const DURACAO_OFERTA = 24 * 60 * 60 * 1000 // 24 horas em ms
+
+    // Verificar se já existe uma data de expiração salva
+    let dataExpiracao: number
+    const salvo = localStorage.getItem(STORAGE_KEY)
+
+    if (salvo) {
+      dataExpiracao = parseInt(salvo, 10)
+    } else {
+      // Primeira visita - criar data de expiração
+      dataExpiracao = Date.now() + DURACAO_OFERTA
+      localStorage.setItem(STORAGE_KEY, dataExpiracao.toString())
+    }
+
+    const calcularTempoRestante = () => {
+      const agora = Date.now()
+      const restante = Math.max(0, dataExpiracao - agora)
+
+      if (restante <= 0) {
+        // Oferta expirou - renovar para criar nova urgência
+        const novaExpiracao = Date.now() + DURACAO_OFERTA
+        localStorage.setItem(STORAGE_KEY, novaExpiracao.toString())
+        return { hours: 23, minutes: 59, seconds: 59 }
+      }
+
+      const hours = Math.floor(restante / (60 * 60 * 1000))
+      const minutes = Math.floor((restante % (60 * 60 * 1000)) / (60 * 1000))
+      const seconds = Math.floor((restante % (60 * 1000)) / 1000)
+
+      return { hours, minutes, seconds }
+    }
+
+    // Definir tempo inicial
+    setTimeLeft(calcularTempoRestante())
+
+    // Atualizar a cada segundo
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev.seconds > 0) {
-          return { ...prev, seconds: prev.seconds - 1 }
-        } else if (prev.minutes > 0) {
-          return { ...prev, minutes: prev.minutes - 1, seconds: 59 }
-        } else if (prev.hours > 0) {
-          return { hours: prev.hours - 1, minutes: 59, seconds: 59 }
-        }
-        return { hours: 23, minutes: 59, seconds: 59 } // Reset
-      })
+      setTimeLeft(calcularTempoRestante())
     }, 1000)
+
     return () => clearInterval(timer)
   }, [])
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useMedAuth, LIMITES_PLANO } from '@/contexts/MedAuthContext'
+import { useTrialTimer } from '@/hooks/useTrialTimer'
 import { supabase } from '@/lib/supabase'
 import {
   FileText,
@@ -16,7 +17,11 @@ import {
   ChevronRight,
   Sparkles,
   Flame,
-  CheckCircle2
+  CheckCircle2,
+  Gift,
+  Zap,
+  Crown,
+  AlertTriangle
 } from 'lucide-react'
 
 interface EstatisticasHoje {
@@ -36,9 +41,20 @@ interface RevisaoPendente {
 
 export default function MedicinaDashboardPage() {
   const { user, profile, plano, limitesPlano, limites, loading: authLoading } = useMedAuth()
+  const {
+    isTrialActive,
+    canStartTrial,
+    isTrialExpired,
+    tempoRestanteFormatado,
+    percentualRestante,
+    corBarra,
+    mostrarUrgencia,
+    iniciarTrial
+  } = useTrialTimer()
   const [estatisticas, setEstatisticas] = useState<EstatisticasHoje | null>(null)
   const [sequenciaDias, setSequenciaDias] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [iniciandoTrial, setIniciandoTrial] = useState(false)
 
   const fetchDados = useCallback(async () => {
     if (authLoading || !user) return
@@ -126,6 +142,12 @@ export default function MedicinaDashboardPage() {
   const iaLimite = limitesPlano.perguntas_ia_mes
   const iaRestantes = iaLimite === -1 ? '∞' : Math.max(0, iaLimite - iaUsadas)
 
+  const handleIniciarTrial = async () => {
+    setIniciandoTrial(true)
+    await iniciarTrial()
+    setIniciandoTrial(false)
+  }
+
   if (loading || authLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -136,6 +158,141 @@ export default function MedicinaDashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* ============================================ */}
+      {/* BANNER DE TRIAL - Para usuários gratuitos */}
+      {/* ============================================ */}
+
+      {/* Banner para iniciar trial (usuário nunca usou) */}
+      {plano === 'gratuito' && canStartTrial && (
+        <div className="bg-gradient-to-r from-purple-900 via-purple-800 to-pink-900 border border-purple-500/30 rounded-xl p-5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-pink-500/10 rounded-full blur-3xl" />
+
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+                <Gift className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-yellow-400" />
+                  Teste GRÁTIS por 4 horas!
+                </h3>
+                <p className="text-purple-200 text-sm">
+                  Acesso completo a TODAS as funcionalidades: IA ilimitada, questões, flashcards e mais!
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleIniciarTrial}
+              disabled={iniciandoTrial}
+              className="flex-shrink-0 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg hover:shadow-emerald-500/25"
+            >
+              {iniciandoTrial ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Ativando...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-5 h-5" />
+                  Começar Agora
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="relative z-10 grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-purple-500/20">
+            {[
+              { icon: '🤖', text: 'IA Tutora' },
+              { icon: '📝', text: 'Questões' },
+              { icon: '🃏', text: 'Flashcards' },
+              { icon: '📚', text: 'Biblioteca' }
+            ].map((item, i) => (
+              <div key={i} className="bg-white/10 rounded-lg px-2 py-2 text-center">
+                <span className="text-lg">{item.icon}</span>
+                <p className="text-white text-xs mt-0.5">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Banner de trial ativo (contagem regressiva) */}
+      {plano === 'gratuito' && isTrialActive && (
+        <div className={`${mostrarUrgencia ? 'bg-gradient-to-r from-red-900 to-orange-900 border-red-500/30' : 'bg-gradient-to-r from-emerald-900 to-teal-900 border-emerald-500/30'} border rounded-xl p-4 relative overflow-hidden`}>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl ${mostrarUrgencia ? 'bg-red-500' : 'bg-emerald-500'} flex items-center justify-center flex-shrink-0 ${mostrarUrgencia ? 'animate-pulse' : ''}`}>
+                {mostrarUrgencia ? (
+                  <AlertTriangle className="w-6 h-6 text-white" />
+                ) : (
+                  <Clock className="w-6 h-6 text-white" />
+                )}
+              </div>
+              <div>
+                <h3 className="text-white font-bold flex items-center gap-2">
+                  {mostrarUrgencia ? 'Trial acabando!' : 'Trial Ativo'}
+                  <span className={`text-2xl font-bold ${mostrarUrgencia ? 'text-red-300' : 'text-emerald-300'}`}>
+                    {tempoRestanteFormatado}
+                  </span>
+                </h3>
+                <p className={`${mostrarUrgencia ? 'text-red-200/70' : 'text-emerald-200/70'} text-sm`}>
+                  {mostrarUrgencia
+                    ? 'Aproveite os últimos minutos do acesso completo!'
+                    : 'Aproveite o acesso completo enquanto dura'
+                  }
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/medicina/dashboard/assinatura"
+              className="flex-shrink-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2"
+            >
+              <Crown className="w-5 h-5" />
+              Manter Acesso
+            </Link>
+          </div>
+
+          {/* Barra de progresso */}
+          <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className={`h-full ${corBarra} transition-all duration-1000`}
+              style={{ width: `${percentualRestante}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Banner de trial expirado */}
+      {plano === 'gratuito' && isTrialExpired && (
+        <div className="bg-gradient-to-r from-slate-800 to-slate-700 border border-white/10 rounded-xl p-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-slate-600 flex items-center justify-center flex-shrink-0">
+                <Clock className="w-6 h-6 text-slate-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold">Seu trial de 4 horas expirou</h3>
+                <p className="text-slate-400 text-sm">
+                  Você experimentou todas as funcionalidades! Continue com acesso completo a partir de R$59,90/mês
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/medicina/dashboard/assinatura"
+              className="flex-shrink-0 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2"
+            >
+              <Crown className="w-5 h-5" />
+              Ver Planos
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
