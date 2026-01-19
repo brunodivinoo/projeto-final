@@ -293,8 +293,13 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
   }, [calcularTrialStatus, user, profile])
 
   const fetchProfile = useCallback(async (userId: string, userEmail?: string, userName?: string, forceRefresh = false) => {
-    if (fetchingRef.current) return
-    if (!forceRefresh && lastFetchedUserIdRef.current === userId) return
+    if (fetchingRef.current) {
+      return
+    }
+    if (!forceRefresh && lastFetchedUserIdRef.current === userId) {
+      setProfileLoading(false)
+      return
+    }
 
     fetchingRef.current = true
     setProfileLoading(true)
@@ -309,7 +314,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
       if (profileError && profileError.code === 'PGRST116') {
         // Profile não existe - criar novo
-        const { data: newProfile } = await supabase
+        const { data: newProfile, error: insertError } = await supabase
           .from('profiles_med')
           .insert({
             id: userId,
@@ -320,9 +325,13 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
           .select()
           .single()
 
-        if (newProfile) {
+        if (insertError) {
+          console.error('Erro ao criar perfil:', insertError)
+        } else if (newProfile) {
           setProfile(newProfile as ProfileMED)
         }
+      } else if (profileError) {
+        console.error('Erro ao buscar perfil:', profileError)
       } else if (profileData) {
         setProfile(profileData as ProfileMED)
       }
@@ -330,63 +339,77 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       // Buscar ou criar limites de uso do mês atual
       const mesAtual = new Date().toISOString().slice(0, 7) // "2026-01"
 
-      const { data: limitesData, error: limitesError } = await supabase
-        .from('limites_uso_med')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('mes_referencia', mesAtual)
-        .single()
-
-      if (limitesError && limitesError.code === 'PGRST116') {
-        // Limites não existem para este mês - criar
-        const { data: newLimites } = await supabase
+      try {
+        const { data: limitesData, error: limitesError } = await supabase
           .from('limites_uso_med')
-          .insert({
-            user_id: userId,
-            mes_referencia: mesAtual,
-            questoes_dia: 0,
-            data_questoes: new Date().toISOString().split('T')[0],
-            simulados_mes: 0,
-            perguntas_ia_mes: 0,
-            resumos_ia_mes: 0,
-            flashcards_ia_mes: 0,
-            casos_clinicos_mes: 0,
-            anotacoes_total: 0
-          })
-          .select()
+          .select('*')
+          .eq('user_id', userId)
+          .eq('mes_referencia', mesAtual)
           .single()
 
-        if (newLimites) {
-          setLimites(newLimites as LimitesUsoMED)
-        }
-      } else if (limitesData) {
-        // Verificar se é um novo dia para resetar questoes_dia
-        const hoje = new Date().toISOString().split('T')[0]
-        if (limitesData.data_questoes !== hoje) {
-          const { data: updatedLimites } = await supabase
+        if (limitesError && limitesError.code === 'PGRST116') {
+          // Limites não existem para este mês - criar
+          const { data: newLimites, error: insertLimitesError } = await supabase
             .from('limites_uso_med')
-            .update({ questoes_dia: 0, data_questoes: hoje })
-            .eq('id', limitesData.id)
+            .insert({
+              user_id: userId,
+              mes_referencia: mesAtual,
+              questoes_dia: 0,
+              data_questoes: new Date().toISOString().split('T')[0],
+              simulados_mes: 0,
+              perguntas_ia_mes: 0,
+              resumos_ia_mes: 0,
+              flashcards_ia_mes: 0,
+              casos_clinicos_mes: 0,
+              anotacoes_total: 0
+            })
             .select()
             .single()
 
-          setLimites((updatedLimites || limitesData) as LimitesUsoMED)
-        } else {
-          setLimites(limitesData as LimitesUsoMED)
+          if (insertLimitesError) {
+            console.error('Erro ao criar limites:', insertLimitesError)
+          } else if (newLimites) {
+            setLimites(newLimites as LimitesUsoMED)
+          }
+        } else if (limitesError) {
+          console.error('Erro ao buscar limites:', limitesError)
+        } else if (limitesData) {
+          // Verificar se é um novo dia para resetar questoes_dia
+          const hoje = new Date().toISOString().split('T')[0]
+          if (limitesData.data_questoes !== hoje) {
+            const { data: updatedLimites } = await supabase
+              .from('limites_uso_med')
+              .update({ questoes_dia: 0, data_questoes: hoje })
+              .eq('id', limitesData.id)
+              .select()
+              .single()
+
+            setLimites((updatedLimites || limitesData) as LimitesUsoMED)
+          } else {
+            setLimites(limitesData as LimitesUsoMED)
+          }
         }
+      } catch (limitesErr) {
+        console.error('Erro ao processar limites:', limitesErr)
       }
 
       // Buscar assinatura ativa
-      const { data: assinaturasData } = await supabase
-        .from('assinaturas_med')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'ativa')
-        .order('created_at', { ascending: false })
-        .limit(1)
+      try {
+        const { data: assinaturasData, error: assinaturaError } = await supabase
+          .from('assinaturas_med')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('status', 'ativa')
+          .order('created_at', { ascending: false })
+          .limit(1)
 
-      if (assinaturasData && assinaturasData.length > 0) {
-        setAssinatura(assinaturasData[0] as AssinaturaMED)
+        if (assinaturaError) {
+          console.error('Erro ao buscar assinatura:', assinaturaError)
+        } else if (assinaturasData && assinaturasData.length > 0) {
+          setAssinatura(assinaturasData[0] as AssinaturaMED)
+        }
+      } catch (assinaturaErr) {
+        console.error('Erro ao processar assinatura:', assinaturaErr)
       }
 
       lastFetchedUserIdRef.current = userId
@@ -493,17 +516,29 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
     const getSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
         if (!mounted) return
 
+        if (sessionError) {
+          console.error('Erro na sessão:', sessionError)
+          setProfileLoading(false)
+          setLoading(false)
+          return
+        }
+
         if (session?.user) {
           setUser(session.user)
-          await fetchProfile(
-            session.user.id,
-            session.user.email || undefined,
-            session.user.user_metadata?.nome
-          )
+          try {
+            await fetchProfile(
+              session.user.id,
+              session.user.email || undefined,
+              session.user.user_metadata?.nome
+            )
+          } catch (profileErr) {
+            console.error('Erro ao carregar perfil:', profileErr)
+            setProfileLoading(false)
+          }
         } else {
           setProfileLoading(false)
         }
