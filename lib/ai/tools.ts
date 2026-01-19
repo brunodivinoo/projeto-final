@@ -467,7 +467,7 @@ function handleCalcularIMC(input: Record<string, unknown>): LocalToolResult {
 
 async function handleGerarImagemMedica(
   input: Record<string, unknown>,
-  userId?: string
+  _userId?: string
 ): Promise<LocalToolResult> {
   const {
     estrutura,
@@ -482,41 +482,50 @@ async function handleGerarImagemMedica(
   }
 
   try {
-    // Fazer requisição para nossa API de geração de imagem
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/medicina/ia/imagem`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        prompt: `${estrutura}${vista ? ` - Vista: ${vista}` : ''}${detalhes_adicionais ? `. ${detalhes_adicionais}` : ''}`,
-        estilo: tipo,
-        quality: qualidade,
-        titulo: `Ilustração: ${estrutura}`
-      })
-    })
+    // Importar dinamicamente o serviço GPT Image para evitar problemas de circular dependency
+    const { generateMedicalImage, buildMedicalImagePrompt } = await import('@/lib/services/gptImageService')
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      return {
-        success: false,
-        error: errorData.error || 'Erro ao gerar imagem'
-      }
+    // Mapear tipo para o formato do serviço
+    const typeMap: Record<string, 'anatomy' | 'histology' | 'radiology' | 'pathology' | 'diagram'> = {
+      'anatomico': 'anatomy',
+      'histologia': 'histology',
+      'radiologia': 'radiology',
+      'diagrama': 'diagram',
+      'fisiopatologia': 'pathology',
+      'educativo': 'diagram'
     }
 
-    const data = await response.json()
+    const imageType = typeMap[tipo as string] || 'anatomy'
 
-    if (data.success && data.imagem_url) {
+    // Construir prompt otimizado para imagem médica
+    const prompt = buildMedicalImagePrompt({
+      structure: estrutura as string,
+      type: imageType,
+      view: vista as string | undefined,
+      additionalDetails: detalhes_adicionais as string | undefined
+    })
+
+    console.log('[Tool gerar_imagem_medica] Gerando imagem:', estrutura)
+
+    // Gerar imagem diretamente via serviço
+    const result = await generateMedicalImage({
+      prompt,
+      quality: qualidade === 'hd' ? 'high' : 'medium',
+      size: '1024x1024',
+      style: 'natural'
+    })
+
+    if (result.url) {
+      console.log('[Tool gerar_imagem_medica] Imagem gerada com sucesso!')
       return {
         success: true,
         data: {
-          imagem_url: data.imagem_url,
-          descricao: data.revised_prompt || `Ilustração de ${estrutura}`,
+          imagem_url: result.url,
+          descricao: result.revisedPrompt || `Ilustração de ${estrutura}`,
           tipo: tipo,
           estrutura: estrutura,
           qualidade: qualidade,
-          custo: data.custo_estimado
+          custo: result.estimatedCost
         }
       }
     }
@@ -526,7 +535,7 @@ async function handleGerarImagemMedica(
       error: 'Não foi possível gerar a imagem'
     }
   } catch (error) {
-    console.error('Erro ao gerar imagem médica:', error)
+    console.error('[Tool gerar_imagem_medica] Erro:', error)
     return {
       success: false,
       error: `Erro na geração de imagem: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
