@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase-server'
 import { isAdmin } from '@/lib/admin/auth'
 import Anthropic from '@anthropic-ai/sdk'
 
@@ -8,19 +7,21 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
 })
 
-interface DisciplinaSugerida {
+interface AssuntoSugerido {
   nome: string
   descricao: string
-  assuntos: {
-    nome: string
-    descricao: string
-    subassuntos: string[]
-  }[]
+  subassuntos: string[]
+}
+
+interface DisciplinaSugeridaItem {
+  nome: string
+  descricao: string
+  assuntos: AssuntoSugerido[]
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = await createClient()
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -177,7 +178,7 @@ Responda APENAS em JSON válido no seguinte formato:
 // Endpoint para criar as sugestões em lote
 export async function PUT(req: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = await createClient()
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -201,7 +202,7 @@ export async function PUT(req: NextRequest) {
     }
 
     if (tipo === 'disciplinas') {
-      for (const disciplina of itens) {
+      for (const disciplina of itens as DisciplinaSugeridaItem[]) {
         try {
           // Verificar se já existe
           const { data: existente } = await supabase
@@ -271,7 +272,7 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: 'disciplina_id é obrigatório' }, { status: 400 })
       }
 
-      for (const assunto of itens) {
+      for (const assunto of itens as AssuntoSugerido[]) {
         try {
           // Verificar se já existe
           const { data: existente } = await supabase
