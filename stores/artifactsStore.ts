@@ -19,7 +19,14 @@ export type ArtifactType =
   | 'layers'
   | 'staging'
   | 'note'
-  | 'question' // NOVO: Questões geradas pela IA
+  | 'question' // Questões geradas pela IA
+  | 'image_generated' // Imagens geradas por IA (DALL-E 3)
+  | 'image_uploaded' // Imagens enviadas pelo usuário
+  | 'pdf_uploaded' // PDFs enviados pelo usuário
+  | 'document' // Documentos gerais
+
+// Categorias de artefatos para abas
+export type ArtifactCategory = 'all' | 'images_generated' | 'images_uploaded' | 'pdfs' | 'questions' | 'diagrams'
 
 // Interface para alternativa de questão
 export interface QuestionAlternative {
@@ -71,6 +78,30 @@ export interface Question {
   mostrar_gabarito?: boolean
 }
 
+// Metadados para imagens
+export interface ImageMetadata {
+  url: string
+  thumbnailUrl?: string
+  width?: number
+  height?: number
+  mimeType?: string
+  size?: number // em bytes
+  source?: 'generated' | 'uploaded' | 'medical_search'
+  prompt?: string // prompt usado para gerar (se gerada)
+  revisedPrompt?: string // prompt revisado pelo DALL-E
+  structure?: string // estrutura anatômica (se médica)
+  imageType?: 'anatomy' | 'histology' | 'radiology' | 'pathology' | 'diagram' | 'other'
+}
+
+// Metadados para PDFs
+export interface PDFMetadata {
+  url: string
+  fileName: string
+  pageCount?: number
+  size?: number // em bytes
+  uploadedAt?: Date
+}
+
 export interface Artifact {
   id: string
   type: ArtifactType
@@ -86,6 +117,10 @@ export interface Artifact {
     interactive?: boolean
     // Metadados específicos para questões
     question?: Question
+    // Metadados para imagens
+    image?: ImageMetadata
+    // Metadados para PDFs
+    pdf?: PDFMetadata
   }
 }
 
@@ -98,15 +133,19 @@ interface ArtifactsState {
   currentConversaId: string | null  // Conversa atual para filtrar artefatos
   currentChatMode: ChatModeType | null  // Modo de chat atual para filtrar artefatos
   chatModeFilter: ChatModeType | 'all'  // Filtro por modo de chat na sidebar
+  categoryFilter: ArtifactCategory  // Filtro por categoria (imagens, pdfs, etc.)
 
   // Ações
   addArtifact: (artifact: Omit<Artifact, 'id' | 'createdAt'>) => string
+  addImageArtifact: (image: ImageMetadata, title: string, conversaId?: string, messageId?: string) => string
+  addPDFArtifact: (pdf: PDFMetadata, conversaId?: string, messageId?: string) => string
   removeArtifact: (id: string) => void
   clearArtifacts: () => void
   clearArtifactsForConversa: (conversaId: string) => void  // Limpar artefatos de uma conversa específica
   setCurrentConversa: (conversaId: string | null) => void  // Definir conversa atual
   setCurrentChatMode: (mode: ChatModeType | null) => void  // Definir modo de chat atual
   setChatModeFilter: (filter: ChatModeType | 'all') => void  // Definir filtro por modo de chat
+  setCategoryFilter: (filter: ArtifactCategory) => void  // Definir filtro por categoria
   selectArtifact: (id: string | null) => void
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
@@ -115,6 +154,10 @@ interface ArtifactsState {
   getArtifactsByMessage: (messageId: string) => Artifact[]
   getArtifactsForCurrentConversa: () => Artifact[]  // Obter artefatos da conversa atual
   getArtifactsByChatMode: (mode: ChatModeType) => Artifact[]  // Obter artefatos por modo
+  getArtifactsByCategory: (category: ArtifactCategory) => Artifact[]  // Obter artefatos por categoria
+  getGeneratedImages: () => Artifact[]  // Obter todas as imagens geradas
+  getUploadedImages: () => Artifact[]  // Obter todas as imagens enviadas
+  getUploadedPDFs: () => Artifact[]  // Obter todos os PDFs enviados
   updateQuestionAnswer: (artifactId: string, resposta: string, acertou: boolean) => void  // Sincronizar resposta
 }
 
@@ -127,8 +170,9 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
   currentConversaId: null,
   currentChatMode: null,
   chatModeFilter: 'all',
+  categoryFilter: 'all',
 
-  // Adicionar artefato
+  // Adicionar artefato genérico
   addArtifact: (artifact) => {
     const id = `artifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const newArtifact: Artifact = {
@@ -140,6 +184,57 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
     set((state) => ({
       artifacts: [...state.artifacts, newArtifact],
       // Abrir sidebar automaticamente quando há artefato
+      isSidebarOpen: true
+    }))
+
+    return id
+  },
+
+  // Adicionar imagem como artefato
+  addImageArtifact: (image, title, conversaId, messageId) => {
+    const id = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const type: ArtifactType = image.source === 'generated' ? 'image_generated' : 'image_uploaded'
+
+    const newArtifact: Artifact = {
+      id,
+      type,
+      title: title || 'Imagem',
+      content: image.url,
+      conversaId,
+      messageId,
+      createdAt: new Date(),
+      metadata: {
+        image
+      }
+    }
+
+    set((state) => ({
+      artifacts: [...state.artifacts, newArtifact],
+      isSidebarOpen: true
+    }))
+
+    return id
+  },
+
+  // Adicionar PDF como artefato
+  addPDFArtifact: (pdf, conversaId, messageId) => {
+    const id = `pdf-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+    const newArtifact: Artifact = {
+      id,
+      type: 'pdf_uploaded',
+      title: pdf.fileName || 'Documento PDF',
+      content: pdf.url,
+      conversaId,
+      messageId,
+      createdAt: new Date(),
+      metadata: {
+        pdf
+      }
+    }
+
+    set((state) => ({
+      artifacts: [...state.artifacts, newArtifact],
       isSidebarOpen: true
     }))
 
@@ -185,6 +280,11 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
     set({ chatModeFilter: filter })
   },
 
+  // Definir filtro por categoria
+  setCategoryFilter: (filter) => {
+    set({ categoryFilter: filter })
+  },
+
   // Selecionar artefato
   selectArtifact: (id) => {
     set({ selectedArtifactId: id })
@@ -227,6 +327,40 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
   // Obter artefatos por modo de chat
   getArtifactsByChatMode: (mode) => {
     return get().artifacts.filter((a) => a.chatMode === mode)
+  },
+
+  // Obter artefatos por categoria
+  getArtifactsByCategory: (category) => {
+    const artifacts = get().artifacts
+    switch (category) {
+      case 'images_generated':
+        return artifacts.filter((a) => a.type === 'image_generated')
+      case 'images_uploaded':
+        return artifacts.filter((a) => a.type === 'image_uploaded')
+      case 'pdfs':
+        return artifacts.filter((a) => a.type === 'pdf_uploaded')
+      case 'questions':
+        return artifacts.filter((a) => a.type === 'question')
+      case 'diagrams':
+        return artifacts.filter((a) => ['diagram', 'flowchart', 'layers'].includes(a.type))
+      default:
+        return artifacts
+    }
+  },
+
+  // Obter todas as imagens geradas
+  getGeneratedImages: () => {
+    return get().artifacts.filter((a) => a.type === 'image_generated')
+  },
+
+  // Obter todas as imagens enviadas
+  getUploadedImages: () => {
+    return get().artifacts.filter((a) => a.type === 'image_uploaded')
+  },
+
+  // Obter todos os PDFs enviados
+  getUploadedPDFs: () => {
+    return get().artifacts.filter((a) => a.type === 'pdf_uploaded')
   },
 
   // Atualizar estado de questão respondida (sincronização chat <-> sidebar)
@@ -326,7 +460,11 @@ export const ARTIFACT_ICONS: Record<ArtifactType, string> = {
   layers: '🔬',
   staging: '📈',
   note: '📝',
-  question: '❓'
+  question: '❓',
+  image_generated: '🖼️',
+  image_uploaded: '📷',
+  pdf_uploaded: '📄',
+  document: '📑'
 }
 
 // Labels para cada tipo
@@ -345,7 +483,31 @@ export const ARTIFACT_LABELS: Record<ArtifactType, string> = {
   layers: 'Camadas',
   staging: 'Estadiamento',
   note: 'Nota',
-  question: 'Questão'
+  question: 'Questão',
+  image_generated: 'Imagem Gerada',
+  image_uploaded: 'Imagem Enviada',
+  pdf_uploaded: 'PDF Enviado',
+  document: 'Documento'
+}
+
+// Labels para categorias de artefatos
+export const CATEGORY_LABELS: Record<ArtifactCategory, string> = {
+  all: 'Todos',
+  images_generated: 'Imagens Geradas',
+  images_uploaded: 'Imagens Enviadas',
+  pdfs: 'PDFs',
+  questions: 'Questões',
+  diagrams: 'Diagramas'
+}
+
+// Ícones para categorias
+export const CATEGORY_ICONS: Record<ArtifactCategory, string> = {
+  all: '📁',
+  images_generated: '🖼️',
+  images_uploaded: '📷',
+  pdfs: '📄',
+  questions: '❓',
+  diagrams: '📊'
 }
 
 // Cores para dificuldade de questões

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useMedAuth } from '@/contexts/MedAuthContext'
 import { ChatMode } from '@/lib/stores/chatModeStore'
+import { useArtifactsStore } from '@/stores/artifactsStore'
 
 export interface Conversa {
   id: string
@@ -214,6 +215,24 @@ export function useChatIA(options: UseChatIAOptions = {}): ChatData & ChatAction
                       ? { ...m, content: fullResponse }
                       : m
                   ))
+                } else if (data.type === 'tool_result') {
+                  // Processar resultados de tools (ex: imagens geradas)
+                  if (data.tool_name === 'gerar_imagem_medica' && data.result?.imagem_url) {
+                    // Adicionar imagem aos artefatos
+                    const { addImageArtifact } = useArtifactsStore.getState()
+                    addImageArtifact(
+                      {
+                        url: data.result.imagem_url,
+                        source: 'generated',
+                        prompt: data.result.descricao || '',
+                        structure: data.result.estrutura || '',
+                        imageType: data.result.tipo || 'anatomy'
+                      },
+                      `Imagem: ${data.result.estrutura || 'Ilustração Médica'}`,
+                      novaConversaId,
+                      msgIATemp.id
+                    )
+                  }
                 } else if (data.type === 'done') {
                   novaConversaId = data.conversa_id
                   // Atualizar tokens
