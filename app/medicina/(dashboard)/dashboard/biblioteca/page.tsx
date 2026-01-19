@@ -18,8 +18,14 @@ import {
   BarChart3,
   Layers,
   BookMarked,
-  Sparkles
+  Sparkles,
+  Library,
+  ExternalLink,
+  Info,
+  Award,
+  BookText
 } from 'lucide-react'
+import { LIVROS_FONTE, getTodosLivros, LIVROS_POR_DISCIPLINA, type LivroReferencia } from '@/lib/admin/livrosFonte'
 
 interface Teoria {
   id: string
@@ -86,7 +92,8 @@ export default function BibliotecaPage() {
   const [filtroDificuldade, setFiltroDificuldade] = useState<number | null>(null)
   const [filtroTempo, setFiltroTempo] = useState<'todos' | 'rapido' | 'medio' | 'longo'>('todos')
   const [showFiltros, setShowFiltros] = useState(false)
-  const [visualizacao, setVisualizacao] = useState<'hierarquia' | 'lista' | 'cards'>('hierarquia')
+  const [visualizacao, setVisualizacao] = useState<'hierarquia' | 'lista' | 'cards' | 'referencias'>('hierarquia')
+  const [livroExpandido, setLivroExpandido] = useState<string | null>(null)
 
   const fetchTeorias = useCallback(async () => {
     if (!user) return
@@ -409,6 +416,15 @@ export default function BibliotecaPage() {
               >
                 <BookMarked className="w-4 h-4" />
               </button>
+              <button
+                onClick={() => setVisualizacao('referencias')}
+                className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                  visualizacao === 'referencias' ? 'bg-emerald-500 text-white' : 'text-white/60 hover:text-white'
+                }`}
+                title="Livros de Referência"
+              >
+                <Library className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -636,7 +652,7 @@ export default function BibliotecaPage() {
               <TeoriaItem key={teoria.id} teoria={teoria} nivel={0} showDisciplina />
             ))}
         </div>
-      ) : (
+      ) : visualizacao === 'cards' ? (
         /* Visualização em Cards */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {todasTeorias
@@ -650,6 +666,102 @@ export default function BibliotecaPage() {
             .map((teoria) => (
               <TeoriaCard key={teoria.id} teoria={teoria} />
             ))}
+        </div>
+      ) : (
+        /* Visualização de Referências Bibliográficas */
+        <div className="space-y-6">
+          {/* Info Box */}
+          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-5">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <Info className="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-amber-300 font-semibold mb-2">Sobre as Referências</h3>
+                <p className="text-white/70 text-sm leading-relaxed">
+                  Todas as questões e conteúdos do PREPARAMED são baseados em livros-texto consagrados da área médica.
+                  As referências seguem o padrão ABNT e estão organizadas por prioridade e área de conhecimento.
+                  Utilize estes livros como fonte primária de estudo complementar.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Livros de Prioridade 1 */}
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                <Award className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Livros Essenciais</h2>
+                <p className="text-white/60 text-sm">Referências principais para todas as disciplinas</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {LIVROS_FONTE.prioridade1.map((livro) => (
+                <LivroCard key={livro.abreviacao} livro={livro} destaque />
+              ))}
+            </div>
+          </div>
+
+          {/* Livros de Prioridade 2 */}
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                <BookText className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Livros Complementares</h2>
+                <p className="text-white/60 text-sm">Referências especializadas por área</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {LIVROS_FONTE.prioridade2.map((livro) => (
+                <LivroCard key={livro.abreviacao} livro={livro} />
+              ))}
+            </div>
+          </div>
+
+          {/* Livros por Disciplina */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-purple-400" />
+              Referências por Disciplina
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Object.entries(LIVROS_POR_DISCIPLINA).map(([disciplina, abreviacoes]) => (
+                <div key={disciplina} className="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors">
+                  <h4 className="text-emerald-400 font-medium mb-2">{disciplina}</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {abreviacoes.map(abrev => (
+                      <span key={abrev} className="px-2 py-0.5 bg-white/10 text-white/70 text-xs rounded">
+                        {abrev}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Fontes Online */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <ExternalLink className="w-5 h-5 text-cyan-400" />
+              Fontes Científicas Online
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              {LIVROS_FONTE.fontesOnline.map((fonte) => (
+                <span
+                  key={fonte}
+                  className="px-4 py-2 bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 rounded-lg text-sm hover:bg-cyan-500/20 transition-colors"
+                >
+                  {fonte}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -741,5 +853,68 @@ function TeoriaCard({ teoria }: { teoria: Teoria }) {
         <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-emerald-400 transition-colors" />
       </div>
     </Link>
+  )
+}
+
+// Componente de Card de Livro de Referência
+function LivroCard({ livro, destaque }: { livro: LivroReferencia; destaque?: boolean }) {
+  const [expandido, setExpandido] = useState(false)
+
+  // Formatar referência ABNT
+  const formatarABNT = () => {
+    const autores = livro.autor.split(',')[0].trim().toUpperCase()
+    const resto = livro.autor.split(',').slice(1).join(',').trim()
+    return `${autores}${resto ? ', ' + resto : ''}. ${livro.titulo}. ${livro.edicao}. ${livro.editora}, ${livro.ano}.`
+  }
+
+  return (
+    <div
+      className={`bg-white/5 rounded-xl border ${destaque ? 'border-emerald-500/30' : 'border-white/10'} p-5 hover:bg-white/10 transition-all cursor-pointer`}
+      onClick={() => setExpandido(!expandido)}
+    >
+      <div className="flex items-start gap-4">
+        <div className={`w-12 h-12 rounded-xl ${destaque ? 'bg-emerald-500/20' : 'bg-white/10'} flex items-center justify-center flex-shrink-0`}>
+          <BookOpen className={`w-6 h-6 ${destaque ? 'text-emerald-400' : 'text-white/60'}`} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <h4 className="text-white font-semibold line-clamp-2">{livro.titulo}</h4>
+            <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${destaque ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white/60'}`}>
+              {livro.abreviacao}
+            </span>
+          </div>
+          <p className="text-white/60 text-sm mt-1">{livro.autor}</p>
+          <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
+            <span className="px-2 py-0.5 bg-white/10 text-white/50 rounded">{livro.edicao}</span>
+            <span className="px-2 py-0.5 bg-white/10 text-white/50 rounded">{livro.ano}</span>
+            <span className="px-2 py-0.5 bg-white/10 text-white/50 rounded">{livro.editora}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Áreas de cobertura */}
+      <div className="flex flex-wrap gap-1 mt-3">
+        {livro.areas.map((area) => (
+          <span key={area} className="px-2 py-0.5 bg-blue-500/10 text-blue-300 text-xs rounded">
+            {area}
+          </span>
+        ))}
+      </div>
+
+      {/* Referência ABNT expandida */}
+      {expandido && (
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <p className="text-white/40 text-xs mb-2">Referência ABNT:</p>
+          <p className="text-white/70 text-sm bg-white/5 p-3 rounded-lg font-mono">
+            {formatarABNT()}
+          </p>
+        </div>
+      )}
+
+      {/* Indicador de expansão */}
+      <div className="flex justify-center mt-3">
+        <ChevronDown className={`w-4 h-4 text-white/30 transition-transform ${expandido ? 'rotate-180' : ''}`} />
+      </div>
+    </div>
   )
 }
