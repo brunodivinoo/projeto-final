@@ -13,10 +13,12 @@ import {
   Trash2,
   Eye,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  FileText
 } from 'lucide-react'
 import { PERIODOS_OPCOES } from '@/lib/admin/periodos'
 import { useMedAuth } from '@/contexts/MedAuthContext'
+import { SugestaoConteudoIA } from './SugestaoConteudoIA'
 
 interface Disciplina {
   id: string
@@ -83,22 +85,45 @@ export function QuestaoGenerator() {
   const logsEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Carregar disciplinas
-  useEffect(() => {
-    const carregarDisciplinas = async () => {
-      try {
-        const res = await fetch('/api/medicina/admin/disciplinas')
-        const data = await res.json()
-        if (data.disciplinas) {
-          setDisciplinas(data.disciplinas)
-        }
-      } catch (error) {
-        console.error('Erro ao carregar disciplinas:', error)
-      } finally {
-        setLoadingDados(false)
+  // Função para carregar disciplinas (reutilizável)
+  const carregarDisciplinas = async () => {
+    try {
+      const res = await fetch('/api/medicina/admin/disciplinas')
+      const data = await res.json()
+      if (data.disciplinas) {
+        setDisciplinas(data.disciplinas)
       }
+    } catch (error) {
+      console.error('Erro ao carregar disciplinas:', error)
+    } finally {
+      setLoadingDados(false)
     }
+  }
 
+  // Função para carregar assuntos (reutilizável)
+  const carregarAssuntos = async () => {
+    if (!disciplinaSelecionada) return
+    try {
+      const res = await fetch(`/api/medicina/admin/disciplinas/assuntos?disciplina_id=${disciplinaSelecionada}`)
+      const data = await res.json()
+      if (data.assuntos) {
+        setAssuntos(data.assuntos)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar assuntos:', error)
+    }
+  }
+
+  // Callback quando conteúdo é criado pela IA
+  const handleConteudoCriado = () => {
+    carregarDisciplinas()
+    if (disciplinaSelecionada) {
+      carregarAssuntos()
+    }
+  }
+
+  // Carregar disciplinas no mount
+  useEffect(() => {
     carregarDisciplinas()
   }, [])
 
@@ -108,18 +133,6 @@ export function QuestaoGenerator() {
       setAssuntos([])
       setAssuntosSelecionados([])
       return
-    }
-
-    const carregarAssuntos = async () => {
-      try {
-        const res = await fetch(`/api/medicina/admin/disciplinas/assuntos?disciplina_id=${disciplinaSelecionada}`)
-        const data = await res.json()
-        if (data.assuntos) {
-          setAssuntos(data.assuntos)
-        }
-      } catch (error) {
-        console.error('Erro ao carregar assuntos:', error)
-      }
     }
 
     carregarAssuntos()
@@ -272,6 +285,13 @@ export function QuestaoGenerator() {
 
   return (
     <div className="space-y-6">
+      {/* Sugestões com IA - Opus 4.5 */}
+      <SugestaoConteudoIA
+        disciplinas={disciplinas}
+        disciplinaSelecionada={disciplinaSelecionada}
+        onConteudoCriado={handleConteudoCriado}
+      />
+
       {/* Configurações */}
       <div className="bg-white/5 rounded-xl p-6 border border-white/10">
         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">

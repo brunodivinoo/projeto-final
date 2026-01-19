@@ -94,7 +94,7 @@ export default function AdminDashboardPage() {
 
       // Buscar nomes das disciplinas
       const disciplinaIds = ultimasGeracoes?.map(g => g.disciplina_id).filter(Boolean) || []
-      let disciplinasMap: Record<string, string> = {}
+      const disciplinasMap: Record<string, string> = {}
 
       if (disciplinaIds.length > 0) {
         const { data: disciplinas } = await supabase
