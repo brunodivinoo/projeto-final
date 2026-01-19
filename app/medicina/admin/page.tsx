@@ -97,7 +97,13 @@ export default function AdminDashboardPage() {
       .limit(20)
 
     if (feedbacksData) {
-      setFeedbacks(feedbacksData as Feedback[])
+      // Transformar dados do Supabase para o formato esperado
+      // O join retorna array, precisamos extrair o primeiro elemento
+      const feedbacksFormatados = feedbacksData.map(f => ({
+        ...f,
+        usuario: Array.isArray(f.usuario) ? (f.usuario[0] || null) : f.usuario
+      }))
+      setFeedbacks(feedbacksFormatados as Feedback[])
     }
 
     // Carregar erros recentes
