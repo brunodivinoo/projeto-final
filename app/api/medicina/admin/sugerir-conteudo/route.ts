@@ -216,15 +216,15 @@ export async function PUT(req: NextRequest) {
             continue
           }
 
-          // Criar disciplina
+          // Criar disciplina (nota: tabela não tem coluna descricao)
           const { data: novaDisciplina, error: errDisciplina } = await supabase
             .from('disciplinas_med')
             .insert({
               nome: disciplina.nome,
               nome_normalizado: disciplina.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
-              descricao: disciplina.descricao,
               icone: 'book',
-              cor: '#3B82F6'
+              cor: '#3B82F6',
+              ativo: true
             })
             .select()
             .single()
@@ -239,8 +239,7 @@ export async function PUT(req: NextRequest) {
                 .insert({
                   nome: assunto.nome,
                   nome_normalizado: assunto.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
-                  disciplina_id: novaDisciplina.id,
-                  descricao: assunto.descricao
+                  disciplina_id: novaDisciplina.id
                 })
                 .select()
                 .single()
@@ -264,7 +263,8 @@ export async function PUT(req: NextRequest) {
 
           resultados.criados++
         } catch (err) {
-          resultados.erros.push(`Erro ao criar ${disciplina.nome}: ${err}`)
+          const errorMessage = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: unknown }).message) : 'Erro desconhecido')
+          resultados.erros.push(`Erro ao criar ${disciplina.nome}: ${errorMessage}`)
         }
       }
     } else if (tipo === 'assuntos') {
@@ -287,14 +287,13 @@ export async function PUT(req: NextRequest) {
             continue
           }
 
-          // Criar assunto
+          // Criar assunto (nota: tabela não tem coluna descricao)
           const { data: novoAssunto, error: errAssunto } = await supabase
             .from('assuntos_med')
             .insert({
               nome: assunto.nome,
               nome_normalizado: assunto.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
-              disciplina_id,
-              descricao: assunto.descricao
+              disciplina_id
             })
             .select()
             .single()
@@ -316,7 +315,8 @@ export async function PUT(req: NextRequest) {
 
           resultados.criados++
         } catch (err) {
-          resultados.erros.push(`Erro ao criar ${assunto.nome}: ${err}`)
+          const errorMessage = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: unknown }).message) : 'Erro desconhecido')
+          resultados.erros.push(`Erro ao criar ${assunto.nome}: ${errorMessage}`)
         }
       }
     }
