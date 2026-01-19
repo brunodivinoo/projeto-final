@@ -41,7 +41,14 @@
       "Bash(git reset:*)",
       "Bash(vercel env:*)",
       "Bash(vercel link:*)",
-      "Bash(vercel ls:*)"
+      "Bash(vercel ls:*)",
+      "Bash(exist on type 'never'\".\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(findstr:*)",
+      "Bash(npx vercel:*)",
+      "Bash(timeout:*)",
+      "Bash(git rm:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git check-ignore:*)"
     ]
   }
 }

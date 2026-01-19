@@ -73,43 +73,72 @@ export class GPTImageError extends Error {
 
 /**
  * Gera uma imagem médica usando GPT Image / DALL-E 3
- * Configurado para MÁXIMO REALISMO em imagens médicas
+ * Configurado para ULTRA-REALISMO MÁXIMO e SEM TEXTO
+ *
+ * IMPORTANTE: DALL-E 3 é péssimo em gerar texto correto.
+ * Geramos imagens 100% visuais e limpas. Anotações/legendas
+ * devem ser adicionadas via frontend (CSS overlay) quando necessário.
  */
 export async function generateMedicalImage(
   options: GenerateImageOptions
 ): Promise<GeneratedImage> {
   const {
     prompt,
-    model = 'dall-e-3', // DALL-E 3 é o mais recente disponível
-    quality = 'high', // Usar HD por padrão para máximo realismo
+    model = 'dall-e-3',
+    quality = 'high',
     size = '1024x1024',
-    style = 'natural', // Natural é melhor para imagens médicas realistas
+    style = 'natural',
     n = 1,
   } = options
 
-  // Adicionar instruções de realismo ao prompt
+  // INSTRUÇÕES CRÍTICAS PARA ULTRA-REALISMO SEM TEXTO
   const enhancedPrompt = `${prompt}
 
-INSTRUÇÕES DE REALISMO (CRÍTICO):
-- Gere uma imagem FOTORREALISTA de alta resolução
-- Texturas detalhadas e naturais dos tecidos
-- Iluminação profissional de estúdio/laboratório
-- Sombras suaves e naturais
-- Cores fiéis à realidade anatômica
-- Qualidade de fotografia profissional médica
-- EVITAR aspecto de ilustração cartoon ou simplificada
-- EVITAR erros anatômicos ou proporções incorretas`
+=== INSTRUÇÕES ABSOLUTAS - LEIA COM MÁXIMA ATENÇÃO ===
+
+🚫 PROIBIÇÕES ABSOLUTAS (NUNCA INCLUIR):
+- ZERO texto, palavras, letras, números ou símbolos escritos
+- ZERO legendas, rótulos, etiquetas ou anotações
+- ZERO setas com nomes ou linhas de referência com texto
+- ZERO marcadores alfabéticos ou numéricos
+- ZERO qualquer forma de escrita em QUALQUER idioma
+- ZERO watermarks, logos ou assinaturas
+
+📸 REQUISITOS DE ULTRA-REALISMO:
+1. FOTOGRAFIA REAL de alta resolução (8K, 16K quality)
+2. Deve parecer uma foto REAL tirada por câmera profissional
+3. Iluminação de estúdio fotográfico médico/científico profissional
+4. Profundidade de campo natural com bokeh suave quando apropriado
+5. Texturas HIPER-DETALHADAS:
+   - Poros visíveis na pele
+   - Fibras musculares individuais
+   - Vasos sanguíneos e capilares visíveis
+   - Textura real de tecidos biológicos
+6. Cores anatomicamente EXATAS e naturais:
+   - Músculos: vermelho-rosado com variações naturais
+   - Ossos: branco-bege com textura porosa visível
+   - Artérias: vermelho vivo com brilho úmido
+   - Veias: azul-arroxeado escuro
+   - Nervos: amarelo-pálido
+   - Gordura: amarelo-creme
+7. Brilho úmido natural dos tecidos vivos
+8. Reflexos de luz realistas em superfícies molhadas
+9. ZERO aspecto de ilustração, desenho, cartoon ou CG
+10. Qualidade de atlas anatômico fotográfico (Sobotta foto-realista)
+
+A imagem deve ser INDISTINGUÍVEL de uma fotografia médica real.
+ABSOLUTAMENTE NENHUM TEXTO OU ESCRITA DE QUALQUER TIPO.`
 
   try {
-    console.log('[GPT Image] Gerando imagem médica REALISTA...')
+    console.log('[GPT Image] Gerando imagem médica FOTORREALISTA sem texto...')
     console.log('[GPT Image] Prompt:', prompt.substring(0, 200) + '...')
 
     const response = await openai.images.generate({
       model,
       prompt: enhancedPrompt,
       size,
-      quality: 'hd', // SEMPRE usar HD para máxima qualidade
-      style: 'natural', // Natural para realismo médico
+      quality: 'hd',
+      style: 'natural',
       n,
     })
 
@@ -152,192 +181,194 @@ export interface MedicalImagePromptParams {
 }
 
 /**
- * Gera um prompt otimizado para imagens médicas em PORTUGUÊS BRASILEIRO
- * com marcações anatômicas precisas e cientificamente corretas
+ * Gera um prompt otimizado para imagens médicas ULTRA-REALISTAS SEM TEXTO
+ *
+ * DALL-E 3 é péssimo em gerar texto, então geramos imagens 100% visuais.
+ * Anotações/legendas são adicionadas via CSS/HTML no frontend quando necessário.
  */
 export function buildMedicalImagePrompt(params: MedicalImagePromptParams): string {
-  const { structure, type, annotations = [], view, additionalDetails } = params
-
-  const annotationText = annotations.length > 0
-    ? `\n\nESTRUTURAS QUE DEVEM SER IDENTIFICADAS COM LINHAS DE REFERÊNCIA:\n${annotations.map((a, i) => `${i + 1}. "${a}"`).join('\n')}`
-    : ''
-
-  // Instruções globais para todas as imagens médicas
-  const globalInstructions = `
-INSTRUÇÕES CRÍTICAS DE IDIOMA E PRECISÃO:
-1. TODOS os textos, legendas e anotações DEVEM estar em PORTUGUÊS BRASILEIRO CORRETO
-2. NÃO usar inglês em nenhuma parte da imagem
-3. As marcações devem apontar EXATAMENTE para a estrutura correta anatomicamente
-4. Cada linha de referência deve conectar o nome da estrutura à sua localização PRECISA
-5. NÃO incluir palavras inventadas ou com erros ortográficos
-6. Usar terminologia anatômica oficial em português (Nomina Anatomica)
-
-FORMATO DAS LEGENDAS:
-- Fonte clara, legível, sem serifa (tipo Arial ou Helvetica)
-- Tamanho adequado para leitura
-- Linhas de referência finas e precisas em preto
-- Cada legenda aponta DIRETAMENTE para a estrutura identificada
-`
+  const { structure, type, view, additionalDetails } = params
 
   const templates: Record<string, string> = {
     anatomy: `
-Crie uma ilustração anatômica educacional de ALTA QUALIDADE para atlas médico brasileiro.
+FOTOGRAFIA MÉDICA ULTRA-REALISTA DE ALTA RESOLUÇÃO
 
-ESTRUTURA PRINCIPAL: ${structure}
-${view ? `VISTA/CORTE: ${view}` : 'VISTA: Vista anterior (padrão)'}
-ESTILO VISUAL: Ilustração científica profissional similar aos atlas Sobotta ou Netter
+Estrutura anatômica: ${structure}
+${view ? `Vista/Perspectiva: ${view}` : 'Vista: anterior, bem iluminada'}
 
-${globalInstructions}
+ESTILO VISUAL ABSOLUTO:
+Esta deve parecer uma FOTOGRAFIA REAL de:
+- Dissecção cadavérica de laboratório de anatomia de universidade de medicina
+- OU modelo anatômico 3D de silicone hiper-realista de última geração
+- Qualidade visual de Atlas Sobotta ou Grant's em versão FOTOGRÁFICA
 
-CARACTERÍSTICAS OBRIGATÓRIAS DA IMAGEM:
-- Fundo BRANCO LIMPO sem elementos de distração
-- Cores anatomicamente precisas e realistas:
-  * Músculos: vermelho/marrom rosado
-  * Ossos: branco/bege
-  * Artérias: vermelho vivo
-  * Veias: azul escuro
-  * Nervos: amarelo
-  * Órgãos: cores naturais específicas de cada um
-- Proporções anatomicamente CORRETAS baseadas em anatomia humana real
-- Iluminação suave e uniforme para visualização clara
-- Bordas bem definidas entre estruturas diferentes
-${annotationText}
+DETALHAMENTO TÉCNICO OBRIGATÓRIO:
+• Resolução: equivalente a 8K, detalhes microscópicos visíveis
+• Músculos: vermelho-rosado com fibras individuais visíveis, fascias brilhantes
+• Ossos: branco-bege com trabeculado e periósteo visível, textura porosa natural
+• Artérias: vermelho vivo com brilho úmido, parede arterial com textura
+• Veias: azul-arroxeado escuro, paredes mais finas que artérias
+• Nervos: amarelo-pálido, fibras nervosas visíveis
+• Gordura: amarelo-creme, textura lobulada natural
+• Cartilagem: branco-azulado translúcido
+• Tendões: branco nacarado com fibras paralelas brilhantes
+• Líquidos corporais: reflexos naturais de umidade nos tecidos
 
-NOMES CORRETOS EM PORTUGUÊS PARA ESTRUTURAS COMUNS:
-- Testículo (NÃO "testicle" ou "testes")
-- Epidídimo (NÃO "epididymis")
-- Próstata (NÃO "prostate")
-- Vesícula seminal (NÃO "seminal vesicle")
-- Ducto deferente (NÃO "vas deferens")
-- Uretra (igual em português)
-- Bexiga (NÃO "bladder")
-- Pênis (NÃO "penis" em inglês)
+ILUMINAÇÃO:
+• Luz de estúdio fotográfico médico profissional
+• Iluminação suave e difusa, sem sombras duras
+• Temperatura de cor neutra (5500K)
+• Reflexos naturais em superfícies úmidas
 
-${additionalDetails ? `DETALHES ADICIONAIS SOLICITADOS: ${additionalDetails}` : ''}
+COMPOSIÇÃO:
+• Fundo neutro (branco, cinza claro ou gradiente médico)
+• Estrutura centralizada e bem enquadrada
+• Profundidade de campo adequada com foco nítido na estrutura principal
 
-QUALIDADE FINAL: Nível de atlas de anatomia médica profissional para faculdade de medicina brasileira.
+PROIBIDO: Qualquer texto, legenda, seta com nome, número, letra ou anotação.
+
+${additionalDetails ? `FOCO ESPECIAL: ${additionalDetails}` : ''}
     `.trim(),
 
     histology: `
-Crie uma fotomicrografia histológica de ALTA QUALIDADE para estudo médico brasileiro.
+FOTOMICROGRAFIA HISTOLÓGICA REAL DE LABORATÓRIO
 
-TECIDO/ESTRUTURA: ${structure}
-COLORAÇÃO: H&E (hematoxilina e eosina) - padrão
-AUMENTO: 400x (campo de alta potência)
+Tecido/Estrutura: ${structure}
 
-${globalInstructions}
+TÉCNICA DE COLORAÇÃO: H&E (Hematoxilina e Eosina) - padrão ouro
 
-CARACTERÍSTICAS OBRIGATÓRIAS:
-- Imagem nítida em TODO o campo visual
-- Núcleos celulares: roxo/azul escuro (hematoxilina)
-- Citoplasma: rosa/eosinofílico (eosina)
-- Matriz extracelular: tons de rosa pálido
-- Colágeno: rosa brilhante
-- Músculo: rosa escuro/magenta
-- Iluminação de microscópio óptico (campo claro)
-${annotationText}
+ESPECIFICAÇÕES TÉCNICAS:
+• Aumento: 400x (campo de alta potência / HPF)
+• Microscópio: Óptico de campo claro de alta qualidade
+• Foco: Nítido em todo o campo visual
+• Iluminação: Köhler perfeita, uniforme
 
-LEGENDAS EM PORTUGUÊS:
-- Célula (NÃO "cell")
-- Núcleo (NÃO "nucleus")
-- Citoplasma (igual)
-- Membrana plasmática (NÃO "cell membrane")
-- Tecido conjuntivo (NÃO "connective tissue")
-- Fibras colágenas (NÃO "collagen fibers")
+CARACTERÍSTICAS VISUAIS OBRIGATÓRIAS:
+• Núcleos: roxo/azul escuro intenso (basofílico - hematoxilina)
+  - Cromatina visível, nucléolos quando presentes
+  - Formato característico do tipo celular
+• Citoplasma: rosa/eosinofílico (eosina)
+  - Variações de intensidade conforme conteúdo proteico
+  - Organelas não visíveis (limite de resolução)
+• Membranas celulares: delimitação clara entre células
+• Matriz extracelular: rosa pálido a médio
+• Fibras colágenas: rosa intenso, onduladas
+• Eritrócitos: rosa-alaranjado brilhante, sem núcleo
+• Músculo: rosa com estriações visíveis (se esquelético)
 
-${additionalDetails ? `DETALHES ADICIONAIS: ${additionalDetails}` : ''}
+QUALIDADE:
+• Fotomicrografia REAL de lâmina histológica
+• Parece foto tirada em microscópio de universidade
+• Artefatos mínimos de fixação/coloração
 
-QUALIDADE: Imagem de atlas de histologia (padrão Junqueira ou Ross) para estudantes brasileiros.
+PROIBIDO: Texto, escala, régua, números, letras ou qualquer anotação.
+
+${additionalDetails ? `FOCO ESPECIAL: ${additionalDetails}` : ''}
     `.trim(),
 
     radiology: `
-Crie uma imagem radiológica educacional de ALTA QUALIDADE para estudo médico brasileiro.
+IMAGEM RADIOLÓGICA REAL DE QUALIDADE DIAGNÓSTICA
 
-REGIÃO ANATÔMICA: ${structure}
-MODALIDADE: ${view || 'Radiografia simples (Raio-X) em incidência AP'}
-
-${globalInstructions}
+Estrutura/Região: ${structure}
+Modalidade: ${view || 'Radiografia convencional (Raio-X) - incidência AP'}
 
 CARACTERÍSTICAS TÉCNICAS OBRIGATÓRIAS:
-- Escala de cinza radiológica padrão
-- Ossos: BRANCO (radiopaco)
-- Ar/gás: PRETO (radiotransparente)
-- Tecidos moles: tons de CINZA
-- Contraste adequado para visualização diagnóstica
-- Bordas anatômicas bem definidas
-- Fundo PRETO (como lightbox/negatoscópio)
-${annotationText}
+• Escala de cinza radiológica padrão
+• Ossos/calcificações: BRANCOS (hiperdensos/radiopacos)
+• Ar/gás: PRETO (hipodensos/radiotransparentes)
+• Tecidos moles: tons de CINZA intermediário
+• Gordura: cinza escuro (menos denso que músculo)
+• Músculo: cinza médio
+• Contraste adequado para visualização diagnóstica
 
-LEGENDAS EM PORTUGUÊS:
-- Clavícula (NÃO "clavicle")
-- Costela (NÃO "rib")
-- Vértebra (NÃO "vertebra" em inglês)
-- Coração (silhueta cardíaca)
-- Pulmão (NÃO "lung")
-- Diafragma (igual)
-- Hilo pulmonar (NÃO "hilum")
+QUALIDADE DE IMAGEM:
+• Parece exame REAL de hospital/clínica radiológica
+• Resolução diagnóstica (detalhes finos visíveis)
+• Exposição adequada (não queimado nem subexposto)
+• Fundo preto (como visualizado em negatoscópio/monitor PACS)
+
+PARA TOMOGRAFIA (CT):
+• Janela adequada (óssea, pulmonar, partes moles)
+• Corte axial típico
+
+PARA RESSONÂNCIA (RM/MRI):
+• Sequência T1 ou T2 conforme apropriado
+• Contraste característico de cada sequência
+
+PROIBIDO: Texto, lateralidade (D/E), dados do paciente, marcadores, números.
 
 ${additionalDetails ? `ACHADOS A DEMONSTRAR: ${additionalDetails}` : ''}
-
-QUALIDADE: Imagem radiológica padrão hospitalar brasileiro para ensino médico.
     `.trim(),
 
     pathology: `
-Crie uma imagem de patologia (macro ou microscópica) de ALTA QUALIDADE para estudo médico brasileiro.
+FOTOGRAFIA DE PATOLOGIA DE ALTA RESOLUÇÃO
 
-ESTRUTURA/LESÃO: ${structure}
-TIPO DE IMAGEM: ${view || 'Macroscopia (peça cirúrgica ou necropsia)'}
+Espécime: ${structure}
+Tipo: ${view || 'Macroscopia - peça cirúrgica/autópsia'}
 
-${globalInstructions}
+PARA MACROSCOPIA:
+• Fotografia REAL de peça anatômica patológica
+• Iluminação de laboratório de patologia profissional
+• Fundo neutro (azul cirúrgico, branco ou verde)
+• Cores naturais do tecido (fresco ou fixado em formol)
+• Lesões claramente visíveis e bem demonstradas
+• Textura real do tecido patológico
 
-CARACTERÍSTICAS OBRIGATÓRIAS:
-- Cores realistas do tecido patológico
-- Lesões claramente visíveis e identificáveis
-- Contraste entre tecido normal e alterado
-- Se macroscopia: régua ou escala de referência
-- Se microscopia: aumento especificado
-${annotationText}
+PARA MICROSCOPIA (se aplicável):
+• Mesmas características de histologia
+• Ênfase nas alterações patológicas
 
-TERMINOLOGIA EM PORTUGUÊS:
-- Necrose (NÃO "necrosis")
-- Inflamação (NÃO "inflammation")
-- Tumor/neoplasia (NÃO "tumor" em inglês)
-- Edema (igual)
-- Hemorragia (NÃO "hemorrhage")
-- Fibrose (NÃO "fibrosis")
+CARACTERÍSTICAS DAS LESÕES:
+• Tumores: massas com bordas definidas ou infiltrativas
+• Necrose: áreas amareladas ou acinzentadas
+• Hemorragia: áreas vermelho-escuras ou marrons
+• Fibrose: áreas esbranquiçadas e firmes
+• Inflamação: áreas avermelhadas e edemaciadas
 
-${additionalDetails ? `ACHADOS PATOLÓGICOS A DEMONSTRAR: ${additionalDetails}` : ''}
+QUALIDADE:
+• Fotografia real de laboratório de patologia
+• Parece documentação de caso médico real
+• Detalhes macroscópicos claramente visíveis
 
-QUALIDADE: Imagem de atlas de patologia (padrão Robbins) para estudantes brasileiros.
+PROIBIDO: Texto, régua, etiquetas, números ou qualquer anotação.
+
+${additionalDetails ? `ACHADOS PATOLÓGICOS: ${additionalDetails}` : ''}
     `.trim(),
 
     diagram: `
-Crie um diagrama médico educacional esquemático de ALTA QUALIDADE em PORTUGUÊS BRASILEIRO.
+DIAGRAMA MÉDICO EDUCACIONAL - VISUAL PURO
 
-TEMA/PROCESSO: ${structure}
-ESTILO: Diagrama didático, colorido, claro e profissional
+Tema: ${structure}
 
-${globalInstructions}
+ESTILO VISUAL:
+• Diagrama científico limpo e profissional
+• Cores vibrantes mas harmônicas
+• Design moderno de material educacional médico
 
-CARACTERÍSTICAS OBRIGATÓRIAS DO DIAGRAMA:
-- Fundo BRANCO ou gradiente suave (azul claro para cinza)
-- Cores vibrantes mas profissionais e consistentes
-- Setas indicando direção/fluxo dos processos
-- Caixas/formas geométricas organizadas logicamente
-- Hierarquia visual clara (do mais importante ao menos importante)
-- Espaçamento adequado entre elementos
-- TODO texto em PORTUGUÊS BRASILEIRO
-${annotationText}
+ELEMENTOS PERMITIDOS:
+• Setas indicando fluxo/direção (SEM texto)
+• Formas geométricas organizadas
+• Gradientes de cor para indicar intensidade/concentração
+• Linhas de conexão entre elementos
+• Ícones representativos (sem letras)
 
-ELEMENTOS TEXTUAIS:
-- Títulos em negrito
-- Subtítulos destacados
-- Texto explicativo legível
-- Abreviações apenas se universalmente conhecidas
+COMPOSIÇÃO:
+• Fundo branco ou gradiente suave
+• Layout organizado e intuitivo
+• Hierarquia visual clara
+• Espaçamento adequado entre elementos
 
-${additionalDetails ? `ELEMENTOS ESPECÍFICOS A INCLUIR: ${additionalDetails}` : ''}
+CORES SUGERIDAS:
+• Artérias/sangue oxigenado: vermelho
+• Veias/sangue desoxigenado: azul
+• Nervos: amarelo
+• Órgãos: cores anatômicas realistas
+• Processos: gradientes indicando direção
 
-QUALIDADE: Diagrama de livro didático médico brasileiro de alta qualidade.
+PROIBIDO: Qualquer texto, palavra, letra, número ou legenda.
+Anotações serão adicionadas posteriormente via software.
+
+${additionalDetails ? `ELEMENTOS ESPECÍFICOS: ${additionalDetails}` : ''}
     `.trim(),
   }
 
@@ -487,4 +518,142 @@ export function detectImageRequest(message: string): ImageRequestDetection {
     structure: foundStructure,
     type,
   }
+}
+
+// ============================================
+// GERAÇÃO DE IMAGEM SEGURA PARA QUESTÕES
+// (Não revela a resposta correta)
+// ============================================
+
+export interface QuestionImageRequest {
+  // Contexto da questão
+  disciplina: string
+  assunto: string
+  enunciado: string
+
+  // O que mostrar na imagem (descrição genérica, NÃO a resposta)
+  estruturaVisual: string
+  tipoImagem: 'anatomy' | 'histology' | 'radiology' | 'pathology' | 'diagram'
+
+  // Opcionais
+  view?: string
+  quality?: ImageQuality
+  size?: ImageSize
+
+  // IMPORTANTE: Alternativas para garantir que a imagem não revele a resposta
+  alternativas?: string[]
+  respostaCorreta?: string
+}
+
+/**
+ * Gera uma imagem para questões de forma SEGURA
+ *
+ * REGRAS DE SEGURANÇA:
+ * 1. A imagem NÃO deve revelar qual é a resposta correta
+ * 2. A imagem deve mostrar a estrutura/contexto de forma NEUTRA
+ * 3. Se a questão pergunta "qual estrutura é X?", a imagem mostra
+ *    a região geral, não destaca a resposta
+ * 4. O aluno deve precisar de CONHECIMENTO para responder, não apenas olhar
+ *
+ * Exemplo:
+ * - Questão: "Qual músculo é responsável pela flexão do antebraço?"
+ * - ERRADO: Gerar imagem com bíceps destacado/colorido diferente
+ * - CERTO: Gerar imagem do braço mostrando vários músculos de forma igual
+ */
+export async function generateQuestionImage(
+  request: QuestionImageRequest
+): Promise<GeneratedImage> {
+  const {
+    disciplina,
+    assunto,
+    estruturaVisual,
+    tipoImagem,
+    view,
+    quality = 'medium',
+    size = '1024x1024',
+    alternativas,
+    respostaCorreta,
+  } = request
+
+  // Construir prompt SEGURO que não revela a resposta
+  let promptSeguro = ''
+
+  // Instruções de segurança para NÃO revelar resposta
+  const instrucaoSeguranca = `
+=== INSTRUÇÕES DE SEGURANÇA PARA QUESTÃO EDUCACIONAL ===
+Esta imagem será usada em uma QUESTÃO DE PROVA.
+A imagem NÃO DEVE revelar qual é a resposta correta.
+
+REGRAS ABSOLUTAS:
+1. NÃO destacar, colorir diferente, ou dar ênfase a nenhuma estrutura específica
+2. Todas as estruturas devem aparecer com IGUAL destaque visual
+3. NÃO usar setas, marcadores ou indicadores que apontem para a resposta
+4. A imagem deve mostrar o CONTEXTO GERAL, não a resposta
+5. O aluno deve precisar de CONHECIMENTO PRÉVIO para identificar a resposta
+
+${alternativas && alternativas.length > 0 ? `
+ALTERNATIVAS DA QUESTÃO (todas devem ter visibilidade IGUAL):
+${alternativas.map((alt, i) => `- ${String.fromCharCode(65 + i)}) ${alt}`).join('\n')}
+
+NENHUMA dessas alternativas deve ser visualmente destacada ou diferenciada.
+` : ''}
+
+${respostaCorreta ? `
+ATENÇÃO: A resposta correta é "${respostaCorreta}" - esta estrutura NÃO deve
+ter NENHUM destaque visual diferente das outras opções.
+` : ''}
+`
+
+  // Construir prompt base conforme tipo
+  const promptBase = buildMedicalImagePrompt({
+    structure: estruturaVisual,
+    type: tipoImagem,
+    view,
+    additionalDetails: `
+Contexto: Questão de ${disciplina} sobre ${assunto}.
+${instrucaoSeguranca}
+    `.trim(),
+  })
+
+  promptSeguro = promptBase
+
+  console.log('[GPT Image] Gerando imagem SEGURA para questão...')
+  console.log('[GPT Image] Estrutura:', estruturaVisual)
+  console.log('[GPT Image] Tipo:', tipoImagem)
+
+  return generateMedicalImage({
+    prompt: promptSeguro,
+    quality,
+    size,
+    style: 'natural',
+  })
+}
+
+/**
+ * Extrai descrição segura para imagem a partir do enunciado
+ * Remove menções diretas à resposta
+ */
+export function extrairDescricaoSeguraParaImagem(
+  enunciado: string,
+  disciplina: string,
+  assunto: string
+): string {
+  // Termos que indicam que a questão quer que o aluno IDENTIFIQUE algo
+  const termosIdentificacao = [
+    'qual', 'que estrutura', 'que órgão', 'que músculo', 'que nervo',
+    'que artéria', 'que veia', 'identifique', 'aponte', 'indique',
+    'nome da estrutura', 'qual é o nome',
+  ]
+
+  const enunciadoLower = enunciado.toLowerCase()
+  const ehQuestaoIdentificacao = termosIdentificacao.some(t => enunciadoLower.includes(t))
+
+  if (ehQuestaoIdentificacao) {
+    // Para questões de identificação, mostrar a REGIÃO GERAL
+    // sem destacar a estrutura específica
+    return `Região anatômica relacionada a ${assunto} - visão geral com múltiplas estruturas visíveis de forma igual, sem destaques`
+  }
+
+  // Para outros tipos de questão, usar o assunto como base
+  return `${assunto} - ${disciplina} - visão educacional geral`
 }

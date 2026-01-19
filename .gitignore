@@ -68,7 +68,8 @@ Thumbs.db
 .vercel
 
 # Pasta de materiais de medicina (arquivos grandes - não pertence ao código)
-Medicina/
+# IMPORTANTE: Usar /Medicina/ para não conflitar com app/medicina
+/Medicina/
 
 # Pasta de questões para importação (arquivos JSON grandes)
 Questoes-para-subir/

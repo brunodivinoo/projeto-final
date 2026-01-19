@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { isAdmin } from '@/lib/admin/auth'
 import { buildPromptQuestao, extrairJsonDaResposta, validarQuestaoGerada, TipoQuestao } from '@/lib/admin/questaoPrompts'
 import { delay } from '@/lib/admin/rateLimit'
-import { generateMedicalImage, buildMedicalImagePrompt } from '@/lib/services/gptImageService'
+import { generateQuestionImage, extrairDescricaoSeguraParaImagem } from '@/lib/services/gptImageService'
 
 // Usar service role para operações admin
 const supabase = createClient(
@@ -213,27 +213,44 @@ export async function POST(req: NextRequest) {
                       throw errQuestao
                     }
 
-                    // Gerar imagem se a disciplina precisa
+                    // Gerar imagem SEGURA se a disciplina precisa
+                    // IMPORTANTE: A imagem NÃO deve revelar a resposta correta
                     let imagemUrl: string | null = null
-                    if (disciplinaPrecisaImagem(disciplina.nome) && questaoData.imagem) {
+                    if (disciplinaPrecisaImagem(disciplina.nome)) {
                       try {
+                        // Extrair descrição segura que não revela a resposta
+                        const estruturaSegura = questaoData.imagem?.estrutura_apontada
+                          ? extrairDescricaoSeguraParaImagem(
+                              questaoData.enunciado,
+                              disciplina.nome,
+                              questaoData.imagem.estrutura_apontada
+                            )
+                          : extrairDescricaoSeguraParaImagem(
+                              questaoData.enunciado,
+                              disciplina.nome,
+                              assunto.nome
+                            )
+
                         sendLog('gerando_imagem', {
                           questao_id: questaoSalva.id,
-                          estrutura: questaoData.imagem.estrutura_apontada || questaoData.imagem.descricao_detalhada?.substring(0, 50)
+                          estrutura: estruturaSegura.substring(0, 50),
+                          modo: 'seguro_sem_resposta'
                         })
 
                         const tipoImagem = getTipoImagem(disciplina.nome)
-                        const prompt = buildMedicalImagePrompt({
-                          structure: questaoData.imagem.estrutura_apontada || assunto.nome,
-                          type: tipoImagem,
-                          additionalDetails: questaoData.imagem.descricao_detalhada
-                        })
 
-                        const imgResult = await generateMedicalImage({
-                          prompt,
+                        // Usar função SEGURA que não revela a resposta
+                        const imgResult = await generateQuestionImage({
+                          disciplina: disciplina.nome,
+                          assunto: assunto.nome,
+                          enunciado: questaoData.enunciado,
+                          estruturaVisual: estruturaSegura,
+                          tipoImagem,
                           quality: 'medium',
                           size: '1024x1024',
-                          style: 'natural'
+                          // Passar alternativas e resposta para garantir que não serão destacadas
+                          alternativas: questaoData.alternativas?.map((alt: { texto: string }) => alt.texto),
+                          respostaCorreta: questaoData.resposta_correta
                         })
 
                         if (imgResult.url) {
@@ -249,15 +266,17 @@ export async function POST(req: NextRequest) {
                                 revisedPrompt: imgResult.revisedPrompt,
                                 geradoPor: 'dall-e-3',
                                 dataGeracao: new Date().toISOString(),
-                                estrutura: questaoData.imagem.estrutura_apontada,
-                                tipo: tipoImagem
+                                estrutura: estruturaSegura,
+                                tipo: tipoImagem,
+                                modoSeguro: true // Flag indicando que foi gerada sem revelar resposta
                               }
                             })
                             .eq('id', questaoSalva.id)
 
                           sendLog('imagem_gerada', {
                             questao_id: questaoSalva.id,
-                            imagem_url: imgResult.url.substring(0, 80) + '...'
+                            imagem_url: imgResult.url.substring(0, 80) + '...',
+                            modo_seguro: true
                           })
                         }
                       } catch (imgError) {
