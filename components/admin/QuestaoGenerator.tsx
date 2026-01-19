@@ -17,7 +17,9 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
-  MessageSquare
+  MessageSquare,
+  X,
+  Check
 } from 'lucide-react'
 import { PERIODOS_OPCOES } from '@/lib/admin/periodos'
 import { useMedAuth } from '@/contexts/MedAuthContext'
@@ -97,6 +99,10 @@ export function QuestaoGenerator() {
   const [tiposQuestaoSelecionados, setTiposQuestaoSelecionados] = useState<string[]>(['multipla_escolha'])
   const [quantidadePorAssunto, setQuantidadePorAssunto] = useState(3)
 
+  // Estados para dropdowns
+  const [disciplinasDropdownAberto, setDisciplinasDropdownAberto] = useState(false)
+  const disciplinasDropdownRef = useRef<HTMLDivElement>(null)
+
   // Estados de geração
   const [gerando, setGerando] = useState(false)
   const [logs, setLogs] = useState<LogEntry[]>([])
@@ -165,6 +171,17 @@ export function QuestaoGenerator() {
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [logs])
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (disciplinasDropdownRef.current && !disciplinasDropdownRef.current.contains(event.target as Node)) {
+        setDisciplinasDropdownAberto(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const disciplinasAtuais = disciplinas.filter(d => disciplinasSelecionadas.includes(d.id))
   const assuntosFiltrados = assuntos.filter(a => disciplinasSelecionadas.includes(a.disciplina_id))
@@ -369,9 +386,9 @@ export function QuestaoGenerator() {
           Configurar Geração de Questões
         </h2>
 
-        <div className="grid grid-cols-1 gap-6">
-          {/* Disciplinas - Multi-select */}
-          <div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Disciplinas - Dropdown Multi-select */}
+          <div ref={disciplinasDropdownRef} className="relative">
             <div className="flex items-center justify-between mb-2">
               <label className="text-white/70 text-sm flex items-center gap-2">
                 <BookOpen className="w-4 h-4" />
@@ -398,44 +415,116 @@ export function QuestaoGenerator() {
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-3 bg-slate-800/50 rounded-lg border border-white/10">
-              {disciplinas.length === 0 ? (
-                <p className="text-white/40 text-sm col-span-full">Nenhuma disciplina cadastrada</p>
-              ) : (
-                disciplinas.map(d => (
-                  <label
-                    key={d.id}
-                    className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg transition-colors ${
-                      disciplinasSelecionadas.includes(d.id)
-                        ? 'bg-cyan-500/20 border border-cyan-500/30'
-                        : 'hover:bg-white/10 border border-transparent'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={disciplinasSelecionadas.includes(d.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setDisciplinasSelecionadas(prev => [...prev, d.id])
-                        } else {
+
+            {/* Botão do Dropdown */}
+            <button
+              type="button"
+              onClick={() => !gerando && setDisciplinasDropdownAberto(!disciplinasDropdownAberto)}
+              disabled={gerando}
+              className="w-full flex items-center justify-between p-3 bg-slate-800/50 border border-white/10 rounded-lg text-left hover:border-cyan-500/50 transition-colors disabled:opacity-50"
+            >
+              <span className="text-white/80">
+                {disciplinasSelecionadas.length === 0
+                  ? 'Clique para selecionar disciplinas...'
+                  : `${disciplinasSelecionadas.length} disciplina(s) selecionada(s)`
+                }
+              </span>
+              <ChevronDown className={`w-5 h-5 text-white/40 transition-transform ${disciplinasDropdownAberto ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Tags das disciplinas selecionadas */}
+            {disciplinasSelecionadas.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {disciplinas
+                  .filter(d => disciplinasSelecionadas.includes(d.id))
+                  .map(d => (
+                    <span
+                      key={d.id}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-cyan-500/20 border border-cyan-500/30 rounded-full text-sm text-cyan-300"
+                    >
+                      {d.nome}
+                      <button
+                        onClick={() => {
                           setDisciplinasSelecionadas(prev => prev.filter(id => id !== d.id))
-                          // Remover assuntos dessa disciplina
                           const assuntosRemover = assuntos.filter(a => a.disciplina_id === d.id).map(a => a.id)
                           setAssuntosSelecionados(prev => prev.filter(id => !assuntosRemover.includes(id)))
+                        }}
+                        disabled={gerando}
+                        className="hover:text-white transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+              </div>
+            )}
+
+            {/* Lista Dropdown */}
+            {disciplinasDropdownAberto && (
+              <div className="absolute z-50 w-full mt-1 bg-slate-900 border border-white/20 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                {disciplinas.length === 0 ? (
+                  <div className="p-4 text-white/40 text-sm text-center">
+                    Nenhuma disciplina cadastrada
+                  </div>
+                ) : (
+                  disciplinas.map(d => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => {
+                        if (disciplinasSelecionadas.includes(d.id)) {
+                          setDisciplinasSelecionadas(prev => prev.filter(id => id !== d.id))
+                          const assuntosRemover = assuntos.filter(a => a.disciplina_id === d.id).map(a => a.id)
+                          setAssuntosSelecionados(prev => prev.filter(id => !assuntosRemover.includes(id)))
+                        } else {
+                          setDisciplinasSelecionadas(prev => [...prev, d.id])
                         }
                       }}
-                      disabled={gerando}
-                      className="rounded text-cyan-500 bg-white/10 border-white/30 focus:ring-cyan-500 flex-shrink-0"
-                    />
-                    <span className="text-white text-sm">{d.nome}</span>
-                  </label>
-                ))
-              )}
+                      className={`w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/5 last:border-b-0 ${
+                        disciplinasSelecionadas.includes(d.id) ? 'bg-cyan-500/10' : ''
+                      }`}
+                    >
+                      <span className="text-white">{d.nome}</span>
+                      {disciplinasSelecionadas.includes(d.id) && (
+                        <Check className="w-5 h-5 text-cyan-400" />
+                      )}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Quantidade e Total - Segunda coluna */}
+          <div className="space-y-4">
+            {/* Quantidade por Assunto */}
+            <div>
+              <label className="block text-white/70 text-sm mb-2">
+                Questões por Assunto/Período
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={quantidadePorAssunto}
+                onChange={(e) => setQuantidadePorAssunto(parseInt(e.target.value) || 1)}
+                className="w-full bg-slate-800/50 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
+                disabled={gerando}
+              />
+            </div>
+
+            {/* Total estimado */}
+            <div className="p-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg border border-cyan-500/20">
+              <p className="text-white/60 text-sm">Total estimado de questões:</p>
+              <p className="text-3xl font-bold text-cyan-400">{totalEstimado}</p>
+              <p className="text-white/40 text-xs mt-1">
+                {assuntosSelecionados.length} assuntos × {periodosSelecionados.length} períodos × {tiposQuestaoSelecionados.length} tipos × {quantidadePorAssunto} questões
+              </p>
             </div>
           </div>
 
-          {/* Tipos de Questão - Multi-select */}
-          <div>
+          {/* Tipos de Questão - Multi-select - Full width */}
+          <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-2">
               <label className="text-white/70 text-sm flex items-center gap-2">
                 <FileText className="w-4 h-4" />
@@ -459,7 +548,7 @@ export function QuestaoGenerator() {
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {TIPOS_QUESTAO.map(tipo => (
                 <label
                   key={tipo.value}
@@ -604,32 +693,6 @@ export function QuestaoGenerator() {
             </div>
           </div>
 
-          {/* Quantidade */}
-          <div>
-            <label className="block text-white/70 text-sm mb-2">
-              Questões por Assunto/Período
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={20}
-              value={quantidadePorAssunto}
-              onChange={(e) => setQuantidadePorAssunto(parseInt(e.target.value) || 1)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
-              disabled={gerando}
-            />
-          </div>
-
-          {/* Total estimado */}
-          <div className="flex items-end">
-            <div className="p-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg border border-cyan-500/20 w-full">
-              <p className="text-white/60 text-sm">Total estimado de questões:</p>
-              <p className="text-3xl font-bold text-cyan-400">{totalEstimado}</p>
-              <p className="text-white/40 text-xs mt-1">
-                {assuntosSelecionados.length} assuntos × {periodosSelecionados.length} períodos × {tiposQuestaoSelecionados.length} tipos × {quantidadePorAssunto} questões
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* Botões de Ação */}

@@ -432,6 +432,178 @@ export default function AdminDashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Seção de Monitoramento */}
+      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+        {/* Header do Monitoramento */}
+        <button
+          onClick={() => setShowMonitoramento(!showMonitoramento)}
+          className="w-full p-5 flex items-center justify-between hover:bg-white/5 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
+              <Eye className="w-5 h-5 text-white" />
+            </div>
+            <div className="text-left">
+              <h3 className="text-white font-semibold">Monitoramento</h3>
+              <p className="text-white/60 text-sm">
+                {stats?.feedbacksPendentes || 0} feedbacks pendentes • {stats?.errosHoje || 0} erros hoje
+              </p>
+            </div>
+          </div>
+          {showMonitoramento ? (
+            <ChevronUp className="w-5 h-5 text-white/60" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-white/60" />
+          )}
+        </button>
+
+        {/* Conteúdo expandido */}
+        {showMonitoramento && (
+          <div className="border-t border-white/10">
+            {/* Abas */}
+            <div className="flex border-b border-white/10">
+              <button
+                onClick={() => setAbaMonitoramento('feedbacks')}
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                  abaMonitoramento === 'feedbacks'
+                    ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4" />
+                Feedbacks ({feedbacks.length})
+              </button>
+              <button
+                onClick={() => setAbaMonitoramento('erros')}
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                  abaMonitoramento === 'erros'
+                    ? 'text-red-400 border-b-2 border-red-400 bg-red-500/10'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Bug className="w-4 h-4" />
+                Erros ({erros.length})
+              </button>
+            </div>
+
+            {/* Lista de Feedbacks */}
+            {abaMonitoramento === 'feedbacks' && (
+              <div className="max-h-96 overflow-y-auto">
+                {feedbacks.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <MessageSquare className="w-12 h-12 text-white/20 mx-auto mb-3" />
+                    <p className="text-white/60">Nenhum feedback recebido</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-white/10">
+                    {feedbacks.map((fb) => (
+                      <div key={fb.id} className="p-4 hover:bg-white/5">
+                        <div
+                          className="cursor-pointer"
+                          onClick={() => setExpandedFeedback(expandedFeedback === fb.id ? null : fb.id)}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                  fb.tipo === 'bug' ? 'bg-red-500/20 text-red-400' :
+                                  fb.tipo === 'sugestao' ? 'bg-blue-500/20 text-blue-400' :
+                                  fb.tipo === 'duvida' ? 'bg-amber-500/20 text-amber-400' :
+                                  'bg-white/20 text-white/60'
+                                }`}>
+                                  {fb.tipo}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded text-xs ${
+                                  fb.status === 'pendente' ? 'bg-amber-500/20 text-amber-400' :
+                                  fb.status === 'resolvido' ? 'bg-green-500/20 text-green-400' :
+                                  'bg-white/20 text-white/60'
+                                }`}>
+                                  {fb.status}
+                                </span>
+                              </div>
+                              <h4 className="text-white font-medium text-sm truncate">{fb.titulo}</h4>
+                              <p className="text-white/40 text-xs mt-1">
+                                {fb.usuario?.nome || fb.usuario?.email || 'Anônimo'} • {new Date(fb.created_at).toLocaleDateString('pt-BR')}
+                              </p>
+                            </div>
+                            {expandedFeedback === fb.id ? (
+                              <ChevronUp className="w-4 h-4 text-white/40 flex-shrink-0" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-white/40 flex-shrink-0" />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Detalhes expandidos */}
+                        {expandedFeedback === fb.id && (
+                          <div className="mt-3 pt-3 border-t border-white/10">
+                            <p className="text-white/80 text-sm whitespace-pre-wrap mb-3">{fb.descricao}</p>
+                            <div className="flex gap-2">
+                              {fb.status === 'pendente' && (
+                                <button
+                                  onClick={() => atualizarStatusFeedback(fb.id, 'resolvido')}
+                                  className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded text-xs hover:bg-green-500/30 transition-colors"
+                                >
+                                  Marcar como Resolvido
+                                </button>
+                              )}
+                              {fb.status === 'resolvido' && (
+                                <button
+                                  onClick={() => atualizarStatusFeedback(fb.id, 'pendente')}
+                                  className="px-3 py-1.5 bg-amber-500/20 text-amber-400 rounded text-xs hover:bg-amber-500/30 transition-colors"
+                                >
+                                  Reabrir
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Lista de Erros */}
+            {abaMonitoramento === 'erros' && (
+              <div className="max-h-96 overflow-y-auto">
+                {erros.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <Bug className="w-12 h-12 text-white/20 mx-auto mb-3" />
+                    <p className="text-white/60">Nenhum erro registrado</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-white/10">
+                    {erros.map((erro) => (
+                      <div key={erro.id} className="p-4 hover:bg-white/5">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-xs font-medium">
+                                {erro.error_type}
+                              </span>
+                              <span className="text-white/40 text-xs">
+                                {erro.pagina}
+                              </span>
+                            </div>
+                            <p className="text-white/80 text-sm break-all">{erro.error_message}</p>
+                            <p className="text-white/40 text-xs mt-1">
+                              {new Date(erro.created_at).toLocaleString('pt-BR')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

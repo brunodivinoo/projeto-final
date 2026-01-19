@@ -13,56 +13,72 @@ interface AdminGuardProps {
 export function AdminGuard({ children }: AdminGuardProps) {
   const { user, loading: authLoading } = useMedAuth()
   const router = useRouter()
-  const [isAdminUser, setIsAdminUser] = useState(false)
-  const [checking, setChecking] = useState(true)
+  const [status, setStatus] = useState<'loading' | 'admin' | 'denied' | 'unauthenticated'>('loading')
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    // Timeout de segurança - após 5 segundos, tenta verificar mesmo assim
+    // Timeout de segurança - após 8 segundos
     timeoutRef.current = setTimeout(() => {
-      if (checking) {
-        setChecking(false)
+      if (status === 'loading') {
         if (!user) {
-          router.push('/medicina/login')
+          setStatus('unauthenticated')
+        } else {
+          // Verificar admin status diretamente
+          const adminStatus = isAdmin(user.email)
+          setStatus(adminStatus ? 'admin' : 'denied')
         }
       }
-    }, 5000)
+    }, 8000)
 
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [checking, user, router])
+  }, [status, user])
 
   useEffect(() => {
-    if (authLoading) return
-
-    if (!user) {
-      router.push('/medicina/login')
+    // Aguardar auth carregar
+    if (authLoading) {
       return
     }
-
-    const adminStatus = isAdmin(user.email)
-    setIsAdminUser(adminStatus)
-    setChecking(false)
 
     // Limpar timeout se completou normalmente
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
 
-    if (!adminStatus) {
-      // Opcional: redirecionar após delay
+    // Sem usuário = não autenticado
+    if (!user) {
+      setStatus('unauthenticated')
+      return
+    }
+
+    // Verificar se é admin
+    const adminStatus = isAdmin(user.email)
+    console.log('[AdminGuard] Verificando admin:', { email: user.email, isAdmin: adminStatus })
+    setStatus(adminStatus ? 'admin' : 'denied')
+  }, [user, authLoading])
+
+  // Redirecionar se não autenticado
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/medicina/login')
+    }
+  }, [status, router])
+
+  // Redirecionar se não é admin (com delay)
+  useEffect(() => {
+    if (status === 'denied') {
       const timer = setTimeout(() => {
         router.push('/medicina/dashboard')
       }, 3000)
       return () => clearTimeout(timer)
     }
-  }, [user, authLoading, router])
+  }, [status, router])
 
-  // Loading state - mas com limite de tempo
-  if ((authLoading || checking) && !user) {
+  // Loading state
+  if (status === 'loading') {
     return (
       <div className="min-h-screen bg-[#0A0F1C] flex items-center justify-center">
         <div className="text-center">
@@ -73,16 +89,20 @@ export function AdminGuard({ children }: AdminGuardProps) {
     )
   }
 
-  // Se tem user mas ainda está checking, verificar admin status diretamente
-  if (user && checking) {
-    const adminStatus = isAdmin(user.email)
-    if (adminStatus) {
-      return <>{children}</>
-    }
+  // Não autenticado (redirecionando)
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-[#0A0F1C] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-cyan-500 mx-auto mb-4" />
+          <p className="text-white/60">Redirecionando para login...</p>
+        </div>
+      </div>
+    )
   }
 
   // Não é admin
-  if (!isAdminUser) {
+  if (status === 'denied') {
     return (
       <div className="min-h-screen bg-[#0A0F1C] flex flex-col items-center justify-center gap-6 p-4">
         <div className="w-24 h-24 rounded-full bg-red-500/20 flex items-center justify-center">
@@ -94,6 +114,11 @@ export function AdminGuard({ children }: AdminGuardProps) {
             Você não tem permissão para acessar esta área.
             Esta seção é restrita a administradores.
           </p>
+          {user && (
+            <p className="text-white/40 text-xs mt-2">
+              Logado como: {user.email}
+            </p>
+          )}
         </div>
         <p className="text-white/40 text-sm">
           Redirecionando em alguns segundos...
