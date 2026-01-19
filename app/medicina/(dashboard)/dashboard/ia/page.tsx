@@ -124,13 +124,41 @@ export default function IAPage() {
   // Modo de chat (Chat Livre, Caso Clínico, Tutor, Questões)
   const { modo: chatMode, trocarModo: trocarModoBase, mostrarIntro, iniciarModo, getSystemPrompt } = useChatMode()
 
-  // Wrapper para trocar modo e sincronizar com store de artefatos e store de modos
-  const trocarModo = useCallback((novoModo: ChatMode) => {
+  // Estado para controlar dropdown de modo
+  const [showModeDropdown, setShowModeDropdown] = useState(false)
+  const modeDropdownDesktopRef = useRef<HTMLDivElement>(null)
+  const modeDropdownMobileRef = useRef<HTMLDivElement>(null)
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+      const isOutsideDesktop = modeDropdownDesktopRef.current && !modeDropdownDesktopRef.current.contains(target)
+      const isOutsideMobile = modeDropdownMobileRef.current && !modeDropdownMobileRef.current.contains(target)
+
+      if (isOutsideDesktop && isOutsideMobile) {
+        setShowModeDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Wrapper para trocar modo - com opção de manter conversa
+  const trocarModo = useCallback((novoModo: ChatMode, manterConversa: boolean = false) => {
     trocarModoBase(novoModo)
     setCurrentChatMode(novoModo)
     // Sincronizar com store de modos
     setStoreMode(novoModo as StoreChatMode)
-    // Limpar mensagens ao trocar de modo
+
+    // Se estiver em uma conversa ativa e quiser manter, não limpa nada
+    if (manterConversa && conversaAtual && mensagens.length > 0) {
+      // Apenas troca o modo - mensagens permanecem
+      // O próximo envio usará o novo modo
+      return
+    }
+
+    // Limpar mensagens ao trocar de modo (comportamento padrão)
     setMensagens([])
     // Carregar conversa ativa do modo se existir
     const conversaDoModo = activeConversationByMode[novoModo as StoreChatMode]
@@ -139,7 +167,13 @@ export default function IAPage() {
     } else {
       setConversaAtual(null)
     }
-  }, [trocarModoBase, setCurrentChatMode, setStoreMode, activeConversationByMode])
+  }, [trocarModoBase, setCurrentChatMode, setStoreMode, activeConversationByMode, conversaAtual, mensagens.length])
+
+  // Função específica para trocar modo dentro da conversa
+  const trocarModoNaConversa = useCallback((novoModo: ChatMode) => {
+    trocarModo(novoModo, true)
+    setShowModeDropdown(false)
+  }, [trocarModo])
 
   // Smart scroll - permite scroll manual durante streaming
   const { containerRef: chatRef, isAtBottom, scrollToBottom } = useSmartScroll({
@@ -726,14 +760,99 @@ export default function IAPage() {
               </div>
             </div>
 
-            {/* Indicador do Modo Atual */}
-            <div className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${MODE_CONFIG[chatMode as StoreChatMode]?.bgColor || 'bg-blue-500/20'} ${MODE_CONFIG[chatMode as StoreChatMode]?.color || 'text-blue-400'}`}>
-              <span>{MODE_CONFIG[chatMode as StoreChatMode]?.icon || '💬'}</span>
-              <span>{MODE_CONFIG[chatMode as StoreChatMode]?.label || 'Chat Livre'}</span>
+            {/* Seletor de Modo - Dropdown Desktop */}
+            <div className="relative" ref={modeDropdownDesktopRef}>
+              <button
+                onClick={() => setShowModeDropdown(!showModeDropdown)}
+                className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all hover:ring-2 hover:ring-white/20 ${MODE_CONFIG[chatMode as StoreChatMode]?.bgColor || 'bg-blue-500/20'} ${MODE_CONFIG[chatMode as StoreChatMode]?.color || 'text-blue-400'}`}
+              >
+                <span>{MODE_CONFIG[chatMode as StoreChatMode]?.icon || '💬'}</span>
+                <span>{MODE_CONFIG[chatMode as StoreChatMode]?.label || 'Chat Livre'}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${showModeDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown de modos */}
+              {showModeDropdown && (
+                <div className="absolute top-full left-0 mt-1 bg-slate-800 border border-white/10 rounded-lg shadow-xl overflow-hidden z-50 min-w-[180px]">
+                  <div className="p-1">
+                    {(Object.keys(MODE_CONFIG) as StoreChatMode[]).map((mode) => {
+                      const config = MODE_CONFIG[mode]
+                      const isActive = chatMode === mode
+
+                      return (
+                        <button
+                          key={mode}
+                          onClick={() => trocarModoNaConversa(mode as ChatMode)}
+                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors ${
+                            isActive
+                              ? `${config.bgColor} ${config.color}`
+                              : 'text-white/70 hover:bg-white/5 hover:text-white'
+                          }`}
+                        >
+                          <span>{config.icon}</span>
+                          <div className="flex-1">
+                            <div className="font-medium">{config.label}</div>
+                            <div className="text-[10px] opacity-60">{config.description}</div>
+                          </div>
+                          {isActive && <CheckCircle2 className="w-4 h-4" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Nota sobre troca de modo */}
+                  {mensagens.length > 0 && (
+                    <div className="px-3 py-2 border-t border-white/10 bg-white/5">
+                      <p className="text-[10px] text-white/50">
+                        💡 Trocar o modo altera o comportamento da IA nas próximas mensagens desta conversa.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
           <div className="flex items-center gap-1">
+            {/* Botão de modo no mobile */}
+            <div className="relative md:hidden" ref={modeDropdownMobileRef}>
+              <button
+                onClick={() => setShowModeDropdown(!showModeDropdown)}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${MODE_CONFIG[chatMode as StoreChatMode]?.bgColor || 'bg-blue-500/20'} ${MODE_CONFIG[chatMode as StoreChatMode]?.color || 'text-blue-400'}`}
+              >
+                <span>{MODE_CONFIG[chatMode as StoreChatMode]?.icon || '💬'}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${showModeDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown mobile */}
+              {showModeDropdown && (
+                <div className="absolute top-full right-0 mt-1 bg-slate-800 border border-white/10 rounded-lg shadow-xl overflow-hidden z-50 min-w-[160px]">
+                  <div className="p-1">
+                    {(Object.keys(MODE_CONFIG) as StoreChatMode[]).map((mode) => {
+                      const config = MODE_CONFIG[mode]
+                      const isActive = chatMode === mode
+
+                      return (
+                        <button
+                          key={mode}
+                          onClick={() => trocarModoNaConversa(mode as ChatMode)}
+                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-xs transition-colors ${
+                            isActive
+                              ? `${config.bgColor} ${config.color}`
+                              : 'text-white/70 hover:bg-white/5 hover:text-white'
+                          }`}
+                        >
+                          <span>{config.icon}</span>
+                          <span className="font-medium">{config.label}</span>
+                          {isActive && <CheckCircle2 className="w-3 h-3 ml-auto" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {isResidencia && <Crown className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-400" />}
             <button
               onClick={() => setShowOpcoes(!showOpcoes)}
