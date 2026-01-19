@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useMedAuth } from '@/contexts/MedAuthContext'
 import { useRouter } from 'next/navigation'
 import { Loader2, ShieldX, ShieldCheck } from 'lucide-react'
@@ -15,6 +15,25 @@ export function AdminGuard({ children }: AdminGuardProps) {
   const router = useRouter()
   const [isAdminUser, setIsAdminUser] = useState(false)
   const [checking, setChecking] = useState(true)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    // Timeout de segurança - após 5 segundos, tenta verificar mesmo assim
+    timeoutRef.current = setTimeout(() => {
+      if (checking) {
+        setChecking(false)
+        if (!user) {
+          router.push('/medicina/login')
+        }
+      }
+    }, 5000)
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [checking, user, router])
 
   useEffect(() => {
     if (authLoading) return
@@ -28,6 +47,11 @@ export function AdminGuard({ children }: AdminGuardProps) {
     setIsAdminUser(adminStatus)
     setChecking(false)
 
+    // Limpar timeout se completou normalmente
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+
     if (!adminStatus) {
       // Opcional: redirecionar após delay
       const timer = setTimeout(() => {
@@ -37,8 +61,8 @@ export function AdminGuard({ children }: AdminGuardProps) {
     }
   }, [user, authLoading, router])
 
-  // Loading state
-  if (authLoading || checking) {
+  // Loading state - mas com limite de tempo
+  if ((authLoading || checking) && !user) {
     return (
       <div className="min-h-screen bg-[#0A0F1C] flex items-center justify-center">
         <div className="text-center">
@@ -47,6 +71,14 @@ export function AdminGuard({ children }: AdminGuardProps) {
         </div>
       </div>
     )
+  }
+
+  // Se tem user mas ainda está checking, verificar admin status diretamente
+  if (user && checking) {
+    const adminStatus = isAdmin(user.email)
+    if (adminStatus) {
+      return <>{children}</>
+    }
   }
 
   // Não é admin

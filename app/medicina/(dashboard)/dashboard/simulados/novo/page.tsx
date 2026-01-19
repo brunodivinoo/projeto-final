@@ -39,9 +39,25 @@ export default function NovoSimuladoPage() {
   const [tempoHabilitado, setTempoHabilitado] = useState(false)
   const [disciplinasSelecionadas, setDisciplinasSelecionadas] = useState<string[]>([])
   const [bancasSelecionadas, setBancasSelecionadas] = useState<string[]>([])
-  const [dificuldadeMin, setDificuldadeMin] = useState(1)
-  const [dificuldadeMax, setDificuldadeMax] = useState(5)
+  const [periodoMin, setPeriodoMin] = useState(1)
+  const [periodoMax, setPeriodoMax] = useState(12)
   const [showFiltrosAvancados, setShowFiltrosAvancados] = useState(false)
+
+  // Informações dos períodos
+  const periodosInfo: Record<number, { label: string; ciclo: string; cor: string }> = {
+    1: { label: '1º Período', ciclo: 'Básico', cor: 'text-green-400' },
+    2: { label: '2º Período', ciclo: 'Básico', cor: 'text-green-400' },
+    3: { label: '3º Período', ciclo: 'Básico', cor: 'text-emerald-400' },
+    4: { label: '4º Período', ciclo: 'Básico', cor: 'text-emerald-400' },
+    5: { label: '5º Período', ciclo: 'Clínico', cor: 'text-teal-400' },
+    6: { label: '6º Período', ciclo: 'Clínico', cor: 'text-cyan-400' },
+    7: { label: '7º Período', ciclo: 'Clínico', cor: 'text-blue-400' },
+    8: { label: '8º Período', ciclo: 'Clínico', cor: 'text-blue-400' },
+    9: { label: '9º Período', ciclo: 'Internato', cor: 'text-indigo-400' },
+    10: { label: '10º Período', ciclo: 'Internato', cor: 'text-purple-400' },
+    11: { label: '11º Período', ciclo: 'Internato', cor: 'text-orange-400' },
+    12: { label: '12º Período', ciclo: 'Internato', cor: 'text-red-400' }
+  }
 
   // Buscar disciplinas e bancas
   useEffect(() => {
@@ -110,8 +126,8 @@ export default function NovoSimuladoPage() {
           nome: nome.trim(),
           tipo: 'personalizado',
           disciplinas: disciplinasSelecionadas.length > 0 ? disciplinasSelecionadas : null,
-          dificuldadeMin,
-          dificuldadeMax,
+          periodoMin,
+          periodoMax,
           bancas: bancasSelecionadas.length > 0 ? bancasSelecionadas : null,
           totalQuestoes,
           tempoLimite: tempoHabilitado ? tempoLimite : null
@@ -324,32 +340,43 @@ export default function NovoSimuladoPage() {
 
           {showFiltrosAvancados && (
             <div className="p-6 border-t border-white/10 space-y-6">
-              {/* Dificuldade */}
+              {/* Período */}
               <div>
                 <label className="text-white/80 text-sm mb-3 block">
-                  Dificuldade: {dificuldadeMin} a {dificuldadeMax}
+                  Período do Curso: <span className={periodosInfo[periodoMin]?.cor}>{periodosInfo[periodoMin]?.label}</span> até <span className={periodosInfo[periodoMax]?.cor}>{periodosInfo[periodoMax]?.label}</span>
                 </label>
                 <div className="flex items-center gap-4">
                   <select
-                    value={dificuldadeMin}
-                    onChange={(e) => setDificuldadeMin(parseInt(e.target.value))}
+                    value={periodoMin}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value)
+                      setPeriodoMin(val)
+                      if (val > periodoMax) setPeriodoMax(val)
+                    }}
                     className="bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    {[1, 2, 3, 4, 5].map(n => (
-                      <option key={n} value={n} className="bg-slate-800">{n}</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                      <option key={n} value={n} className="bg-slate-800">{periodosInfo[n]?.label} ({periodosInfo[n]?.ciclo})</option>
                     ))}
                   </select>
                   <span className="text-white/40">até</span>
                   <select
-                    value={dificuldadeMax}
-                    onChange={(e) => setDificuldadeMax(parseInt(e.target.value))}
+                    value={periodoMax}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value)
+                      setPeriodoMax(val)
+                      if (val < periodoMin) setPeriodoMin(val)
+                    }}
                     className="bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    {[1, 2, 3, 4, 5].map(n => (
-                      <option key={n} value={n} className="bg-slate-800">{n}</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                      <option key={n} value={n} className="bg-slate-800">{periodosInfo[n]?.label} ({periodosInfo[n]?.ciclo})</option>
                     ))}
                   </select>
                 </div>
+                <p className="text-white/40 text-xs mt-2">
+                  Ciclo Básico: 1º-4º | Ciclo Clínico: 5º-8º | Internato: 9º-12º
+                </p>
               </div>
 
               {/* Bancas */}

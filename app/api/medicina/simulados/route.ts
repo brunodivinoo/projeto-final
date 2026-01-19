@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
       tipo,
       disciplinas,
       assuntos,
-      dificuldadeMin,
-      dificuldadeMax,
+      periodoMin,
+      periodoMax,
       bancas,
       anos,
       totalQuestoes,
@@ -123,12 +123,12 @@ export async function POST(request: NextRequest) {
       queryQuestoes = queryQuestoes.in('assunto_id', assuntos)
     }
 
-    if (dificuldadeMin) {
-      queryQuestoes = queryQuestoes.gte('dificuldade', dificuldadeMin)
+    if (periodoMin) {
+      queryQuestoes = queryQuestoes.gte('periodo_dificuldade', periodoMin)
     }
 
-    if (dificuldadeMax) {
-      queryQuestoes = queryQuestoes.lte('dificuldade', dificuldadeMax)
+    if (periodoMax) {
+      queryQuestoes = queryQuestoes.lte('periodo_dificuldade', periodoMax)
     }
 
     if (bancas && bancas.length > 0) {
@@ -163,8 +163,8 @@ export async function POST(request: NextRequest) {
         nome,
         tipo: tipo || 'personalizado',
         disciplinas: disciplinas || null,
-        dificuldade_min: dificuldadeMin || null,
-        dificuldade_max: dificuldadeMax || null,
+        periodo_min: periodoMin || null,
+        periodo_max: periodoMax || null,
         bancas: bancas || null,
         anos: anos || null,
         questoes_ids: questoesIds,

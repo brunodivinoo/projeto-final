@@ -34,11 +34,15 @@ interface Flashcard {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { user_id, tema, quantidade = 10, dificuldade = 'misto' } = body
+    const { user_id, tema, disciplina, assunto, quantidade = 10, dificuldade = 'misto' } = body
 
-    if (!user_id || !tema) {
+    // Aceitar tanto 'tema' quanto 'disciplina' para retrocompatibilidade
+    const temaFinal = tema || disciplina
+    const assuntoInfo = assunto ? ` - ${assunto}` : ''
+
+    if (!temaFinal) {
       return NextResponse.json(
-        { error: 'user_id e tema são obrigatórios' },
+        { error: 'tema ou disciplina é obrigatório' },
         { status: 400 }
       )
     }
@@ -63,23 +67,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar limite
-    const { permitido, usado, limite } = await verificarLimiteIA(user_id, plano, 'flashcards')
-    if (!permitido) {
-      return NextResponse.json(
-        {
-          error: `Limite de flashcards atingido (${usado}/${limite})`,
-          usado,
-          limite
-        },
-        { status: 429 }
-      )
+    // Verificar limite (se user_id não foi fornecido, permitir geração anônima limitada)
+    if (user_id) {
+      const { permitido, usado, limite } = await verificarLimiteIA(user_id, plano, 'flashcards')
+      if (!permitido) {
+        return NextResponse.json(
+          {
+            error: `Limite de flashcards atingido (${usado}/${limite})`,
+            usado,
+            limite
+          },
+          { status: 429 }
+        )
+      }
     }
 
     // Construir prompt
+    const temaCompleto = assunto ? `${temaFinal} - ${assunto}` : temaFinal
     const promptCompleto = `${PROMPT_GERAR_FLASHCARDS}
 
-TEMA: ${tema}
+TEMA: ${temaCompleto}
 QUANTIDADE: ${qtd} flashcards
 DIFICULDADE: ${dificuldade === 'misto' ? 'variada (fácil, médio e difícil)' : dificuldade}
 
@@ -142,32 +149,37 @@ Retorne em formato JSON com a estrutura: { "flashcards": [{ "frente": "...", "ve
       tokensOutput = Math.ceil(jsonResponse.length / 4)
     }
 
-    // Salvar flashcards no banco
-    const flashcardsParaSalvar = flashcards.map(f => ({
-      user_id,
-      tema,
-      frente: f.frente,
-      verso: f.verso,
-      dificuldade: f.dificuldade || 'medio',
-      tags: f.tags || [tema]
-    }))
+    // Salvar flashcards no banco apenas se tiver user_id
+    let savedFlashcards = null
+    if (user_id) {
+      const flashcardsParaSalvar = flashcards.map(f => ({
+        user_id,
+        tema: temaFinal,
+        frente: f.frente,
+        verso: f.verso,
+        dificuldade: f.dificuldade || 'medio',
+        tags: f.tags || [temaFinal, ...(assunto ? [assunto] : [])]
+      }))
 
-    const { data: savedFlashcards, error: saveError } = await supabase
-      .from('flashcards_ia_med')
-      .insert(flashcardsParaSalvar)
-      .select()
+      const { data, error: saveError } = await supabase
+        .from('flashcards_ia_med')
+        .insert(flashcardsParaSalvar)
+        .select()
 
-    if (saveError) {
-      console.error('Erro ao salvar flashcards:', saveError)
+      savedFlashcards = data
+
+      if (saveError) {
+        console.error('Erro ao salvar flashcards:', saveError)
+      }
+
+      // Incrementar uso (conta quantidade de flashcards)
+      const custo = calcularCusto(
+        plano === 'residencia' ? MODELOS.claude.opus : 'gemini-flash',
+        tokensInput,
+        tokensOutput
+      )
+      await incrementarUsoIA(user_id, 'flashcards', flashcards.length, tokensInput, tokensOutput, custo)
     }
-
-    // Incrementar uso (conta quantidade de flashcards)
-    const custo = calcularCusto(
-      plano === 'residencia' ? MODELOS.claude.opus : 'gemini-flash',
-      tokensInput,
-      tokensOutput
-    )
-    await incrementarUsoIA(user_id, 'flashcards', flashcards.length, tokensInput, tokensOutput, custo)
 
     return NextResponse.json({
       success: true,

@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
       .from('forum_topicos_med')
       .select(`
         *,
-        autor:profiles_med!forum_topicos_med_user_id_fkey(id, nome, plano),
-        disciplina:disciplinas_med(id, nome)
+        autor:profiles_med!user_id(id, nome, plano),
+        disciplina:disciplinas_med!disciplina_id(id, nome)
       `, { count: 'exact' })
 
     if (categoria) {
@@ -43,7 +43,10 @@ export async function GET(request: NextRequest) {
 
     const { data: topicos, error, count } = await query
 
-    if (error) throw error
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
 
     return NextResponse.json({
       topicos: topicos || [],
@@ -53,7 +56,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao buscar tópicos:', error)
     return NextResponse.json(
-      { error: 'Erro ao buscar tópicos' },
+      { error: 'Erro ao buscar tópicos', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
@@ -85,19 +88,22 @@ export async function POST(request: NextRequest) {
       })
       .select(`
         *,
-        autor:profiles_med!forum_topicos_med_user_id_fkey(id, nome, plano),
-        disciplina:disciplinas_med(id, nome)
+        autor:profiles_med!user_id(id, nome, plano),
+        disciplina:disciplinas_med!disciplina_id(id, nome)
       `)
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
 
     return NextResponse.json({ topico })
 
   } catch (error) {
     console.error('Erro ao criar tópico:', error)
     return NextResponse.json(
-      { error: 'Erro ao criar tópico' },
+      { error: 'Erro ao criar tópico', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

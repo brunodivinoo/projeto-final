@@ -19,10 +19,10 @@ export async function GET(
       .from('forum_topicos_med')
       .select(`
         *,
-        autor:profiles_med!forum_topicos_med_user_id_fkey(id, nome, plano, avatar_url),
-        disciplina:disciplinas_med(id, nome),
-        questao:questoes_med(id, enunciado),
-        teoria:teorias_med(id, titulo)
+        autor:profiles_med!user_id(id, nome, plano, avatar_url),
+        disciplina:disciplinas_med!disciplina_id(id, nome),
+        questao:questoes_med!questao_id(id, enunciado),
+        teoria:teorias_med!teoria_id(id, titulo)
       `)
       .eq('id', id)
       .single()
@@ -45,7 +45,7 @@ export async function GET(
       .from('forum_respostas_med')
       .select(`
         *,
-        autor:profiles_med!forum_respostas_med_user_id_fkey(id, nome, plano, avatar_url)
+        autor:profiles_med!user_id(id, nome, plano, avatar_url)
       `)
       .eq('topico_id', id)
       .order('melhor_resposta', { ascending: false })
@@ -94,7 +94,7 @@ export async function POST(
       })
       .select(`
         *,
-        autor:profiles_med!forum_respostas_med_user_id_fkey(id, nome, plano, avatar_url)
+        autor:profiles_med!user_id(id, nome, plano, avatar_url)
       `)
       .single()
 

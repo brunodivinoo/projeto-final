@@ -20,10 +20,13 @@ import {
   BookOpen,
   Target,
   TrendingUp,
-  X
+  X,
+  Loader2,
+  AlertCircle
 } from 'lucide-react'
 import { useFlashcardsMed, FlashcardMed, calcularIntervaloExibicao } from '@/hooks/useFlashcardsMed'
 import { useMedAuth } from '@/contexts/MedAuthContext'
+import { supabase } from '@/lib/supabase'
 
 interface FlashcardSystemProps {
   disciplinaInicial?: string
@@ -57,6 +60,7 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
   const [mostrarCriar, setMostrarCriar] = useState(false)
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
   const [sessaoCompleta, setSessaoCompleta] = useState(false)
+  const [mostrarGerarIA, setMostrarGerarIA] = useState(false)
 
   // Form de criar flashcard
   const [novoFrente, setNovoFrente] = useState('')
@@ -64,8 +68,47 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
   const [novoDisciplina, setNovoDisciplina] = useState('')
   const [novoAssunto, setNovoAssunto] = useState('')
 
+  // Estados para geração com IA
+  const [disciplinasDisponiveis, setDisciplinasDisponiveis] = useState<{id: string, nome: string}[]>([])
+  const [assuntosDisponiveis, setAssuntosDisponiveis] = useState<{id: string, nome: string}[]>([])
+  const [disciplinaIA, setDisciplinaIA] = useState('')
+  const [assuntoIA, setAssuntoIA] = useState('')
+  const [quantidadeIA, setQuantidadeIA] = useState(5)
+  const [gerandoIA, setGerandoIA] = useState(false)
+  const [erroIA, setErroIA] = useState('')
+  const [flashcardsGerados, setFlashcardsGerados] = useState<{frente: string, verso: string}[]>([])
+
   // Verificar se pode usar
   const podeUsar = podeUsarFuncionalidade('flashcards')
+
+  // Carregar disciplinas e assuntos disponíveis
+  useEffect(() => {
+    const carregarDados = async () => {
+      const { data: discs } = await supabase
+        .from('disciplinas_med')
+        .select('id, nome')
+        .order('nome')
+      if (discs) setDisciplinasDisponiveis(discs)
+    }
+    carregarDados()
+  }, [])
+
+  // Carregar assuntos quando disciplina mudar
+  useEffect(() => {
+    const carregarAssuntos = async () => {
+      if (!disciplinaIA) {
+        setAssuntosDisponiveis([])
+        return
+      }
+      const { data: assuntos } = await supabase
+        .from('assuntos_med')
+        .select('id, nome')
+        .eq('disciplina_id', disciplinaIA)
+        .order('nome')
+      if (assuntos) setAssuntosDisponiveis(assuntos)
+    }
+    carregarAssuntos()
+  }, [disciplinaIA])
 
   // Iniciar timer quando vira o card
   useEffect(() => {
@@ -112,6 +155,71 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
     setNovoAssunto('')
     setMostrarCriar(false)
   }, [novoFrente, novoVerso, novoDisciplina, novoAssunto, criarFlashcard])
+
+  // Gerar flashcards com IA
+  const handleGerarComIA = useCallback(async () => {
+    if (!disciplinaIA) {
+      setErroIA('Selecione uma disciplina')
+      return
+    }
+
+    setGerandoIA(true)
+    setErroIA('')
+    setFlashcardsGerados([])
+
+    try {
+      const disciplinaNome = disciplinasDisponiveis.find(d => d.id === disciplinaIA)?.nome || ''
+      const assuntoNome = assuntosDisponiveis.find(a => a.id === assuntoIA)?.nome || ''
+
+      const response = await fetch('/api/medicina/ia/flashcards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          disciplina: disciplinaNome,
+          assunto: assuntoNome || undefined,
+          quantidade: quantidadeIA
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao gerar flashcards')
+      }
+
+      const data = await response.json()
+
+      if (data.flashcards && data.flashcards.length > 0) {
+        setFlashcardsGerados(data.flashcards)
+      } else {
+        throw new Error('Nenhum flashcard gerado')
+      }
+    } catch (err) {
+      setErroIA(err instanceof Error ? err.message : 'Erro ao gerar flashcards')
+    } finally {
+      setGerandoIA(false)
+    }
+  }, [disciplinaIA, assuntoIA, quantidadeIA, disciplinasDisponiveis, assuntosDisponiveis])
+
+  // Salvar flashcards gerados pela IA
+  const handleSalvarFlashcardsIA = useCallback(async () => {
+    if (flashcardsGerados.length === 0) return
+
+    const disciplinaNome = disciplinasDisponiveis.find(d => d.id === disciplinaIA)?.nome || ''
+    const assuntoNome = assuntosDisponiveis.find(a => a.id === assuntoIA)?.nome || ''
+
+    for (const fc of flashcardsGerados) {
+      await criarFlashcard({
+        frente: fc.frente,
+        verso: fc.verso,
+        disciplina: disciplinaNome,
+        assunto: assuntoNome || undefined
+      })
+    }
+
+    setFlashcardsGerados([])
+    setMostrarGerarIA(false)
+    setDisciplinaIA('')
+    setAssuntoIA('')
+  }, [flashcardsGerados, disciplinaIA, assuntoIA, disciplinasDisponiveis, assuntosDisponiveis, criarFlashcard])
 
   // Loading
   if (loading) {
@@ -194,6 +302,15 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
             title="Embaralhar"
           >
             <Shuffle className="w-5 h-5" />
+          </button>
+
+          {/* Gerar com IA */}
+          <button
+            onClick={() => setMostrarGerarIA(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-lg transition-colors"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span className="hidden sm:inline">IA</span>
           </button>
 
           {/* Criar novo */}
@@ -478,6 +595,158 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
                   Criar Flashcard
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Gerar Flashcards com IA */}
+      <AnimatePresence>
+        {mostrarGerarIA && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+            onClick={() => !gerandoIA && setMostrarGerarIA(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-800 rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-emerald-400" />
+                  Gerar Flashcards com IA
+                </h3>
+                <button
+                  onClick={() => !gerandoIA && setMostrarGerarIA(false)}
+                  className="text-white/60 hover:text-white"
+                  disabled={gerandoIA}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {flashcardsGerados.length === 0 ? (
+                // Formulário de geração
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-white/60 text-sm mb-1">Disciplina *</label>
+                    <select
+                      value={disciplinaIA}
+                      onChange={e => {
+                        setDisciplinaIA(e.target.value)
+                        setAssuntoIA('')
+                      }}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500"
+                      disabled={gerandoIA}
+                    >
+                      <option value="" className="bg-slate-800">Selecione uma disciplina</option>
+                      {disciplinasDisponiveis.map(d => (
+                        <option key={d.id} value={d.id} className="bg-slate-800">{d.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-white/60 text-sm mb-1">Assunto (opcional)</label>
+                    <select
+                      value={assuntoIA}
+                      onChange={e => setAssuntoIA(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500"
+                      disabled={!disciplinaIA || gerandoIA}
+                    >
+                      <option value="" className="bg-slate-800">Todos os assuntos</option>
+                      {assuntosDisponiveis.map(a => (
+                        <option key={a.id} value={a.id} className="bg-slate-800">{a.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-white/60 text-sm mb-1">Quantidade de Flashcards</label>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="range"
+                        min="3"
+                        max="20"
+                        value={quantidadeIA}
+                        onChange={e => setQuantidadeIA(parseInt(e.target.value))}
+                        className="flex-1 accent-emerald-500"
+                        disabled={gerandoIA}
+                      />
+                      <span className="w-8 text-white font-medium text-center">{quantidadeIA}</span>
+                    </div>
+                  </div>
+
+                  {erroIA && (
+                    <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{erroIA}</span>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleGerarComIA}
+                    disabled={!disciplinaIA || gerandoIA}
+                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    {gerandoIA ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Gerando flashcards...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5" />
+                        Gerar {quantidadeIA} Flashcards
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                // Preview dos flashcards gerados
+                <div className="space-y-4">
+                  <p className="text-emerald-400 text-sm">
+                    {flashcardsGerados.length} flashcards gerados! Revise antes de salvar:
+                  </p>
+
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {flashcardsGerados.map((fc, idx) => (
+                      <div key={idx} className="bg-white/5 border border-white/10 rounded-lg p-3">
+                        <p className="text-white/60 text-xs mb-1">Frente:</p>
+                        <p className="text-white text-sm mb-2">{fc.frente}</p>
+                        <p className="text-white/60 text-xs mb-1">Verso:</p>
+                        <p className="text-emerald-200 text-sm">{fc.verso}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setFlashcardsGerados([])
+                        setErroIA('')
+                      }}
+                      className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Gerar novamente
+                    </button>
+                    <button
+                      onClick={handleSalvarFlashcardsIA}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Salvar todos
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
