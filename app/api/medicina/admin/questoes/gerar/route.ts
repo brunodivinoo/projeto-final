@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { isAdmin } from '@/lib/admin/auth'
 import { buildPromptQuestao, extrairJsonDaResposta, validarQuestaoGerada, TipoQuestao } from '@/lib/admin/questaoPrompts'
 import { delay } from '@/lib/admin/rateLimit'
+import { generateMedicalImage, buildMedicalImagePrompt } from '@/lib/services/gptImageService'
 
 // Usar service role para operações admin
 const supabase = createClient(
@@ -17,6 +18,29 @@ const anthropic = new Anthropic({
 
 // Intervalo entre questões (3 segundos)
 const DELAY_ENTRE_QUESTOES = 3000
+
+// Disciplinas que OBRIGATORIAMENTE precisam de imagens
+const DISCIPLINAS_IMAGEM_OBRIGATORIA = [
+  'anatomia', 'histologia', 'embriologia', 'patologia',
+  'radiologia', 'dermatologia', 'oftalmologia', 'cardiologia',
+  'hematologia', 'parasitologia', 'microbiologia', 'neurologia'
+]
+
+// Verificar se disciplina precisa de imagem
+function disciplinaPrecisaImagem(nomeDisciplina: string): boolean {
+  const nome = nomeDisciplina?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') || ''
+  return DISCIPLINAS_IMAGEM_OBRIGATORIA.some(d => nome.includes(d))
+}
+
+// Mapear disciplina para tipo de imagem
+function getTipoImagem(nomeDisciplina: string): 'anatomy' | 'histology' | 'radiology' | 'pathology' | 'diagram' {
+  const nome = nomeDisciplina?.toLowerCase() || ''
+  if (nome.includes('anatomia') || nome.includes('embriologia')) return 'anatomy'
+  if (nome.includes('histologia')) return 'histology'
+  if (nome.includes('radiologia') || nome.includes('cardiologia') || nome.includes('neurologia')) return 'radiology'
+  if (nome.includes('patologia') || nome.includes('dermatologia')) return 'pathology'
+  return 'diagram'
+}
 
 interface AssuntoInput {
   id: string
@@ -189,6 +213,63 @@ export async function POST(req: NextRequest) {
                       throw errQuestao
                     }
 
+                    // Gerar imagem se a disciplina precisa
+                    let imagemUrl: string | null = null
+                    if (disciplinaPrecisaImagem(disciplina.nome) && questaoData.imagem) {
+                      try {
+                        sendLog('gerando_imagem', {
+                          questao_id: questaoSalva.id,
+                          estrutura: questaoData.imagem.estrutura_apontada || questaoData.imagem.descricao_detalhada?.substring(0, 50)
+                        })
+
+                        const tipoImagem = getTipoImagem(disciplina.nome)
+                        const prompt = buildMedicalImagePrompt({
+                          structure: questaoData.imagem.estrutura_apontada || assunto.nome,
+                          type: tipoImagem,
+                          additionalDetails: questaoData.imagem.descricao_detalhada
+                        })
+
+                        const imgResult = await generateMedicalImage({
+                          prompt,
+                          quality: 'medium',
+                          size: '1024x1024',
+                          style: 'natural'
+                        })
+
+                        if (imgResult.url) {
+                          imagemUrl = imgResult.url
+
+                          // Atualizar questão com a imagem
+                          await supabase
+                            .from('questoes_med')
+                            .update({
+                              imagem_url: imgResult.url,
+                              imagem_dados: {
+                                url: imgResult.url,
+                                revisedPrompt: imgResult.revisedPrompt,
+                                geradoPor: 'dall-e-3',
+                                dataGeracao: new Date().toISOString(),
+                                estrutura: questaoData.imagem.estrutura_apontada,
+                                tipo: tipoImagem
+                              }
+                            })
+                            .eq('id', questaoSalva.id)
+
+                          sendLog('imagem_gerada', {
+                            questao_id: questaoSalva.id,
+                            imagem_url: imgResult.url.substring(0, 80) + '...'
+                          })
+                        }
+                      } catch (imgError) {
+                        console.error('Erro ao gerar imagem:', imgError)
+                        sendLog('erro_imagem', {
+                          questao_id: questaoSalva.id,
+                          erro: imgError instanceof Error ? imgError.message : 'Erro desconhecido'
+                        })
+                        // Não bloquear a geração da questão por erro de imagem
+                      }
+                    }
+
                     // Log de sucesso no banco (ignorar erros de log)
                     try {
                       await supabase
@@ -215,7 +296,8 @@ export async function POST(req: NextRequest) {
                       tempo_ms: tempoGeracao,
                       tokens: response.usage.input_tokens + response.usage.output_tokens,
                       total_geradas: totalGeradas,
-                      tipo_questao: tipoQuestao
+                      tipo_questao: tipoQuestao,
+                      tem_imagem: !!imagemUrl
                     })
 
                   } catch (error) {
