@@ -327,17 +327,16 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Buscar assinatura ativa
-      const { data: assinaturaData } = await supabase
+      const { data: assinaturasData } = await supabase
         .from('assinaturas_med')
         .select('*')
         .eq('user_id', userId)
         .eq('status', 'ativa')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single()
 
-      if (assinaturaData) {
-        setAssinatura(assinaturaData as AssinaturaMED)
+      if (assinaturasData && assinaturasData.length > 0) {
+        setAssinatura(assinaturasData[0] as AssinaturaMED)
       }
 
       lastFetchedUserIdRef.current = userId

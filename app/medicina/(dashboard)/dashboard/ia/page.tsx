@@ -35,8 +35,7 @@ import { useArtifactsStore } from '@/stores/artifactsStore'
 import { VoiceButton } from '@/components/medicina/VoiceButton'
 import { ExamAnalyzerModal } from '@/components/medicina/ExamAnalyzer'
 import { ChatModeSelector, ChatModeIntro, useChatMode, type ChatMode } from '@/components/medicina/ChatModes'
-import { ChatTabs } from '@/components/medicina/ia/ChatTabs'
-import { useChatModeStore, ChatMode as StoreChatMode } from '@/lib/stores/chatModeStore'
+import { useChatModeStore, ChatMode as StoreChatMode, MODE_CONFIG } from '@/lib/stores/chatModeStore'
 
 // Hook para obter o estado da sidebar de artefatos
 const useArtifactsSidebar = () => {
@@ -141,11 +140,6 @@ export default function IAPage() {
       setConversaAtual(null)
     }
   }, [trocarModoBase, setCurrentChatMode, setStoreMode, activeConversationByMode])
-
-  // Handler para troca via ChatTabs
-  const handleModeChangeFromTabs = useCallback((mode: StoreChatMode) => {
-    trocarModo(mode as ChatMode)
-  }, [trocarModo])
 
   // Smart scroll - permite scroll manual durante streaming
   const { containerRef: chatRef, isAtBottom, scrollToBottom } = useSmartScroll({
@@ -704,9 +698,6 @@ export default function IAPage() {
 
       {/* Chat Principal */}
       <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
-        {/* Abas de Modo */}
-        <ChatTabs onModeChange={handleModeChangeFromTabs} />
-
         {/* Header - Compacto */}
         <div className="flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-white/10">
           <div className="flex items-center gap-2 md:gap-3">
@@ -733,6 +724,12 @@ export default function IAPage() {
                   {isResidencia ? 'Claude Opus | Ilimitado' : `Gemini Flash | ${uso?.uso_mes.chats || 0}/100`}
                 </p>
               </div>
+            </div>
+
+            {/* Indicador do Modo Atual */}
+            <div className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${MODE_CONFIG[chatMode as StoreChatMode]?.bgColor || 'bg-blue-500/20'} ${MODE_CONFIG[chatMode as StoreChatMode]?.color || 'text-blue-400'}`}>
+              <span>{MODE_CONFIG[chatMode as StoreChatMode]?.icon || '💬'}</span>
+              <span>{MODE_CONFIG[chatMode as StoreChatMode]?.label || 'Chat Livre'}</span>
             </div>
           </div>
 
