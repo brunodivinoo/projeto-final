@@ -13,7 +13,9 @@ import {
   Camera,
   Crown,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  Edit3
 } from 'lucide-react'
 
 const estados = [
@@ -45,6 +47,12 @@ export default function PerfilPage() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
 
+  // Estados para alteração de email
+  const [editandoEmail, setEditandoEmail] = useState(false)
+  const [novoEmail, setNovoEmail] = useState('')
+  const [salvandoEmail, setSalvandoEmail] = useState(false)
+  const [emailEnviado, setEmailEnviado] = useState(false)
+
   const [form, setForm] = useState({
     nome: '',
     email: '',
@@ -64,8 +72,44 @@ export default function PerfilPage() {
         estado: profile.estado || '',
         cidade: profile.cidade || ''
       })
+      setNovoEmail(profile.email || user?.email || '')
     }
   }, [profile, user])
+
+  const handleAlterarEmail = async () => {
+    if (!novoEmail || novoEmail === form.email) {
+      setEditandoEmail(false)
+      return
+    }
+
+    // Validar email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(novoEmail)) {
+      setError('Digite um email válido')
+      return
+    }
+
+    setSalvandoEmail(true)
+    setError('')
+
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        email: novoEmail
+      })
+
+      if (updateError) {
+        setError(updateError.message)
+      } else {
+        setEmailEnviado(true)
+        setEditandoEmail(false)
+      }
+    } catch (err) {
+      console.error('Erro ao alterar email:', err)
+      setError('Erro ao alterar email. Tente novamente.')
+    } finally {
+      setSalvandoEmail(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -165,16 +209,73 @@ export default function PerfilPage() {
               <label className="block text-white/80 text-sm font-medium mb-2">
                 E-mail
               </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                <input
-                  type="email"
-                  value={form.email}
-                  disabled
-                  className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-12 pr-4 text-white/50 cursor-not-allowed"
-                />
-              </div>
-              <p className="text-white/40 text-xs mt-1">O e-mail não pode ser alterado</p>
+              {editandoEmail ? (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <input
+                      type="email"
+                      value={novoEmail}
+                      onChange={(e) => setNovoEmail(e.target.value)}
+                      className="w-full bg-white/5 border border-emerald-500/50 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      placeholder="novo@email.com"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAlterarEmail}
+                      disabled={salvandoEmail}
+                      className="flex-1 py-2 bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 rounded-lg text-sm font-medium hover:bg-emerald-500/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {salvandoEmail ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        'Confirmar'
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditandoEmail(false)
+                        setNovoEmail(form.email)
+                      }}
+                      className="px-4 py-2 bg-white/5 border border-white/10 text-white/60 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                  <input
+                    type="email"
+                    value={form.email}
+                    disabled
+                    className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-12 pr-12 text-white/70 cursor-not-allowed"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setEditandoEmail(true)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                    title="Alterar email"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+              {emailEnviado ? (
+                <p className="text-emerald-400 text-xs mt-1 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Email de confirmação enviado para {novoEmail}. Verifique sua caixa de entrada.
+                </p>
+              ) : (
+                <p className="text-white/40 text-xs mt-1">Clique no ícone para alterar o email</p>
+              )}
             </div>
           </div>
         </div>

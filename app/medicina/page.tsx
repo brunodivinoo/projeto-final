@@ -202,11 +202,11 @@ export default function MedicinaLandingPage() {
                 </Link>
                 <ul className="space-y-3">
                   {[
-                    '20 questões por dia',
-                    '2 simulados por mês',
+                    '10 questões por dia',
                     'Teoria básica',
                     '10 anotações',
-                    'Estatísticas básicas'
+                    'Estatísticas básicas',
+                    'Trial de 4h completo'
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-emerald-200/70 text-sm">
                       <Check className="w-5 h-5 text-emerald-500/50 flex-shrink-0" />
@@ -258,12 +258,12 @@ export default function MedicinaLandingPage() {
                 <ul className="space-y-3">
                   {[
                     { text: 'Questões ilimitadas', highlight: true },
-                    { text: '10 simulados por mês', highlight: false },
-                    { text: 'Teoria completa', highlight: false },
+                    { text: '5 simulados por mês', highlight: false },
+                    { text: 'Teoria avançada', highlight: false },
                     { text: '100 anotações', highlight: false },
                     { text: '100 perguntas IA/mês', highlight: true },
-                    { text: '50 resumos IA/mês', highlight: false },
-                    { text: 'Exportar PDF/Word', highlight: false },
+                    { text: '15 resumos IA/mês', highlight: false },
+                    { text: '50 flashcards', highlight: false },
                     { text: 'Suporte por e-mail', highlight: false }
                   ].map((item, i) => (
                     <li key={i} className={`flex items-start gap-3 text-sm ${item.highlight ? 'text-white font-medium' : 'text-emerald-200/80'}`}>

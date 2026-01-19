@@ -185,7 +185,7 @@ export function UpgradeModal({ tipo, feature, conquista, onClose }: UpgradeModal
               <>
                 <li className="flex items-center gap-2 text-white/90">
                   <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  {limitesSugeridos.questoes_dia} questões por dia
+                  Questões ilimitadas
                 </li>
                 <li className="flex items-center gap-2 text-white/90">
                   <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -193,7 +193,7 @@ export function UpgradeModal({ tipo, feature, conquista, onClose }: UpgradeModal
                 </li>
                 <li className="flex items-center gap-2 text-white/90">
                   <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  Simulados e flashcards
+                  5 simulados e 50 flashcards
                 </li>
                 <li className="flex items-center gap-2 text-white/90">
                   <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />

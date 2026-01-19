@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { Eye, EyeOff, Stethoscope, Mail, Lock, User, ArrowLeft, Loader2, GraduationCap, MapPin, CheckCircle2 } from 'lucide-react'
+import { Eye, EyeOff, Stethoscope, Mail, Lock, User, ArrowLeft, Loader2, GraduationCap, MapPin, CheckCircle2, Gift } from 'lucide-react'
 
 const ESTADOS_BRASIL = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
@@ -23,10 +23,14 @@ const ANOS_CURSO = [
 
 export default function MedicinaCadastroPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
   const [sucesso, setSucesso] = useState(false)
+
+  // Código de indicação da URL (ref=XXXXXXXX)
+  const [codigoIndicacao, setCodigoIndicacao] = useState('')
 
   // Step 1 - Dados básicos
   const [nome, setNome] = useState('')
@@ -40,6 +44,14 @@ export default function MedicinaCadastroPage() {
   const [anoCurso, setAnoCurso] = useState<number | ''>('')
   const [estado, setEstado] = useState('')
   const [cidade, setCidade] = useState('')
+
+  // Capturar código de indicação da URL
+  useEffect(() => {
+    const ref = searchParams.get('ref')
+    if (ref) {
+      setCodigoIndicacao(ref.toUpperCase())
+    }
+  }, [searchParams])
 
   const validarStep1 = () => {
     if (!nome.trim()) {
@@ -101,7 +113,7 @@ export default function MedicinaCadastroPage() {
       }
 
       if (data.user) {
-        // Criar profile_MED
+        // Criar profile_MED (com código de indicação se houver)
         await supabase
           .from('profiles_med')
           .insert({
@@ -112,7 +124,8 @@ export default function MedicinaCadastroPage() {
             ano_curso: anoCurso || null,
             estado: estado || null,
             cidade: cidade || null,
-            plano: 'gratuito'
+            plano: 'gratuito',
+            indicado_por: codigoIndicacao || null
           })
 
         // Criar limites de uso do mês atual
@@ -205,6 +218,21 @@ export default function MedicinaCadastroPage() {
               2
             </div>
           </div>
+
+          {/* Banner de indicação */}
+          {codigoIndicacao && (
+            <div className="mb-4 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
+                  <Gift className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-white font-medium">Você foi convidado!</p>
+                  <p className="text-purple-200 text-sm">Ganhe +3 questões/dia de bônus ao se cadastrar</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Card de Cadastro */}
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">

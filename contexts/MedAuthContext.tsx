@@ -43,7 +43,7 @@ export interface LimitesUsoMED {
 // =============================================
 // LIMITES POR PLANO - PREPARAMED 2026
 // =============================================
-// FREE: R$0 - Trial 4h + 20 questões/dia
+// FREE: R$0 - Trial 4h + 10 questões/dia
 // PREMIUM: R$60/mês - Sonnet + limites generosos
 // RESIDÊNCIA: R$150/mês - Opus + ilimitado
 // =============================================
@@ -53,7 +53,7 @@ export const LIMITES_PLANO = {
     // Trial de 4 horas com acesso total
     trial_horas: 4,
     // Após trial
-    questoes_dia: 20,
+    questoes_dia: 10,
     gabarito_percentual: 50, // 50% blur
     simulados_mes: 0,
     questoes_por_simulado: 0,
@@ -76,13 +76,13 @@ export const LIMITES_PLANO = {
   premium: {
     // R$60/mês
     trial_horas: 0,
-    questoes_dia: 80,
+    questoes_dia: -1, // ilimitado
     gabarito_percentual: 100,
-    simulados_mes: 2,
+    simulados_mes: 5,
     questoes_por_simulado: 100,
     perguntas_ia_mes: 100, // Sonnet
-    resumos_ia_mes: 10,
-    flashcards_semana: 30,
+    resumos_ia_mes: 15,
+    flashcards_semana: 50,
     casos_clinicos_mes: 3, // Texto apenas
     anotacoes_total: 100,
     biblioteca_acesso: true,

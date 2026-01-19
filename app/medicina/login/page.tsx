@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { Eye, EyeOff, Stethoscope, Mail, Lock, ArrowLeft, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Stethoscope, Mail, Lock, ArrowLeft, Loader2, Sparkles, CheckCircle2 } from 'lucide-react'
 
 export default function MedicinaLoginPage() {
   const router = useRouter()
@@ -12,7 +12,9 @@ export default function MedicinaLoginPage() {
   const [senha, setSenha] = useState('')
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [loadingMagicLink, setLoadingMagicLink] = useState(false)
   const [erro, setErro] = useState('')
+  const [magicLinkEnviado, setMagicLinkEnviado] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,6 +88,36 @@ export default function MedicinaLoginPage() {
       setErro('Erro ao fazer login com Google')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleMagicLink = async () => {
+    if (!email) {
+      setErro('Digite seu email para receber o link mágico')
+      return
+    }
+
+    setLoadingMagicLink(true)
+    setErro('')
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/medicina/dashboard`
+        }
+      })
+
+      if (error) {
+        setErro(error.message)
+      } else {
+        setMagicLinkEnviado(true)
+      }
+    } catch (err) {
+      console.error('Erro ao enviar magic link:', err)
+      setErro('Erro ao enviar link. Tente novamente.')
+    } finally {
+      setLoadingMagicLink(false)
     }
   }
 
@@ -172,8 +204,21 @@ export default function MedicinaLoginPage() {
                 </div>
               </div>
 
-              {/* Esqueceu a senha */}
-              <div className="text-right">
+              {/* Esqueceu a senha e Magic Link */}
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={handleMagicLink}
+                  disabled={loadingMagicLink || loading}
+                  className="text-sm text-purple-300 hover:text-purple-200 transition-colors flex items-center gap-1 disabled:opacity-50"
+                >
+                  {loadingMagicLink ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3 h-3" />
+                  )}
+                  Entrar sem senha
+                </button>
                 <Link
                   href="/medicina/esqueci-senha"
                   className="text-sm text-emerald-300 hover:text-white transition-colors"
@@ -181,6 +226,17 @@ export default function MedicinaLoginPage() {
                   Esqueceu a senha?
                 </Link>
               </div>
+
+              {/* Magic Link Enviado */}
+              {magicLinkEnviado && (
+                <div className="p-3 bg-purple-500/20 border border-purple-500/50 rounded-lg text-purple-200 text-sm flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">Link mágico enviado!</p>
+                    <p className="text-purple-300/80 text-xs mt-1">Verifique seu email e clique no link para entrar sem precisar de senha.</p>
+                  </div>
+                </div>
+              )}
 
               {/* Botão Entrar */}
               <button

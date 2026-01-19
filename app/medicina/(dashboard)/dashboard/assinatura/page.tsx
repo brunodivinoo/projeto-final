@@ -47,10 +47,10 @@ const planos = [
     descricao: 'Para conhecer a plataforma',
     economia: null,
     recursos: [
-      { texto: '20 questões por dia', disponivel: true, destaque: false },
-      { texto: '2 simulados por mês', disponivel: true, destaque: false },
+      { texto: '10 questões por dia', disponivel: true, destaque: false },
       { texto: 'Teoria nível básico', disponivel: true, destaque: false },
       { texto: 'Estatísticas básicas', disponivel: true, destaque: false },
+      { texto: 'Simulados', disponivel: false, destaque: false },
       { texto: 'IA Tutora', disponivel: false, destaque: false },
       { texto: 'Flashcards', disponivel: false, destaque: false },
       { texto: 'Resumos IA', disponivel: false, destaque: false },
@@ -72,12 +72,12 @@ const planos = [
     economia: 'R$240/ano',
     recursos: [
       { texto: 'Questões ilimitadas', disponivel: true, destaque: true },
-      { texto: '10 simulados por mês', disponivel: true, destaque: false },
+      { texto: '5 simulados por mês', disponivel: true, destaque: false },
       { texto: 'Teoria nível avançado', disponivel: true, destaque: false },
       { texto: 'Estatísticas completas', disponivel: true, destaque: false },
       { texto: '100 perguntas IA/mês', disponivel: true, destaque: true },
-      { texto: '500 flashcards', disponivel: true, destaque: false },
-      { texto: '50 resumos IA/mês', disponivel: true, destaque: false },
+      { texto: '50 flashcards', disponivel: true, destaque: false },
+      { texto: '15 resumos IA/mês', disponivel: true, destaque: false },
       { texto: 'Suporte por e-mail', disponivel: true, destaque: false },
     ]
   },
@@ -511,11 +511,11 @@ export default function AssinaturaPage() {
             </thead>
             <tbody>
               {[
-                { recurso: 'Questões por dia', gratuito: '20', premium: '∞ Ilimitadas', residencia: '∞ Ilimitadas' },
-                { recurso: 'Simulados por mês', gratuito: '2', premium: '10', residencia: '∞ Ilimitados' },
+                { recurso: 'Questões por dia', gratuito: '10', premium: '∞ Ilimitadas', residencia: '∞ Ilimitadas' },
+                { recurso: 'Simulados por mês', gratuito: '—', premium: '5', residencia: '∞ Ilimitados' },
                 { recurso: 'Perguntas IA', gratuito: '—', premium: '100/mês', residencia: '∞ Ilimitadas' },
-                { recurso: 'Resumos IA', gratuito: '—', premium: '50/mês', residencia: '∞ Ilimitados' },
-                { recurso: 'Flashcards', gratuito: '50', premium: '500', residencia: '∞ Ilimitados' },
+                { recurso: 'Resumos IA', gratuito: '—', premium: '15/mês', residencia: '∞ Ilimitados' },
+                { recurso: 'Flashcards', gratuito: '—', premium: '50', residencia: '∞ Ilimitados' },
                 { recurso: 'Anotações', gratuito: '10', premium: '100', residencia: '∞ Ilimitadas' },
                 { recurso: 'Nível de teoria', gratuito: 'Básico', premium: 'Avançado', residencia: 'Expert' },
                 { recurso: 'Suporte', gratuito: '—', premium: 'E-mail', residencia: 'Prioritário 24h' },
