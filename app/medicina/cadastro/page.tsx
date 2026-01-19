@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -21,7 +21,7 @@ const ANOS_CURSO = [
   { value: 7, label: 'Formado' }
 ]
 
-export default function MedicinaCadastroPage() {
+function CadastroForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState(1)
@@ -470,5 +470,25 @@ export default function MedicinaCadastroPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+// Loading fallback para o Suspense
+function CadastroLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-900 via-teal-900 to-cyan-900 flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="w-12 h-12 text-emerald-400 animate-spin mx-auto mb-4" />
+        <p className="text-emerald-200">Carregando...</p>
+      </div>
+    </div>
+  )
+}
+
+export default function MedicinaCadastroPage() {
+  return (
+    <Suspense fallback={<CadastroLoading />}>
+      <CadastroForm />
+    </Suspense>
   )
 }
