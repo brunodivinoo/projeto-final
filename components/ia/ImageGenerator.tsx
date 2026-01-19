@@ -56,7 +56,11 @@ export default function ImageGenerator({ prompt, onGenerate }: ImageGeneratorPro
         throw new Error(data.error || 'Erro ao gerar imagem')
       }
 
-      if (data.imagem_base64) {
+      // Suporta tanto URL (DALL-E 3) quanto base64 (Gemini legacy)
+      if (data.imagem_url) {
+        setImageData(data.imagem_url)
+        onGenerate?.(data.imagem_url)
+      } else if (data.imagem_base64) {
         const imageUrl = `data:image/png;base64,${data.imagem_base64}`
         setImageData(imageUrl)
         onGenerate?.(imageUrl)
@@ -186,7 +190,7 @@ export default function ImageGenerator({ prompt, onGenerate }: ImageGeneratorPro
 
         {/* Info */}
         <p className="text-white/40 text-xs mt-3 text-center">
-          Imagens geradas com Gemini Imagen para fins educacionais
+          Imagens geradas com DALL-E 3 para fins educacionais
         </p>
       </div>
     </div>

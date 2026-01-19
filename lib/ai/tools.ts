@@ -193,6 +193,47 @@ export const TOOL_GERAR_RESUMO: Anthropic.Tool = {
   }
 }
 
+export const TOOL_GERAR_IMAGEM_MEDICA: Anthropic.Tool = {
+  name: 'gerar_imagem_medica',
+  description: `Gera uma imagem médica educacional de alta qualidade usando DALL-E 3.
+Use esta ferramenta quando o usuário pedir:
+- Ilustrações anatômicas (ex: "mostre o coração", "ilustre o rim")
+- Imagens histológicas (ex: "mostre uma lâmina de tecido muscular")
+- Diagramas médicos (ex: "diagrama do ciclo cardíaco")
+- Imagens radiológicas educativas (ex: "raio-x de pneumonia")
+- Qualquer visualização médica educativa
+
+A imagem gerada será inserida na resposta automaticamente.`,
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      estrutura: {
+        type: 'string',
+        description: 'A estrutura anatômica, tecido ou conceito médico a ser ilustrado (ex: coração, fígado, neurônio)'
+      },
+      tipo: {
+        type: 'string',
+        enum: ['anatomico', 'histologia', 'radiologia', 'diagrama', 'fisiopatologia', 'educativo'],
+        description: 'Tipo de imagem médica a ser gerada'
+      },
+      vista: {
+        type: 'string',
+        description: 'Vista ou perspectiva da imagem (ex: anterior, posterior, corte sagital, transversal)'
+      },
+      detalhes_adicionais: {
+        type: 'string',
+        description: 'Detalhes específicos que devem aparecer na imagem (ex: anotações, estruturas destacadas)'
+      },
+      qualidade: {
+        type: 'string',
+        enum: ['standard', 'hd'],
+        description: 'Qualidade da imagem (standard = mais rápido, hd = mais detalhado)'
+      }
+    },
+    required: ['estrutura', 'tipo']
+  }
+}
+
 // ==========================================
 // LISTA DE TODAS AS TOOLS
 // ==========================================
@@ -201,7 +242,8 @@ export const PREPARAMED_TOOLS: Anthropic.Tool[] = [
   TOOL_BUSCAR_QUESTOES,
   TOOL_CRIAR_PLANO_ESTUDOS,
   TOOL_EXPLICAR_QUESTAO,
-  TOOL_CALCULAR_IMC
+  TOOL_CALCULAR_IMC,
+  TOOL_GERAR_IMAGEM_MEDICA
 ]
 
 export const STRUCTURED_OUTPUT_TOOLS: Anthropic.Tool[] = [
@@ -223,7 +265,7 @@ interface LocalToolResult {
 export async function executarTool(
   toolName: string,
   input: Record<string, unknown>,
-  _userId?: string
+  userId?: string
 ): Promise<LocalToolResult> {
   try {
     switch (toolName) {
@@ -238,6 +280,9 @@ export async function executarTool(
 
       case 'calcular_imc':
         return handleCalcularIMC(input)
+
+      case 'gerar_imagem_medica':
+        return await handleGerarImagemMedica(input, userId)
 
       default:
         return { success: false, error: `Tool "${toolName}" não implementada` }
@@ -412,6 +457,79 @@ function handleCalcularIMC(input: Record<string, unknown>): LocalToolResult {
       recomendacao: imc < 18.5 || imc >= 25
         ? 'Recomenda-se acompanhamento nutricional e avaliação médica.'
         : 'IMC dentro da faixa de normalidade.'
+    }
+  }
+}
+
+// ==========================================
+// HANDLER PARA GERAÇÃO DE IMAGEM MÉDICA
+// ==========================================
+
+async function handleGerarImagemMedica(
+  input: Record<string, unknown>,
+  userId?: string
+): Promise<LocalToolResult> {
+  const {
+    estrutura,
+    tipo = 'anatomico',
+    vista,
+    detalhes_adicionais,
+    qualidade = 'standard'
+  } = input
+
+  if (!estrutura) {
+    return { success: false, error: 'A estrutura a ser ilustrada é obrigatória' }
+  }
+
+  try {
+    // Fazer requisição para nossa API de geração de imagem
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/medicina/ia/imagem`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        prompt: `${estrutura}${vista ? ` - Vista: ${vista}` : ''}${detalhes_adicionais ? `. ${detalhes_adicionais}` : ''}`,
+        estilo: tipo,
+        quality: qualidade,
+        titulo: `Ilustração: ${estrutura}`
+      })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      return {
+        success: false,
+        error: errorData.error || 'Erro ao gerar imagem'
+      }
+    }
+
+    const data = await response.json()
+
+    if (data.success && data.imagem_url) {
+      return {
+        success: true,
+        data: {
+          imagem_url: data.imagem_url,
+          descricao: data.revised_prompt || `Ilustração de ${estrutura}`,
+          tipo: tipo,
+          estrutura: estrutura,
+          qualidade: qualidade,
+          custo: data.custo_estimado
+        }
+      }
+    }
+
+    return {
+      success: false,
+      error: 'Não foi possível gerar a imagem'
+    }
+  } catch (error) {
+    console.error('Erro ao gerar imagem médica:', error)
+    return {
+      success: false,
+      error: `Erro na geração de imagem: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
     }
   }
 }

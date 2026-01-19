@@ -1,63 +1,81 @@
 // API Route - Geração de Imagens Médicas PREPARAMED
+// Usa DALL-E 3 (GPT Image) para imagens de alta qualidade
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 import { PlanoIA, verificarLimiteIA, incrementarUsoIA } from '@/lib/ai'
-import { MODELOS } from '@/lib/ai/config'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+})
 
-// Estilos disponíveis para geração
+// Estilos disponíveis para geração (otimizados para DALL-E 3)
 const ESTILOS_IMAGEM = {
-  anatomico: `Crie uma ilustração anatômica médica profissional, estilo livro didático de anatomia.
-Use cores realistas para tecidos e órgãos.
-Inclua legendas e setas indicativas quando apropriado.
-Qualidade de atlas de anatomia médica.`,
+  anatomico: `Ilustração anatômica educacional de alta qualidade para atlas médico profissional.
+ESTILO: Diagrama científico no estilo Netter/Sobotta com cores anatomicamente corretas.
+FUNDO: Branco limpo, sem distrações.
+DETALHES: Linhas precisas, diferenciação clara entre tecidos, proporções corretas.
+LEGENDAS: Em português brasileiro com linhas de referência finas.
+QUALIDADE: Nível de atlas de anatomia médica profissional.`,
 
-  fluxograma: `Crie um fluxograma médico profissional para tomada de decisão clínica.
-Use boxes coloridos, setas direcionais e texto claro.
-Siga padrões de algoritmos clínicos.
-Formato limpo e organizado, fácil de seguir.`,
+  fluxograma: `Fluxograma médico profissional para tomada de decisão clínica.
+Use boxes coloridos distintos, setas direcionais claras e texto legível.
+Siga padrões de algoritmos clínicos (guidelines).
+Formato limpo, organizado e fácil de seguir passo a passo.
+FUNDO: Branco ou gradiente suave.
+TEXTO: Em português brasileiro.`,
 
-  diagrama: `Crie um diagrama médico educativo.
-Ilustração clara e didática.
-Cores distintas para diferentes elementos.
-Estilo de livro-texto médico.`,
+  diagrama: `Diagrama médico educativo de alta qualidade.
+Ilustração clara, didática e visualmente atrativa.
+Cores distintas e profissionais para diferentes elementos.
+Estilo de livro-texto médico (Guyton, Costanzo).
+LEGENDAS: Em português brasileiro.`,
 
-  fisiopatologia: `Crie uma ilustração de fisiopatologia médica.
-Mostre mecanismos celulares e moleculares.
-Use setas para indicar processos e cascatas.
-Estilo de revista científica médica.`,
+  fisiopatologia: `Ilustração de fisiopatologia médica detalhada.
+Mostre mecanismos celulares e moleculares com precisão.
+Use setas coloridas para indicar processos, cascatas e interações.
+Estilo de revista científica médica de alto impacto.
+QUALIDADE: Imagem para publicação científica.`,
 
-  procedimento: `Crie uma ilustração de procedimento médico passo-a-passo.
-Mostre instrumentos e técnica correta.
-Numeração de etapas se necessário.
-Estilo de manual de procedimentos.`,
+  procedimento: `Ilustração de procedimento médico passo-a-passo.
+Mostre instrumentos médicos e técnica correta com detalhes.
+Numeração clara de etapas sequenciais.
+Estilo de manual de procedimentos cirúrgicos.
+QUALIDADE: Material de treinamento médico.`,
 
-  histologia: `Crie uma ilustração histológica médica.
-Mostre estruturas celulares e teciduais.
-Use cores típicas de colorações histológicas.
-Estilo de atlas de histologia.`,
+  histologia: `Fotomicrografia histológica de alta qualidade.
+COLORAÇÃO: H&E (hematoxilina e eosina) - núcleos em roxo, citoplasma em rosa.
+AUMENTO: 400x com foco nítido em toda a imagem.
+Mostre estruturas celulares e teciduais claramente identificáveis.
+ESTILO: Atlas de histologia (Junqueira/Ross).`,
 
-  radiologia: `Crie uma ilustração esquemática de achados radiológicos.
-Mostre as estruturas normais vs anormais.
-Inclua legendas explicativas.
-Estilo educativo para interpretação de exames.`,
+  radiologia: `Imagem radiológica educacional de alta qualidade.
+TÉCNICA: Escala de cinza padrão radiológico (ossos brancos, ar preto).
+Inclua legendas explicativas e setas para achados importantes.
+FUNDO: Preto (como lightbox radiológico).
+QUALIDADE: Imagem diagnóstica padrão hospitalar.`,
 
-  educativo: `Crie uma ilustração médica educativa geral.
-Foco em clareza e compreensão.
-Estilo adequado para ensino médico.
-Cores vibrantes e design moderno.`
+  educativo: `Ilustração médica educativa de alta qualidade.
+Foco em clareza, compreensão e engajamento visual.
+Estilo moderno e profissional para ensino médico.
+Cores vibrantes mas academicamente apropriadas.
+LEGENDAS: Em português brasileiro quando necessário.`
+}
+
+// Custos por qualidade (DALL-E 3)
+const CUSTOS_IMAGEM = {
+  standard: 0.04, // $0.04 por imagem standard
+  hd: 0.08, // $0.08 por imagem HD
 }
 
 // ==========================================
-// POST - Gerar Imagem Médica
+// POST - Gerar Imagem Médica com DALL-E 3
 // ==========================================
 
 export async function POST(request: NextRequest) {
@@ -67,7 +85,9 @@ export async function POST(request: NextRequest) {
       user_id,
       prompt,
       estilo = 'educativo',
-      titulo
+      titulo,
+      quality = 'standard', // 'standard' ou 'hd'
+      size = '1024x1024', // '1024x1024', '1024x1792', '1792x1024'
     } = body
 
     if (!user_id || !prompt) {
@@ -86,12 +106,11 @@ export async function POST(request: NextRequest) {
 
     const plano = (profile?.plano || 'gratuito') as PlanoIA
 
-    // Verificar se plano permite geração de imagens
-    if (plano !== 'residencia') {
-      return NextResponse.json(
-        { error: 'Geração de imagens disponível apenas no plano Residência' },
-        { status: 403 }
-      )
+    // Limites por plano (imagens por mês)
+    const limitesPorPlano: Record<string, number> = {
+      gratuito: 5,
+      premium: 30,
+      residencia: 100,
     }
 
     // Verificar limite
@@ -99,9 +118,10 @@ export async function POST(request: NextRequest) {
     if (!permitido) {
       return NextResponse.json(
         {
-          error: `Limite de geração de imagens atingido (${usado}/${limite})`,
+          error: `Limite de geração de imagens atingido (${usado}/${limite}). Faça upgrade para gerar mais imagens.`,
           usado,
-          limite
+          limite,
+          plano
         },
         { status: 429 }
       )
@@ -115,50 +135,39 @@ export async function POST(request: NextRequest) {
 CONTEÚDO A ILUSTRAR:
 ${prompt}
 
-Crie uma imagem profissional de alta qualidade para uso em educação médica.
-A imagem deve ser cientificamente precisa e visualmente clara.
-NÃO inclua texto com erros ortográficos.
-Foque na precisão anatômica e médica.`
+REQUISITOS OBRIGATÓRIOS:
+- Imagem profissional de alta qualidade para educação médica
+- Cientificamente precisa e visualmente clara
+- NÃO inclua texto com erros ortográficos
+- Precisão anatômica e médica é essencial
+- Cores realistas e apropriadas para o contexto médico`
 
-    // Usar Gemini para gerar imagem
-    const model = genAI.getGenerativeModel({
-      model: MODELOS.gemini.image // gemini-2.0-flash-exp com geração de imagem
+    console.log(`[DALL-E 3] Gerando imagem para usuário ${user_id}`)
+    console.log(`[DALL-E 3] Estilo: ${estilo}, Qualidade: ${quality}`)
+
+    // Gerar imagem com DALL-E 3
+    const response = await openai.images.generate({
+      model: 'dall-e-3',
+      prompt: promptCompleto,
+      n: 1,
+      size: size as '1024x1024' | '1024x1792' | '1792x1024',
+      quality: quality as 'standard' | 'hd',
+      style: 'natural', // 'vivid' ou 'natural' - natural é melhor para imagens médicas
+      response_format: 'url', // Retorna URL temporária
     })
 
-    const result = await model.generateContent({
-      contents: [{
-        role: 'user',
-        parts: [{
-          text: promptCompleto
-        }]
-      }],
-      generationConfig: {
-        // @ts-expect-error - responseModalities é uma propriedade beta
-        responseModalities: ['image', 'text']
-      }
-    })
-
-    const response = result.response
-    let imagemBase64: string | null = null
-    let descricao = ''
-
-    // Extrair imagem e descrição da resposta
-    for (const candidate of response.candidates || []) {
-      for (const part of candidate.content?.parts || []) {
-        if ('inlineData' in part && part.inlineData) {
-          imagemBase64 = part.inlineData.data || null
-        } else if ('text' in part && part.text) {
-          descricao = part.text
-        }
-      }
-    }
-
-    if (!imagemBase64) {
+    if (!response.data || response.data.length === 0) {
       return NextResponse.json(
         { error: 'Não foi possível gerar a imagem. Tente reformular o prompt.' },
         { status: 500 }
       )
     }
+
+    const imagemGerada = response.data[0]
+    const imageUrl = imagemGerada.url
+    const revisedPrompt = imagemGerada.revised_prompt || prompt
+
+    console.log(`[DALL-E 3] Imagem gerada com sucesso!`)
 
     // Salvar no banco de dados
     const { data: documento, error: saveError } = await supabase
@@ -167,11 +176,18 @@ Foque na precisão anatômica e médica.`
         user_id,
         tipo: 'imagem',
         titulo: titulo || `Ilustração: ${prompt.substring(0, 50)}...`,
-        conteudo: descricao,
+        conteudo: revisedPrompt,
         formato: 'image/png',
-        // Em produção, você salvaria a imagem no storage e guardaria a URL
-        // Por ora, guardamos metadados
-        tamanho_bytes: Math.ceil(imagemBase64.length * 0.75) // Estimativa do tamanho
+        url: imageUrl, // URL da imagem gerada
+        tamanho_bytes: 0, // Não temos o tamanho exato
+        metadata: {
+          estilo,
+          quality,
+          size,
+          modelo: 'dall-e-3',
+          revised_prompt: revisedPrompt,
+          gerado_em: new Date().toISOString(),
+        }
       })
       .select()
       .single()
@@ -180,24 +196,46 @@ Foque na precisão anatômica e médica.`
       console.error('Erro ao salvar documento:', saveError)
     }
 
+    // Calcular custo
+    const custo = CUSTOS_IMAGEM[quality as keyof typeof CUSTOS_IMAGEM] || 0.04
+
     // Incrementar uso
-    await incrementarUsoIA(user_id, 'imagens', 1, 0, 0, 0.02) // Custo estimado por imagem
+    await incrementarUsoIA(user_id, 'imagens', 1, 0, 0, custo)
 
     return NextResponse.json({
       success: true,
-      imagem_base64: imagemBase64,
-      descricao,
+      imagem_url: imageUrl,
+      revised_prompt: revisedPrompt,
       estilo,
+      quality,
       documento_id: documento?.id,
-      tokens: {
-        input: 0, // Gemini não reporta tokens para imagens
-        output: 0,
-        total: 0
-      }
+      custo_estimado: custo,
+      modelo: 'dall-e-3'
     })
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Erro ao gerar imagem:', error)
-    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
+
+    const err = error as { message?: string; code?: string; status?: number }
+
+    // Tratamento de erros específicos da OpenAI
+    if (err.code === 'content_policy_violation') {
+      return NextResponse.json(
+        { error: 'O prompt foi rejeitado pela moderação. Tente descrever de forma diferente.' },
+        { status: 400 }
+      )
+    }
+
+    if (err.code === 'rate_limit_exceeded') {
+      return NextResponse.json(
+        { error: 'Limite de requisições excedido. Tente novamente em alguns segundos.' },
+        { status: 429 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: err.message || 'Erro interno do servidor' },
+      { status: 500 }
+    )
   }
 }
 

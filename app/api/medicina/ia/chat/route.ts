@@ -59,6 +59,14 @@ function formatToolResponse(toolName: string, data: unknown): string {
       return `\n\n📝 **Questão encontrada:**\n${questao.enunciado}\n\n**Explicação:** ${questao.explicacao || 'Explicação não disponível'}\n`
     }
 
+    case 'gerar_imagem_medica': {
+      if (!resultado.imagem_url) {
+        return '\n\n❌ Não foi possível gerar a imagem solicitada.\n'
+      }
+      // Retornar markdown com a imagem inline
+      return `\n\n🖼️ **Imagem Gerada: ${resultado.estrutura || 'Ilustração Médica'}**\n\n![${resultado.descricao || 'Ilustração médica educacional'}](${resultado.imagem_url})\n\n*Imagem gerada com DALL-E 3 para fins educacionais.*\n`
+    }
+
     default:
       return `\n\n✅ Ferramenta ${toolName} executada com sucesso.\n`
   }
