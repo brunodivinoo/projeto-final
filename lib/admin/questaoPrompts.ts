@@ -3,6 +3,35 @@
 
 import { LIVROS_POR_DISCIPLINA } from './livrosFonte'
 import { PERIODOS_DIFICULDADE } from './periodos'
+import { precisaDeImagem, getPrioridadeImagem, getTiposImagensRecomendados } from '@/lib/ai/disciplinas-imagens'
+
+// Disciplinas que OBRIGATORIAMENTE precisam de imagens com estruturas apontadas
+const DISCIPLINAS_IMAGEM_OBRIGATORIA = [
+  'anatomia',
+  'histologia',
+  'embriologia',
+  'patologia',
+  'radiologia',
+  'dermatologia',
+  'oftalmologia',
+  'cardiologia', // ECG
+  'hematologia', // esfregaços
+  'parasitologia',
+  'microbiologia',
+  'neurologia' // TC/RM
+]
+
+// Verificar se disciplina precisa de imagem obrigatória
+function disciplinaPrecisaImagem(nomeDisciplina: string): boolean {
+  const nomeNormalizado = nomeDisciplina
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+
+  return DISCIPLINAS_IMAGEM_OBRIGATORIA.some(d =>
+    nomeNormalizado.includes(d) || d.includes(nomeNormalizado)
+  ) || precisaDeImagem(nomeDisciplina)
+}
 
 export type TipoQuestao =
   | 'multipla_escolha'
@@ -45,6 +74,16 @@ export interface QuestaoGerada {
   }>
   palavras_chave: string[]
   dica_estudo: string
+  // Campos para imagem (OBRIGATÓRIO para disciplinas visuais)
+  imagem_obrigatoria?: boolean
+  imagem?: {
+    descricao_detalhada: string // Descrição completa da imagem necessária
+    estrutura_apontada: string // Qual estrutura deve ser destacada/seta
+    tipo_imagem: string // atlas, radiografia, histologia, etc.
+    fonte_imagem: string // Livro/atlas de origem (ex: "Sobotta", "Netter")
+    legenda: string // Legenda da imagem
+    achados_principais: string[] // O que o aluno deve identificar
+  }
 }
 
 export function buildPromptQuestao(params: GerarQuestaoParams): string {
@@ -188,6 +227,45 @@ export function buildPromptQuestao(params: GerarQuestaoParams): string {
   const estruturaAlternativas = tipoInfo.estrutura
   const regrasEstrutura = tipoInfo.regras
 
+  // Verificar se disciplina precisa de imagem obrigatória
+  const precisaImagem = disciplinaPrecisaImagem(disciplina)
+  const prioridadeImagem = getPrioridadeImagem(disciplina)
+  const tiposImagemRecomendados = getTiposImagensRecomendados(disciplina)
+
+  // Bloco de instruções de imagem (apenas para disciplinas que precisam)
+  const instrucoesImagem = precisaImagem ? `
+### ⚠️ IMAGEM OBRIGATÓRIA - PRIORIDADE ${prioridadeImagem}
+
+Esta disciplina (${disciplina}) **OBRIGATORIAMENTE** precisa de imagem com estrutura apontada!
+
+Em provas de medicina, questões de ${disciplina} SEMPRE vêm acompanhadas de imagens.
+Você DEVE incluir o campo "imagem" no JSON com os seguintes dados:
+
+**Tipos de imagem recomendados para ${disciplina}:**
+${tiposImagemRecomendados.map(t => `- ${t}`).join('\n')}
+
+**O que a imagem DEVE ter:**
+1. Uma estrutura anatômica/histológica/patológica claramente identificável
+2. Uma SETA ou MARCAÇÃO apontando para a estrutura que será perguntada
+3. Descrição detalhada suficiente para GERAR ou BUSCAR a imagem
+4. Referência ao livro/atlas de origem (Sobotta, Netter, Robbins, etc.)
+
+**Formato do campo imagem:**
+\`\`\`json
+"imagem": {
+  "descricao_detalhada": "Corte sagital do crânio mostrando o encéfalo com todas as estruturas identificáveis, similar à figura X.X do Sobotta",
+  "estrutura_apontada": "Corpo caloso - seta preta apontando para a estrutura",
+  "tipo_imagem": "atlas anatomico",
+  "fonte_imagem": "Sobotta - Atlas de Anatomia Humana, Vol. 1",
+  "legenda": "Corte sagital mediano do encéfalo",
+  "achados_principais": ["corpo caloso", "tálamo", "hipotálamo", "mesencéfalo", "cerebelo"]
+}
+\`\`\`
+
+**LEMBRE-SE:** A questão deve PERGUNTAR sobre a estrutura apontada pela seta!
+Exemplo: "Na imagem acima, a seta aponta para qual estrutura?"
+` : ''
+
   return `Você é um professor de medicina especialista em ${disciplina}, com vasta experiência em elaboração de questões para provas de faculdade e concursos de residência médica no Brasil.
 
 ## TAREFA
@@ -211,6 +289,7 @@ ${subAssunto ? `- **Sub-assunto:** ${subAssunto}` : ''}
 
 ### 2. ESTRUTURA DA QUESTÃO
 ${regrasEstrutura}
+${instrucoesImagem}
 
 ### 3. FONTES E REFERÊNCIAS (⚠️ OBRIGATÓRIO!)
 **LIVROS-FONTE QUE VOCÊ DEVE USAR (em ordem de prioridade):**
@@ -226,7 +305,7 @@ ${livrosRecomendados.map((l, i) => `${i + 1}. ${l}`).join('\n')}
 ### 4. FORMATO DE RESPOSTA (JSON)
 \`\`\`json
 {
-  "enunciado": "Texto completo do enunciado",
+  "enunciado": "Texto completo do enunciado${precisaImagem ? ' (DEVE mencionar a imagem e a seta que aponta para a estrutura)' : ''}",
   "tipo": "${tipoQuestao}",
   "alternativas": ${estruturaAlternativas},
   "resposta_correta": "B",
@@ -244,7 +323,16 @@ ${livrosRecomendados.map((l, i) => `${i + 1}. ${l}`).join('\n')}
     }
   ],
   "palavras_chave": ["palavra1", "palavra2", "palavra3"],
-  "dica_estudo": "Uma dica curta para o aluno memorizar o conceito"
+  "dica_estudo": "Uma dica curta para o aluno memorizar o conceito"${precisaImagem ? `,
+  "imagem_obrigatoria": true,
+  "imagem": {
+    "descricao_detalhada": "Descrição MUITO DETALHADA da imagem necessária, como aparece nos livros",
+    "estrutura_apontada": "Nome da estrutura + descrição de onde a seta aponta",
+    "tipo_imagem": "atlas/histologia/radiografia/etc",
+    "fonte_imagem": "Nome do livro/atlas de origem (Sobotta, Netter, Robbins, etc.)",
+    "legenda": "Legenda que apareceria na imagem",
+    "achados_principais": ["estrutura1", "estrutura2", "estrutura3"]
+  }` : ''}
 }
 \`\`\`
 
@@ -338,7 +426,7 @@ export function extrairJsonDaResposta(texto: string): QuestaoGerada | null {
 }
 
 // Validar questão gerada
-export function validarQuestaoGerada(questao: QuestaoGerada): { valida: boolean; erros: string[] } {
+export function validarQuestaoGerada(questao: QuestaoGerada, disciplina?: string): { valida: boolean; erros: string[] } {
   const erros: string[] = []
 
   if (!questao.enunciado || questao.enunciado.length < 20) {
@@ -362,8 +450,24 @@ export function validarQuestaoGerada(questao: QuestaoGerada): { valida: boolean;
     erros.push('Palavras-chave insuficientes')
   }
 
+  // Validar imagem obrigatória para disciplinas visuais
+  if (disciplina && disciplinaPrecisaImagem(disciplina)) {
+    if (!questao.imagem || !questao.imagem.descricao_detalhada) {
+      erros.push(`Disciplina ${disciplina} REQUER imagem obrigatória com estrutura apontada`)
+    }
+    if (questao.imagem && !questao.imagem.estrutura_apontada) {
+      erros.push('Imagem deve ter uma estrutura apontada (seta)')
+    }
+    if (questao.imagem && !questao.imagem.fonte_imagem) {
+      erros.push('Imagem deve ter fonte/atlas de referência')
+    }
+  }
+
   return {
     valida: erros.length === 0,
     erros
   }
 }
+
+// Exportar função para verificar necessidade de imagem
+export { disciplinaPrecisaImagem }
