@@ -36,7 +36,7 @@ export default function GerarQuestoesPage() {
           <li>1. Selecione a disciplina e os assuntos para gerar questões</li>
           <li>2. Escolha os períodos (níveis de dificuldade) - do 1º ao 12º período</li>
           <li>3. Defina a quantidade de questões por assunto/período</li>
-          <li>4. Clique em "Iniciar Geração" e acompanhe em tempo real</li>
+          <li>4. Clique em &quot;Iniciar Geração&quot; e acompanhe em tempo real</li>
           <li>5. As questões são salvas automaticamente com referências ABNT</li>
         </ul>
       </div>
