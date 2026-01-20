@@ -1267,42 +1267,49 @@ export async function generateMedicalImage(
     console.log('[GPT Image] Conhecimento anatômico:', anatomicalKnowledge ? 'ENCONTRADO' : 'não encontrado')
   }
 
-  // Construir prompt com conhecimento anatômico
-  const enhancedPrompt = `${prompt}
+  // Instruções de qualidade (compactas para economizar caracteres)
+  const qualityInstructions = `
+ESTILO: Ilustração médica profissional tipo Atlas Netter/Sobotta. Cores anatômicas corretas (artérias=vermelho, veias=azul, nervos=amarelo). Fundo neutro.
+PROIBIDO: Texto, legendas, números, letras, setas com texto, watermarks. Anatomia 100% correta.`
 
-${anatomicalKnowledge ? `
-${anatomicalKnowledge}
-` : ''}
+  // Construir prompt base (limitar para caber no limite de 4000 chars do DALL-E)
+  // Prioridade: prompt original > conhecimento anatômico resumido > instruções
+  const MAX_PROMPT_LENGTH = 3800 // Margem de segurança
 
-=== INSTRUÇÕES CRÍTICAS DE QUALIDADE ===
+  let enhancedPrompt = prompt
 
-🎯 PRECISÃO ANATÔMICA (PRIORIDADE MÁXIMA):
-- A anatomia DEVE estar 100% CORRETA segundo literatura médica
-- Posições relativas das estruturas devem ser EXATAS
-- Proporções devem ser REALISTAS
-- NÃO invente estruturas - mostre apenas o que existe anatomicamente
-- Siga EXATAMENTE as referências anatômicas fornecidas acima
+  // Adicionar conhecimento anatômico se couber (versão resumida)
+  if (anatomicalKnowledge) {
+    // Extrair apenas as partes mais importantes do conhecimento
+    const knowledgeLines = anatomicalKnowledge.split('\n').filter(line => line.trim())
+    const keyStructuresLine = knowledgeLines.find(l => l.includes('ESTRUTURAS QUE DEVEM APARECER'))
+    const mistakesLine = knowledgeLines.find(l => l.includes('ERROS COMUNS'))
 
-📸 ESTILO VISUAL:
-- Ilustração médica profissional estilo Atlas Netter/Sobotta
-- OU fotografia médica de alta qualidade (dissecção/modelo)
-- Cores anatomicamente corretas e padronizadas:
-  • Artérias: vermelho vivo
-  • Veias: azul escuro
-  • Nervos: amarelo
-  • Músculos: vermelho-rosado
-  • Ossos: bege/marfim
-- Iluminação uniforme e profissional
-- Fundo neutro (branco ou gradiente suave)
+    let compactKnowledge = ''
+    if (keyStructuresLine) {
+      compactKnowledge += keyStructuresLine.substring(0, 500) + '\n'
+    }
+    if (mistakesLine) {
+      compactKnowledge += mistakesLine.substring(0, 300)
+    }
 
-🚫 PROIBIÇÕES ABSOLUTAS:
-- ZERO texto, legendas, números ou letras
-- ZERO setas, linhas ou marcadores com texto
-- ZERO watermarks ou logos
-- ZERO estruturas anatomicamente incorretas ou inventadas
-- ZERO estilo cartoon ou simplificado demais
+    if (enhancedPrompt.length + compactKnowledge.length + qualityInstructions.length < MAX_PROMPT_LENGTH) {
+      enhancedPrompt += '\n\n' + compactKnowledge
+    }
+  }
 
-A imagem deve ser EDUCACIONALMENTE PRECISA e adequada para estudo médico universitário.`
+  // Adicionar instruções de qualidade se couber
+  if (enhancedPrompt.length + qualityInstructions.length < MAX_PROMPT_LENGTH) {
+    enhancedPrompt += '\n' + qualityInstructions
+  }
+
+  // Garantir que não exceda o limite
+  if (enhancedPrompt.length > MAX_PROMPT_LENGTH) {
+    enhancedPrompt = enhancedPrompt.substring(0, MAX_PROMPT_LENGTH)
+    console.log('[GPT Image] Prompt truncado para', MAX_PROMPT_LENGTH, 'caracteres')
+  }
+
+  console.log('[GPT Image] Tamanho final do prompt:', enhancedPrompt.length, 'caracteres')
 
   try {
     console.log('[GPT Image] Chamando API OpenAI DALL-E 3...')
@@ -1380,6 +1387,14 @@ A imagem deve ser EDUCACIONALMENTE PRECISA e adequada para estudo médico univer
       console.error('[GPT Image] OpenAI API Error - Code:', error.code)
 
       if (error.status === 400) {
+        // Verificar se é erro de prompt muito longo
+        if (error.code === 'string_above_max_length' || error.message?.includes('too long')) {
+          throw new GPTImageError(
+            'Prompt muito longo. Tente uma descrição mais curta.',
+            'PROMPT_TOO_LONG',
+            400
+          )
+        }
         throw new GPTImageError(
           'Prompt rejeitado pela API (pode conter conteúdo não permitido)',
           error.code || 'CONTENT_POLICY',
@@ -1422,202 +1437,58 @@ export interface MedicalImagePromptParams {
 }
 
 /**
- * Gera um prompt otimizado para imagens médicas ULTRA-REALISTAS SEM TEXTO
- *
- * DALL-E 3 é péssimo em gerar texto, então geramos imagens 100% visuais.
- * Anotações/legendas são adicionadas via CSS/HTML no frontend quando necessário.
+ * Gera um prompt COMPACTO para imagens médicas
+ * Limite do DALL-E 3: 4000 caracteres
+ * Mantemos prompts com ~1500-2000 chars para deixar margem
  */
 export function buildMedicalImagePrompt(params: MedicalImagePromptParams): string {
   const { structure, type, view, additionalDetails } = params
 
-  // IMPORTANTE: Buscar conhecimento anatômico específico para garantir precisão
-  const anatomicalKnowledge = getAnatomicalKnowledge(structure)
+  // Buscar apenas estruturas-chave e erros a evitar (versão compacta)
+  const knowledge = getAnatomicalKnowledge(structure)
+  let keyInfo = ''
+  if (knowledge) {
+    const lines = knowledge.split('\n')
+    const structuresLine = lines.find(l => l.includes('ESTRUTURAS QUE DEVEM APARECER'))
+    const mistakesLine = lines.find(l => l.includes('ERROS COMUNS'))
+    if (structuresLine) keyInfo += structuresLine.substring(0, 300) + '\n'
+    if (mistakesLine) keyInfo += mistakesLine.substring(0, 200)
+  }
 
   const templates: Record<string, string> = {
-    anatomy: `
-ILUSTRAÇÃO ANATÔMICA MÉDICA DE ALTA PRECISÃO
+    anatomy: `Ilustração anatômica médica profissional: ${structure}
+${view ? `Vista: ${view}` : 'Vista anterior'}
+${keyInfo}
+Estilo: Atlas Netter/Sobotta, fotorrealista. Cores anatômicas corretas (artérias=vermelho vivo, veias=azul escuro, nervos=amarelo, músculos=vermelho-rosado, ossos=bege). Iluminação profissional, fundo neutro.
+${additionalDetails ? `Detalhes: ${additionalDetails.substring(0, 200)}` : ''}
+PROIBIDO: texto, legendas, números, letras, setas com texto.`.trim(),
 
-Estrutura anatômica: ${structure}
-${view ? `Vista/Perspectiva: ${view}` : 'Vista: anterior, bem iluminada'}
+    histology: `Fotomicrografia histológica: ${structure}
+Coloração H&E, aumento 400x.
+${keyInfo}
+Núcleos roxo/azul (hematoxilina), citoplasma rosa (eosina). Foco nítido, iluminação Köhler.
+${additionalDetails ? `Detalhes: ${additionalDetails.substring(0, 200)}` : ''}
+PROIBIDO: texto, escala, régua, números, letras.`.trim(),
 
-${anatomicalKnowledge}
+    radiology: `Imagem radiológica: ${structure}
+${view || 'Radiografia AP'}
+${keyInfo}
+Escala de cinza diagnóstica. Ossos=branco, ar=preto, tecidos moles=cinza. Contraste adequado, qualidade diagnóstica.
+${additionalDetails ? `Detalhes: ${additionalDetails.substring(0, 200)}` : ''}
+PROIBIDO: texto, lateralidade, dados paciente, marcadores.`.trim(),
 
-ESTILO VISUAL ABSOLUTO:
-Esta deve parecer uma FOTOGRAFIA REAL de:
-- Dissecção cadavérica de laboratório de anatomia de universidade de medicina
-- OU modelo anatômico 3D de silicone hiper-realista de última geração
-- Qualidade visual de Atlas Sobotta ou Grant's em versão FOTOGRÁFICA
+    pathology: `Fotografia patológica: ${structure}
+${view || 'Macroscopia'}
+${keyInfo}
+Fotografia real de peça anatômica. Iluminação profissional, fundo neutro. Cores naturais do tecido.
+${additionalDetails ? `Detalhes: ${additionalDetails.substring(0, 200)}` : ''}
+PROIBIDO: texto, régua, etiquetas, números.`.trim(),
 
-DETALHAMENTO TÉCNICO OBRIGATÓRIO:
-• Resolução: equivalente a 8K, detalhes microscópicos visíveis
-• Músculos: vermelho-rosado com fibras individuais visíveis, fascias brilhantes
-• Ossos: branco-bege com trabeculado e periósteo visível, textura porosa natural
-• Artérias: vermelho vivo com brilho úmido, parede arterial com textura
-• Veias: azul-arroxeado escuro, paredes mais finas que artérias
-• Nervos: amarelo-pálido, fibras nervosas visíveis
-• Gordura: amarelo-creme, textura lobulada natural
-• Cartilagem: branco-azulado translúcido
-• Tendões: branco nacarado com fibras paralelas brilhantes
-• Líquidos corporais: reflexos naturais de umidade nos tecidos
-
-ILUMINAÇÃO:
-• Luz de estúdio fotográfico médico profissional
-• Iluminação suave e difusa, sem sombras duras
-• Temperatura de cor neutra (5500K)
-• Reflexos naturais em superfícies úmidas
-
-COMPOSIÇÃO:
-• Fundo neutro (branco, cinza claro ou gradiente médico)
-• Estrutura centralizada e bem enquadrada
-• Profundidade de campo adequada com foco nítido na estrutura principal
-
-PROIBIDO: Qualquer texto, legenda, seta com nome, número, letra ou anotação.
-
-${additionalDetails ? `FOCO ESPECIAL: ${additionalDetails}` : ''}
-    `.trim(),
-
-    histology: `
-FOTOMICROGRAFIA HISTOLÓGICA REAL DE LABORATÓRIO
-
-Tecido/Estrutura: ${structure}
-
-${anatomicalKnowledge}
-
-TÉCNICA DE COLORAÇÃO: H&E (Hematoxilina e Eosina) - padrão ouro
-
-ESPECIFICAÇÕES TÉCNICAS:
-• Aumento: 400x (campo de alta potência / HPF)
-• Microscópio: Óptico de campo claro de alta qualidade
-• Foco: Nítido em todo o campo visual
-• Iluminação: Köhler perfeita, uniforme
-
-CARACTERÍSTICAS VISUAIS OBRIGATÓRIAS:
-• Núcleos: roxo/azul escuro intenso (basofílico - hematoxilina)
-  - Cromatina visível, nucléolos quando presentes
-  - Formato característico do tipo celular
-• Citoplasma: rosa/eosinofílico (eosina)
-  - Variações de intensidade conforme conteúdo proteico
-  - Organelas não visíveis (limite de resolução)
-• Membranas celulares: delimitação clara entre células
-• Matriz extracelular: rosa pálido a médio
-• Fibras colágenas: rosa intenso, onduladas
-• Eritrócitos: rosa-alaranjado brilhante, sem núcleo
-• Músculo: rosa com estriações visíveis (se esquelético)
-
-QUALIDADE:
-• Fotomicrografia REAL de lâmina histológica
-• Parece foto tirada em microscópio de universidade
-• Artefatos mínimos de fixação/coloração
-
-PROIBIDO: Texto, escala, régua, números, letras ou qualquer anotação.
-
-${additionalDetails ? `FOCO ESPECIAL: ${additionalDetails}` : ''}
-    `.trim(),
-
-    radiology: `
-IMAGEM RADIOLÓGICA REAL DE QUALIDADE DIAGNÓSTICA
-
-Estrutura/Região: ${structure}
-Modalidade: ${view || 'Radiografia convencional (Raio-X) - incidência AP'}
-
-CARACTERÍSTICAS TÉCNICAS OBRIGATÓRIAS:
-• Escala de cinza radiológica padrão
-• Ossos/calcificações: BRANCOS (hiperdensos/radiopacos)
-• Ar/gás: PRETO (hipodensos/radiotransparentes)
-• Tecidos moles: tons de CINZA intermediário
-• Gordura: cinza escuro (menos denso que músculo)
-• Músculo: cinza médio
-• Contraste adequado para visualização diagnóstica
-
-QUALIDADE DE IMAGEM:
-• Parece exame REAL de hospital/clínica radiológica
-• Resolução diagnóstica (detalhes finos visíveis)
-• Exposição adequada (não queimado nem subexposto)
-• Fundo preto (como visualizado em negatoscópio/monitor PACS)
-
-PARA TOMOGRAFIA (CT):
-• Janela adequada (óssea, pulmonar, partes moles)
-• Corte axial típico
-
-PARA RESSONÂNCIA (RM/MRI):
-• Sequência T1 ou T2 conforme apropriado
-• Contraste característico de cada sequência
-
-PROIBIDO: Texto, lateralidade (D/E), dados do paciente, marcadores, números.
-
-${additionalDetails ? `ACHADOS A DEMONSTRAR: ${additionalDetails}` : ''}
-    `.trim(),
-
-    pathology: `
-FOTOGRAFIA DE PATOLOGIA DE ALTA RESOLUÇÃO
-
-Espécime: ${structure}
-Tipo: ${view || 'Macroscopia - peça cirúrgica/autópsia'}
-
-PARA MACROSCOPIA:
-• Fotografia REAL de peça anatômica patológica
-• Iluminação de laboratório de patologia profissional
-• Fundo neutro (azul cirúrgico, branco ou verde)
-• Cores naturais do tecido (fresco ou fixado em formol)
-• Lesões claramente visíveis e bem demonstradas
-• Textura real do tecido patológico
-
-PARA MICROSCOPIA (se aplicável):
-• Mesmas características de histologia
-• Ênfase nas alterações patológicas
-
-CARACTERÍSTICAS DAS LESÕES:
-• Tumores: massas com bordas definidas ou infiltrativas
-• Necrose: áreas amareladas ou acinzentadas
-• Hemorragia: áreas vermelho-escuras ou marrons
-• Fibrose: áreas esbranquiçadas e firmes
-• Inflamação: áreas avermelhadas e edemaciadas
-
-QUALIDADE:
-• Fotografia real de laboratório de patologia
-• Parece documentação de caso médico real
-• Detalhes macroscópicos claramente visíveis
-
-PROIBIDO: Texto, régua, etiquetas, números ou qualquer anotação.
-
-${additionalDetails ? `ACHADOS PATOLÓGICOS: ${additionalDetails}` : ''}
-    `.trim(),
-
-    diagram: `
-DIAGRAMA MÉDICO EDUCACIONAL - VISUAL PURO
-
-Tema: ${structure}
-
-ESTILO VISUAL:
-• Diagrama científico limpo e profissional
-• Cores vibrantes mas harmônicas
-• Design moderno de material educacional médico
-
-ELEMENTOS PERMITIDOS:
-• Setas indicando fluxo/direção (SEM texto)
-• Formas geométricas organizadas
-• Gradientes de cor para indicar intensidade/concentração
-• Linhas de conexão entre elementos
-• Ícones representativos (sem letras)
-
-COMPOSIÇÃO:
-• Fundo branco ou gradiente suave
-• Layout organizado e intuitivo
-• Hierarquia visual clara
-• Espaçamento adequado entre elementos
-
-CORES SUGERIDAS:
-• Artérias/sangue oxigenado: vermelho
-• Veias/sangue desoxigenado: azul
-• Nervos: amarelo
-• Órgãos: cores anatômicas realistas
-• Processos: gradientes indicando direção
-
-PROIBIDO: Qualquer texto, palavra, letra, número ou legenda.
-Anotações serão adicionadas posteriormente via software.
-
-${additionalDetails ? `ELEMENTOS ESPECÍFICOS: ${additionalDetails}` : ''}
-    `.trim(),
+    diagram: `Diagrama médico educacional: ${structure}
+${keyInfo}
+Estilo limpo e profissional. Cores vibrantes, design moderno. Setas podem indicar fluxo (sem texto).
+${additionalDetails ? `Detalhes: ${additionalDetails.substring(0, 200)}` : ''}
+PROIBIDO: qualquer texto, palavra, letra, número ou legenda.`.trim()
   }
 
   return templates[type] || templates.anatomy
