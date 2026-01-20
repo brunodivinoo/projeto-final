@@ -217,21 +217,45 @@ export function useChatIA(options: UseChatIAOptions = {}): ChatData & ChatAction
                   ))
                 } else if (data.type === 'tool_result') {
                   // Processar resultados de tools (ex: imagens geradas)
+                  console.log('[useChatIA] Tool result recebido:', data.tool_name)
+
                   if (data.tool_name === 'gerar_imagem_medica' && data.result?.imagem_url) {
+                    console.log('[useChatIA] Imagem gerada, adicionando ao chat e artefatos')
+                    console.log('[useChatIA] URL length:', data.result.imagem_url.length)
+
+                    // Adicionar imagem ao conteúdo da mensagem (markdown)
+                    const imagemMarkdown = `\n\n![${data.result.estrutura || 'Imagem Médica'}](${data.result.imagem_url})\n\n*Imagem gerada com DALL-E 3 para fins educacionais.*`
+                    fullResponse += imagemMarkdown
+
+                    // Atualizar mensagem da IA com a imagem
+                    setMensagens(prev => prev.map(m =>
+                      m.id === msgIATemp.id
+                        ? { ...m, content: fullResponse }
+                        : m
+                    ))
+
                     // Adicionar imagem aos artefatos
-                    const { addImageArtifact } = useArtifactsStore.getState()
-                    addImageArtifact(
-                      {
-                        url: data.result.imagem_url,
-                        source: 'generated',
-                        prompt: data.result.descricao || '',
-                        structure: data.result.estrutura || '',
-                        imageType: data.result.tipo || 'anatomy'
-                      },
-                      `Imagem: ${data.result.estrutura || 'Ilustração Médica'}`,
-                      novaConversaId,
-                      msgIATemp.id
-                    )
+                    try {
+                      const { addImageArtifact, setSidebarOpen, setCategoryFilter } = useArtifactsStore.getState()
+                      addImageArtifact(
+                        {
+                          url: data.result.imagem_url,
+                          source: 'generated',
+                          prompt: data.result.descricao || '',
+                          structure: data.result.estrutura || '',
+                          imageType: data.result.tipo || 'anatomy'
+                        },
+                        `Imagem: ${data.result.estrutura || 'Ilustração Médica'}`,
+                        novaConversaId || '',
+                        msgIATemp.id
+                      )
+                      // Abrir sidebar de artefatos e filtrar por imagens geradas
+                      setCategoryFilter('images_generated')
+                      setSidebarOpen(true)
+                      console.log('[useChatIA] Imagem adicionada aos artefatos com sucesso')
+                    } catch (artifactError) {
+                      console.error('[useChatIA] Erro ao adicionar artefato:', artifactError)
+                    }
                   }
                 } else if (data.type === 'done') {
                   novaConversaId = data.conversa_id
