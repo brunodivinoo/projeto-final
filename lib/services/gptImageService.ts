@@ -6,6 +6,475 @@ const openai = new OpenAI({
 })
 
 // ============================================
+// BASE DE CONHECIMENTO ANATÔMICO
+// Descrições precisas para garantir imagens corretas
+// ============================================
+
+interface AnatomicalKnowledge {
+  description: string
+  keyStructures: string[]
+  correctView: string
+  commonMistakes: string[]
+}
+
+const ANATOMICAL_KNOWLEDGE: Record<string, AnatomicalKnowledge> = {
+  // ==================== SISTEMA REPRODUTOR ====================
+
+  'sistema reprodutor masculino': {
+    description: `
+ANATOMIA CORRETA DO SISTEMA REPRODUTOR MASCULINO (Vista Sagital Mediana):
+
+POSICIONAMENTO ESPACIAL OBRIGATÓRIO:
+- ESCROTO: bolsa externa, pendendo ABAIXO e ANTERIOR ao períneo
+- TESTÍCULOS (2): dentro do escroto, formato ovoide, ~4cm comprimento
+- EPIDÍDIMO: estrutura em forma de C, na face POSTERIOR de cada testículo
+- DUCTO DEFERENTE: tubo fino que SOBE do epidídimo, atravessa canal inguinal
+- BEXIGA: estrutura central na pelve, acima da próstata
+- VESÍCULAS SEMINAIS: 2 bolsas, POSTERIOR e INFERIOR à bexiga, ~5cm
+- PRÓSTATA: glândula em forma de castanha, ABAIXO da bexiga, envolvendo a uretra
+- URETRA: tubo que atravessa próstata → pênis
+- PÊNIS: anterior, com corpos cavernosos (2, dorsais) e corpo esponjoso (1, ventral)
+
+RELAÇÕES ANATÔMICAS CRÍTICAS:
+- Testículos ficam FORA da cavidade pélvica (no escroto externo)
+- Próstata fica ABAIXO da bexiga, não ao lado
+- Vesículas seminais ficam ATRÁS da bexiga
+- O ducto deferente faz uma curva ao redor do ureter
+    `,
+    keyStructures: ['escroto externo', 'testículos no escroto', 'epidídimo posterior', 'ducto deferente ascendente', 'vesículas seminais posteriores à bexiga', 'próstata abaixo da bexiga', 'uretra prostática'],
+    correctView: 'Corte sagital mediano da pelve masculina, mostrando escroto externamente',
+    commonMistakes: ['NÃO colocar testículos dentro da pelve', 'NÃO colocar próstata acima da bexiga', 'NÃO esquecer o escroto externo']
+  },
+
+  'sistema reprodutor feminino': {
+    description: `
+ANATOMIA CORRETA DO SISTEMA REPRODUTOR FEMININO (Vista Anterior/Coronal):
+
+POSICIONAMENTO ESPACIAL OBRIGATÓRIO:
+- ÚTERO: órgão central em forma de pera invertida, ~7cm comprimento
+  - Fundo uterino: parte superior arredondada
+  - Corpo uterino: parte principal
+  - Colo uterino (cérvix): parte inferior cilíndrica
+- TUBAS UTERINAS (2): tubos de ~10cm, saem lateralmente do fundo uterino
+  - Porção intramural → istmo → ampola → infundíbulo com fímbrias
+  - Fímbrias: projeções digitiformes na extremidade, abraçando o ovário
+- OVÁRIOS (2): estruturas ovoides de ~3cm, laterais ao útero
+  - Conectados ao útero pelo ligamento útero-ovárico
+  - Posicionados ABAIXO das tubas, não ao lado
+- VAGINA: canal que conecta colo uterino ao exterior
+- LIGAMENTO LARGO: membrana que sustenta útero e anexos
+
+RELAÇÕES ANATÔMICAS CRÍTICAS:
+- Tubas uterinas se curvam SOBRE os ovários (não saem retas)
+- Fímbrias "abraçam" os ovários para captar óvulos
+- Útero tem formato de PERA INVERTIDA, não de triângulo
+    `,
+    keyStructures: ['útero piriforme central', 'tubas uterinas curvadas', 'fímbrias sobre ovários', 'ovários laterais inferiores', 'ligamento largo'],
+    correctView: 'Vista anterior/coronal do sistema reprodutor feminino isolado',
+    commonMistakes: ['NÃO fazer útero triangular', 'NÃO fazer tubas retas horizontais', 'NÃO esquecer as fímbrias']
+  },
+
+  // ==================== SISTEMA CARDIOVASCULAR ====================
+
+  'coração': {
+    description: `
+ANATOMIA CORRETA DO CORAÇÃO (Vista Anterior ou Corte Coronal):
+
+CÂMARAS (posicionamento real, não esquemático):
+- ÁTRIO DIREITO: superior direito, recebe veias cavas
+- ÁTRIO ESQUERDO: superior esquerdo, posterior, recebe veias pulmonares
+- VENTRÍCULO DIREITO: inferior direito, parede mais fina (~3mm)
+- VENTRÍCULO ESQUERDO: inferior esquerdo, parede mais espessa (~12mm)
+
+GRANDES VASOS:
+- AORTA: sai do ventrículo esquerdo, curva para a esquerda (arco aórtico)
+- TRONCO PULMONAR: sai do ventrículo direito, bifurca em artérias pulmonares
+- VEIAS CAVAS: superior e inferior, chegam no átrio direito
+- VEIAS PULMONARES (4): chegam no átrio esquerdo
+
+VÁLVULAS:
+- Tricúspide: entre átrio e ventrículo direitos
+- Mitral (bicúspide): entre átrio e ventrículo esquerdos
+- Pulmonar: saída do ventrículo direito
+- Aórtica: saída do ventrículo esquerdo
+
+IMPORTANTE: O coração está levemente rotacionado - ventrículo esquerdo é mais posterior
+    `,
+    keyStructures: ['4 câmaras', 'septo interventricular', 'aorta curvada', 'artérias coronárias', 'válvulas cardíacas'],
+    correctView: 'Vista anterior do coração ou corte coronal/frontal',
+    commonMistakes: ['NÃO fazer câmaras do mesmo tamanho', 'NÃO esquecer diferença de espessura das paredes', 'Ventrículo esquerdo tem parede MAIS GROSSA']
+  },
+
+  // ==================== FÍGADO ====================
+
+  'fígado': {
+    description: `
+ANATOMIA CORRETA DO FÍGADO:
+
+MACROSCÓPICA (Vista Anterior):
+- Maior glândula do corpo, ~1.5kg
+- LOBO DIREITO: maior, ocupa hipocôndrio direito
+- LOBO ESQUERDO: menor, cruza linha média
+- LOBO CAUDADO: posterior, visível na face visceral
+- LOBO QUADRADO: inferior, entre vesícula biliar e ligamento falciforme
+- LIGAMENTO FALCIFORME: divide lobos direito e esquerdo anteriormente
+- VESÍCULA BILIAR: na face inferior, entre lobos direito e quadrado
+
+HISTOLOGIA DO FÍGADO (H&E, 400x):
+- LÓBULOS HEPÁTICOS: estruturas hexagonais
+- VEIA CENTROLOBULAR: no centro de cada lóbulo
+- HEPATÓCITOS: células POLIGONAIS em cordões/placas radiantes
+- SINUSOIDES: capilares entre os cordões de hepatócitos
+- ESPAÇO PORTA (tríade portal): na periferia dos lóbulos
+  - Ramo da artéria hepática
+  - Ramo da veia porta
+  - Ducto biliar
+- CÉLULAS DE KUPFFER: macrófagos nos sinusoides
+    `,
+    keyStructures: ['lóbulos hexagonais', 'veia centrolobular', 'cordões de hepatócitos poligonais', 'sinusoides', 'espaço porta com tríade'],
+    correctView: 'Corte histológico mostrando lóbulos hepáticos com veia central e espaços porta',
+    commonMistakes: ['NÃO confundir com músculo', 'Hepatócitos são POLIGONAIS não alongados', 'Lóbulos são HEXAGONAIS']
+  },
+
+  // ==================== SISTEMA RESPIRATÓRIO ====================
+
+  'pulmão': {
+    description: `
+ANATOMIA CORRETA DOS PULMÕES:
+
+PULMÃO DIREITO (3 lobos):
+- Lobo superior
+- Lobo médio
+- Lobo inferior
+- Separados por fissuras horizontal e oblíqua
+
+PULMÃO ESQUERDO (2 lobos):
+- Lobo superior (com língula)
+- Lobo inferior
+- Separados por fissura oblíqua
+- Incisura cardíaca: impressão do coração
+
+ESTRUTURAS:
+- Brônquios principais → lobares → segmentares → bronquíolos → alvéolos
+- Hilo pulmonar: entrada de brônquio, artéria e veias pulmonares
+- Pleura: visceral (aderida ao pulmão) e parietal (na parede torácica)
+    `,
+    keyStructures: ['3 lobos direito', '2 lobos esquerdo', 'incisura cardíaca', 'hilo pulmonar', 'árvore brônquica'],
+    correctView: 'Vista anterior de ambos os pulmões ou corte coronal',
+    commonMistakes: ['NÃO fazer pulmões simétricos', 'Direito tem 3 lobos, esquerdo tem 2', 'Esquerdo tem incisura cardíaca']
+  },
+
+  // ==================== RIM ====================
+
+  'rim': {
+    description: `
+ANATOMIA CORRETA DO RIM (Corte Coronal/Frontal):
+
+ESTRUTURA EXTERNA:
+- Formato de feijão, ~11cm x 6cm x 3cm
+- Polo superior e inferior
+- Face convexa (lateral) e côncava (medial com hilo)
+- Cápsula fibrosa envolvendo
+
+ESTRUTURA INTERNA (corte coronal):
+- CÓRTEX RENAL: camada EXTERNA, mais clara, contém glomérulos
+- MEDULA RENAL: INTERNA, mais escura, com pirâmides renais
+- PIRÂMIDES RENAIS: 8-18 estruturas triangulares, base voltada para córtex, ápice para dentro
+- PAPILA RENAL: ápice da pirâmide, drena para cálice menor
+- COLUNAS RENAIS (de Bertin): extensões do córtex entre pirâmides
+- CÁLICES MENORES: recebem urina das papilas
+- CÁLICES MAIORES: união de cálices menores
+- PELVE RENAL: estrutura em funil, une cálices maiores → ureter
+- HILO RENAL: onde entram/saem artéria, veia e pelve renal
+    `,
+    keyStructures: ['córtex externo claro', 'medula interna escura', 'pirâmides triangulares apontando para dentro', 'cálices', 'pelve renal', 'hilo'],
+    correctView: 'Corte coronal/frontal do rim mostrando córtex, medula e sistema coletor',
+    commonMistakes: ['NÃO inverter córtex e medula', 'Córtex é EXTERNO e mais claro', 'Pirâmides apontam para DENTRO (para pelve)']
+  },
+
+  // ==================== CÉREBRO ====================
+
+  'cérebro': {
+    description: `
+ANATOMIA CORRETA DO CÉREBRO:
+
+VISTA LATERAL:
+- LOBO FRONTAL: anterior, até sulco central (de Rolando)
+- LOBO PARIETAL: superior posterior, entre sulcos central e parieto-occipital
+- LOBO TEMPORAL: inferior lateral, abaixo da fissura lateral (de Sylvius)
+- LOBO OCCIPITAL: posterior
+- CEREBELO: inferior posterior
+- TRONCO ENCEFÁLICO: mesencéfalo, ponte, bulbo
+
+SULCOS IMPORTANTES:
+- Sulco central (Rolando): separa frontal de parietal
+- Fissura lateral (Sylvius): separa temporal dos demais
+- Sulco parieto-occipital: separa parietal de occipital
+
+GIROS IMPORTANTES:
+- Giro pré-central: motor primário (anterior ao sulco central)
+- Giro pós-central: sensitivo primário (posterior ao sulco central)
+    `,
+    keyStructures: ['4 lobos cerebrais', 'sulco central', 'fissura lateral', 'giros pré e pós-central', 'cerebelo', 'tronco encefálico'],
+    correctView: 'Vista lateral do hemisfério cerebral esquerdo',
+    commonMistakes: ['NÃO confundir posições dos lobos', 'Frontal é ANTERIOR', 'Occipital é POSTERIOR']
+  },
+
+  // ==================== HISTOLOGIA ====================
+
+  'tecido muscular estriado esquelético': {
+    description: `
+HISTOLOGIA DO MÚSCULO ESTRIADO ESQUELÉTICO (H&E, 400x):
+
+CARACTERÍSTICAS OBRIGATÓRIAS:
+- Fibras CILÍNDRICAS longas e PARALELAS
+- MÚLTIPLOS NÚCLEOS na PERIFERIA da fibra (não no centro!)
+- ESTRIAÇÕES TRANSVERSAIS visíveis (bandas A escuras e I claras)
+- Endomísio: tecido conjuntivo entre fibras individuais
+- Perimísio: ao redor de fascículos
+- Epimísio: ao redor do músculo todo
+    `,
+    keyStructures: ['fibras paralelas cilíndricas', 'núcleos periféricos múltiplos', 'estriações transversais claras'],
+    correctView: 'Corte longitudinal mostrando fibras paralelas com estriações',
+    commonMistakes: ['Núcleos são PERIFÉRICOS, não centrais', 'Fibras são PARALELAS', 'Estriações são TRANSVERSAIS']
+  },
+
+  'tecido muscular cardíaco': {
+    description: `
+HISTOLOGIA DO MÚSCULO CARDÍACO (H&E, 400x):
+
+CARACTERÍSTICAS OBRIGATÓRIAS:
+- Fibras RAMIFICADAS (não paralelas como esquelético!)
+- NÚCLEO CENTRAL único (ou dois) em cada célula
+- DISCOS INTERCALARES: linhas escuras transversais entre células (junções especializadas)
+- Estriações transversais presentes mas menos evidentes que no esquelético
+- Células mais CURTAS que músculo esquelético
+    `,
+    keyStructures: ['fibras ramificadas', 'núcleo central único', 'discos intercalares escuros'],
+    correctView: 'Corte longitudinal mostrando ramificações e discos intercalares',
+    commonMistakes: ['Cardíaco tem núcleo CENTRAL (esquelético tem periférico)', 'Cardíaco é RAMIFICADO (esquelético é paralelo)', 'Discos intercalares são exclusivos do cardíaco']
+  },
+
+  'tecido muscular liso': {
+    description: `
+HISTOLOGIA DO MÚSCULO LISO (H&E, 400x):
+
+CARACTERÍSTICAS OBRIGATÓRIAS:
+- Células FUSIFORMES (formato de fuso/charuto)
+- NÚCLEO CENTRAL único, alongado, acompanha formato da célula
+- SEM estriações (por isso "liso")
+- Células dispostas em feixes, frequentemente em camadas perpendiculares
+- Encontrado em vísceras, vasos sanguíneos, útero
+    `,
+    keyStructures: ['células fusiformes', 'núcleo central alongado', 'ausência de estriações'],
+    correctView: 'Corte longitudinal e transversal mostrando células fusiformes',
+    commonMistakes: ['Liso NÃO tem estriações', 'Núcleo é CENTRAL e ALONGADO', 'Células são FUSIFORMES não cilíndricas']
+  },
+
+  'tecido epitelial': {
+    description: `
+HISTOLOGIA DE EPITÉLIOS (H&E):
+
+TIPOS PRINCIPAIS:
+- Simples pavimentoso: células achatadas, uma camada (endotélio, alvéolos)
+- Simples cúbico: células cúbicas, uma camada (túbulos renais)
+- Simples cilíndrico/colunar: células colunares, uma camada (intestino)
+- Estratificado pavimentoso: múltiplas camadas, superfície achatada (pele, esôfago)
+- Pseudoestratificado: parece múltiplas camadas mas TODAS tocam a membrana basal (vias aéreas)
+- De transição (urotélio): células em guarda-chuva (bexiga)
+
+CARACTERÍSTICAS GERAIS:
+- Células justapostas com pouco espaço entre elas
+- Membrana basal na base
+- AVASCULAR (sem vasos sanguíneos no epitélio)
+- Polaridade: superfície apical vs basal
+    `,
+    keyStructures: ['células organizadas justapostas', 'membrana basal', 'polaridade celular'],
+    correctView: 'Corte perpendicular à superfície epitelial',
+    commonMistakes: ['Epitélio é AVASCULAR', 'Todas células do pseudoestratificado tocam a membrana basal', 'Identificar corretamente número de camadas']
+  },
+
+  'tecido conjuntivo': {
+    description: `
+HISTOLOGIA DO TECIDO CONJUNTIVO (H&E):
+
+COMPONENTES:
+- CÉLULAS: fibroblastos (principais), macrófagos, mastócitos, plasmócitos
+- FIBRAS: colágenas (rosa, onduladas), elásticas, reticulares
+- SUBSTÂNCIA FUNDAMENTAL: matriz extracelular amorfa
+
+TIPOS:
+- Frouxo: muitas células, poucas fibras, muito espaço
+- Denso não modelado: muitas fibras colágenas em várias direções (derme)
+- Denso modelado: fibras paralelas em uma direção (tendões, ligamentos)
+
+FIBROBLASTOS: células fusiformes com núcleo oval, produzem fibras e matriz
+    `,
+    keyStructures: ['fibroblastos fusiformes', 'fibras colágenas rosa onduladas', 'substância fundamental'],
+    correctView: 'Corte mostrando células esparsas entre fibras e matriz',
+    commonMistakes: ['Conjuntivo tem MUITA matriz extracelular', 'Fibroblastos são fusiformes com núcleo oval', 'Fibras colágenas são ROSA e ONDULADAS']
+  },
+
+  'tecido ósseo': {
+    description: `
+HISTOLOGIA DO TECIDO ÓSSEO (H&E ou técnica especial):
+
+OSSO COMPACTO (CORTICAL):
+- SISTEMAS DE HAVERS (ósteons): unidades cilíndricas
+- CANAL DE HAVERS: central, contém vasos e nervos
+- LAMELAS: camadas concêntricas ao redor do canal
+- LACUNAS: espaços onde ficam os osteócitos
+- CANALÍCULOS: canalículos que conectam lacunas
+- CANAIS DE VOLKMANN: conectam sistemas de Havers entre si
+
+CÉLULAS:
+- Osteoblastos: formam osso, na superfície
+- Osteócitos: osteoblastos aprisionados nas lacunas
+- Osteoclastos: células gigantes multinucleadas, reabsorvem osso
+    `,
+    keyStructures: ['sistemas de Havers concêntricos', 'canal de Havers central', 'lamelas concêntricas', 'lacunas com osteócitos', 'canalículos'],
+    correctView: 'Corte transversal de osso compacto mostrando sistemas de Havers',
+    commonMistakes: ['Lamelas são CONCÊNTRICAS ao redor do canal', 'Osteócitos ficam nas LACUNAS', 'Canal de Havers é CENTRAL no ósteon']
+  },
+
+  'tecido cartilaginoso': {
+    description: `
+HISTOLOGIA DO TECIDO CARTILAGINOSO (H&E):
+
+TIPOS:
+- HIALINA: mais comum (articulações, vias aéreas, costelas)
+  - Matriz homogênea, azulada/rosa clara
+  - Condrócitos em lacunas, frequentemente em grupos isógenos
+  - Pericôndrio na superfície (exceto articular)
+
+- ELÁSTICA: pavilhão auricular, epiglote
+  - Similar à hialina + fibras elásticas na matriz
+
+- FIBROSA: discos intervertebrais, meniscos
+  - Muito colágeno tipo I na matriz
+  - Condrócitos em fileiras entre fibras
+
+CÉLULAS: Condrócitos em lacunas, frequentemente em grupos (grupos isógenos)
+    `,
+    keyStructures: ['condrócitos em lacunas', 'grupos isógenos', 'matriz cartilaginosa', 'pericôndrio'],
+    correctView: 'Corte mostrando condrócitos em lacunas dentro da matriz',
+    commonMistakes: ['Condrócitos ficam em LACUNAS', 'Grupos isógenos = divisão recente', 'Matriz é AVASCULAR']
+  },
+
+  'tecido nervoso': {
+    description: `
+HISTOLOGIA DO TECIDO NERVOSO (H&E ou técnicas especiais):
+
+NEURÔNIOS:
+- CORPO CELULAR (pericário): contém núcleo grande com nucléolo evidente
+- DENDRITOS: prolongamentos curtos, ramificados, recebem estímulos
+- AXÔNIO: prolongamento único, longo, transmite impulso
+- SUBSTÂNCIA DE NISSL: grumos basofílicos no citoplasma (RER)
+
+CÉLULAS DA GLIA:
+- Astrócitos: suporte, barreira hematoencefálica
+- Oligodendrócitos: mielina no SNC
+- Células de Schwann: mielina no SNP
+- Micróglia: defesa
+
+SUBSTÂNCIA CINZENTA: corpos celulares dos neurônios
+SUBSTÂNCIA BRANCA: axônios mielinizados
+    `,
+    keyStructures: ['neurônios com núcleo grande', 'substância de Nissl', 'axônios', 'células da glia'],
+    correctView: 'Corte de medula espinhal ou córtex cerebral',
+    commonMistakes: ['Neurônios têm núcleo GRANDE com NUCLÉOLO evidente', 'Substância de Nissl é basofílica (roxa)', 'Substância cinzenta = corpos celulares']
+  },
+
+  'sangue': {
+    description: `
+HISTOLOGIA DO SANGUE (Esfregaço, coloração Giemsa ou Wright):
+
+HEMÁCIAS (eritrócitos):
+- Discos bicôncavos, ANUCLEADOS em mamíferos
+- Rosa/alaranjado (eosinofílicas)
+- ~7μm de diâmetro
+
+LEUCÓCITOS:
+- NEUTRÓFILOS: núcleo multilobulado (3-5 lobos), grânulos finos
+- EOSINÓFILOS: núcleo bilobulado, grânulos grandes alaranjados
+- BASÓFILOS: núcleo em S, grânulos grandes azul-escuros
+- LINFÓCITOS: núcleo grande e redondo, pouco citoplasma
+- MONÓCITOS: maiores, núcleo em ferradura, citoplasma azul-acinzentado
+
+PLAQUETAS: fragmentos celulares pequenos, anucleados
+    `,
+    keyStructures: ['hemácias anucleadas rosa', 'neutrófilos multilobulados', 'linfócitos com núcleo grande redondo', 'plaquetas pequenas'],
+    correctView: 'Esfregaço sanguíneo com células dispersas',
+    commonMistakes: ['Hemácias são ANUCLEADAS', 'Neutrófilos têm núcleo MULTILOBULADO', 'Linfócitos têm POUCO citoplasma']
+  }
+}
+
+/**
+ * Busca conhecimento anatômico relevante para uma estrutura
+ */
+function getAnatomicalKnowledge(structure: string): string {
+  const normalizedStructure = structure.toLowerCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove acentos
+
+  // Busca direta
+  for (const [key, knowledge] of Object.entries(ANATOMICAL_KNOWLEDGE)) {
+    const normalizedKey = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    if (normalizedStructure === normalizedKey || normalizedStructure.includes(normalizedKey) || normalizedKey.includes(normalizedStructure)) {
+      return `
+=== REFERÊNCIA ANATÔMICA OBRIGATÓRIA (SIGA EXATAMENTE) ===
+${knowledge.description}
+
+ESTRUTURAS QUE DEVEM APARECER: ${knowledge.keyStructures.join(', ')}
+
+VISTA CORRETA: ${knowledge.correctView}
+
+⚠️ ERROS COMUNS A EVITAR: ${knowledge.commonMistakes.join('; ')}
+      `.trim()
+    }
+  }
+
+  // Busca por palavras-chave
+  const keywords = normalizedStructure.split(' ').filter(k => k.length > 3)
+  for (const keyword of keywords) {
+    for (const [key, knowledge] of Object.entries(ANATOMICAL_KNOWLEDGE)) {
+      const normalizedKey = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      if (normalizedKey.includes(keyword)) {
+        return `
+=== REFERÊNCIA ANATÔMICA RELACIONADA ===
+${knowledge.description}
+
+ESTRUTURAS-CHAVE: ${knowledge.keyStructures.join(', ')}
+
+VISTA RECOMENDADA: ${knowledge.correctView}
+        `.trim()
+      }
+    }
+  }
+
+  return ''
+}
+
+/**
+ * Converte URL de imagem temporária para base64 permanente
+ */
+async function convertImageToBase64(imageUrl: string): Promise<string> {
+  try {
+    const response = await fetch(imageUrl)
+    if (!response.ok) {
+      throw new Error(`Falha ao baixar imagem: ${response.status}`)
+    }
+    const arrayBuffer = await response.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    const base64 = buffer.toString('base64')
+    const mimeType = response.headers.get('content-type') || 'image/png'
+    return `data:${mimeType};base64,${base64}`
+  } catch (error) {
+    console.error('[GPT Image] Erro ao converter para base64:', error)
+    throw error
+  }
+}
+
+// ============================================
 // TIPOS
 // ============================================
 
@@ -73,11 +542,11 @@ export class GPTImageError extends Error {
 
 /**
  * Gera uma imagem médica usando GPT Image / DALL-E 3
- * Configurado para ULTRA-REALISMO MÁXIMO e SEM TEXTO
  *
- * IMPORTANTE: DALL-E 3 é péssimo em gerar texto correto.
- * Geramos imagens 100% visuais e limpas. Anotações/legendas
- * devem ser adicionadas via frontend (CSS overlay) quando necessário.
+ * MELHORIAS:
+ * 1. Usa base de conhecimento anatômico para garantir precisão
+ * 2. Converte para base64 para armazenamento permanente (URLs do DALL-E expiram)
+ * 3. Instruções claras para não incluir texto
  */
 export async function generateMedicalImage(
   options: GenerateImageOptions
@@ -91,47 +560,55 @@ export async function generateMedicalImage(
     n = 1,
   } = options
 
-  // INSTRUÇÕES CRÍTICAS PARA ULTRA-REALISMO SEM TEXTO
+  // Extrair estrutura do prompt para buscar conhecimento anatômico
+  const structureMatch = prompt.match(/(?:estrutura|tecido|órgão|sistema)[:\s]+([^\n]+)/i)
+    || prompt.match(/^([^\n]{10,100})/i)
+  const structure = structureMatch ? structureMatch[1].trim() : prompt.substring(0, 100)
+
+  // Buscar conhecimento anatômico específico
+  const anatomicalKnowledge = getAnatomicalKnowledge(structure)
+
+  // Construir prompt com conhecimento anatômico
   const enhancedPrompt = `${prompt}
 
-=== INSTRUÇÕES ABSOLUTAS - LEIA COM MÁXIMA ATENÇÃO ===
+${anatomicalKnowledge ? `
+${anatomicalKnowledge}
+` : ''}
 
-🚫 PROIBIÇÕES ABSOLUTAS (NUNCA INCLUIR):
-- ZERO texto, palavras, letras, números ou símbolos escritos
-- ZERO legendas, rótulos, etiquetas ou anotações
-- ZERO setas com nomes ou linhas de referência com texto
-- ZERO marcadores alfabéticos ou numéricos
-- ZERO qualquer forma de escrita em QUALQUER idioma
-- ZERO watermarks, logos ou assinaturas
+=== INSTRUÇÕES CRÍTICAS DE QUALIDADE ===
 
-📸 REQUISITOS DE ULTRA-REALISMO:
-1. FOTOGRAFIA REAL de alta resolução (8K, 16K quality)
-2. Deve parecer uma foto REAL tirada por câmera profissional
-3. Iluminação de estúdio fotográfico médico/científico profissional
-4. Profundidade de campo natural com bokeh suave quando apropriado
-5. Texturas HIPER-DETALHADAS:
-   - Poros visíveis na pele
-   - Fibras musculares individuais
-   - Vasos sanguíneos e capilares visíveis
-   - Textura real de tecidos biológicos
-6. Cores anatomicamente EXATAS e naturais:
-   - Músculos: vermelho-rosado com variações naturais
-   - Ossos: branco-bege com textura porosa visível
-   - Artérias: vermelho vivo com brilho úmido
-   - Veias: azul-arroxeado escuro
-   - Nervos: amarelo-pálido
-   - Gordura: amarelo-creme
-7. Brilho úmido natural dos tecidos vivos
-8. Reflexos de luz realistas em superfícies molhadas
-9. ZERO aspecto de ilustração, desenho, cartoon ou CG
-10. Qualidade de atlas anatômico fotográfico (Sobotta foto-realista)
+🎯 PRECISÃO ANATÔMICA (PRIORIDADE MÁXIMA):
+- A anatomia DEVE estar 100% CORRETA segundo literatura médica
+- Posições relativas das estruturas devem ser EXATAS
+- Proporções devem ser REALISTAS
+- NÃO invente estruturas - mostre apenas o que existe anatomicamente
+- Siga EXATAMENTE as referências anatômicas fornecidas acima
 
-A imagem deve ser INDISTINGUÍVEL de uma fotografia médica real.
-ABSOLUTAMENTE NENHUM TEXTO OU ESCRITA DE QUALQUER TIPO.`
+📸 ESTILO VISUAL:
+- Ilustração médica profissional estilo Atlas Netter/Sobotta
+- OU fotografia médica de alta qualidade (dissecção/modelo)
+- Cores anatomicamente corretas e padronizadas:
+  • Artérias: vermelho vivo
+  • Veias: azul escuro
+  • Nervos: amarelo
+  • Músculos: vermelho-rosado
+  • Ossos: bege/marfim
+- Iluminação uniforme e profissional
+- Fundo neutro (branco ou gradiente suave)
+
+🚫 PROIBIÇÕES ABSOLUTAS:
+- ZERO texto, legendas, números ou letras
+- ZERO setas, linhas ou marcadores com texto
+- ZERO watermarks ou logos
+- ZERO estruturas anatomicamente incorretas ou inventadas
+- ZERO estilo cartoon ou simplificado demais
+
+A imagem deve ser EDUCACIONALMENTE PRECISA e adequada para estudo médico universitário.`
 
   try {
-    console.log('[GPT Image] Gerando imagem médica FOTORREALISTA sem texto...')
-    console.log('[GPT Image] Prompt:', prompt.substring(0, 200) + '...')
+    console.log('[GPT Image] Gerando imagem médica com precisão anatômica...')
+    console.log('[GPT Image] Estrutura detectada:', structure.substring(0, 50))
+    console.log('[GPT Image] Conhecimento anatômico:', anatomicalKnowledge ? 'ENCONTRADO' : 'não encontrado')
 
     const response = await openai.images.generate({
       model,
@@ -147,14 +624,28 @@ ABSOLUTAMENTE NENHUM TEXTO OU ESCRITA DE QUALQUER TIPO.`
     }
 
     const imageData = response.data[0]
+    const temporaryUrl = imageData.url
 
-    console.log('[GPT Image] Imagem gerada com sucesso!')
+    console.log('[GPT Image] Imagem gerada, convertendo para base64 permanente...')
 
-    // Sempre HD para imagens médicas = custo high
+    // IMPORTANTE: Converter para base64 para armazenamento permanente
+    // URLs do DALL-E expiram em ~1 hora
+    let permanentUrl = temporaryUrl
+    try {
+      if (temporaryUrl) {
+        permanentUrl = await convertImageToBase64(temporaryUrl)
+        console.log('[GPT Image] Convertido para base64 com sucesso!')
+      }
+    } catch (conversionError) {
+      console.error('[GPT Image] Falha na conversão base64, usando URL temporária:', conversionError)
+      // Fallback para URL temporária se a conversão falhar
+    }
+
     return {
-      url: imageData.url,
+      url: permanentUrl,
+      base64: permanentUrl?.startsWith('data:') ? permanentUrl : undefined,
       revisedPrompt: imageData.revised_prompt || prompt,
-      estimatedCost: COSTS['high'][size] * n, // HD = high cost
+      estimatedCost: COSTS['high'][size] * n,
     }
   } catch (error: unknown) {
     console.error('[GPT Image] Erro na geração:', error)
@@ -189,12 +680,17 @@ export interface MedicalImagePromptParams {
 export function buildMedicalImagePrompt(params: MedicalImagePromptParams): string {
   const { structure, type, view, additionalDetails } = params
 
+  // IMPORTANTE: Buscar conhecimento anatômico específico para garantir precisão
+  const anatomicalKnowledge = getAnatomicalKnowledge(structure)
+
   const templates: Record<string, string> = {
     anatomy: `
-FOTOGRAFIA MÉDICA ULTRA-REALISTA DE ALTA RESOLUÇÃO
+ILUSTRAÇÃO ANATÔMICA MÉDICA DE ALTA PRECISÃO
 
 Estrutura anatômica: ${structure}
 ${view ? `Vista/Perspectiva: ${view}` : 'Vista: anterior, bem iluminada'}
+
+${anatomicalKnowledge}
 
 ESTILO VISUAL ABSOLUTO:
 Esta deve parecer uma FOTOGRAFIA REAL de:
@@ -234,6 +730,8 @@ ${additionalDetails ? `FOCO ESPECIAL: ${additionalDetails}` : ''}
 FOTOMICROGRAFIA HISTOLÓGICA REAL DE LABORATÓRIO
 
 Tecido/Estrutura: ${structure}
+
+${anatomicalKnowledge}
 
 TÉCNICA DE COLORAÇÃO: H&E (Hematoxilina e Eosina) - padrão ouro
 
