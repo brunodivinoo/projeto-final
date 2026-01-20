@@ -9,8 +9,207 @@ const openai = new OpenAI({
 const DEBUG_IMAGE_GENERATION = true
 
 // ============================================
-// BASE DE CONHECIMENTO ANATÔMICO
-// Descrições precisas para garantir imagens corretas
+// BASE DE CONHECIMENTO ANATÔMICO - VERSÃO COMPACTA
+// Cada entrada tem máximo ~800 caracteres para caber no prompt final
+// Limite do DALL-E 3: 4000 caracteres
+// ============================================
+
+interface AnatomicalKnowledgeCompact {
+  anatomy: string      // Descrição essencial
+  mustShow: string[]   // Estruturas obrigatórias
+  avoid: string        // Erros críticos a evitar
+}
+
+const ANATOMICAL_KNOWLEDGE_COMPACT: Record<string, AnatomicalKnowledgeCompact> = {
+
+  // CARDIOVASCULAR
+  'coração': {
+    anatomy: `4 câmaras: AD (recebe cavas), AE (recebe pulmonares), VD (parede fina, ejeta p/ tronco pulmonar), VE (parede ESPESSA, ejeta p/ aorta). Valvas: tricúspide (AD-VD), mitral (AE-VE), pulmonar, aórtica. Septo interventricular. Pericárdio envolve.`,
+    mustShow: ['4 câmaras', 'VE parede mais espessa que VD', 'septo', 'valvas', 'aorta do VE', 'tronco pulmonar do VD'],
+    avoid: 'NÃO inverter espessura das paredes (VE é MAIS grosso). NÃO trocar origem da aorta e tronco pulmonar.'
+  },
+
+  'circulação coronariana': {
+    anatomy: `Coronária D: sulco AV direito, irriga VD e parede inferior. Coronária E divide em: Descendente Anterior (sulco IV anterior, parede anterior VE) e Circunflexa (sulco AV esquerdo, parede lateral). Veias drenam p/ seio coronário → AD.`,
+    mustShow: ['coronária D à direita', 'DA no sulco IV anterior', 'Cx à esquerda', 'seio coronário posterior'],
+    avoid: 'NÃO inverter coronárias D e E. DA e Cx são ramos da ESQUERDA.'
+  },
+
+  // RESPIRATÓRIO
+  'pulmões': {
+    anatomy: `Direito: 3 lobos (superior, médio, inferior), mais curto/largo. Esquerdo: 2 lobos + incisura cardíaca, mais longo/estreito. Fissuras: oblíqua (ambos) e horizontal (só direito). Hilo: brônquio, artéria pulmonar, 2 veias.`,
+    mustShow: ['3 lobos à direita', '2 lobos à esquerda', 'incisura cardíaca esquerda', 'fissuras'],
+    avoid: 'NÃO colocar 3 lobos no esquerdo. NÃO esquecer incisura cardíaca.'
+  },
+
+  'pulmão': {
+    anatomy: `Direito: 3 lobos (superior, médio, inferior), mais curto/largo. Esquerdo: 2 lobos + incisura cardíaca, mais longo/estreito. Fissuras: oblíqua (ambos) e horizontal (só direito). Hilo: brônquio, artéria pulmonar, 2 veias.`,
+    mustShow: ['3 lobos à direita', '2 lobos à esquerda', 'incisura cardíaca esquerda', 'fissuras'],
+    avoid: 'NÃO colocar 3 lobos no esquerdo. NÃO esquecer incisura cardíaca.'
+  },
+
+  'árvore brônquica': {
+    anatomy: `Traqueia (anéis em C) bifurca na carina T4-T5. Brônquio D: mais curto, largo, VERTICAL (aspiração comum aqui). Brônquio E: mais longo, estreito, HORIZONTAL. Divisões: lobares → segmentares → bronquíolos → alvéolos.`,
+    mustShow: ['traqueia com anéis', 'carina', 'brônquio D vertical', 'brônquio E horizontal'],
+    avoid: 'NÃO fazer brônquios simétricos. D é mais VERTICAL.'
+  },
+
+  // DIGESTÓRIO
+  'fígado': {
+    anatomy: `Maior glândula. Lobos: D (5/6), E (menor), quadrado (inferior, entre vesícula e lig. redondo), caudado (posterior, entre VCI e lig. venoso). Faces: diafragmática (superior) e visceral (inferior com porta hepatis). Veias hepáticas → VCI.`,
+    mustShow: ['4 lobos', 'vesícula biliar', 'porta hepatis', 'veias hepáticas'],
+    avoid: 'NÃO esquecer lobos caudado e quadrado. NÃO confundir faces.'
+  },
+
+  'histologia do fígado': {
+    anatomy: `Lóbulos HEXAGONAIS. Veia central no CENTRO. Tríades portais nos 6 vértices (veia porta + artéria hepática + ducto biliar). Hepatócitos POLIGONAIS em cordões radiados do centro. Sinusóides entre cordões. Sangue: periferia→centro. Bile: centro→periferia.`,
+    mustShow: ['lóbulos hexagonais', 'veia central no centro', 'tríades nos vértices', 'hepatócitos poligonais em cordões'],
+    avoid: 'NÃO fazer hepatócitos alongados (são POLIGONAIS). NÃO confundir com músculo.'
+  },
+
+  // REPRODUTOR MASCULINO
+  'sistema reprodutor masculino': {
+    anatomy: `EXTERNOS: Testículos no ESCROTO (fora da pelve!), epidídimo posterior ao testículo, pênis (2 corpos cavernosos + 1 esponjoso). INTERNOS: Ducto deferente sobe pelo canal inguinal, vesículas seminais POSTERIOR-INFERIOR à bexiga, próstata INFERIOR à bexiga envolvendo uretra.`,
+    mustShow: ['testículos NO ESCROTO (externos)', 'epidídimo posterior', 'próstata abaixo da bexiga', 'vesículas seminais atrás da bexiga'],
+    avoid: 'NUNCA colocar testículos dentro da pelve. Próstata é INFERIOR, vesículas são POSTERIORES à bexiga.'
+  },
+
+  // REPRODUTOR FEMININO
+  'sistema reprodutor feminino': {
+    anatomy: `Ovários LATERAIS ao útero (fossas ováricas). Tubas uterinas com fímbrias (captam óvulo) → ampola → istmo → útero. Útero piriforme: fundo, corpo, colo. Entre bexiga (anterior) e reto (posterior). Vagina abaixo do colo. Ligamentos: largo, redondo, uterossacro.`,
+    mustShow: ['ovários laterais', 'tubas com fímbrias', 'útero (fundo-corpo-colo)', 'bexiga anterior', 'reto posterior'],
+    avoid: 'NÃO desenhar útero simétrico triangular. NÃO esquecer fímbrias. Ovários são LATERAIS.'
+  },
+
+  // URINÁRIO
+  'rim': {
+    anatomy: `Retroperitoneal, forma de feijão. D mais baixo (fígado). EXTERNO: polos, hilo medial. INTERNO (corte coronal): córtex EXTERNO (glomérulos) → medula com pirâmides (base p/ córtex, ápice=papila p/ cálice) → cálices menores/maiores → pelve → ureter.`,
+    mustShow: ['córtex externo', 'pirâmides medulares', 'papilas', 'cálices', 'pelve', 'hilo'],
+    avoid: 'NÃO confundir córtex com medula. Córtex é EXTERNO.'
+  },
+
+  'néfron': {
+    anatomy: `Unidade funcional. Corpúsculo renal no córtex: glomérulo + cápsula de Bowman. TCP com borda em escova (córtex). Alça de Henle desce na medula (ramos fino e espesso). TCD sem borda em escova (córtex). Ducto coletor desce pela medula.`,
+    mustShow: ['glomérulo', 'cápsula de Bowman', 'TCP com microvilosidades', 'alça de Henle na medula', 'TCD', 'ducto coletor'],
+    avoid: 'NÃO esquecer borda em escova do TCP. Ducto coletor na MEDULA.'
+  },
+
+  // NERVOSO
+  'encéfalo': {
+    anatomy: `Cérebro: 2 hemisférios com giros/sulcos, unidos pelo corpo caloso. Lobos: frontal, parietal, temporal, occipital. Sulcos principais: central, lateral. Diencéfalo: tálamo, hipotálamo. Tronco: mesencéfalo, ponte, bulbo. Cerebelo: posterior ao tronco, com folia.`,
+    mustShow: ['hemisférios cerebrais', 'corpo caloso', 'lobos', 'tronco encefálico', 'cerebelo'],
+    avoid: 'NÃO esquecer cerebelo. NÃO simplificar demais os giros.'
+  },
+
+  'cérebro': {
+    anatomy: `Cérebro: 2 hemisférios com giros/sulcos, unidos pelo corpo caloso. Lobos: frontal (anterior), parietal (superior), temporal (lateral inferior), occipital (posterior). Sulcos: central (Rolando), lateral (Sylvius). Giro pré-central=motor, pós-central=sensitivo.`,
+    mustShow: ['hemisférios', '4 lobos', 'sulco central', 'fissura lateral', 'giros pré e pós-central'],
+    avoid: 'NÃO confundir posições dos lobos. Frontal é ANTERIOR, Occipital é POSTERIOR.'
+  },
+
+  'medula espinhal': {
+    anatomy: `Do forame magno até L1-L2. Intumescências cervical e lombar. Cone medular → cauda equina abaixo. Corte transversal: substância cinzenta central em H (cornos anterior=motor, posterior=sensitivo), branca periférica. Raiz posterior tem gânglio.`,
+    mustShow: ['termina em L1-L2', 'cone medular', 'cauda equina', 'H cinzento central', 'gânglio na raiz posterior'],
+    avoid: 'NÃO estender até sacro. Gânglio só na raiz POSTERIOR.'
+  },
+
+  // MUSCULOESQUELÉTICO
+  'coluna vertebral': {
+    anatomy: `33 vértebras: 7C, 12T, 5L, 5S (fundidas), 4Co (fundidas). Curvaturas: lordose cervical/lombar (convexa anterior), cifose torácica/sacral (côncava anterior). Vértebra: corpo anterior, arco posterior, processos espinhosos/transversos/articulares.`,
+    mustShow: ['regiões C-T-L-S-Co', 'curvaturas alternadas', 'corpo e arco vertebral', 'discos intervertebrais'],
+    avoid: 'NÃO fazer todas vértebras iguais. NÃO esquecer curvaturas.'
+  },
+
+  'membro superior esqueleto': {
+    anatomy: `Cintura: clavícula + escápula. Braço: úmero. Antebraço: ulna (MEDIAL, olécrano) + rádio (LATERAL). Mão: 8 carpos, 5 metacarpos, falanges (2 no polegar, 3 nos demais).`,
+    mustShow: ['clavícula-escápula', 'úmero', 'ulna medial', 'rádio lateral', 'carpo-metacarpo-falanges'],
+    avoid: 'NÃO inverter ulna e rádio. Ulna é MEDIAL (lado mindinho).'
+  },
+
+  'membro inferior esqueleto': {
+    anatomy: `Cintura pélvica: ílio+ísquio+púbis (acetábulo). Coxa: fêmur. Joelho: patela. Perna: tíbia (MEDIAL, suporta peso) + fíbula (LATERAL). Pé: 7 tarsos (tálus, calcâneo), 5 metatarsos, falanges.`,
+    mustShow: ['pelve com acetábulo', 'fêmur', 'patela', 'tíbia medial', 'fíbula lateral', 'tarso-metatarso-falanges'],
+    avoid: 'NÃO inverter tíbia e fíbula. Tíbia é MEDIAL e suporta peso.'
+  },
+
+  // HISTOLOGIA BÁSICA
+  'tecido epitelial': {
+    anatomy: `Células justapostas sobre membrana basal. Simples (1 camada) ou estratificado (várias). Formas: pavimentoso, cúbico, colunar. Pseudoestratificado: todos tocam a basal mas parecem várias camadas.`,
+    mustShow: ['membrana basal', 'células em camadas', 'núcleos característicos'],
+    avoid: 'NÃO confundir pseudoestratificado com estratificado verdadeiro.'
+  },
+
+  'tecido conjuntivo': {
+    anatomy: `Células dispersas em matriz extracelular abundante. Fibroblastos produzem fibras (colágenas rosa, elásticas, reticulares). Tipos: frouxo, denso modelado/não modelado, adiposo, cartilaginoso, ósseo.`,
+    mustShow: ['fibroblastos', 'fibras colágenas', 'matriz extracelular'],
+    avoid: 'NÃO confundir frouxo com denso. NÃO esquecer matriz.'
+  },
+
+  'tecido muscular estriado esquelético': {
+    anatomy: `Fibras longas, cilíndricas, multinucleadas. Núcleos PERIFÉRICOS. Estriações transversais (bandas A escuras, I claras, linhas Z). Sarcômero: Z a Z. Controle voluntário.`,
+    mustShow: ['fibras longas paralelas', 'estriações', 'núcleos PERIFÉRICOS'],
+    avoid: 'NÃO colocar núcleos centrais (são PERIFÉRICOS no esquelético).'
+  },
+
+  'tecido muscular cardíaco': {
+    anatomy: `Fibras ramificadas. 1-2 núcleos CENTRAIS. Estriações presentes. DISCOS INTERCALARES entre células (junções especializadas). Controle involuntário.`,
+    mustShow: ['fibras ramificadas', 'núcleos centrais', 'discos intercalares', 'estriações'],
+    avoid: 'NÃO esquecer discos intercalares (diferencial do cardíaco).'
+  },
+
+  'tecido muscular liso': {
+    anatomy: `Células fusiformes. 1 núcleo CENTRAL alongado. SEM ESTRIAÇÕES. Controle involuntário. Localização: vísceras, vasos, útero.`,
+    mustShow: ['células fusiformes', 'núcleo central', 'sem estriações'],
+    avoid: 'NÃO colocar estriações (músculo liso NÃO tem).'
+  },
+
+  'tecido nervoso': {
+    anatomy: `Neurônios: corpo celular (núcleo grande, corpúsculos de Nissl), dendritos (múltiplos, receptores), axônio (único, efetor). Glia: astrócitos, oligodendrócitos, micróglia, Schwann.`,
+    mustShow: ['corpo celular', 'corpúsculos de Nissl', 'dendritos', 'axônio', 'células da glia'],
+    avoid: 'NÃO confundir neurônios com glia. Glia é menor e mais numerosa.'
+  },
+
+  'tecido ósseo': {
+    anatomy: `Osso compacto: sistemas de Havers (ósteons) com canal central, lamelas concêntricas, lacunas com osteócitos, canalículos. Células: osteoblastos (formam), osteócitos (mantêm), osteoclastos (reabsorvem).`,
+    mustShow: ['sistemas de Havers', 'canal central', 'lamelas concêntricas', 'lacunas', 'osteócitos'],
+    avoid: 'Lamelas são CONCÊNTRICAS ao canal. Osteócitos nas LACUNAS.'
+  },
+
+  'tecido cartilaginoso': {
+    anatomy: `Condrócitos em lacunas dentro de matriz. Grupos isógenos = divisão recente. Tipos: hialina (articulações), elástica (orelha), fibrosa (discos). Pericôndrio na superfície (exceto articular).`,
+    mustShow: ['condrócitos em lacunas', 'grupos isógenos', 'matriz', 'pericôndrio'],
+    avoid: 'Condrócitos em LACUNAS. Matriz é AVASCULAR.'
+  },
+
+  'sangue': {
+    anatomy: `Hemácias: discos bicôncavos, ANUCLEADAS, rosa. Leucócitos: neutrófilos (núcleo multilobulado), linfócitos (núcleo grande redondo), monócitos, eosinófilos, basófilos. Plaquetas: fragmentos pequenos.`,
+    mustShow: ['hemácias anucleadas', 'neutrófilos multilobulados', 'linfócitos', 'plaquetas'],
+    avoid: 'Hemácias são ANUCLEADAS. Neutrófilos têm núcleo MULTILOBULADO.'
+  },
+
+  // OLHO E OUVIDO
+  'olho': {
+    anatomy: `Túnicas: fibrosa (esclera+córnea), vascular/úvea (coroide+corpo ciliar+íris), nervosa (retina). Meios refrativos: córnea, humor aquoso, cristalino, vítreo. Câmaras: anterior (córnea-íris), posterior (íris-cristalino). Retina: disco óptico (ponto cego), fóvea (mácula).`,
+    mustShow: ['3 túnicas', 'cristalino', 'câmaras', 'disco óptico', 'fóvea'],
+    avoid: 'NÃO confundir câmaras anterior e posterior.'
+  },
+
+  'ouvido': {
+    anatomy: `Externo: pavilhão, meato, tímpano. Médio: ossículos (martelo-bigorna-estribo), tuba auditiva. Interno: vestíbulo, 3 canais semicirculares perpendiculares, cóclea (2.5 voltas em espiral com órgão de Corti).`,
+    mustShow: ['3 partes', 'ossículos em sequência', '3 canais semicirculares perpendiculares', 'cóclea espiral'],
+    avoid: 'NÃO simplificar cóclea. NÃO esquecer canais semicirculares perpendiculares.'
+  },
+
+  'pele': {
+    anatomy: `Epiderme: estratos basal→espinhoso→granuloso→(lúcido)→córneo. Derme: papilar (frouxo) e reticular (denso). Anexos: folículos pilosos, glândulas sebáceas (abrem no folículo), sudoríparas.`,
+    mustShow: ['estratos epidérmicos em ordem', 'derme papilar e reticular', 'folículos', 'glândulas'],
+    avoid: 'Estrato lúcido só em pele ESPESSA. Sebáceas abrem no FOLÍCULO.'
+  }
+}
+
+// ============================================
+// BASE DE CONHECIMENTO ANATÔMICO - VERSÃO DETALHADA
+// Usado para consultas e referências mais completas
 // ============================================
 
 interface AnatomicalKnowledge {
@@ -21,63 +220,6 @@ interface AnatomicalKnowledge {
 }
 
 const ANATOMICAL_KNOWLEDGE: Record<string, AnatomicalKnowledge> = {
-  // ========================================
-  // SISTEMA CARDIOVASCULAR
-  // ========================================
-
-  'coração': {
-    description: `
-Órgão muscular oco, cônico, tamanho de um punho fechado.
-Localização: mediastino médio, 2/3 à esquerda da linha média.
-
-CÂMARAS (4):
-- Átrio direito: parede fina, recebe veias cavas (superior e inferior)
-- Átrio esquerdo: parede fina, recebe 4 veias pulmonares
-- Ventrículo direito: parede média (5mm), forma triangular, ejeta para tronco pulmonar
-- Ventrículo esquerdo: parede espessa (15mm), forma cônica, ejeta para aorta
-
-VALVAS (4):
-- Tricúspide: entre AD e VD (3 folhetos)
-- Mitral/Bicúspide: entre AE e VE (2 folhetos)
-- Pulmonar: saída do VD (3 válvulas semilunares)
-- Aórtica: saída do VE (3 válvulas semilunares)
-
-VASOS:
-- Aorta: sai do VE, curva para esquerda e posterior
-- Tronco pulmonar: sai do VD, bifurca em artérias pulmonares D/E
-- Veias cavas: drenam para AD
-- Veias pulmonares: drenam para AE (únicas veias com sangue arterial)
-
-CAMADAS: Endocárdio (interno), Miocárdio (muscular), Epicárdio (externo)
-Pericárdio: saco fibrosseroso que envolve o coração
-    `,
-    keyStructures: ['átrio direito com veias cavas', 'átrio esquerdo com veias pulmonares', 'ventrículo direito (parede fina)', 'ventrículo esquerdo (parede espessa)', 'septo interventricular', 'valvas cardíacas', 'aorta saindo do VE', 'tronco pulmonar saindo do VD'],
-    correctView: 'AD superior-direito → VD anterior-inferior | AE posterior-superior → VE posterior-inferior | Aorta posterior ao tronco pulmonar',
-    commonMistakes: ['NÃO inverter espessura das paredes ventriculares. VE é MAIS ESPESSO que VD. NÃO colocar aorta saindo do VD.']
-  },
-
-  'circulação coronariana': {
-    description: `
-Artérias coronárias: primeiros ramos da aorta, logo acima da valva aórtica.
-
-ARTÉRIA CORONÁRIA DIREITA (ACD):
-- Origina-se do seio aórtico direito
-- Percorre sulco coronário à direita
-- Irriga: AD, VD, nó sinoatrial (60%), nó AV (80%), parede inferior do VE
-- Ramo descendente posterior (na maioria das pessoas - dominância direita)
-
-ARTÉRIA CORONÁRIA ESQUERDA (ACE):
-- Origina-se do seio aórtico esquerdo
-- Tronco curto que bifurca em:
-  * Descendente anterior (DA): desce pelo sulco IV anterior, irriga parede anterior do VE e 2/3 anteriores do septo
-  * Circunflexa (Cx): percorre sulco coronário à esquerda, irriga parede lateral do VE
-
-VEIAS: Drenam para seio coronário → átrio direito
-    `,
-    keyStructures: ['artéria coronária direita no sulco AV direito', 'artéria descendente anterior no sulco IV anterior', 'artéria circunflexa no sulco AV esquerdo', 'seio coronário na face posterior'],
-    correctView: 'Coronárias nascem da raiz da aorta → seguem sulcos coronário e interventricular',
-    commonMistakes: ['NÃO inverter coronária direita e esquerda. NÃO esquecer que DA e Cx são ramos da ACE.']
-  },
 
   // ========================================
   // SISTEMA RESPIRATÓRIO
@@ -85,8 +227,6 @@ VEIAS: Drenam para seio coronário → átrio direito
 
   'pulmões': {
     description: `
-Órgãos pareados, ocupam cavidades pleurais.
-
 PULMÃO DIREITO (3 lobos):
 - Lobo superior: acima da fissura horizontal
 - Lobo médio: entre fissuras horizontal e oblíqua
