@@ -404,14 +404,24 @@ async function streamClaude(params: StreamClaudeParams) {
               })
 
               // Executar tool
+              console.log('[Chat API] Executando tool:', currentToolCall.name)
+              console.log('[Chat API] Tool input parsed:', JSON.stringify(toolInput))
+
               const toolResult = await executarTool(currentToolCall.name, toolInput, user_id)
+
+              console.log('[Chat API] Tool result success:', toolResult.success)
+              console.log('[Chat API] Tool result has data:', !!toolResult.data)
+              if (toolResult.error) {
+                console.error('[Chat API] Tool error:', toolResult.error)
+              }
 
               // Enviar resultado da tool como evento
               controller.enqueue(
                 encoder.encode(`data: ${JSON.stringify({
                   type: 'tool_result',
                   tool_name: currentToolCall.name,
-                  result: toolResult.data
+                  result: toolResult.data,
+                  error: toolResult.error
                 })}\n\n`)
               )
 
@@ -424,7 +434,9 @@ async function streamClaude(params: StreamClaudeParams) {
                 )
               }
             } catch (parseError) {
-              console.error('Erro ao processar tool call:', parseError)
+              console.error('[Chat API] Erro ao processar tool call:', parseError)
+              console.error('[Chat API] Tool name:', currentToolCall.name)
+              console.error('[Chat API] Tool input:', currentToolCall.input)
             }
             currentToolCall = null
           } else if (evt.type === 'message_delta') {

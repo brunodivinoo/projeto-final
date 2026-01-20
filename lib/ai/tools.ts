@@ -477,13 +477,24 @@ async function handleGerarImagemMedica(
     qualidade = 'standard'
   } = input
 
+  console.log('[Tool gerar_imagem_medica] =====================================')
+  console.log('[Tool gerar_imagem_medica] INICIANDO')
+  console.log('[Tool gerar_imagem_medica] Estrutura:', estrutura)
+  console.log('[Tool gerar_imagem_medica] Tipo:', tipo)
+  console.log('[Tool gerar_imagem_medica] Vista:', vista)
+  console.log('[Tool gerar_imagem_medica] Qualidade:', qualidade)
+  console.log('[Tool gerar_imagem_medica] =====================================')
+
   if (!estrutura) {
+    console.error('[Tool gerar_imagem_medica] ERRO: Estrutura não fornecida')
     return { success: false, error: 'A estrutura a ser ilustrada é obrigatória' }
   }
 
   try {
     // Importar dinamicamente o serviço GPT Image para evitar problemas de circular dependency
+    console.log('[Tool gerar_imagem_medica] Importando serviço GPT Image...')
     const { generateMedicalImage, buildMedicalImagePrompt } = await import('@/lib/services/gptImageService')
+    console.log('[Tool gerar_imagem_medica] Serviço importado com sucesso!')
 
     // Mapear tipo para o formato do serviço
     const typeMap: Record<string, 'anatomy' | 'histology' | 'radiology' | 'pathology' | 'diagram'> = {
@@ -496,8 +507,10 @@ async function handleGerarImagemMedica(
     }
 
     const imageType = typeMap[tipo as string] || 'anatomy'
+    console.log('[Tool gerar_imagem_medica] Tipo de imagem mapeado:', imageType)
 
     // Construir prompt otimizado para imagem médica
+    console.log('[Tool gerar_imagem_medica] Construindo prompt...')
     const prompt = buildMedicalImagePrompt({
       structure: estrutura as string,
       type: imageType,
@@ -505,7 +518,8 @@ async function handleGerarImagemMedica(
       additionalDetails: detalhes_adicionais as string | undefined
     })
 
-    console.log('[Tool gerar_imagem_medica] Gerando imagem:', estrutura)
+    console.log('[Tool gerar_imagem_medica] Prompt construído, tamanho:', prompt.length, 'caracteres')
+    console.log('[Tool gerar_imagem_medica] Chamando generateMedicalImage...')
 
     // Gerar imagem diretamente via serviço
     const result = await generateMedicalImage({
@@ -515,8 +529,12 @@ async function handleGerarImagemMedica(
       style: 'natural'
     })
 
+    console.log('[Tool gerar_imagem_medica] Resultado recebido!')
+    console.log('[Tool gerar_imagem_medica] URL presente:', !!result.url)
+    console.log('[Tool gerar_imagem_medica] URL type:', result.url?.startsWith('data:') ? 'base64' : 'URL')
+
     if (result.url) {
-      console.log('[Tool gerar_imagem_medica] Imagem gerada com sucesso!')
+      console.log('[Tool gerar_imagem_medica] ✅ SUCESSO!')
       return {
         success: true,
         data: {
@@ -525,20 +543,29 @@ async function handleGerarImagemMedica(
           tipo: tipo,
           estrutura: estrutura,
           qualidade: qualidade,
-          custo: result.estimatedCost
+          custo: result.estimatedCost,
+          is_base64: result.url.startsWith('data:')
         }
       }
     }
 
+    console.error('[Tool gerar_imagem_medica] ❌ FALHA: URL não presente no resultado')
     return {
       success: false,
-      error: 'Não foi possível gerar a imagem'
+      error: 'Não foi possível gerar a imagem - URL não retornada'
     }
   } catch (error) {
-    console.error('[Tool gerar_imagem_medica] Erro:', error)
+    console.error('[Tool gerar_imagem_medica] =====================================')
+    console.error('[Tool gerar_imagem_medica] ❌ ERRO CAPTURADO:')
+    console.error('[Tool gerar_imagem_medica] Error type:', error?.constructor?.name)
+    console.error('[Tool gerar_imagem_medica] Error message:', error instanceof Error ? error.message : String(error))
+    console.error('[Tool gerar_imagem_medica] Full error:', error)
+    console.error('[Tool gerar_imagem_medica] =====================================')
+
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
     return {
       success: false,
-      error: `Erro na geração de imagem: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+      error: `Erro na geração de imagem: ${errorMessage}`
     }
   }
 }

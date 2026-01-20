@@ -5,6 +5,9 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
+// Flag para debug
+const DEBUG_IMAGE_GENERATION = true
+
 // ============================================
 // BASE DE CONHECIMENTO ANATÔMICO
 // Descrições precisas para garantir imagens corretas
@@ -18,134 +21,103 @@ interface AnatomicalKnowledge {
 }
 
 const ANATOMICAL_KNOWLEDGE: Record<string, AnatomicalKnowledge> = {
-  // ==================== SISTEMA REPRODUTOR ====================
-
-  'sistema reprodutor masculino': {
-    description: `
-ANATOMIA CORRETA DO SISTEMA REPRODUTOR MASCULINO (Vista Sagital Mediana):
-
-POSICIONAMENTO ESPACIAL OBRIGATÓRIO:
-- ESCROTO: bolsa externa, pendendo ABAIXO e ANTERIOR ao períneo
-- TESTÍCULOS (2): dentro do escroto, formato ovoide, ~4cm comprimento
-- EPIDÍDIMO: estrutura em forma de C, na face POSTERIOR de cada testículo
-- DUCTO DEFERENTE: tubo fino que SOBE do epidídimo, atravessa canal inguinal
-- BEXIGA: estrutura central na pelve, acima da próstata
-- VESÍCULAS SEMINAIS: 2 bolsas, POSTERIOR e INFERIOR à bexiga, ~5cm
-- PRÓSTATA: glândula em forma de castanha, ABAIXO da bexiga, envolvendo a uretra
-- URETRA: tubo que atravessa próstata → pênis
-- PÊNIS: anterior, com corpos cavernosos (2, dorsais) e corpo esponjoso (1, ventral)
-
-RELAÇÕES ANATÔMICAS CRÍTICAS:
-- Testículos ficam FORA da cavidade pélvica (no escroto externo)
-- Próstata fica ABAIXO da bexiga, não ao lado
-- Vesículas seminais ficam ATRÁS da bexiga
-- O ducto deferente faz uma curva ao redor do ureter
-    `,
-    keyStructures: ['escroto externo', 'testículos no escroto', 'epidídimo posterior', 'ducto deferente ascendente', 'vesículas seminais posteriores à bexiga', 'próstata abaixo da bexiga', 'uretra prostática'],
-    correctView: 'Corte sagital mediano da pelve masculina, mostrando escroto externamente',
-    commonMistakes: ['NÃO colocar testículos dentro da pelve', 'NÃO colocar próstata acima da bexiga', 'NÃO esquecer o escroto externo']
-  },
-
-  'sistema reprodutor feminino': {
-    description: `
-ANATOMIA CORRETA DO SISTEMA REPRODUTOR FEMININO (Vista Anterior/Coronal):
-
-POSICIONAMENTO ESPACIAL OBRIGATÓRIO:
-- ÚTERO: órgão central em forma de pera invertida, ~7cm comprimento
-  - Fundo uterino: parte superior arredondada
-  - Corpo uterino: parte principal
-  - Colo uterino (cérvix): parte inferior cilíndrica
-- TUBAS UTERINAS (2): tubos de ~10cm, saem lateralmente do fundo uterino
-  - Porção intramural → istmo → ampola → infundíbulo com fímbrias
-  - Fímbrias: projeções digitiformes na extremidade, abraçando o ovário
-- OVÁRIOS (2): estruturas ovoides de ~3cm, laterais ao útero
-  - Conectados ao útero pelo ligamento útero-ovárico
-  - Posicionados ABAIXO das tubas, não ao lado
-- VAGINA: canal que conecta colo uterino ao exterior
-- LIGAMENTO LARGO: membrana que sustenta útero e anexos
-
-RELAÇÕES ANATÔMICAS CRÍTICAS:
-- Tubas uterinas se curvam SOBRE os ovários (não saem retas)
-- Fímbrias "abraçam" os ovários para captar óvulos
-- Útero tem formato de PERA INVERTIDA, não de triângulo
-    `,
-    keyStructures: ['útero piriforme central', 'tubas uterinas curvadas', 'fímbrias sobre ovários', 'ovários laterais inferiores', 'ligamento largo'],
-    correctView: 'Vista anterior/coronal do sistema reprodutor feminino isolado',
-    commonMistakes: ['NÃO fazer útero triangular', 'NÃO fazer tubas retas horizontais', 'NÃO esquecer as fímbrias']
-  },
-
-  // ==================== SISTEMA CARDIOVASCULAR ====================
+  // ========================================
+  // SISTEMA CARDIOVASCULAR
+  // ========================================
 
   'coração': {
     description: `
-ANATOMIA CORRETA DO CORAÇÃO (Vista Anterior ou Corte Coronal):
+Órgão muscular oco, cônico, tamanho de um punho fechado.
+Localização: mediastino médio, 2/3 à esquerda da linha média.
 
-CÂMARAS (posicionamento real, não esquemático):
-- ÁTRIO DIREITO: superior direito, recebe veias cavas
-- ÁTRIO ESQUERDO: superior esquerdo, posterior, recebe veias pulmonares
-- VENTRÍCULO DIREITO: inferior direito, parede mais fina (~3mm)
-- VENTRÍCULO ESQUERDO: inferior esquerdo, parede mais espessa (~12mm)
+CÂMARAS (4):
+- Átrio direito: parede fina, recebe veias cavas (superior e inferior)
+- Átrio esquerdo: parede fina, recebe 4 veias pulmonares
+- Ventrículo direito: parede média (5mm), forma triangular, ejeta para tronco pulmonar
+- Ventrículo esquerdo: parede espessa (15mm), forma cônica, ejeta para aorta
 
-GRANDES VASOS:
-- AORTA: sai do ventrículo esquerdo, curva para a esquerda (arco aórtico)
-- TRONCO PULMONAR: sai do ventrículo direito, bifurca em artérias pulmonares
-- VEIAS CAVAS: superior e inferior, chegam no átrio direito
-- VEIAS PULMONARES (4): chegam no átrio esquerdo
+VALVAS (4):
+- Tricúspide: entre AD e VD (3 folhetos)
+- Mitral/Bicúspide: entre AE e VE (2 folhetos)
+- Pulmonar: saída do VD (3 válvulas semilunares)
+- Aórtica: saída do VE (3 válvulas semilunares)
 
-VÁLVULAS:
-- Tricúspide: entre átrio e ventrículo direitos
-- Mitral (bicúspide): entre átrio e ventrículo esquerdos
-- Pulmonar: saída do ventrículo direito
-- Aórtica: saída do ventrículo esquerdo
+VASOS:
+- Aorta: sai do VE, curva para esquerda e posterior
+- Tronco pulmonar: sai do VD, bifurca em artérias pulmonares D/E
+- Veias cavas: drenam para AD
+- Veias pulmonares: drenam para AE (únicas veias com sangue arterial)
 
-IMPORTANTE: O coração está levemente rotacionado - ventrículo esquerdo é mais posterior
+CAMADAS: Endocárdio (interno), Miocárdio (muscular), Epicárdio (externo)
+Pericárdio: saco fibrosseroso que envolve o coração
     `,
-    keyStructures: ['4 câmaras', 'septo interventricular', 'aorta curvada', 'artérias coronárias', 'válvulas cardíacas'],
-    correctView: 'Vista anterior do coração ou corte coronal/frontal',
-    commonMistakes: ['NÃO fazer câmaras do mesmo tamanho', 'NÃO esquecer diferença de espessura das paredes', 'Ventrículo esquerdo tem parede MAIS GROSSA']
+    keyStructures: ['átrio direito com veias cavas', 'átrio esquerdo com veias pulmonares', 'ventrículo direito (parede fina)', 'ventrículo esquerdo (parede espessa)', 'septo interventricular', 'valvas cardíacas', 'aorta saindo do VE', 'tronco pulmonar saindo do VD'],
+    correctView: 'AD superior-direito → VD anterior-inferior | AE posterior-superior → VE posterior-inferior | Aorta posterior ao tronco pulmonar',
+    commonMistakes: ['NÃO inverter espessura das paredes ventriculares. VE é MAIS ESPESSO que VD. NÃO colocar aorta saindo do VD.']
   },
 
-  // ==================== FÍGADO ====================
-
-  'fígado': {
+  'circulação coronariana': {
     description: `
-ANATOMIA CORRETA DO FÍGADO:
+Artérias coronárias: primeiros ramos da aorta, logo acima da valva aórtica.
 
-MACROSCÓPICA (Vista Anterior):
-- Maior glândula do corpo, ~1.5kg
-- LOBO DIREITO: maior, ocupa hipocôndrio direito
-- LOBO ESQUERDO: menor, cruza linha média
-- LOBO CAUDADO: posterior, visível na face visceral
-- LOBO QUADRADO: inferior, entre vesícula biliar e ligamento falciforme
-- LIGAMENTO FALCIFORME: divide lobos direito e esquerdo anteriormente
-- VESÍCULA BILIAR: na face inferior, entre lobos direito e quadrado
+ARTÉRIA CORONÁRIA DIREITA (ACD):
+- Origina-se do seio aórtico direito
+- Percorre sulco coronário à direita
+- Irriga: AD, VD, nó sinoatrial (60%), nó AV (80%), parede inferior do VE
+- Ramo descendente posterior (na maioria das pessoas - dominância direita)
 
-HISTOLOGIA DO FÍGADO (H&E, 400x):
-- LÓBULOS HEPÁTICOS: estruturas hexagonais
-- VEIA CENTROLOBULAR: no centro de cada lóbulo
-- HEPATÓCITOS: células POLIGONAIS em cordões/placas radiantes
-- SINUSOIDES: capilares entre os cordões de hepatócitos
-- ESPAÇO PORTA (tríade portal): na periferia dos lóbulos
-  - Ramo da artéria hepática
-  - Ramo da veia porta
-  - Ducto biliar
-- CÉLULAS DE KUPFFER: macrófagos nos sinusoides
+ARTÉRIA CORONÁRIA ESQUERDA (ACE):
+- Origina-se do seio aórtico esquerdo
+- Tronco curto que bifurca em:
+  * Descendente anterior (DA): desce pelo sulco IV anterior, irriga parede anterior do VE e 2/3 anteriores do septo
+  * Circunflexa (Cx): percorre sulco coronário à esquerda, irriga parede lateral do VE
+
+VEIAS: Drenam para seio coronário → átrio direito
     `,
-    keyStructures: ['lóbulos hexagonais', 'veia centrolobular', 'cordões de hepatócitos poligonais', 'sinusoides', 'espaço porta com tríade'],
-    correctView: 'Corte histológico mostrando lóbulos hepáticos com veia central e espaços porta',
-    commonMistakes: ['NÃO confundir com músculo', 'Hepatócitos são POLIGONAIS não alongados', 'Lóbulos são HEXAGONAIS']
+    keyStructures: ['artéria coronária direita no sulco AV direito', 'artéria descendente anterior no sulco IV anterior', 'artéria circunflexa no sulco AV esquerdo', 'seio coronário na face posterior'],
+    correctView: 'Coronárias nascem da raiz da aorta → seguem sulcos coronário e interventricular',
+    commonMistakes: ['NÃO inverter coronária direita e esquerda. NÃO esquecer que DA e Cx são ramos da ACE.']
   },
 
-  // ==================== SISTEMA RESPIRATÓRIO ====================
+  // ========================================
+  // SISTEMA RESPIRATÓRIO
+  // ========================================
+
+  'pulmões': {
+    description: `
+Órgãos pareados, ocupam cavidades pleurais.
+
+PULMÃO DIREITO (3 lobos):
+- Lobo superior: acima da fissura horizontal
+- Lobo médio: entre fissuras horizontal e oblíqua
+- Lobo inferior: abaixo da fissura oblíqua
+- Mais curto (diafragma elevado pelo fígado) e mais largo
+
+PULMÃO ESQUERDO (2 lobos):
+- Lobo superior: inclui língula (equivalente ao lobo médio)
+- Lobo inferior: abaixo da fissura oblíqua
+- Incisura cardíaca: depressão para o coração
+- Mais longo e mais estreito
+
+HILO PULMONAR (conteúdo):
+- Brônquio principal
+- Artéria pulmonar
+- 2 veias pulmonares (superior e inferior)
+- Vasos brônquicos, linfonodos, nervos
+
+SEGMENTOS BRONCOPULMONARES: 10 no direito, 8-10 no esquerdo
+    `,
+    keyStructures: ['pulmão direito com 3 lobos', 'pulmão esquerdo com 2 lobos e incisura cardíaca', 'fissuras horizontal e oblíqua à direita', 'fissura oblíqua à esquerda', 'hilo pulmonar com brônquio, artéria e veias'],
+    correctView: 'Direito: 3 lobos, mais curto/largo | Esquerdo: 2 lobos, incisura cardíaca, mais longo/estreito',
+    commonMistakes: ['NÃO colocar 3 lobos no pulmão esquerdo. NÃO esquecer a incisura cardíaca à esquerda.']
+  },
 
   'pulmão': {
     description: `
-ANATOMIA CORRETA DOS PULMÕES:
-
 PULMÃO DIREITO (3 lobos):
-- Lobo superior
-- Lobo médio
-- Lobo inferior
+- Lobo superior: acima da fissura horizontal
+- Lobo médio: entre fissuras horizontal e oblíqua
+- Lobo inferior: abaixo da fissura oblíqua
 - Separados por fissuras horizontal e oblíqua
 
 PULMÃO ESQUERDO (2 lobos):
@@ -164,40 +136,354 @@ ESTRUTURAS:
     commonMistakes: ['NÃO fazer pulmões simétricos', 'Direito tem 3 lobos, esquerdo tem 2', 'Esquerdo tem incisura cardíaca']
   },
 
-  // ==================== RIM ====================
+  'árvore brônquica': {
+    description: `
+TRAQUEIA:
+- 10-12cm de comprimento, 2cm de diâmetro
+- Anéis cartilaginosos em "C" (abertos posteriormente)
+- Bifurca na carina (T4-T5)
+
+BRÔNQUIOS PRINCIPAIS:
+- Direito: mais curto, mais largo, mais vertical (aspiração mais comum)
+- Esquerdo: mais longo, mais estreito, mais horizontal
+
+DIVISÕES:
+- Brônquios lobares: 3 à direita, 2 à esquerda
+- Brônquios segmentares: 10 à direita, 8-10 à esquerda
+- Bronquíolos: perdem cartilagem
+- Bronquíolos terminais → respiratórios → ductos alveolares → alvéolos
+    `,
+    keyStructures: ['traqueia com anéis cartilaginosos', 'carina traqueal', 'brônquio principal direito (mais vertical)', 'brônquio principal esquerdo (mais horizontal)', 'ramificações progressivas'],
+    correctView: 'Traqueia → carina → brônquios principais → lobares → segmentares → bronquíolos',
+    commonMistakes: ['NÃO fazer brônquio direito e esquerdo simétricos. Direito é mais vertical.']
+  },
+
+  // ========================================
+  // SISTEMA DIGESTÓRIO
+  // ========================================
+
+  'fígado': {
+    description: `
+Maior glândula do corpo, 1.5kg, quadrante superior direito.
+
+LOBOS (anatomia de superfície):
+- Lobo direito: maior (5/6 do órgão)
+- Lobo esquerdo: menor, cruza a linha média
+- Lobo quadrado: entre vesícula biliar e ligamento redondo (inferior)
+- Lobo caudado: entre VCI e ligamento venoso (posterior)
+
+FACES:
+- Diafragmática: convexa, lisa, sob o diafragma
+- Visceral: côncava, com impressões de órgãos adjacentes
+
+LIGAMENTOS:
+- Falciforme: conecta ao diafragma e parede abdominal anterior
+- Redondo: vestígio da veia umbilical (borda livre do falciforme)
+- Coronário: reflexão peritoneal superior
+- Triangulares: extremidades do coronário
+
+PEDÍCULO HEPÁTICO (porta hepatis):
+- Veia porta (posterior)
+- Artéria hepática própria (anterior esquerda)
+- Ducto hepático comum (anterior direita)
+
+DRENAGEM VENOSA: Veias hepáticas → VCI
+    `,
+    keyStructures: ['lobo direito (maior)', 'lobo esquerdo', 'lobo quadrado inferior', 'lobo caudado posterior', 'vesícula biliar na face visceral', 'porta hepatis com tríade portal', 'veias hepáticas drenando para VCI'],
+    correctView: 'Face diafragmática superior/anterior | Face visceral inferior/posterior | Porta hepatis no centro da face visceral',
+    commonMistakes: ['NÃO esquecer os 4 lobos. NÃO inverter posição do lobo caudado e quadrado.']
+  },
+
+  'histologia do fígado': {
+    description: `
+LÓBULO HEPÁTICO CLÁSSICO:
+- Forma HEXAGONAL (6 lados)
+- Veia central (centrolobular) no centro
+- Tríades portais nos cantos (6 tríades por lóbulo)
+
+TRÍADE PORTAL:
+- Ramo da veia porta
+- Ramo da artéria hepática
+- Ducto biliar
+- Envoltos em tecido conjuntivo
+
+HEPATÓCITOS:
+- Células POLIGONAIS grandes (20-30 μm)
+- Núcleo redondo central, às vezes binucleados
+- Citoplasma eosinofílico (rosa) abundante
+- Organizados em CORDÕES/PLACAS radiando do centro
+
+SINUSÓIDES HEPÁTICOS:
+- Capilares fenestrados entre cordões de hepatócitos
+- Contêm células de Kupffer (macrófagos)
+- Sangue flui da periferia → centro (centrípeto)
+
+ESPAÇO DE DISSE: entre sinusóides e hepatócitos (células estreladas)
+
+BILE: flui do centro → periferia (centrífugo) - oposto ao sangue
+    `,
+    keyStructures: ['lóbulos hexagonais', 'veia central no centro do lóbulo', 'tríades portais nos vértices', 'cordões de hepatócitos radiados', 'sinusóides entre os cordões', 'hepatócitos poligonais com núcleo central'],
+    correctView: 'Tríades portais na periferia → sinusóides → veia central | Sangue: periferia→centro | Bile: centro→periferia',
+    commonMistakes: ['NÃO mostrar hepatócitos alongados (devem ser POLIGONAIS). NÃO esquecer padrão HEXAGONAL dos lóbulos. NÃO confundir com músculo estriado.']
+  },
+
+  // ========================================
+  // SISTEMA REPRODUTOR MASCULINO
+  // ========================================
+
+  'sistema reprodutor masculino': {
+    description: `
+ÓRGÃOS EXTERNOS:
+
+ESCROTO:
+- Bolsa cutânea dividida em 2 compartimentos
+- Localização: EXTERNA à cavidade pélvica
+- Função: manter testículos 2-3°C abaixo da temperatura corporal
+
+TESTÍCULOS (2):
+- Gônadas masculinas, formato ovoide (4-5cm)
+- Localização: DENTRO DO ESCROTO (não na pelve!)
+- Envolvidos pela túnica albugínea
+- Túbulos seminíferos: produção de espermatozoides
+- Células de Leydig: produção de testosterona
+
+EPIDÍDIMO:
+- Estrutura em forma de vírgula/crescente
+- Localização: face POSTERIOR de cada testículo
+- Partes: cabeça (superior), corpo, cauda (inferior)
+- Função: maturação e armazenamento de espermatozoides
+
+PÊNIS:
+- Corpos cavernosos (2): dorsais, tecido erétil principal
+- Corpo esponjoso (1): ventral, contém uretra
+- Glande: expansão distal do corpo esponjoso
+- Prepúcio: pele que cobre a glande
+
+ÓRGÃOS INTERNOS:
+
+DUCTO DEFERENTE:
+- Tubo muscular de parede espessa
+- Trajeto: epidídimo → canal inguinal → cavidade pélvica → posterior à bexiga
+- Ampola: dilatação terminal antes de juntar com vesícula seminal
+
+VESÍCULAS SEMINAIS (2):
+- Glândulas em forma de saco tortuoso (5cm)
+- Localização: POSTERIOR e INFERIOR à bexiga
+- Une-se ao ducto deferente → ducto ejaculatório
+- Produz 70% do líquido seminal (frutose)
+
+DUCTOS EJACULATÓRIOS (2):
+- Formados pela união: ducto deferente + vesícula seminal
+- Atravessam a próstata
+- Abrem na uretra prostática
+
+PRÓSTATA:
+- Glândula única em forma de castanha (3-4cm)
+- Localização: INFERIOR à bexiga, envolvendo a uretra prostática
+- Zonas: periférica (70%), central, transicional
+- Produz 30% do líquido seminal (PSA, fosfatase ácida)
+
+GLÂNDULAS BULBOURETRAIS (de Cowper):
+- Par de glândulas pequenas (ervilha)
+- Localização: diafragma urogenital
+- Secretam muco pré-ejaculatório
+
+URETRA MASCULINA (18-20cm):
+- Prostática: atravessa próstata (3cm)
+- Membranosa: atravessa diafragma urogenital (1cm)
+- Esponjosa: dentro do corpo esponjoso (15cm)
+    `,
+    keyStructures: ['testículos DENTRO do escroto (externos)', 'epidídimo posterior ao testículo', 'ducto deferente subindo pelo canal inguinal', 'vesículas seminais posterior-inferior à bexiga', 'próstata inferior à bexiga envolvendo uretra', 'corpos cavernosos e esponjoso do pênis'],
+    correctView: 'Testículos (escroto) → epidídimo → ducto deferente (sobe) → vesículas seminais + próstata (pelve) → uretra (atravessa próstata e pênis)',
+    commonMistakes: ['NUNCA colocar testículos dentro da pelve - estão NO ESCROTO (externo). NÃO inverter vesículas seminais e próstata. Próstata é INFERIOR à bexiga, vesículas são POSTERIORES.']
+  },
+
+  // ========================================
+  // SISTEMA REPRODUTOR FEMININO
+  // ========================================
+
+  'sistema reprodutor feminino': {
+    description: `
+ÓRGÃOS INTERNOS:
+
+OVÁRIOS (2):
+- Gônadas femininas, formato amendoado (3-4cm)
+- Localização: fossas ováricas, laterais ao útero
+- Fixação: ligamento suspensor, ligamento próprio do ovário, mesovário
+- Superfície: irregular nas mulheres adultas (cicatrizes ovulatórias)
+
+TUBAS UTERINAS (2) - Trompas de Falópio:
+- Comprimento: 10-12cm
+- Partes (lateral → medial):
+  * Infundíbulo: extremidade aberta com fímbrias
+  * Ampola: parte mais larga, local comum de fertilização
+  * Istmo: porção estreita
+  * Parte uterina: atravessa parede do útero
+- Fímbrias: projeções digitiformes que capturam o óvulo
+
+ÚTERO:
+- Órgão muscular piriforme (7-8cm)
+- Localização: pelve, entre bexiga (anterior) e reto (posterior)
+- Partes:
+  * Fundo: acima da entrada das tubas
+  * Corpo: porção principal
+  * Istmo: estreitamento
+  * Colo/Cérvix: porção inferior, projeta-se na vagina
+- Camadas:
+  * Endométrio: mucosa interna (descama na menstruação)
+  * Miométrio: muscular espessa
+  * Perimétrio: serosa externa
+- Posição normal: antevertido e antefletido
+
+VAGINA:
+- Canal fibromuscular (7-10cm)
+- Estende-se do colo do útero ao vestíbulo
+- Fórnices: recessos ao redor do colo (anterior, posterior, laterais)
+- Fórnix posterior: mais profundo, relacionado ao fundo de saco de Douglas
+
+LIGAMENTOS:
+- Largo: prega peritoneal bilateral
+- Redondo: do útero ao lábio maior (atravessa canal inguinal)
+- Uterossacro: do colo ao sacro
+- Cardinal/Transverso: suporte lateral do colo
+
+ÓRGÃOS EXTERNOS (VULVA):
+- Monte púbico
+- Lábios maiores e menores
+- Clitóris
+- Vestíbulo: contém óstios uretral e vaginal
+- Glândulas vestibulares maiores (de Bartholin)
+    `,
+    keyStructures: ['ovários laterais ao útero', 'tubas uterinas conectando ovários ao útero', 'fímbrias nas extremidades das tubas', 'útero com fundo corpo e colo', 'vagina inferior ao útero', 'bexiga anterior ao útero', 'reto posterior ao útero'],
+    correctView: 'Ovários (lateral) → Tubas (fímbrias capturam óvulo) → Útero (fundo-corpo-colo) → Vagina | Bexiga anterior | Reto posterior',
+    commonMistakes: ['NÃO desenhar útero muito grande ou simétrico como um triângulo perfeito. NÃO esquecer as fímbrias. NÃO colocar ovários muito próximos do útero.']
+  },
+
+  // ========================================
+  // SISTEMA URINÁRIO
+  // ========================================
 
   'rim': {
     description: `
-ANATOMIA CORRETA DO RIM (Corte Coronal/Frontal):
+Órgãos pareados, retroperitoneais, formato de feijão (11x6x3cm).
 
-ESTRUTURA EXTERNA:
-- Formato de feijão, ~11cm x 6cm x 3cm
-- Polo superior e inferior
-- Face convexa (lateral) e côncava (medial com hilo)
-- Cápsula fibrosa envolvendo
+ANATOMIA EXTERNA:
+- Polo superior: mais medial, relacionado à suprarrenal
+- Polo inferior: mais lateral
+- Face anterior: convexa
+- Face posterior: plana, contra parede posterior
+- Hilo renal: face medial, entrada de vasos e ureter
 
-ESTRUTURA INTERNA (corte coronal):
-- CÓRTEX RENAL: camada EXTERNA, mais clara, contém glomérulos
-- MEDULA RENAL: INTERNA, mais escura, com pirâmides renais
-- PIRÂMIDES RENAIS: 8-18 estruturas triangulares, base voltada para córtex, ápice para dentro
-- PAPILA RENAL: ápice da pirâmide, drena para cálice menor
-- COLUNAS RENAIS (de Bertin): extensões do córtex entre pirâmides
-- CÁLICES MENORES: recebem urina das papilas
-- CÁLICES MAIORES: união de cálices menores
-- PELVE RENAL: estrutura em funil, une cálices maiores → ureter
-- HILO RENAL: onde entram/saem artéria, veia e pelve renal
+RELAÇÕES:
+- Rim direito: mais baixo (fígado), T12-L3
+- Rim esquerdo: mais alto, T11-L2
+
+ANATOMIA INTERNA (corte coronal):
+- CÓRTEX: zona externa, mais clara
+  * Contém glomérulos e túbulos contorcidos
+  * Colunas renais: extensões entre pirâmides
+- MEDULA: zona interna, mais escura
+  * 8-18 pirâmides renais (estriadas)
+  * Base voltada para o córtex
+  * Ápice (papila) voltado para o seio renal
+- PELVE RENAL: cavidade que coleta urina
+  * Cálices menores: recebem papilas
+  * Cálices maiores: união de cálices menores
+  * Pelve: união de cálices maiores → ureter
+
+VASCULARIZAÇÃO:
+- Artéria renal: ramo da aorta
+- Segmentares → Interlobares → Arqueadas → Interlobulares → Aferentes
+- Veia renal: drena para VCI
     `,
-    keyStructures: ['córtex externo claro', 'medula interna escura', 'pirâmides triangulares apontando para dentro', 'cálices', 'pelve renal', 'hilo'],
-    correctView: 'Corte coronal/frontal do rim mostrando córtex, medula e sistema coletor',
-    commonMistakes: ['NÃO inverter córtex e medula', 'Córtex é EXTERNO e mais claro', 'Pirâmides apontam para DENTRO (para pelve)']
+    keyStructures: ['córtex renal externo', 'medula com pirâmides', 'papilas renais', 'cálices menores e maiores', 'pelve renal', 'hilo com artéria veia e ureter', 'cápsula fibrosa'],
+    correctView: 'Córtex (externo) → Pirâmides medulares → Papilas → Cálices → Pelve → Ureter',
+    commonMistakes: ['NÃO confundir córtex com medula. Córtex é EXTERNO. NÃO esquecer as pirâmides.']
   },
 
-  // ==================== CÉREBRO ====================
+  'néfron': {
+    description: `
+Unidade funcional do rim. ~1 milhão por rim.
+
+COMPONENTES:
+
+CORPÚSCULO RENAL (no córtex):
+- Glomérulo: novelo de capilares fenestrados
+- Cápsula de Bowman: envolve o glomérulo
+  * Folheto parietal: epitélio simples pavimentoso
+  * Folheto visceral: podócitos
+- Polo vascular: entrada/saída de arteríolas
+- Polo urinário: início do túbulo contorcido proximal
+
+TÚBULO CONTORCIDO PROXIMAL (no córtex):
+- Epitélio cúbico com borda em escova (microvilosidades)
+- Reabsorve 65% do filtrado
+
+ALÇA DE HENLE (na medula):
+- Ramo descendente fino: permeável à água
+- Ramo ascendente fino: impermeável à água
+- Ramo ascendente espesso: reabsorção ativa de Na+
+
+TÚBULO CONTORCIDO DISTAL (no córtex):
+- Epitélio cúbico SEM borda em escova
+- Mácula densa: contato com arteríola aferente
+
+DUCTO COLETOR (na medula):
+- Epitélio cúbico a colunar
+- Células principais: reabsorção de água (ADH)
+- Células intercaladas: secreção de H+
+- Vários néfrons drenam para cada ducto
+    `,
+    keyStructures: ['glomérulo com capilares', 'cápsula de Bowman', 'túbulo contorcido proximal com borda em escova', 'alça de Henle (ramos descendente e ascendente)', 'túbulo contorcido distal', 'ducto coletor', 'arteríolas aferente e eferente'],
+    correctView: 'Corpúsculo (córtex) → TCP (córtex) → Alça de Henle (mergulha na medula) → TCD (córtex) → Ducto coletor (desce pela medula)',
+    commonMistakes: ['NÃO esquecer a borda em escova do TCP. NÃO mostrar ducto coletor no córtex.']
+  },
+
+  // ========================================
+  // SISTEMA NERVOSO
+  // ========================================
+
+  'encéfalo': {
+    description: `
+DIVISÕES PRINCIPAIS:
+
+CÉREBRO (telencéfalo):
+- 2 hemisférios separados pela fissura longitudinal
+- Unidos pelo corpo caloso
+- Superfície: giros e sulcos
+- Lobos: frontal, parietal, temporal, occipital, ínsula
+- Sulcos principais: central (Rolando), lateral (Sylvius), parieto-occipital
+
+DIENCÉFALO:
+- Tálamo: relay sensorial, núcleos em forma de ovo
+- Hipotálamo: inferior ao tálamo, controle autonômico
+- Epitálamo: inclui glândula pineal
+- Subtálamo: motor
+
+TRONCO ENCEFÁLICO:
+- Mesencéfalo: pedúnculos cerebrais, colículos
+- Ponte: protuberância anterior, conecta hemisférios cerebelares
+- Bulbo (medula oblonga): pirâmides, olivas
+
+CEREBELO:
+- 2 hemisférios + vermis central
+- Folia: pregas transversais características
+- Pedúnculos cerebelares: superior, médio, inferior
+- Funções: coordenação motora, equilíbrio
+
+VENTRÍCULOS:
+- Laterais (2): nos hemisférios cerebrais
+- Terceiro: no diencéfalo
+- Aqueduto cerebral: no mesencéfalo
+- Quarto: entre tronco e cerebelo
+    `,
+    keyStructures: ['hemisférios cerebrais com giros e sulcos', 'corpo caloso conectando hemisférios', 'lobos frontal parietal temporal occipital', 'tronco encefálico (mesencéfalo ponte bulbo)', 'cerebelo posterior ao tronco', 'diencéfalo (tálamo hipotálamo)'],
+    correctView: 'Cérebro (superior) → Diencéfalo (central) → Tronco (inferior) | Cerebelo posterior ao tronco',
+    commonMistakes: ['NÃO esquecer o cerebelo. NÃO confundir ponte com bulbo. NÃO simplificar demais os giros.']
+  },
 
   'cérebro': {
     description: `
-ANATOMIA CORRETA DO CÉREBRO:
-
 VISTA LATERAL:
 - LOBO FRONTAL: anterior, até sulco central (de Rolando)
 - LOBO PARIETAL: superior posterior, entre sulcos central e parieto-occipital
@@ -220,7 +506,275 @@ GIROS IMPORTANTES:
     commonMistakes: ['NÃO confundir posições dos lobos', 'Frontal é ANTERIOR', 'Occipital é POSTERIOR']
   },
 
-  // ==================== HISTOLOGIA ====================
+  'medula espinhal': {
+    description: `
+Estrutura cilíndrica, 42-45cm, do forame magno até L1-L2.
+
+ANATOMIA EXTERNA:
+- Intumescências: cervical (C4-T1) e lombar (L2-S3) - membros
+- Cone medular: extremidade inferior afilada
+- Cauda equina: raízes nervosas abaixo do cone
+- Filum terminale: fio de pia-máter até o cóccix
+
+SULCOS:
+- Fissura mediana anterior: profunda, anterior
+- Sulco mediano posterior: raso, posterior
+- Sulcos laterais: saída/entrada de raízes
+
+RAÍZES:
+- Anterior (ventral): motora, eferente
+- Posterior (dorsal): sensitiva, aferente, com gânglio
+
+ANATOMIA INTERNA (corte transversal):
+- Substância cinzenta central em forma de "H" ou borboleta:
+  * Corno anterior: neurônios motores
+  * Corno posterior: neurônios sensitivos
+  * Corno lateral (T1-L2): neurônios simpáticos
+- Substância branca periférica:
+  * Funículos anterior, lateral, posterior
+  * Tratos ascendentes (sensitivos) e descendentes (motores)
+- Canal central: vestígio do tubo neural
+
+MENINGES:
+- Dura-máter: externa, forma saco dural até S2
+- Aracnoide: intermediária, avascular
+- Pia-máter: interna, adere à medula
+- Espaço subaracnóideo: contém LCR
+    `,
+    keyStructures: ['intumescências cervical e lombar', 'cone medular em L1-L2', 'cauda equina abaixo do cone', 'substância cinzenta central em H', 'substância branca periférica', 'raízes anterior (motora) e posterior (sensitiva)', 'gânglio da raiz posterior'],
+    correctView: 'Medula dentro do canal vertebral | Cinzenta central, branca periférica | Raiz posterior com gânglio, raiz anterior sem gânglio',
+    commonMistakes: ['NÃO estender medula até sacro (termina em L1-L2). NÃO esquecer o gânglio na raiz posterior.']
+  },
+
+  // ========================================
+  // SISTEMA MUSCULOESQUELÉTICO
+  // ========================================
+
+  'coluna vertebral': {
+    description: `
+33 vértebras: 7 cervicais, 12 torácicas, 5 lombares, 5 sacrais (fundidas), 4 coccígeas (fundidas).
+
+CURVATURAS:
+- Cervical: lordose (convexa anterior) - secundária
+- Torácica: cifose (côncava anterior) - primária
+- Lombar: lordose - secundária
+- Sacral: cifose - primária
+
+VÉRTEBRA TÍPICA:
+- Corpo: anterior, suporta peso
+- Arco vertebral: posterior, protege medula
+  * Pedículos: conectam corpo ao arco
+  * Lâminas: completam o arco posteriormente
+- Processos:
+  * Espinhoso: posterior, palpável
+  * Transversos (2): laterais
+  * Articulares (4): superior e inferior, cada lado
+- Forame vertebral: canal para medula
+- Forames intervertebrais: saída dos nervos espinhais
+
+CARACTERÍSTICAS REGIONAIS:
+- Cervicais: forame transverso (artéria vertebral), processo espinhoso bífido
+- C1 (Atlas): sem corpo, articula com occipital
+- C2 (Áxis): processo odontoide (dente)
+- Torácicas: fóveas costais para articulação com costelas
+- Lombares: maiores corpos, processos robustos
+
+DISCOS INTERVERTEBRAIS:
+- Núcleo pulposo: centro gelatinoso
+- Anel fibroso: periferia fibrocartilaginosa
+    `,
+    keyStructures: ['regiões cervical torácica lombar sacral coccígea', 'curvaturas lordóticas e cifóticas', 'corpo vertebral anterior', 'arco vertebral posterior', 'processos espinhosos e transversos', 'discos intervertebrais', 'forames vertebral e intervertebral'],
+    correctView: 'Cervical (7) → Torácica (12) → Lombar (5) → Sacro → Cóccix | Lordose cervical e lombar, cifose torácica e sacral',
+    commonMistakes: ['NÃO esquecer as curvaturas. NÃO fazer todas as vértebras iguais.']
+  },
+
+  'membro superior esqueleto': {
+    description: `
+CINTURA ESCAPULAR:
+- Clavícula: osso em "S", conecta esterno à escápula
+- Escápula: triangular, posterior
+  * Espinha da escápula → acrômio
+  * Processo coracoide: anterior
+  * Cavidade glenoide: articula com úmero
+
+BRAÇO:
+- Úmero: osso longo
+  * Cabeça: esférica, articula com glenoide
+  * Tubérculos maior e menor
+  * Sulco intertubercular (bicipital)
+  * Diáfise com tuberosidade deltoidea
+  * Epicôndilos medial e lateral (cotovelo)
+  * Tróclea e capítulo (articulação com ulna e rádio)
+
+ANTEBRAÇO:
+- Ulna: medial, maior proximalmente
+  * Olécrano: ponta do cotovelo
+  * Processo coronoide
+  * Incisura troclear: articula com tróclea
+- Rádio: lateral, maior distalmente
+  * Cabeça: articula com capítulo
+  * Tuberosidade radial: inserção do bíceps
+  * Processo estiloide: lateral no punho
+
+MÃO:
+- Carpo (8 ossos): escafoide, semilunar, piramidal, pisiforme, trapézio, trapezoide, capitato, hamato
+- Metacarpos (5): I a V, lateral para medial
+- Falanges: 2 no polegar, 3 nos demais (proximal, média, distal)
+    `,
+    keyStructures: ['clavícula e escápula (cintura)', 'úmero no braço', 'ulna (medial) e rádio (lateral) no antebraço', 'ossos do carpo', 'metacarpos I-V', 'falanges'],
+    correctView: 'Clavícula-Escápula → Úmero → Ulna+Rádio → Carpo → Metacarpos → Falanges | Ulna medial, Rádio lateral',
+    commonMistakes: ['NÃO inverter ulna e rádio. Ulna é MEDIAL (lado do mindinho). NÃO esquecer que polegar tem só 2 falanges.']
+  },
+
+  'membro inferior esqueleto': {
+    description: `
+CINTURA PÉLVICA:
+- Osso do quadril (3 fundidos): ílio, ísquio, púbis
+  * Acetábulo: cavidade para cabeça do fêmur
+  * Forame obturado: maior forame do corpo
+- Sacro: posterior, entre os ossos do quadril
+- Sínfise púbica: articulação anterior
+
+COXA:
+- Fêmur: maior osso do corpo
+  * Cabeça: esférica, fóvea para ligamento
+  * Colo: conecta cabeça à diáfise (ângulo ~125°)
+  * Trocânteres maior e menor
+  * Diáfise com linha áspera posterior
+  * Côndilos medial e lateral (joelho)
+  * Epicôndilos
+  * Fossa intercondilar posterior
+
+JOELHO:
+- Patela: maior osso sesamoide, no tendão do quadríceps
+
+PERNA:
+- Tíbia: medial, suporta peso
+  * Platô tibial com côndilos
+  * Tuberosidade tibial: inserção do ligamento patelar
+  * Maléolo medial: proeminência no tornozelo
+- Fíbula: lateral, não suporta peso
+  * Cabeça: proximal
+  * Maléolo lateral: tornozelo
+
+PÉ:
+- Tarso (7): tálus, calcâneo, navicular, cubóide, cuneiformes (3)
+- Metatarsos (5): I a V
+- Falanges: 2 no hálux, 3 nos demais
+- Arcos: longitudinais (medial e lateral), transverso
+    `,
+    keyStructures: ['osso do quadril com acetábulo', 'fêmur na coxa', 'patela no joelho', 'tíbia (medial) e fíbula (lateral) na perna', 'ossos do tarso', 'metatarsos I-V', 'falanges'],
+    correctView: 'Pelve → Fêmur → Patela+Tíbia+Fíbula → Tarso → Metatarsos → Falanges | Tíbia medial, Fíbula lateral',
+    commonMistakes: ['NÃO inverter tíbia e fíbula. Tíbia é MEDIAL e suporta peso. NÃO esquecer os maléolos.']
+  },
+
+  // ========================================
+  // HISTOLOGIA GERAL
+  // ========================================
+
+  'tecido epitelial': {
+    description: `
+Tecido de revestimento e glandular. Células justapostas, pouca matriz extracelular.
+
+CLASSIFICAÇÃO POR CAMADAS:
+- Simples: uma camada de células
+- Estratificado: múltiplas camadas
+- Pseudoestratificado: parece estratificado, mas todos tocam a membrana basal
+
+CLASSIFICAÇÃO POR FORMA (camada superficial):
+- Pavimentoso: células achatadas, núcleo central achatado
+- Cúbico: células quadradas, núcleo central esférico
+- Colunar/Cilíndrico: células altas, núcleo oval basal
+- De transição (urotélio): células em cúpula que mudam de forma
+
+TIPOS COMUNS E LOCALIZAÇÃO:
+- Simples pavimentoso: endotélio, alvéolos
+- Simples cúbico: túbulos renais, ductos glandulares
+- Simples colunar: estômago, intestino (com microvilosidades)
+- Pseudoestratificado colunar ciliado: vias aéreas
+- Estratificado pavimentoso não queratinizado: esôfago, vagina
+- Estratificado pavimentoso queratinizado: pele (epiderme)
+- Transição (urotélio): bexiga, ureteres
+
+ESPECIALIZAÇÕES:
+- Microvilosidades: aumentam absorção
+- Cílios: movimentam muco/partículas
+- Estereocílios: epidídimo (longos, imóveis)
+- Queratina: proteção mecânica
+    `,
+    keyStructures: ['membrana basal', 'células com formas características', 'núcleos em posições típicas', 'especializações apicais quando presentes'],
+    correctView: 'Células apoiadas na membrana basal | Simples: 1 camada | Estratificado: várias camadas | Núcleos basais em células colunares',
+    commonMistakes: ['NÃO confundir pseudoestratificado com estratificado verdadeiro. NÃO esquecer a membrana basal.']
+  },
+
+  'tecido conjuntivo': {
+    description: `
+Tecido de suporte e preenchimento. Células separadas por matriz extracelular abundante.
+
+COMPONENTES:
+- CÉLULAS:
+  * Fibroblastos: produzem fibras e matriz
+  * Macrófagos: fagocitose
+  * Mastócitos: histamina, heparina (grânulos metacromáticos)
+  * Plasmócitos: anticorpos
+  * Adipócitos: armazenam gordura
+
+- FIBRAS:
+  * Colágenas: grossas, rosa em H&E, resistentes à tração
+  * Elásticas: finas, ramificadas, amarelas (coloração especial)
+  * Reticulares: finas, formam redes, coram com prata
+
+- SUBSTÂNCIA FUNDAMENTAL: gel de proteoglicanos e glicoproteínas
+
+TIPOS:
+- Frouxo (areolar): muita substância fundamental, pouca fibra
+- Denso não modelado: fibras em várias direções (derme)
+- Denso modelado: fibras paralelas (tendões, ligamentos)
+- Adiposo: unilocular (branco) ou multilocular (marrom)
+- Reticular: arcabouço de órgãos hematopoiéticos
+- Cartilaginoso: hialino, elástico, fibroso
+- Ósseo: compacto e esponjoso
+    `,
+    keyStructures: ['fibroblastos fusiformes', 'fibras colágenas rosa', 'matriz extracelular', 'outros tipos celulares quando presentes'],
+    correctView: 'Células dispersas na matriz | Fibras orientadas conforme tipo | Substância fundamental entre elementos',
+    commonMistakes: ['NÃO confundir tecido frouxo com denso. NÃO esquecer a matriz extracelular.']
+  },
+
+  'tecido muscular': {
+    description: `
+Tecido especializado em contração.
+
+MÚSCULO ESTRIADO ESQUELÉTICO:
+- Células: fibras muito longas, multinucleadas, cilíndricas
+- Núcleos: periféricos, múltiplos
+- Estriações: bandas A (escuras), I (claras), Z (linhas)
+- Controle: voluntário
+- Localização: músculos do esqueleto
+
+MÚSCULO ESTRIADO CARDÍACO:
+- Células: fibras ramificadas, 1-2 núcleos centrais
+- Discos intercalares: junções especializadas entre células
+- Estriações: presentes, similares ao esquelético
+- Controle: involuntário
+- Localização: coração
+
+MÚSCULO LISO:
+- Células: fusiformes, um núcleo central alongado
+- Estriações: AUSENTES
+- Controle: involuntário
+- Localização: vísceras, vasos, útero
+
+SARCÔMERO (unidade contrátil):
+- Linha Z a linha Z
+- Filamentos finos (actina): da linha Z
+- Filamentos grossos (miosina): banda A central
+- Banda H: só miosina
+- Linha M: centro da banda A
+    `,
+    keyStructures: ['fibras com estriações (esquelético e cardíaco)', 'núcleos periféricos (esquelético) ou centrais (cardíaco, liso)', 'discos intercalares (cardíaco)', 'células fusiformes sem estriação (liso)'],
+    correctView: 'Esquelético: fibras paralelas longas | Cardíaco: fibras ramificadas com discos intercalares | Liso: células fusiformes em feixes',
+    commonMistakes: ['NÃO colocar núcleos centrais no músculo esquelético (são periféricos). NÃO colocar estriações no músculo liso.']
+  },
 
   'tecido muscular estriado esquelético': {
     description: `
@@ -271,48 +825,39 @@ CARACTERÍSTICAS OBRIGATÓRIAS:
     commonMistakes: ['Liso NÃO tem estriações', 'Núcleo é CENTRAL e ALONGADO', 'Células são FUSIFORMES não cilíndricas']
   },
 
-  'tecido epitelial': {
+  'tecido nervoso': {
     description: `
-HISTOLOGIA DE EPITÉLIOS (H&E):
+Tecido especializado em comunicação elétrica.
 
-TIPOS PRINCIPAIS:
-- Simples pavimentoso: células achatadas, uma camada (endotélio, alvéolos)
-- Simples cúbico: células cúbicas, uma camada (túbulos renais)
-- Simples cilíndrico/colunar: células colunares, uma camada (intestino)
-- Estratificado pavimentoso: múltiplas camadas, superfície achatada (pele, esôfago)
-- Pseudoestratificado: parece múltiplas camadas mas TODAS tocam a membrana basal (vias aéreas)
-- De transição (urotélio): células em guarda-chuva (bexiga)
+NEURÔNIOS:
+- Corpo celular (soma/pericário):
+  * Núcleo grande, nucléolo evidente
+  * Corpúsculos de Nissl: RER (basofílico)
+- Dendritos: prolongamentos receptores, múltiplos, ramificados
+- Axônio: prolongamento efetor, único, pode ser mielinizado
 
-CARACTERÍSTICAS GERAIS:
-- Células justapostas com pouco espaço entre elas
-- Membrana basal na base
-- AVASCULAR (sem vasos sanguíneos no epitélio)
-- Polaridade: superfície apical vs basal
+CLASSIFICAÇÃO DOS NEURÔNIOS:
+- Multipolar: vários dendritos, 1 axônio (mais comum)
+- Bipolar: 1 dendrito, 1 axônio (retina, ouvido interno)
+- Pseudounipolar: prolongamento único que se bifurca (gânglios sensitivos)
+
+CÉLULAS DA GLIA (neuróglia):
+- SNC:
+  * Astrócitos: suporte, barreira hematoencefálica
+  * Oligodendrócitos: mielina do SNC
+  * Micróglia: macrófagos residentes
+  * Células ependimárias: revestem ventrículos
+- SNP:
+  * Células de Schwann: mielina do SNP
+  * Células satélites: suporte nos gânglios
+
+MIELINA:
+- Bainha isolante que acelera condução
+- Nódulos de Ranvier: interrupções na bainha
     `,
-    keyStructures: ['células organizadas justapostas', 'membrana basal', 'polaridade celular'],
-    correctView: 'Corte perpendicular à superfície epitelial',
-    commonMistakes: ['Epitélio é AVASCULAR', 'Todas células do pseudoestratificado tocam a membrana basal', 'Identificar corretamente número de camadas']
-  },
-
-  'tecido conjuntivo': {
-    description: `
-HISTOLOGIA DO TECIDO CONJUNTIVO (H&E):
-
-COMPONENTES:
-- CÉLULAS: fibroblastos (principais), macrófagos, mastócitos, plasmócitos
-- FIBRAS: colágenas (rosa, onduladas), elásticas, reticulares
-- SUBSTÂNCIA FUNDAMENTAL: matriz extracelular amorfa
-
-TIPOS:
-- Frouxo: muitas células, poucas fibras, muito espaço
-- Denso não modelado: muitas fibras colágenas em várias direções (derme)
-- Denso modelado: fibras paralelas em uma direção (tendões, ligamentos)
-
-FIBROBLASTOS: células fusiformes com núcleo oval, produzem fibras e matriz
-    `,
-    keyStructures: ['fibroblastos fusiformes', 'fibras colágenas rosa onduladas', 'substância fundamental'],
-    correctView: 'Corte mostrando células esparsas entre fibras e matriz',
-    commonMistakes: ['Conjuntivo tem MUITA matriz extracelular', 'Fibroblastos são fusiformes com núcleo oval', 'Fibras colágenas são ROSA e ONDULADAS']
+    keyStructures: ['corpo celular com núcleo grande', 'corpúsculos de Nissl (basofílicos)', 'dendritos múltiplos', 'axônio único', 'células da glia menores'],
+    correctView: 'Corpo celular → Dendritos (aferentes) | Corpo celular → Axônio (eferente)',
+    commonMistakes: ['NÃO esquecer os corpúsculos de Nissl. NÃO confundir neurônios com células da glia (glia é menor e mais numerosa).']
   },
 
   'tecido ósseo': {
@@ -361,30 +906,6 @@ CÉLULAS: Condrócitos em lacunas, frequentemente em grupos (grupos isógenos)
     commonMistakes: ['Condrócitos ficam em LACUNAS', 'Grupos isógenos = divisão recente', 'Matriz é AVASCULAR']
   },
 
-  'tecido nervoso': {
-    description: `
-HISTOLOGIA DO TECIDO NERVOSO (H&E ou técnicas especiais):
-
-NEURÔNIOS:
-- CORPO CELULAR (pericário): contém núcleo grande com nucléolo evidente
-- DENDRITOS: prolongamentos curtos, ramificados, recebem estímulos
-- AXÔNIO: prolongamento único, longo, transmite impulso
-- SUBSTÂNCIA DE NISSL: grumos basofílicos no citoplasma (RER)
-
-CÉLULAS DA GLIA:
-- Astrócitos: suporte, barreira hematoencefálica
-- Oligodendrócitos: mielina no SNC
-- Células de Schwann: mielina no SNP
-- Micróglia: defesa
-
-SUBSTÂNCIA CINZENTA: corpos celulares dos neurônios
-SUBSTÂNCIA BRANCA: axônios mielinizados
-    `,
-    keyStructures: ['neurônios com núcleo grande', 'substância de Nissl', 'axônios', 'células da glia'],
-    correctView: 'Corte de medula espinhal ou córtex cerebral',
-    commonMistakes: ['Neurônios têm núcleo GRANDE com NUCLÉOLO evidente', 'Substância de Nissl é basofílica (roxa)', 'Substância cinzenta = corpos celulares']
-  },
-
   'sangue': {
     description: `
 HISTOLOGIA DO SANGUE (Esfregaço, coloração Giemsa ou Wright):
@@ -406,6 +927,119 @@ PLAQUETAS: fragmentos celulares pequenos, anucleados
     keyStructures: ['hemácias anucleadas rosa', 'neutrófilos multilobulados', 'linfócitos com núcleo grande redondo', 'plaquetas pequenas'],
     correctView: 'Esfregaço sanguíneo com células dispersas',
     commonMistakes: ['Hemácias são ANUCLEADAS', 'Neutrófilos têm núcleo MULTILOBULADO', 'Linfócitos têm POUCO citoplasma']
+  },
+
+  // ========================================
+  // SISTEMAS ADICIONAIS - OLHO E OUVIDO
+  // ========================================
+
+  'olho': {
+    description: `
+TÚNICAS (camadas da parede):
+
+FIBROSA (externa):
+- Esclera: branca, posterior 5/6, proteção
+- Córnea: transparente, anterior 1/6, refração
+
+VASCULAR/ÚVEA (média):
+- Coroide: vascularizada, nutrição
+- Corpo ciliar: músculo ciliar + processos ciliares
+  * Produz humor aquoso
+  * Acomodação do cristalino
+- Íris: anterior, colorida, com pupila central
+  * Músculo esfíncter: miose (parassimpático)
+  * Músculo dilatador: midríase (simpático)
+
+NERVOSA (interna):
+- Retina: 10 camadas, fotorreceptores
+  * Cones: visão colorida, mácula
+  * Bastonetes: visão noturna, periferia
+  * Fóvea: centro da mácula, só cones
+  * Disco óptico: saída do nervo óptico (ponto cego)
+
+MEIOS REFRATIVOS:
+- Córnea: maior poder de refração (fixo)
+- Humor aquoso: entre córnea e cristalino
+- Cristalino: lente biconvexa, acomodação (variável)
+- Humor vítreo: posterior ao cristalino, mantém forma
+
+CÂMARAS:
+- Anterior: entre córnea e íris
+- Posterior: entre íris e cristalino
+- Vítrea: posterior ao cristalino
+    `,
+    keyStructures: ['esclera e córnea (túnica fibrosa)', 'coroide corpo ciliar e íris (úvea)', 'retina com disco óptico e fóvea', 'cristalino', 'câmaras anterior e posterior', 'humor vítreo'],
+    correctView: 'Córnea anterior → Íris com pupila → Cristalino → Vítreo → Retina → Esclera | Disco óptico nasal, Fóvea temporal',
+    commonMistakes: ['NÃO confundir câmara anterior com posterior. NÃO esquecer o corpo ciliar.']
+  },
+
+  'ouvido': {
+    description: `
+OUVIDO EXTERNO:
+- Pavilhão auricular (orelha): cartilagem elástica
+- Meato acústico externo: ~2.5cm até tímpano
+- Membrana timpânica: separa externo do médio
+
+OUVIDO MÉDIO:
+- Cavidade timpânica: no osso temporal
+- Ossículos (3): martelo → bigorna → estribo
+  * Martelo: fixo ao tímpano
+  * Estribo: fixo à janela oval
+- Tuba auditiva (Eustáquio): comunica com nasofaringe
+- Janela oval: recebe base do estribo
+- Janela redonda: membranosa, alivia pressão
+
+OUVIDO INTERNO (labirinto):
+- Labirinto ósseo (cheio de perilinfa):
+  * Vestíbulo: contém utrículo e sáculo
+  * Canais semicirculares (3): perpendiculares entre si
+  * Cóclea: 2.5 voltas em espiral
+- Labirinto membranoso (cheio de endolinfa):
+  * Ducto coclear: contém órgão de Corti (audição)
+  * Utrículo e sáculo: equilíbrio estático (máculas)
+  * Ductos semicirculares: equilíbrio dinâmico (cristas ampulares)
+
+CÓCLEA (corte transversal):
+- Escala vestibular: superior, perilinfa
+- Ducto coclear: médio, endolinfa, órgão de Corti
+- Escala timpânica: inferior, perilinfa
+    `,
+    keyStructures: ['pavilhão auricular e meato externo', 'membrana timpânica', 'ossículos (martelo bigorna estribo)', 'cóclea em espiral', 'canais semicirculares perpendiculares', 'vestíbulo'],
+    correctView: 'Externo (pavilhão → meato) → Médio (tímpano → ossículos → janelas) → Interno (vestíbulo + canais + cóclea)',
+    commonMistakes: ['NÃO esquecer os 3 canais semicirculares em planos perpendiculares. NÃO simplificar a espiral da cóclea.']
+  },
+
+  'pele': {
+    description: `
+EPIDERME (epitélio estratificado pavimentoso queratinizado):
+- Estrato basal/germinativo: células-tronco, mitoses
+- Estrato espinhoso: queratinócitos unidos por desmossomos
+- Estrato granuloso: grânulos de querato-hialina
+- Estrato lúcido: só em pele espessa (palmas, plantas)
+- Estrato córneo: células mortas cheias de queratina
+
+Células especiais:
+- Melanócitos: produzem melanina, no estrato basal
+- Células de Langerhans: apresentação de antígeno, no espinhoso
+- Células de Merkel: mecanorreceptores, no basal
+
+DERME (tecido conjuntivo):
+- Papilar: superficial, tecido frouxo, papilas dérmicas
+- Reticular: profunda, tecido denso não modelado
+
+Anexos:
+- Folículos pilosos: invaginações epidérmicas
+- Glândulas sebáceas: holocrinas, associadas aos folículos
+- Glândulas sudoríparas écrinas: merócrinas, toda pele
+- Glândulas sudoríparas apócrinas: axila, genitais
+
+HIPODERME (não é parte da pele):
+- Tecido adiposo
+- Fáscia superficial
+    `,
+    keyStructures: ['estratos da epiderme (basal espinhoso granuloso córneo)', 'derme papilar e reticular', 'folículos pilosos', 'glândulas sebáceas', 'glândulas sudoríparas'],
+    correctView: 'Epiderme (estratos em ordem) → Derme (papilar depois reticular) → Hipoderme',
+    commonMistakes: ['NÃO colocar estrato lúcido em pele fina. NÃO esquecer que glândulas sebáceas se abrem no folículo piloso.']
   }
 }
 
@@ -456,21 +1090,62 @@ VISTA RECOMENDADA: ${knowledge.correctView}
 
 /**
  * Converte URL de imagem temporária para base64 permanente
+ * IMPORTANTE: URLs do DALL-E expiram em ~1 hora
  */
 async function convertImageToBase64(imageUrl: string): Promise<string> {
+  if (DEBUG_IMAGE_GENERATION) {
+    console.log('[GPT Image] Iniciando conversão para base64...')
+    console.log('[GPT Image] URL da imagem:', imageUrl.substring(0, 100) + '...')
+  }
+
   try {
-    const response = await fetch(imageUrl)
+    // Adicionar timeout para evitar travamento
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30s timeout
+
+    const response = await fetch(imageUrl, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; PREPARAMED/1.0)'
+      }
+    })
+
+    clearTimeout(timeoutId)
+
     if (!response.ok) {
-      throw new Error(`Falha ao baixar imagem: ${response.status}`)
+      throw new Error(`Falha ao baixar imagem: HTTP ${response.status} ${response.statusText}`)
     }
+
     const arrayBuffer = await response.arrayBuffer()
+
+    if (DEBUG_IMAGE_GENERATION) {
+      console.log('[GPT Image] Imagem baixada, tamanho:', arrayBuffer.byteLength, 'bytes')
+    }
+
+    if (arrayBuffer.byteLength === 0) {
+      throw new Error('Imagem baixada está vazia')
+    }
+
     const buffer = Buffer.from(arrayBuffer)
     const base64 = buffer.toString('base64')
     const mimeType = response.headers.get('content-type') || 'image/png'
-    return `data:${mimeType};base64,${base64}`
+    const dataUrl = `data:${mimeType};base64,${base64}`
+
+    if (DEBUG_IMAGE_GENERATION) {
+      console.log('[GPT Image] Conversão concluída! Base64 length:', base64.length)
+    }
+
+    return dataUrl
   } catch (error) {
     console.error('[GPT Image] Erro ao converter para base64:', error)
-    throw error
+    // Re-throw com mensagem mais clara
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Timeout ao baixar imagem do DALL-E (30s)')
+      }
+      throw error
+    }
+    throw new Error('Erro desconhecido na conversão para base64')
   }
 }
 
@@ -560,13 +1235,35 @@ export async function generateMedicalImage(
     n = 1,
   } = options
 
+  if (DEBUG_IMAGE_GENERATION) {
+    console.log('[GPT Image] ============================================')
+    console.log('[GPT Image] INICIANDO GERAÇÃO DE IMAGEM MÉDICA')
+    console.log('[GPT Image] Model:', model)
+    console.log('[GPT Image] Quality:', quality)
+    console.log('[GPT Image] Size:', size)
+    console.log('[GPT Image] ============================================')
+  }
+
+  // Verificar se a API key está configurada
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('[GPT Image] ERRO CRÍTICO: OPENAI_API_KEY não está configurada!')
+    throw new GPTImageError('Chave da API OpenAI não configurada', 'NO_API_KEY', 500)
+  }
+
   // Extrair estrutura do prompt para buscar conhecimento anatômico
   const structureMatch = prompt.match(/(?:estrutura|tecido|órgão|sistema)[:\s]+([^\n]+)/i)
+    || prompt.match(/Estrutura anatômica:\s*([^\n]+)/i)
+    || prompt.match(/Tecido\/Estrutura:\s*([^\n]+)/i)
     || prompt.match(/^([^\n]{10,100})/i)
   const structure = structureMatch ? structureMatch[1].trim() : prompt.substring(0, 100)
 
   // Buscar conhecimento anatômico específico
   const anatomicalKnowledge = getAnatomicalKnowledge(structure)
+
+  if (DEBUG_IMAGE_GENERATION) {
+    console.log('[GPT Image] Estrutura detectada:', structure.substring(0, 50))
+    console.log('[GPT Image] Conhecimento anatômico:', anatomicalKnowledge ? 'ENCONTRADO' : 'não encontrado')
+  }
 
   // Construir prompt com conhecimento anatômico
   const enhancedPrompt = `${prompt}
@@ -606,9 +1303,7 @@ ${anatomicalKnowledge}
 A imagem deve ser EDUCACIONALMENTE PRECISA e adequada para estudo médico universitário.`
 
   try {
-    console.log('[GPT Image] Gerando imagem médica com precisão anatômica...')
-    console.log('[GPT Image] Estrutura detectada:', structure.substring(0, 50))
-    console.log('[GPT Image] Conhecimento anatômico:', anatomicalKnowledge ? 'ENCONTRADO' : 'não encontrado')
+    console.log('[GPT Image] Chamando API OpenAI DALL-E 3...')
 
     const response = await openai.images.generate({
       model,
@@ -619,37 +1314,90 @@ A imagem deve ser EDUCACIONALMENTE PRECISA e adequada para estudo médico univer
       n,
     })
 
+    if (DEBUG_IMAGE_GENERATION) {
+      console.log('[GPT Image] Resposta da API recebida!')
+      console.log('[GPT Image] Data length:', response.data?.length || 0)
+    }
+
     if (!response.data || response.data.length === 0) {
-      throw new GPTImageError('Nenhuma imagem foi gerada')
+      throw new GPTImageError('Nenhuma imagem foi gerada pela API')
     }
 
     const imageData = response.data[0]
     const temporaryUrl = imageData.url
 
-    console.log('[GPT Image] Imagem gerada, convertendo para base64 permanente...')
+    if (!temporaryUrl) {
+      throw new GPTImageError('URL da imagem não retornada pela API')
+    }
+
+    console.log('[GPT Image] URL temporária recebida:', temporaryUrl.substring(0, 80) + '...')
+    console.log('[GPT Image] Convertendo para base64 permanente...')
 
     // IMPORTANTE: Converter para base64 para armazenamento permanente
     // URLs do DALL-E expiram em ~1 hora
     let permanentUrl = temporaryUrl
+    let conversionFailed = false
+
     try {
-      if (temporaryUrl) {
-        permanentUrl = await convertImageToBase64(temporaryUrl)
-        console.log('[GPT Image] Convertido para base64 com sucesso!')
-      }
+      permanentUrl = await convertImageToBase64(temporaryUrl)
+      console.log('[GPT Image] ✅ Convertido para base64 com sucesso!')
     } catch (conversionError) {
-      console.error('[GPT Image] Falha na conversão base64, usando URL temporária:', conversionError)
-      // Fallback para URL temporária se a conversão falhar
+      console.error('[GPT Image] ⚠️ Falha na conversão base64:', conversionError)
+      console.log('[GPT Image] Usando URL temporária como fallback (expira em ~1 hora)')
+      conversionFailed = true
+      // Mantém temporaryUrl como fallback
     }
 
-    return {
+    const result: GeneratedImage = {
       url: permanentUrl,
       base64: permanentUrl?.startsWith('data:') ? permanentUrl : undefined,
       revisedPrompt: imageData.revised_prompt || prompt,
       estimatedCost: COSTS['high'][size] * n,
     }
-  } catch (error: unknown) {
-    console.error('[GPT Image] Erro na geração:', error)
 
+    if (DEBUG_IMAGE_GENERATION) {
+      console.log('[GPT Image] ============================================')
+      console.log('[GPT Image] GERAÇÃO CONCLUÍDA COM SUCESSO!')
+      console.log('[GPT Image] URL type:', permanentUrl?.startsWith('data:') ? 'base64' : 'URL temporária')
+      console.log('[GPT Image] Conversion failed:', conversionFailed)
+      console.log('[GPT Image] Custo estimado: $', result.estimatedCost)
+      console.log('[GPT Image] ============================================')
+    }
+
+    return result
+  } catch (error: unknown) {
+    console.error('[GPT Image] ============================================')
+    console.error('[GPT Image] ERRO NA GERAÇÃO DE IMAGEM')
+    console.error('[GPT Image] Error:', error)
+    console.error('[GPT Image] ============================================')
+
+    // Tratamento específico de erros da OpenAI
+    if (error instanceof OpenAI.APIError) {
+      console.error('[GPT Image] OpenAI API Error - Status:', error.status)
+      console.error('[GPT Image] OpenAI API Error - Message:', error.message)
+      console.error('[GPT Image] OpenAI API Error - Code:', error.code)
+
+      if (error.status === 400) {
+        throw new GPTImageError(
+          'Prompt rejeitado pela API (pode conter conteúdo não permitido)',
+          error.code || 'CONTENT_POLICY',
+          400
+        )
+      }
+      if (error.status === 401) {
+        throw new GPTImageError('Chave da API OpenAI inválida', 'INVALID_API_KEY', 401)
+      }
+      if (error.status === 429) {
+        throw new GPTImageError('Limite de requisições excedido, tente novamente em alguns segundos', 'RATE_LIMIT', 429)
+      }
+      if (error.status === 500 || error.status === 503) {
+        throw new GPTImageError('Serviço da OpenAI temporariamente indisponível', 'SERVICE_UNAVAILABLE', error.status)
+      }
+
+      throw new GPTImageError(error.message, error.code || 'OPENAI_ERROR', error.status)
+    }
+
+    // Erro genérico
     const err = error as { message?: string; code?: string; status?: number }
     throw new GPTImageError(
       err.message || 'Erro desconhecido na geração de imagem',
