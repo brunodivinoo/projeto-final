@@ -306,7 +306,9 @@ async function streamClaude(params: StreamClaudeParams) {
 
     // Se content é array (multi-modal), filtrar imagens
     if (Array.isArray(m.content)) {
-      const contentFiltrado = m.content.filter((block: { type: string }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const contentArray = m.content as any[]
+      const contentFiltrado = contentArray.filter((block) => {
         // Manter apenas blocos de texto, remover imagens
         return block.type === 'text'
       })
