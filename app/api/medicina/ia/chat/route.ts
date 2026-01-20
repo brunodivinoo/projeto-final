@@ -279,11 +279,48 @@ async function streamClaude(params: StreamClaudeParams) {
     thinking_budget = 8000
   } = params
 
-  // Preparar mensagens
-  const messages: Anthropic.MessageParam[] = historico.map(m => ({
-    role: m.role,
-    content: m.content
-  }))
+  // Preparar mensagens - limitar histórico para evitar erro de tokens
+  // Limite: últimas 20 mensagens para evitar exceder 200k tokens
+  const MAX_HISTORICO = 20
+  const historicoLimitado = historico.slice(-MAX_HISTORICO)
+
+  // Limpar imagens base64 de mensagens antigas (manter só nas últimas 2)
+  const messages: Anthropic.MessageParam[] = historicoLimitado.map((m, index) => {
+    // Se é uma das últimas 2 mensagens, manter conteúdo original
+    if (index >= historicoLimitado.length - 2) {
+      return {
+        role: m.role,
+        content: m.content
+      }
+    }
+
+    // Para mensagens antigas, remover imagens base64 para economizar tokens
+    if (typeof m.content === 'string') {
+      // Remover base64 de imagens inline no texto
+      const contentLimpo = m.content.replace(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/g, '[imagem removida do histórico]')
+      return {
+        role: m.role,
+        content: contentLimpo
+      }
+    }
+
+    // Se content é array (multi-modal), filtrar imagens
+    if (Array.isArray(m.content)) {
+      const contentFiltrado = m.content.filter((block: { type: string }) => {
+        // Manter apenas blocos de texto, remover imagens
+        return block.type === 'text'
+      })
+      return {
+        role: m.role,
+        content: contentFiltrado.length > 0 ? contentFiltrado : '[conteúdo de imagem removido do histórico]'
+      }
+    }
+
+    return {
+      role: m.role,
+      content: m.content
+    }
+  })
 
   // Preparar conteúdo da mensagem atual
   const userContent: Anthropic.ContentBlockParam[] = []
