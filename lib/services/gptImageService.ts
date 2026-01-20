@@ -1091,6 +1091,8 @@ VISTA RECOMENDADA: ${knowledge.correctView}
 /**
  * Converte URL de imagem temporária para base64 permanente
  * IMPORTANTE: URLs do DALL-E expiram em ~1 hora
+ *
+ * Timeout reduzido para 15s para não bloquear muito o fluxo do chat
  */
 async function convertImageToBase64(imageUrl: string): Promise<string> {
   if (DEBUG_IMAGE_GENERATION) {
@@ -1099,9 +1101,9 @@ async function convertImageToBase64(imageUrl: string): Promise<string> {
   }
 
   try {
-    // Adicionar timeout para evitar travamento
+    // Adicionar timeout curto para não bloquear o chat
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000) // 15s timeout (reduzido)
 
     const response = await fetch(imageUrl, {
       signal: controller.signal,
@@ -1141,7 +1143,7 @@ async function convertImageToBase64(imageUrl: string): Promise<string> {
     // Re-throw com mensagem mais clara
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        throw new Error('Timeout ao baixar imagem do DALL-E (30s)')
+        throw new Error('Timeout ao baixar imagem do DALL-E (15s)')
       }
       throw error
     }

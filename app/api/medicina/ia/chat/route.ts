@@ -1,6 +1,10 @@
 // API Route - Chat IA PREPARAMED com Streaming
 
 import { NextRequest, NextResponse } from 'next/server'
+
+// Configuração de runtime para permitir execução mais longa (geração de imagens)
+export const dynamic = 'force-dynamic'
+export const maxDuration = 60 // 60 segundos para acomodar geração de imagens
 import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
