@@ -1,6 +1,8 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { useChatIA, Conversa } from '@/hooks/useChatIA'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 export function ChatIA() {
   const {
@@ -193,7 +195,36 @@ export function ChatIA() {
                         ? 'bg-[#137fec] text-white rounded-br-md'
                         : 'bg-gray-100 dark:bg-[#283039] text-gray-900 dark:text-white rounded-bl-md'
                     }`}>
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      {msg.role === 'user' ? (
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      ) : (
+                        <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-img:rounded-lg prose-img:max-w-full prose-img:my-2">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              img: ({ src, alt }) => (
+                                <img
+                                  src={src}
+                                  alt={alt || 'Imagem gerada'}
+                                  className="rounded-lg max-w-full h-auto my-2 border border-gray-200 dark:border-gray-700"
+                                  style={{ maxHeight: '400px', objectFit: 'contain' }}
+                                  loading="lazy"
+                                />
+                              ),
+                              p: ({ children }) => <p className="my-1">{children}</p>,
+                              ul: ({ children }) => <ul className="list-disc pl-4 my-1">{children}</ul>,
+                              ol: ({ children }) => <ol className="list-decimal pl-4 my-1">{children}</ol>,
+                              li: ({ children }) => <li className="my-0.5">{children}</li>,
+                              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                              code: ({ children }) => (
+                                <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded text-xs">{children}</code>
+                              ),
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
+                      )}
                     </div>
                     <p className="text-xs text-[#9dabb9] mt-1 px-1">
                       {new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
