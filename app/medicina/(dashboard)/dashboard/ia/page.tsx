@@ -450,7 +450,46 @@ export default function IAPage() {
                 ))
               } else if (data.type === 'tool_result') {
                 // Tool foi executada
-                console.log('Tool result:', data)
+                console.log('[IA Page] Tool result recebido:', data.tool_name)
+
+                // Processar imagem gerada
+                if (data.tool_name === 'gerar_imagem_medica' && data.result?.imagem_url) {
+                  console.log('[IA Page] Imagem gerada! Adicionando ao chat...')
+                  console.log('[IA Page] URL length:', data.result.imagem_url.length)
+
+                  // Adicionar imagem ao conteúdo da mensagem (markdown)
+                  const imagemMarkdown = `\n\n![${data.result.estrutura || 'Imagem Médica'}](${data.result.imagem_url})\n\n*Imagem gerada com DALL-E 3 para fins educacionais.*`
+                  fullResponse += imagemMarkdown
+
+                  // Atualizar mensagem com a imagem
+                  setMensagens(prev => prev.map(m =>
+                    m.id === respostaId
+                      ? { ...m, conteudo: fullResponse }
+                      : m
+                  ))
+
+                  // Adicionar aos artefatos e abrir sidebar
+                  try {
+                    const { addImageArtifact, setSidebarOpen, setCategoryFilter } = useArtifactsStore.getState()
+                    addImageArtifact(
+                      {
+                        url: data.result.imagem_url,
+                        source: 'generated',
+                        prompt: data.result.descricao || '',
+                        structure: data.result.estrutura || '',
+                        imageType: data.result.tipo || 'anatomy'
+                      },
+                      `Imagem: ${data.result.estrutura || 'Ilustração Médica'}`,
+                      conversaAtual || '',
+                      respostaId
+                    )
+                    setCategoryFilter('images_generated')
+                    setSidebarOpen(true)
+                    console.log('[IA Page] Imagem adicionada aos artefatos!')
+                  } catch (err) {
+                    console.error('[IA Page] Erro ao adicionar artefato:', err)
+                  }
+                }
               } else if (data.type === 'done') {
                 receivedDone = true
                 setConversaAtual(data.conversa_id)
