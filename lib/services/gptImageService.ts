@@ -1784,6 +1784,246 @@ export function detectImageRequest(message: string): ImageRequestDetection {
 // (Não revela a resposta correta)
 // ============================================
 
+/**
+ * Gera prompt para imagem de questão educacional
+ *
+ * @param structure - Estrutura/região anatômica da questão
+ * @param imageType - Tipo de imagem (anatomy, histology, radiology)
+ * @param alternatives - Array com as 4-5 alternativas
+ * @param correctAnswer - Resposta correta (para garantir que NÃO seja destacada)
+ * @param questionContext - Contexto adicional da questão
+ */
+function buildQuestionImagePrompt(
+  structure: string,
+  imageType: 'anatomy' | 'histology' | 'radiology',
+  alternatives: string[],
+  correctAnswer: string,
+  questionContext?: string
+): string {
+
+  // Buscar conhecimento anatômico na versão compacta
+  const normalizedStructure = structure.toLowerCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+  let knowledge: typeof ANATOMICAL_KNOWLEDGE_COMPACT[string] | undefined
+  for (const [key, value] of Object.entries(ANATOMICAL_KNOWLEDGE_COMPACT)) {
+    const normalizedKey = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    if (normalizedStructure.includes(normalizedKey) || normalizedKey.includes(normalizedStructure)) {
+      knowledge = value
+      break
+    }
+  }
+
+  const anatomySection = knowledge
+    ? `
+ANATOMIA DE REFERÊNCIA (para precisão, NÃO para destaque):
+${knowledge.anatomy}
+
+TODAS estas estruturas devem aparecer COM IGUAL VISIBILIDADE:
+${knowledge.mustShow.join(', ')}
+
+⚠️ ERROS A EVITAR: ${knowledge.avoid}
+`
+    : ''
+
+  // Templates por tipo
+  const baseTemplates: Record<string, string> = {
+
+    anatomy: `
+ILUSTRAÇÃO ANATÔMICA PARA QUESTÃO DE PROVA
+
+Região/Estrutura: ${structure}
+${questionContext ? `Contexto: ${questionContext}` : ''}
+
+${anatomySection}
+
+=== ESTILO VISUAL ===
+- Estilo atlas médico profissional (Netter/Sobotta)
+- Cores anatômicas padronizadas e UNIFORMES
+- Iluminação HOMOGÊNEA em toda a imagem
+- Todas as estruturas com MESMO nível de detalhamento
+- Fundo neutro (branco ou cinza claro)
+
+=== CORES PADRÃO (aplicar UNIFORMEMENTE) ===
+- Artérias: vermelho
+- Veias: azul
+- Nervos: amarelo
+- Músculos: vermelho-rosado
+- Ossos: bege/marfim
+- Órgãos: tons naturais sem destaque
+
+`,
+
+    histology: `
+FOTOMICROGRAFIA HISTOLÓGICA PARA QUESTÃO DE PROVA
+
+Tecido/Estrutura: ${structure}
+Coloração: H&E (Hematoxilina e Eosina)
+Aumento: adequado para visualizar todas as estruturas relevantes
+
+${anatomySection}
+
+=== CARACTERÍSTICAS TÉCNICAS ===
+- Coloração H&E padrão (núcleos roxos, citoplasma rosa)
+- Campo microscópico COMPLETO mostrando contexto
+- Foco UNIFORME em todo o campo
+- TODAS as estruturas celulares com mesma nitidez
+- Sem áreas destacadas ou em evidência
+
+`,
+
+    radiology: `
+IMAGEM RADIOLÓGICA PARA QUESTÃO DE PROVA
+
+Região: ${structure}
+Modalidade: Radiografia convencional / TC / RM (conforme mais adequado)
+
+${anatomySection}
+
+=== CARACTERÍSTICAS TÉCNICAS ===
+- Contraste UNIFORME em toda a imagem
+- Densidade/intensidade padrão para cada tecido
+- Sem realce ou destaque em estruturas específicas
+- Qualidade diagnóstica padrão
+
+`
+  }
+
+  // Seção de SEGURANÇA (anti-spoiler)
+  const securitySection = `
+=== 🔒 INSTRUÇÕES DE SEGURANÇA - QUESTÃO EDUCACIONAL ===
+
+⚠️ REGRA PRINCIPAL: Esta imagem será usada em PROVA.
+A imagem NÃO PODE revelar ou sugerir a resposta correta.
+
+ALTERNATIVAS DA QUESTÃO (TODAS devem ter IGUAL visibilidade):
+${alternatives.map((alt, i) => `${String.fromCharCode(65 + i)}) ${alt}`).join('\n')}
+
+🚫 PROIBIÇÕES ABSOLUTAS:
+
+1. DESTAQUE VISUAL:
+   - NÃO usar cor diferente para nenhuma estrutura específica
+   - NÃO usar brilho, sombra ou efeito em uma estrutura
+   - NÃO usar linhas mais grossas ou finas para diferenciar
+   - NÃO posicionar uma estrutura mais centralizada que outras
+
+2. INDICADORES:
+   - NÃO usar setas, círculos ou marcadores
+   - NÃO usar numeração ou letras
+   - NÃO usar qualquer forma de anotação
+   - NÃO usar zoom ou ampliação em área específica
+
+3. COMPOSIÇÃO:
+   - NÃO enquadrar favorecendo uma estrutura
+   - NÃO usar iluminação direcionada
+   - NÃO criar contraste artificial
+   - NÃO omitir estruturas para facilitar identificação
+
+✅ REQUISITOS OBRIGATÓRIOS:
+
+1. EQUILÍBRIO VISUAL:
+   - TODAS as alternativas visíveis com IGUAL clareza
+   - Composição CENTRALIZADA mostrando contexto completo
+   - Iluminação DIFUSA e homogênea
+   - Mesmo nível de detalhe para todas as estruturas
+
+2. NEUTRALIDADE:
+   - Imagem deve parecer de ATLAS ou LIVRO-TEXTO
+   - Sem ênfase editorial ou didática direcionada
+   - Estudante deve usar CONHECIMENTO PRÉVIO para responder
+
+=== ⚠️ VERIFICAÇÃO FINAL ===
+A resposta correta é: "${correctAnswer}"
+Esta estrutura NÃO pode ter destaque visual diferente das outras.
+
+`
+
+  // Instruções finais
+  const finalInstructions = `
+=== RESULTADO ESPERADO ===
+✓ Anatomicamente CORRETA
+✓ Visualmente NEUTRA (sem favorecer nenhuma alternativa)
+✓ Educacionalmente JUSTA (requer conhecimento para responder)
+✓ Tecnicamente PROFISSIONAL (qualidade de atlas médico)
+
+PROIBIDO ABSOLUTAMENTE:
+✗ Qualquer texto, legenda, número ou letra
+✗ Qualquer indicador visual da resposta correta
+`
+
+  // Montar prompt final
+  let prompt = baseTemplates[imageType] || baseTemplates.anatomy
+  prompt += securitySection
+  prompt += finalInstructions
+
+  // Verificar tamanho (limite DALL-E 3: 4000 chars)
+  if (prompt.length > 3800) {
+    // Versão compacta se exceder
+    prompt = buildQuestionImagePromptCompact(
+      structure,
+      imageType,
+      alternatives,
+      correctAnswer
+    )
+  }
+
+  return prompt.trim()
+}
+
+/**
+ * Versão COMPACTA do prompt de questões (< 4000 chars)
+ */
+function buildQuestionImagePromptCompact(
+  structure: string,
+  imageType: string,
+  alternatives: string[],
+  correctAnswer: string
+): string {
+
+  const normalizedStructure = structure.toLowerCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+  let knowledge: typeof ANATOMICAL_KNOWLEDGE_COMPACT[string] | undefined
+  for (const [key, value] of Object.entries(ANATOMICAL_KNOWLEDGE_COMPACT)) {
+    const normalizedKey = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    if (normalizedStructure.includes(normalizedKey) || normalizedKey.includes(normalizedStructure)) {
+      knowledge = value
+      break
+    }
+  }
+
+  const anatomyRef = knowledge?.anatomy?.substring(0, 300) || ''
+
+  return `
+IMAGEM PARA QUESTÃO DE PROVA - ${structure.toUpperCase()}
+Tipo: ${imageType}
+
+${anatomyRef ? `ANATOMIA: ${anatomyRef}` : ''}
+
+=== REGRAS DE SEGURANÇA (OBRIGATÓRIO) ===
+
+Esta é uma QUESTÃO DE PROVA. A imagem NÃO pode revelar a resposta.
+
+ALTERNATIVAS (todas com IGUAL visibilidade):
+${alternatives.map((alt, i) => `${String.fromCharCode(65 + i)}) ${alt}`).join('\n')}
+
+🚫 PROIBIDO:
+- Destacar, colorir diferente ou enfatizar qualquer estrutura
+- Usar setas, marcadores, zoom ou enquadramento favorecendo algo
+- Qualquer texto, legenda, número ou letra
+
+✅ OBRIGATÓRIO:
+- TODAS as estruturas com MESMO destaque visual
+- Iluminação e cores UNIFORMES
+- Composição NEUTRA mostrando contexto completo
+- Estilo de atlas médico profissional
+
+⚠️ VERIFICAÇÃO: "${correctAnswer}" NÃO pode ter destaque visual.
+
+Resultado: Imagem anatomicamente correta + visualmente neutra + sem spoiler.
+  `.trim()
+}
+
 export interface QuestionImageRequest {
   // Contexto da questão
   disciplina: string
@@ -1827,58 +2067,32 @@ export async function generateQuestionImage(
     assunto,
     estruturaVisual,
     tipoImagem,
-    view,
     quality = 'medium',
     size = '1024x1024',
-    alternativas,
-    respostaCorreta,
+    alternativas = [],
+    respostaCorreta = '',
   } = request
 
-  // Construir prompt SEGURO que não revela a resposta
-  let promptSeguro = ''
+  // Mapear tipo de imagem para os tipos suportados pelo novo prompt
+  const tipoMapeado: 'anatomy' | 'histology' | 'radiology' =
+    tipoImagem === 'pathology' || tipoImagem === 'diagram'
+      ? 'anatomy'
+      : tipoImagem as 'anatomy' | 'histology' | 'radiology'
 
-  // Instruções de segurança para NÃO revelar resposta
-  const instrucaoSeguranca = `
-=== INSTRUÇÕES DE SEGURANÇA PARA QUESTÃO EDUCACIONAL ===
-Esta imagem será usada em uma QUESTÃO DE PROVA.
-A imagem NÃO DEVE revelar qual é a resposta correta.
-
-REGRAS ABSOLUTAS:
-1. NÃO destacar, colorir diferente, ou dar ênfase a nenhuma estrutura específica
-2. Todas as estruturas devem aparecer com IGUAL destaque visual
-3. NÃO usar setas, marcadores ou indicadores que apontem para a resposta
-4. A imagem deve mostrar o CONTEXTO GERAL, não a resposta
-5. O aluno deve precisar de CONHECIMENTO PRÉVIO para identificar a resposta
-
-${alternativas && alternativas.length > 0 ? `
-ALTERNATIVAS DA QUESTÃO (todas devem ter visibilidade IGUAL):
-${alternativas.map((alt, i) => `- ${String.fromCharCode(65 + i)}) ${alt}`).join('\n')}
-
-NENHUMA dessas alternativas deve ser visualmente destacada ou diferenciada.
-` : ''}
-
-${respostaCorreta ? `
-ATENÇÃO: A resposta correta é "${respostaCorreta}" - esta estrutura NÃO deve
-ter NENHUM destaque visual diferente das outras opções.
-` : ''}
-`
-
-  // Construir prompt base conforme tipo
-  const promptBase = buildMedicalImagePrompt({
-    structure: estruturaVisual,
-    type: tipoImagem,
-    view,
-    additionalDetails: `
-Contexto: Questão de ${disciplina} sobre ${assunto}.
-${instrucaoSeguranca}
-    `.trim(),
-  })
-
-  promptSeguro = promptBase
+  // Usar a nova função de prompt para questões (com anti-spoiler)
+  const promptSeguro = buildQuestionImagePrompt(
+    estruturaVisual,
+    tipoMapeado,
+    alternativas,
+    respostaCorreta,
+    `Questão de ${disciplina} sobre ${assunto}`
+  )
 
   console.log('[GPT Image] Gerando imagem SEGURA para questão...')
   console.log('[GPT Image] Estrutura:', estruturaVisual)
   console.log('[GPT Image] Tipo:', tipoImagem)
+  console.log('[GPT Image] Alternativas:', alternativas.length)
+  console.log('[GPT Image] Prompt length:', promptSeguro.length, 'chars')
 
   return generateMedicalImage({
     prompt: promptSeguro,
