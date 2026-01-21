@@ -55,27 +55,50 @@ export default function NutrimaeCadastroPage() {
       }
 
       if (data.user) {
-        // Perfil é criado automaticamente pelo trigger no banco
-        // Mas tentamos criar aqui também caso o usuário não precise confirmar email
+        // Confirma o email automaticamente via API
+        try {
+          await fetch('/api/nutrivida/auth/confirm-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: data.user.id })
+          })
+        } catch {
+          // Ignora erro de confirmacao, usuario pode confirmar manualmente
+        }
+
+        // Cria o perfil
+        try {
+          await supabase
+            .from('profiles_nutri')
+            .upsert({
+              id: data.user.id,
+              nome: nome,
+              email: email,
+              plano: 'normal',
+              amamentando: false
+            }, { onConflict: 'id' })
+        } catch {
+          // Perfil já criado pelo trigger, ignorar
+        }
+
+        // Se ja tem sessao, redireciona direto
         if (data.session) {
-          // Sessão criada = email confirmation disabled
-          try {
-            await supabase
-              .from('profiles_nutri')
-              .upsert({
-                id: data.user.id,
-                nome: nome,
-                email: email,
-                plano: 'normal',
-                amamentando: false
-              }, { onConflict: 'id' })
-          } catch {
-            // Perfil já criado pelo trigger, ignorar
-          }
           router.push('/nutrivida/dashboard')
           return
         }
 
+        // Faz login automatico apos confirmar email
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email,
+          password: senha
+        })
+
+        if (!loginError && loginData.session) {
+          router.push('/nutrivida/dashboard')
+          return
+        }
+
+        // Se nao conseguiu login automatico, mostra tela de sucesso
         setSucesso(true)
       }
     } catch (err) {
@@ -118,8 +141,7 @@ export default function NutrimaeCadastroPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Conta criada!</h2>
           <p className="text-gray-600 mb-6">
-            Enviamos um link de confirmacao para <strong>{email}</strong>.
-            Verifique seu email para ativar sua conta.
+            Sua conta foi criada com sucesso! Agora voce pode fazer login com seu email <strong>{email}</strong> e a senha que voce criou.
           </p>
           <Link
             href="/nutrivida/login"
