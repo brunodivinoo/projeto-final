@@ -76,7 +76,7 @@ export default function NutrimaeLoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/nutrivida/dashboard`
+          redirectTo: `${window.location.origin}/nutrivida/auth/callback`
         }
       })
 
@@ -104,7 +104,7 @@ export default function NutrimaeLoginPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/nutrivida/dashboard`
+          emailRedirectTo: `${window.location.origin}/nutrivida/auth/callback`
         }
       })
 

@@ -41,7 +41,7 @@ export default function NutrimaeCadastroPage() {
           data: {
             nome: nome
           },
-          emailRedirectTo: `${window.location.origin}/nutrivida/dashboard`
+          emailRedirectTo: `${window.location.origin}/nutrivida/auth/callback`
         }
       })
 
@@ -55,16 +55,26 @@ export default function NutrimaeCadastroPage() {
       }
 
       if (data.user) {
-        // Criar perfil
-        await supabase
-          .from('profiles_nutri')
-          .insert({
-            id: data.user.id,
-            nome: nome,
-            email: email,
-            plano: 'normal',
-            amamentando: false
-          })
+        // Perfil é criado automaticamente pelo trigger no banco
+        // Mas tentamos criar aqui também caso o usuário não precise confirmar email
+        if (data.session) {
+          // Sessão criada = email confirmation disabled
+          try {
+            await supabase
+              .from('profiles_nutri')
+              .upsert({
+                id: data.user.id,
+                nome: nome,
+                email: email,
+                plano: 'normal',
+                amamentando: false
+              }, { onConflict: 'id' })
+          } catch {
+            // Perfil já criado pelo trigger, ignorar
+          }
+          router.push('/nutrivida/dashboard')
+          return
+        }
 
         setSucesso(true)
       }
@@ -84,7 +94,7 @@ export default function NutrimaeCadastroPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/nutrivida/dashboard`
+          redirectTo: `${window.location.origin}/nutrivida/auth/callback`
         }
       })
 
