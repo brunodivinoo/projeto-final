@@ -380,18 +380,30 @@ async function streamClaude(params: StreamClaudeParams) {
   const modeloSelecionado = params.plano === 'residencia' ? MODELOS.claude.opus : MODELOS.claude.sonnet
   const systemPrompt = params.plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
 
+  // IMPORTANTE: Extended Thinking NÃO é compatível com tool_use no agentic loop
+  // Quando tools são usadas, precisamos desabilitar thinking para evitar o erro:
+  // "Expected `thinking` or `redacted_thinking`, but found `tool_use`"
+  // Isso porque a API exige que mensagens assistant comecem com thinking blocks
+  // quando thinking está habilitado, mas nosso agentic loop não preserva esses blocos
+  const hasTools = tools.length > 0
+  const canUseExtendedThinking = use_extended_thinking && !hasTools
+
+  if (use_extended_thinking && hasTools) {
+    console.log('[Chat API] Extended Thinking desabilitado - incompatível com tools no agentic loop')
+  }
+
   // Configurar parâmetros
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const streamParams: any = {
     model: modeloSelecionado,
-    max_tokens: use_extended_thinking ? 16000 : 8192,
+    max_tokens: canUseExtendedThinking ? 16000 : 8192,
     system: systemPrompt,
     messages,
     stream: true,
-    tools: tools.length > 0 ? tools : undefined
+    tools: hasTools ? tools : undefined
   }
 
-  if (use_extended_thinking) {
+  if (canUseExtendedThinking) {
     streamParams.thinking = {
       type: 'enabled',
       budget_tokens: thinking_budget
