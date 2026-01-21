@@ -238,6 +238,8 @@ export default function IAPage() {
   const carregarConversa = useCallback(async (conversaId: string) => {
     if (!user) return
 
+    console.log('[IA Page] Carregando conversa:', conversaId)
+
     // Limpar artefatos ao trocar de conversa
     clearArtifacts()
     setCurrentConversa(conversaId)
@@ -246,7 +248,18 @@ export default function IAPage() {
       const response = await fetch(`/api/medicina/ia/chat?user_id=${user.id}&conversa_id=${conversaId}`)
       const data = await response.json()
 
-      if (data.mensagens) {
+      console.log('[IA Page] Resposta da API:', {
+        hasConversa: !!data.conversa,
+        hasMensagens: !!data.mensagens,
+        mensagensCount: data.mensagens?.length || 0,
+        error: data.error
+      })
+
+      // Sempre definir a conversa atual, mesmo se não houver mensagens
+      setConversaAtual(conversaId)
+      setActiveConversation(chatMode as StoreChatMode, conversaId)
+
+      if (data.mensagens && Array.isArray(data.mensagens)) {
         const msgs: Mensagem[] = data.mensagens.map((m: { id: string; role: string; content: string; created_at: string; has_image?: boolean; has_pdf?: boolean; tokens?: number }) => ({
           id: m.id,
           tipo: m.role === 'user' ? 'usuario' : 'ia',
@@ -256,13 +269,14 @@ export default function IAPage() {
           hasPdf: m.has_pdf,
           tokens: m.tokens
         }))
+        console.log('[IA Page] Mensagens processadas:', msgs.length)
         setMensagens(msgs)
-        setConversaAtual(conversaId)
-        // Atualizar store de modos
-        setActiveConversation(chatMode as StoreChatMode, conversaId)
+      } else {
+        console.log('[IA Page] Nenhuma mensagem encontrada ou formato inválido')
+        setMensagens([])
       }
     } catch (error) {
-      console.error('Erro ao carregar conversa:', error)
+      console.error('[IA Page] Erro ao carregar conversa:', error)
     }
     setShowConversas(false)
   }, [user, clearArtifacts, setCurrentConversa, chatMode, setActiveConversation])

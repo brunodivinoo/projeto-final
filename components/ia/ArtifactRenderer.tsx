@@ -139,6 +139,10 @@ const QUESTION_REGEX = /```quest(?:ao|ion)(?::[^\n]*)?\n([\s\S]*?)```/g
 // CORREÇÃO: O regex antigo usava [\s\S]*$ que capturava tudo até o final do texto,
 // ignorando completamente qualquer ``` de fechamento. Agora usamos uma função
 // que verifica CORRETAMENTE se existe um fechamento válido.
+// Variável para controlar rate-limit de logs
+let lastIncompleteLogTime = 0
+const INCOMPLETE_LOG_INTERVAL = 2000 // Log a cada 2 segundos no máximo
+
 const INCOMPLETE_QUESTION_REGEX = {
   test: (content: string): boolean => {
     // Encontrar todas as aberturas de bloco ```questao ou ```question
@@ -150,12 +154,18 @@ const INCOMPLETE_QUESTION_REGEX = {
       const startIndex = openMatch.index! + openMatch[0].length
       const afterOpen = content.substring(startIndex)
 
-      // Procurar por ``` que NÃO seja seguido de "quest" (fechamento válido)
-      const closeMatch = afterOpen.match(/^([\s\S]*?)```(?!quest)/)
+      // Procurar por ``` no início de uma linha (fechamento de bloco de código)
+      // O fechamento DEVE estar no início de uma linha (após \n ou no início)
+      const closeMatch = afterOpen.match(/([\s\S]*?)(\n```|\n\s*```)/)
 
       // Se não encontrou fechamento, esta questão está incompleta
       if (!closeMatch) {
-        console.log('[INCOMPLETE_QUESTION_REGEX] Questão incompleta detectada, posição:', openMatch.index)
+        // Rate-limit logs para evitar spam no console
+        const now = Date.now()
+        if (now - lastIncompleteLogTime > INCOMPLETE_LOG_INTERVAL) {
+          lastIncompleteLogTime = now
+          console.log('[INCOMPLETE_QUESTION] Detectada, posição:', openMatch.index, 'len:', content.length)
+        }
         return true
       }
     }
@@ -517,10 +527,25 @@ export function getPartialQuestionData(): PartialQuestionData | null {
   return lastPartialQuestionData
 }
 
+// Rate-limit para logs de hideIncompleteQuestions
+let lastHideLogTime = 0
+const HIDE_LOG_INTERVAL = 3000 // Log a cada 3 segundos no máximo
+
+// Cache para evitar reprocessamento excessivo
+let lastProcessedContentLength = 0
+let lastProcessedResult: string | null = null
+
 // Função para detectar e remover blocos de questão incompletos durante streaming
 // Isso evita mostrar o JSON bruto enquanto a questão está sendo gerada
 // Agora também extrai dados parciais para mostrar no skeleton
 function hideIncompleteQuestions(content: string): string {
+  // Otimização: se o conteúdo não mudou significativamente, retornar resultado cacheado
+  // Considera "significativo" se mudou mais de 50 caracteres ou passou de 5 segundos
+  const contentLengthDiff = Math.abs(content.length - lastProcessedContentLength)
+  if (contentLengthDiff < 50 && lastProcessedResult !== null) {
+    return lastProcessedResult
+  }
+
   // Verifica se há um bloco de questão incompleto (iniciado mas não fechado)
   if (INCOMPLETE_QUESTION_REGEX.test(content)) {
     // Encontrar a ÚLTIMA abertura de bloco que NÃO tem fechamento
@@ -531,34 +556,53 @@ function hideIncompleteQuestions(content: string): string {
       const startIndex = openMatch.index! + openMatch[0].length
       const afterOpen = content.substring(startIndex)
 
-      // Verificar se este bloco específico tem fechamento
-      const closeMatch = afterOpen.match(/^([\s\S]*?)```(?!quest)/)
+      // Verificar se este bloco específico tem fechamento (``` no início de linha)
+      const closeMatch = afterOpen.match(/([\s\S]*?)(\n```|\n\s*```)/)
 
       if (!closeMatch) {
         // Este é o bloco incompleto - extrair dados parciais
         const incompleteJson = afterOpen
         lastPartialQuestionData = extractPartialQuestionData(incompleteJson, content)
 
-        console.log('[ArtifactRenderer] Questão incompleta detectada, mostrando skeleton', {
-          hasEnunciado: !!lastPartialQuestionData.enunciado,
-          hasCasoClinico: !!lastPartialQuestionData.caso_clinico,
-          alternativasCount: lastPartialQuestionData.alternativasCount || 0,
-          questionIndex: lastPartialQuestionData.questionIndex,
-          jsonLength: incompleteJson.length
-        })
+        // Rate-limit logs
+        const now = Date.now()
+        if (now - lastHideLogTime > HIDE_LOG_INTERVAL) {
+          lastHideLogTime = now
+          console.log('[ArtifactRenderer] Questão incompleta, skeleton ativo', {
+            hasEnunciado: !!lastPartialQuestionData.enunciado,
+            alternativasCount: lastPartialQuestionData.alternativasCount || 0,
+            questionIndex: lastPartialQuestionData.questionIndex,
+            jsonLength: incompleteJson.length
+          })
+        }
 
         // Remove o bloco incompleto e adiciona um marcador especial
         const beforeBlock = content.substring(0, openMatch.index)
         // Usar marcador especial que será renderizado como skeleton
-        return beforeBlock + '\n\n[QUESTION_STREAMING_SKELETON]\n'
+        const result = beforeBlock + '\n\n[QUESTION_STREAMING_SKELETON]\n'
+
+        // Cachear resultado
+        lastProcessedContentLength = content.length
+        lastProcessedResult = result
+
+        return result
       }
     }
   }
 
   // Limpar dados parciais se não há questão incompleta
   lastPartialQuestionData = null
+
+  // Cachear resultado
+  lastProcessedContentLength = content.length
+  lastProcessedResult = content
+
   return content
 }
+
+// Rate-limit para logs de isCompleteQuestionJson
+let lastCompleteCheckLogTime = 0
+const COMPLETE_CHECK_LOG_INTERVAL = 5000 // Log a cada 5 segundos no máximo
 
 // Verifica se um bloco de questão JSON está completo e válido
 function isCompleteQuestionJson(jsonStr: string): boolean {
@@ -573,26 +617,21 @@ function isCompleteQuestionJson(jsonStr: string): boolean {
     // Se temos enunciado + alternativas (2+), considera completo
     // Gabarito não é obrigatório para renderizar o card
     if (hasEnunciado && hasAlternativas) {
-      console.log('[ArtifactRenderer] JSON completo validado:', {
-        hasEnunciado,
-        alternativasCount: parsed.alternativas.length,
-        hasGabarito
-      })
+      // Rate-limit log de sucesso
+      const now = Date.now()
+      if (now - lastCompleteCheckLogTime > COMPLETE_CHECK_LOG_INTERVAL) {
+        lastCompleteCheckLogTime = now
+        console.log('[ArtifactRenderer] JSON completo:', {
+          alternativasCount: parsed.alternativas.length,
+          hasGabarito
+        })
+      }
       return true
     }
 
-    // Log para debug quando não passa na validação
-    console.log('[ArtifactRenderer] JSON incompleto:', {
-      hasEnunciado,
-      enunciadoLength: parsed.enunciado?.length || 0,
-      hasAlternativas,
-      alternativasCount: parsed.alternativas?.length || 0,
-      hasGabarito
-    })
-
     return false
-  } catch (e) {
-    console.log('[ArtifactRenderer] JSON parse falhou em isCompleteQuestionJson:', (e as Error).message?.substring(0, 50))
+  } catch {
+    // Não logar erros de parse - são esperados durante streaming
     return false
   }
 }
@@ -678,10 +717,19 @@ function extractGabaritoComentadoFromPartial(json: string): Record<string, unkno
   return Object.keys(gabarito).length > 0 ? gabarito : null
 }
 
+// Rate-limit para logs de reparo
+let lastRepairLogTime = 0
+const REPAIR_LOG_INTERVAL = 5000 // Log a cada 5 segundos
+
 // Tenta reparar JSON incompleto de questão - versão robusta
 function tryRepairQuestionJson(jsonStr: string): string | null {
   let repaired = jsonStr.trim()
-  console.log('[ArtifactRenderer] Iniciando reparo de JSON, tamanho:', repaired.length)
+  const now = Date.now()
+  const shouldLog = now - lastRepairLogTime > REPAIR_LOG_INTERVAL
+  if (shouldLog) {
+    lastRepairLogTime = now
+    console.log('[ArtifactRenderer] Tentando reparo de JSON, tamanho:', repaired.length)
+  }
 
   // =====================================================
   // FASE 1: Detectar e corrigir strings truncadas
@@ -691,8 +739,8 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
   const quoteCount = (repaired.match(/(?<!\\)"/g) || []).length
   const hasUnclosedString = quoteCount % 2 !== 0
 
-  if (hasUnclosedString) {
-    console.log('[ArtifactRenderer] String não fechada detectada, corrigindo...')
+  if (hasUnclosedString && shouldLog) {
+    console.log('[ArtifactRenderer] String não fechada detectada')
 
     // Encontrar a última aspas de abertura de string
     let inString = false
@@ -722,7 +770,6 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
 
       // Fechar a string truncada
       repaired = repaired.substring(0, truncateAt) + '"'
-      console.log('[ArtifactRenderer] String fechada na posição', truncateAt)
     }
   }
 
@@ -771,18 +818,16 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
   try {
     const parsed = JSON.parse(repaired)
     if (parsed.enunciado && parsed.alternativas && parsed.alternativas.length >= 2) {
-      console.log('[ArtifactRenderer] JSON reparado com sucesso via fechamento de brackets')
+      if (shouldLog) console.log('[ArtifactRenderer] JSON reparado via fechamento de brackets')
       return repaired
     }
-  } catch (e) {
-    console.log('[ArtifactRenderer] Parse falhou após fechamento:', (e as Error).message?.substring(0, 100))
+  } catch {
+    // Continuar para próxima fase
   }
 
   // =====================================================
   // FASE 5: Extração manual de campos (fallback robusto)
   // =====================================================
-
-  console.log('[ArtifactRenderer] Tentando extração manual de campos...')
 
   // Extrair campos individualmente
   const enunciado = extractJsonStringValue(jsonStr, 'enunciado')
@@ -796,14 +841,14 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
   const alternativas = extractAlternativasFromPartial(jsonStr)
   const gabaritoComentado = extractGabaritoComentadoFromPartial(jsonStr)
 
-  console.log('[ArtifactRenderer] Campos extraídos manualmente:', {
-    hasEnunciado: !!enunciado,
-    enunciadoLength: enunciado?.length || 0,
-    hasDisciplina: !!disciplina,
-    alternativasCount: alternativas.length,
-    hasGabarito: !!gabaritoComentado,
-    gabaritoFields: gabaritoComentado ? Object.keys(gabaritoComentado) : []
-  })
+  // Log apenas se permitido pelo rate-limit
+  if (shouldLog) {
+    console.log('[ArtifactRenderer] Extração manual:', {
+      hasEnunciado: !!enunciado,
+      alternativasCount: alternativas.length,
+      hasGabarito: !!gabaritoComentado
+    })
+  }
 
   // Se temos enunciado e pelo menos algumas alternativas, reconstruir
   if (enunciado && enunciado.length > 20 && alternativas.length >= 2) {
@@ -823,15 +868,13 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
     if (gabaritoComentado) reconstructed.gabarito_comentado = gabaritoComentado
 
     const reconstructedJson = JSON.stringify(reconstructed)
-    console.log('[ArtifactRenderer] JSON reconstruído via extração manual, alternativas:', alternativas.length)
+    if (shouldLog) console.log('[ArtifactRenderer] JSON reconstruído, alternativas:', alternativas.length)
     return reconstructedJson
   }
 
   // =====================================================
   // FASE 6: Último recurso - truncamento progressivo
   // =====================================================
-
-  console.log('[ArtifactRenderer] Tentando truncamento progressivo...')
 
   // Tentar encontrar o maior substring válido
   for (let cutoff = repaired.length - 1; cutoff > repaired.length * 0.5; cutoff--) {
@@ -852,7 +895,7 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
     try {
       const parsed = JSON.parse(attempt)
       if (parsed.enunciado && parsed.alternativas && parsed.alternativas.length >= 2) {
-        console.log('[ArtifactRenderer] JSON recuperado via truncamento em posição', cutoff)
+        if (shouldLog) console.log('[ArtifactRenderer] JSON recuperado via truncamento')
         return attempt
       }
     } catch {
@@ -860,7 +903,6 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
     }
   }
 
-  console.log('[ArtifactRenderer] Todas as tentativas de reparo falharam')
   return null
 }
 
@@ -872,14 +914,16 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   // Detectar se há questão incompleta para mostrar indicador de carregamento
   const hasIncompleteQuestion = INCOMPLETE_QUESTION_REGEX.test(content)
 
-  // Contar questões completas no conteúdo
+  // Rate-limit para logs de parseArtifacts
+  const parseArtifactsLogAllowed = Date.now() - lastHideLogTime > 5000
+
+  // Contar questões completas no conteúdo (apenas para verificação interna)
   const completedQuestions = content.match(/```quest(?:ao|ion)(?::[^\n]*)?\n[\s\S]*?```/g)
-  if (completedQuestions || hasIncompleteQuestion) {
+  if ((completedQuestions || hasIncompleteQuestion) && parseArtifactsLogAllowed) {
     console.log('[ArtifactRenderer] parseArtifacts:', {
       contentLength: content.length,
       completedQuestionsCount: completedQuestions?.length || 0,
-      hasIncompleteQuestion,
-      hasQuestionMarker: content.includes('```quest')
+      hasIncompleteQuestion
     })
   }
 
@@ -930,45 +974,26 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   // Buscar questões geradas pela IA (COMPLETAS ou que podem ser reparadas)
   const questionRegex = new RegExp(QUESTION_REGEX.source, 'g')
   let questionMatchCount = 0
+  // Rate-limit para logs de parsing
+  const parseLogAllowed = Date.now() - lastRepairLogTime > 3000
 
   while ((match = questionRegex.exec(processedContent)) !== null) {
     questionMatchCount++
-    const jsonLength = match[1].length
-    console.log(`[ArtifactRenderer] ========== QUESTÃO #${questionMatchCount} ==========`)
-    console.log(`[ArtifactRenderer] Tamanho do JSON: ${jsonLength} chars`)
 
     try {
       let questionJson = match[1].trim()
 
-      // Log do início e final do JSON para debug
-      console.log('[ArtifactRenderer] Início:', questionJson.substring(0, 80).replace(/\n/g, ' '))
-      console.log('[ArtifactRenderer] Final:', questionJson.substring(Math.max(0, questionJson.length - 80)).replace(/\n/g, ' '))
-
-      // Verificar estrutura básica
-      const looksComplete = questionJson.endsWith('}')
-      const openBraces = (questionJson.match(/\{/g) || []).length
-      const closeBraces = (questionJson.match(/\}/g) || []).length
-      const hasBracketBalance = openBraces === closeBraces
-
-      console.log('[ArtifactRenderer] Termina com }:', looksComplete)
-      console.log('[ArtifactRenderer] Brackets: { =', openBraces, '} =', closeBraces, 'Balanceado:', hasBracketBalance)
-
       // Primeiro tentar como está
       if (!isCompleteQuestionJson(questionJson)) {
-        console.log('[ArtifactRenderer] JSON incompleto, tentando reparar...')
 
         // Tentar reparar JSON incompleto
         const repaired = tryRepairQuestionJson(questionJson)
         if (repaired) {
           questionJson = repaired
-          console.log('[ArtifactRenderer] ✅ JSON reparado, novo tamanho:', repaired.length)
         } else {
           // Não foi possível reparar, pular
-          console.log('[ArtifactRenderer] ❌ Reparo falhou, pulando questão')
           continue
         }
-      } else {
-        console.log('[ArtifactRenderer] ✅ JSON já está completo')
       }
 
       const questionData = JSON.parse(questionJson) as Question
@@ -991,20 +1016,16 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
       }
 
       allMatches.push({ match, type: 'question', questionData })
-      console.log('[ArtifactRenderer] ✅ Questão adicionada:', {
-        numero: questionData.numero,
-        disciplina: questionData.disciplina,
-        assunto: questionData.assunto,
-        alternativas: questionData.alternativas?.length || 0
-      })
-    } catch (error) {
-      console.error('[ArtifactRenderer] ❌ Erro ao parsear questão:', error)
-      console.error('[ArtifactRenderer] JSON problemático (500 chars):', match[1].substring(0, 500))
-    }
-  }
 
-  if (questionMatchCount > 0) {
-    console.log(`[ArtifactRenderer] ========== TOTAL: ${questionMatchCount} questões processadas ==========`)
+      // Log apenas se permitido pelo rate-limit
+      if (parseLogAllowed) {
+        console.log('[ArtifactRenderer] Questão', questionData.numero, 'processada')
+      }
+    } catch (error) {
+      if (parseLogAllowed) {
+        console.error('[ArtifactRenderer] Erro ao parsear questão:', error)
+      }
+    }
   }
 
   // NOVO: Buscar blocos de código que podem conter ASCII art

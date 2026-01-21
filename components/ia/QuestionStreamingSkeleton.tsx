@@ -4,13 +4,13 @@ import { useState, useEffect, useMemo } from 'react'
 
 // Mensagens de progresso que variam com o tempo
 const PROGRESS_MESSAGES = [
-  { time: 0, emoji: '📝', text: 'Elaborando caso clínico...' },
-  { time: 3000, emoji: '🏥', text: 'Contextualizando cenário médico...' },
-  { time: 6000, emoji: '✍️', text: 'Criando alternativas desafiadoras...' },
-  { time: 10000, emoji: '🎯', text: 'Finalizando questão...' },
-  { time: 15000, emoji: '📋', text: 'Preparando gabarito comentado...' },
-  { time: 20000, emoji: '🔍', text: 'Revisando conteúdo médico...' },
-  { time: 25000, emoji: '⏳', text: 'Quase lá, finalizando detalhes...' },
+  { time: 0, emoji: '📝', text: 'Elaborando questão...' },
+  { time: 2000, emoji: '🏥', text: 'Contextualizando cenário...' },
+  { time: 4000, emoji: '✍️', text: 'Criando alternativas...' },
+  { time: 7000, emoji: '🎯', text: 'Finalizando questão...' },
+  { time: 10000, emoji: '📋', text: 'Preparando gabarito...' },
+  { time: 15000, emoji: '🔍', text: 'Revisando conteúdo...' },
+  { time: 20000, emoji: '⏳', text: 'Quase lá...' },
 ]
 
 // Dicas médicas para mostrar durante loading longo
@@ -37,7 +37,7 @@ interface QuestionStreamingSkeletonProps {
   onTimeout?: () => void
   /** Callback para cancelar/retry */
   onCancel?: () => void
-  /** Tempo em ms para considerar timeout (default: 45s) */
+  /** Tempo em ms para considerar timeout (default: 30s) */
   timeoutMs?: number
 }
 
@@ -45,7 +45,7 @@ export default function QuestionStreamingSkeleton({
   partialData,
   onTimeout,
   onCancel,
-  timeoutMs = 45000
+  timeoutMs = 30000
 }: QuestionStreamingSkeletonProps) {
   const [elapsedTime, setElapsedTime] = useState(0)
   const [currentTipIndex, setCurrentTipIndex] = useState(0)

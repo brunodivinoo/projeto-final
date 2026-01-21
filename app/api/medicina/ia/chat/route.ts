@@ -610,6 +610,24 @@ async function streamClaude(params: StreamClaudeParams) {
         controller.close()
       } catch (error) {
         console.error('Erro no stream Claude:', error)
+
+        // Salvar resposta parcial se houver conteúdo
+        if (fullResponse && fullResponse.length > 0) {
+          console.log('[Chat API] Salvando resposta parcial após erro, tamanho:', fullResponse.length)
+          try {
+            await supabase
+              .from('mensagens_ia_med')
+              .insert({
+                conversa_id,
+                role: 'assistant',
+                content: fullResponse + '\n\n---\n*Resposta pode estar incompleta devido a um erro durante a geração.*',
+                tokens: tokensInput + tokensOutput
+              })
+          } catch (saveError) {
+            console.error('[Chat API] Erro ao salvar resposta parcial:', saveError)
+          }
+        }
+
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ type: 'error', error: 'Erro no processamento' })}\n\n`)
         )
@@ -766,22 +784,27 @@ export async function GET(request: NextRequest) {
 
     if (conversa_id) {
       // Buscar conversa específica com mensagens
-      const { data: conversa } = await supabase
+      const { data: conversa, error: convError } = await supabase
         .from('conversas_ia_med')
         .select('*')
         .eq('id', conversa_id)
         .eq('user_id', user_id)
         .single()
 
+      console.log('[Chat API GET] Buscando conversa:', conversa_id)
+      console.log('[Chat API GET] Conversa encontrada:', !!conversa, 'erro:', convError?.message)
+
       if (!conversa) {
         return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 })
       }
 
-      const { data: mensagens } = await supabase
+      const { data: mensagens, error: msgError } = await supabase
         .from('mensagens_ia_med')
         .select('*')
         .eq('conversa_id', conversa_id)
         .order('created_at', { ascending: true })
+
+      console.log('[Chat API GET] Mensagens encontradas:', mensagens?.length || 0, 'erro:', msgError?.message)
 
       return NextResponse.json({ conversa, mensagens })
     }
