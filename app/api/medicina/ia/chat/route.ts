@@ -395,10 +395,12 @@ async function streamClaude(params: StreamClaudeParams) {
   }
 
   // Configurar parâmetros
+  // max_tokens aumentado para evitar cortes em respostas longas
+  // Claude Opus suporta até 32k output, Sonnet até 16k
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const streamParams: any = {
     model: modeloSelecionado,
-    max_tokens: canUseExtendedThinking ? 16000 : 8192,
+    max_tokens: canUseExtendedThinking ? 32000 : 16000,
     system: systemPrompt,
     messages,
     stream: true,
@@ -562,6 +564,17 @@ async function streamClaude(params: StreamClaudeParams) {
           // Se não houve tool calls ou o stop_reason é end_turn, terminamos
           if (toolCallsThisIteration.length === 0 || stopReason === 'end_turn') {
             console.log('[Chat API] Finalizando - stop_reason:', stopReason, 'tools:', toolCallsThisIteration.length)
+
+            // Se a resposta foi cortada por max_tokens, adicionar indicador
+            if (stopReason === 'max_tokens') {
+              console.log('[Chat API] Resposta cortada por max_tokens')
+              const truncatedMsg = '\n\n---\n*[Resposta cortada por limite de tamanho. Pergunte novamente se precisar de mais detalhes.]*'
+              fullResponse += truncatedMsg
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: truncatedMsg })}\n\n`)
+              )
+            }
+
             break
           }
 
