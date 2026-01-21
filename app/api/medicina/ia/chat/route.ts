@@ -397,8 +397,7 @@ async function streamClaude(params: StreamClaudeParams) {
   // Configurar parâmetros
   // max_tokens reduzido para evitar timeout do Vercel (120s)
   // Se a resposta for cortada, a auto-continuação vai pedir mais
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const streamParams: any = {
+  const streamParams: Record<string, unknown> = {
     model: modeloSelecionado,
     max_tokens: canUseExtendedThinking ? 16000 : 8000,
     system: systemPrompt,
