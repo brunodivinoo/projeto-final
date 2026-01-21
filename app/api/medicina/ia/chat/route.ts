@@ -426,13 +426,15 @@ async function streamClaude(params: StreamClaudeParams) {
       let tokensOutput = 0
       const currentMessages = [...messages]
       let iterationCount = 0
-      const MAX_ITERATIONS = 5 // Limite de segurança para evitar loops infinitos
+      let continuationCount = 0 // Contador de continuações por max_tokens
+      const MAX_ITERATIONS = 10 // Limite de iterações (tools + continuações)
+      const MAX_CONTINUATIONS = 3 // Limite de continuações automáticas por max_tokens
 
       try {
         // Agentic loop - continua até o Claude terminar ou atingir limite
         while (iterationCount < MAX_ITERATIONS) {
           iterationCount++
-          console.log(`[Chat API] Iteração ${iterationCount}/${MAX_ITERATIONS}`)
+          console.log(`[Chat API] Iteração ${iterationCount}/${MAX_ITERATIONS} (continuações: ${continuationCount}/${MAX_CONTINUATIONS})`)
 
           // Criar stream para esta iteração
           const currentStreamParams = {
@@ -564,18 +566,41 @@ async function streamClaude(params: StreamClaudeParams) {
           // Se não houve tool calls ou o stop_reason é end_turn, terminamos
           if (toolCallsThisIteration.length === 0 || stopReason === 'end_turn') {
             console.log('[Chat API] Finalizando - stop_reason:', stopReason, 'tools:', toolCallsThisIteration.length)
+            break
+          }
 
-            // Se a resposta foi cortada por max_tokens, adicionar indicador
-            if (stopReason === 'max_tokens') {
-              console.log('[Chat API] Resposta cortada por max_tokens')
-              const truncatedMsg = '\n\n---\n*[Resposta cortada por limite de tamanho. Pergunte novamente se precisar de mais detalhes.]*'
-              fullResponse += truncatedMsg
+          // Se a resposta foi cortada por max_tokens, CONTINUAR automaticamente
+          if (stopReason === 'max_tokens' && toolCallsThisIteration.length === 0) {
+            continuationCount++
+
+            // Se atingiu limite de continuações, parar
+            if (continuationCount > MAX_CONTINUATIONS) {
+              console.log('[Chat API] Limite de continuações atingido')
+              const endMsg = '\n\n---\n*[Resposta muito longa. Pergunte sobre um tópico mais específico para continuar.]*'
+              fullResponse += endMsg
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: truncatedMsg })}\n\n`)
+                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: endMsg })}\n\n`)
               )
+              break
             }
 
-            break
+            console.log(`[Chat API] Resposta cortada por max_tokens - continuando automaticamente (${continuationCount}/${MAX_CONTINUATIONS})...`)
+
+            // Adicionar mensagem parcial do assistant e pedir para continuar
+            currentMessages.push({
+              role: 'assistant',
+              content: fullResponse
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            currentMessages.push({
+              role: 'user',
+              content: 'Continue exatamente de onde parou, sem repetir o que já foi dito. Mantenha a formatação.'
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            // Continuar para próxima iteração (vai chamar a API novamente)
+            continue
           }
 
           // Preparar mensagens para próxima iteração (continuar após tool use)
@@ -659,9 +684,30 @@ async function streamClaude(params: StreamClaudeParams) {
         controller.close()
       } catch (error) {
         console.error('Erro no stream Claude:', error)
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
 
-        // Salvar resposta parcial se houver conteúdo
+        // Verificar tipo de erro para dar resposta adequada
+        const isOverloaded = errorMessage.includes('overloaded') || errorMessage.includes('529')
+        const isRateLimit = errorMessage.includes('rate_limit') || errorMessage.includes('429')
+        const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT')
+
+        let fallbackMessage = ''
+
+        if (fullResponse && fullResponse.length > 100) {
+          // Se já tem conteúdo substancial, apenas avisar que pode estar incompleto
+          fallbackMessage = '\n\n---\n*Resposta pode estar incompleta. Se precisar de mais detalhes, pergunte novamente.*'
+        } else if (isOverloaded || isRateLimit) {
+          // Se API está sobrecarregada, dar mensagem amigável
+          fallbackMessage = 'Desculpe, estou com alta demanda no momento. Por favor, tente novamente em alguns segundos. Sua pergunta foi salva e você pode reformulá-la se preferir.'
+        } else if (isTimeout) {
+          fallbackMessage = 'A resposta está demorando mais que o esperado. Por favor, tente fazer uma pergunta mais específica ou divida em partes menores.'
+        } else {
+          fallbackMessage = 'Desculpe, tive uma instabilidade técnica. Por favor, tente novamente ou reformule sua pergunta de forma diferente.'
+        }
+
+        // Se já tem resposta parcial, adicionar aviso
         if (fullResponse && fullResponse.length > 0) {
+          fullResponse += fallbackMessage
           console.log('[Chat API] Salvando resposta parcial após erro, tamanho:', fullResponse.length)
           try {
             await supabase
@@ -669,17 +715,59 @@ async function streamClaude(params: StreamClaudeParams) {
               .insert({
                 conversa_id,
                 role: 'assistant',
-                content: fullResponse + '\n\n---\n*Resposta pode estar incompleta devido a um erro durante a geração.*',
+                content: fullResponse,
                 tokens: tokensInput + tokensOutput
               })
+
+            // Enviar o conteúdo parcial que já foi gerado
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: 'text', content: fallbackMessage })}\n\n`)
+            )
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                type: 'done',
+                conversa_id,
+                tokens: { input: tokensInput, output: tokensOutput },
+                partial: true
+              })}\n\n`)
+            )
           } catch (saveError) {
             console.error('[Chat API] Erro ao salvar resposta parcial:', saveError)
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: 'error', error: fallbackMessage })}\n\n`)
+            )
+          }
+        } else {
+          // Sem resposta parcial, salvar mensagem de fallback
+          try {
+            await supabase
+              .from('mensagens_ia_med')
+              .insert({
+                conversa_id,
+                role: 'assistant',
+                content: fallbackMessage,
+                tokens: 0
+              })
+
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: 'text', content: fallbackMessage })}\n\n`)
+            )
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                type: 'done',
+                conversa_id,
+                tokens: { input: 0, output: 0 },
+                error: true
+              })}\n\n`)
+            )
+          } catch (saveError) {
+            console.error('[Chat API] Erro ao salvar fallback:', saveError)
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: 'error', error: fallbackMessage })}\n\n`)
+            )
           }
         }
 
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: 'error', error: 'Erro no processamento' })}\n\n`)
-        )
         controller.close()
       }
     }
