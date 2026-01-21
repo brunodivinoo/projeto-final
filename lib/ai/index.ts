@@ -19,6 +19,9 @@ export * from './tools'
 // Cache e Otimizações
 export * from './cache'
 
+// Vercel AI SDK helpers (retry, structured outputs, validação)
+export * from './vercel-ai'
+
 // ==========================================
 // FUNÇÕES UNIFICADAS PARA API ROUTES
 // ==========================================
