@@ -44,6 +44,13 @@ const useArtifactsSidebar = () => {
   return { isSidebarOpen, hasArtifacts: artifacts.length > 0 }
 }
 
+interface ImagemGerada {
+  id: string
+  url: string
+  estrutura: string
+  descricao: string
+}
+
 interface Mensagem {
   id: string
   tipo: 'usuario' | 'ia' | 'system'
@@ -53,6 +60,7 @@ interface Mensagem {
   hasPdf?: boolean
   thinking?: string
   tokens?: number
+  imagemGerada?: ImagemGerada
 }
 
 interface Conversa {
@@ -457,14 +465,27 @@ export default function IAPage() {
                   console.log('[IA Page] Imagem gerada! Adicionando ao chat...')
                   console.log('[IA Page] URL length:', data.result.imagem_url.length)
 
-                  // Adicionar imagem ao conteúdo da mensagem (markdown)
-                  const imagemMarkdown = `\n\n![${data.result.estrutura || 'Imagem Médica'}](${data.result.imagem_url})\n\n*Imagem gerada com DALL-E 3 para fins educacionais.*`
-                  fullResponse += imagemMarkdown
+                  // Armazenar imagem para renderização
+                  const imagemId = `img-${Date.now()}`
+                  const imagemUrl = data.result.imagem_url
 
-                  // Atualizar mensagem com a imagem
+                  // Adicionar marcador especial no conteúdo (será substituído na renderização)
+                  const imagemMarcador = `\n\n[GENERATED_IMAGE:${imagemId}]\n\n*Imagem gerada com DALL-E 3 para fins educacionais.*`
+                  fullResponse += imagemMarcador
+
+                  // Atualizar mensagem com marcador e dados da imagem
                   setMensagens(prev => prev.map(m =>
                     m.id === respostaId
-                      ? { ...m, conteudo: fullResponse }
+                      ? {
+                          ...m,
+                          conteudo: fullResponse,
+                          imagemGerada: {
+                            id: imagemId,
+                            url: imagemUrl,
+                            estrutura: data.result.estrutura || 'Imagem Médica',
+                            descricao: data.result.descricao || ''
+                          }
+                        }
                       : m
                   ))
 
@@ -473,7 +494,7 @@ export default function IAPage() {
                     const { addImageArtifact, setSidebarOpen, setCategoryFilter } = useArtifactsStore.getState()
                     addImageArtifact(
                       {
-                        url: data.result.imagem_url,
+                        url: imagemUrl,
                         source: 'generated',
                         prompt: data.result.descricao || '',
                         structure: data.result.estrutura || '',
@@ -1046,8 +1067,38 @@ export default function IAPage() {
 
                     {msg.tipo === 'ia' ? (
                       <div className="prose prose-invert prose-sm max-w-none text-xs md:text-sm">
+                        {/* Renderizar imagem gerada se existir */}
+                        {msg.imagemGerada && (
+                          <div className="my-4 rounded-xl overflow-hidden border border-white/10 bg-white/5">
+                            <div className="p-2 border-b border-white/10 bg-white/5">
+                              <p className="text-xs text-purple-400 font-medium flex items-center gap-2">
+                                <ImageIcon className="w-4 h-4" />
+                                {msg.imagemGerada.estrutura}
+                              </p>
+                            </div>
+                            <img
+                              src={msg.imagemGerada.url}
+                              alt={msg.imagemGerada.descricao || msg.imagemGerada.estrutura}
+                              className="w-full max-w-lg mx-auto"
+                              style={{ display: 'block' }}
+                              onError={(e) => {
+                                console.error('[IA Page] Erro ao carregar imagem')
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                              }}
+                              onLoad={() => {
+                                console.log('[IA Page] Imagem carregada com sucesso!')
+                              }}
+                            />
+                            {msg.imagemGerada.descricao && (
+                              <p className="p-2 text-xs text-white/60 text-center border-t border-white/10">
+                                {msg.imagemGerada.descricao}
+                              </p>
+                            )}
+                          </div>
+                        )}
                         <ArtifactRenderer
-                          content={msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')}
+                          content={(msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')).replace(/\[GENERATED_IMAGE:[^\]]+\]/g, '')}
                           userId={user?.id}
                           messageId={msg.id}
                           conversaId={conversaAtual || undefined}

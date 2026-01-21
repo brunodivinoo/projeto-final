@@ -67,8 +67,9 @@ function formatToolResponse(toolName: string, data: unknown): string {
       if (!resultado.imagem_url) {
         return '\n\n❌ Não foi possível gerar a imagem solicitada.\n'
       }
-      // Retornar markdown com a imagem inline
-      return `\n\n🖼️ **Imagem Gerada: ${resultado.estrutura || 'Ilustração Médica'}**\n\n![${resultado.descricao || 'Ilustração médica educacional'}](${resultado.imagem_url})\n\n*Imagem gerada com DALL-E 3 para fins educacionais.*\n`
+      // NÃO incluir a URL base64 no texto - a imagem será renderizada via tool_result no frontend
+      // Apenas retornar uma confirmação de que a imagem foi gerada
+      return `\n\n🖼️ **Imagem Gerada: ${resultado.estrutura || 'Ilustração Médica'}**\n\n*Imagem gerada com DALL-E 3 para fins educacionais.*\n`
     }
 
     default:
@@ -397,100 +398,159 @@ async function streamClaude(params: StreamClaudeParams) {
     }
   }
 
-  // Criar stream
-  const stream = await anthropic.messages.stream(streamParams)
-
   // Criar encoder para streaming
   const encoder = new TextEncoder()
 
-  // Stream response
+  // Stream response com agentic loop para múltiplas tools
   const readableStream = new ReadableStream({
     async start(controller) {
       let fullResponse = ''
       let thinking = ''
       let tokensInput = 0
       let tokensOutput = 0
-      const toolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }> = []
-      let currentToolCall: { id: string; name: string; input: string } | null = null
+      const currentMessages = [...messages]
+      let iterationCount = 0
+      const MAX_ITERATIONS = 5 // Limite de segurança para evitar loops infinitos
 
       try {
-        for await (const event of stream) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const evt = event as any
+        // Agentic loop - continua até o Claude terminar ou atingir limite
+        while (iterationCount < MAX_ITERATIONS) {
+          iterationCount++
+          console.log(`[Chat API] Iteração ${iterationCount}/${MAX_ITERATIONS}`)
 
-          if (evt.type === 'content_block_start') {
-            if (evt.content_block?.type === 'tool_use') {
-              currentToolCall = { id: evt.content_block.id, name: evt.content_block.name, input: '' }
-            }
-          } else if (evt.type === 'content_block_delta') {
-            if (evt.delta.type === 'text_delta') {
-              const text = evt.delta.text
-              fullResponse += text
+          // Criar stream para esta iteração
+          const currentStreamParams = {
+            ...streamParams,
+            messages: currentMessages
+          }
+          const stream = await anthropic.messages.stream(currentStreamParams)
 
-              // Enviar chunk
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: text })}\n\n`)
-              )
-            } else if (evt.delta.type === 'thinking_delta') {
-              thinking += evt.delta.thinking || ''
-            } else if (evt.delta.type === 'input_json_delta' && currentToolCall) {
-              currentToolCall.input += evt.delta.partial_json || ''
-            }
-          } else if (evt.type === 'content_block_stop' && currentToolCall) {
-            // Tool call completa, processar
-            try {
-              const toolInput = JSON.parse(currentToolCall.input || '{}')
-              toolCalls.push({
-                id: currentToolCall.id,
-                name: currentToolCall.name,
-                input: toolInput
-              })
+          const toolCallsThisIteration: Array<{ id: string; name: string; input: Record<string, unknown>; result: unknown }> = []
+          let currentToolCall: { id: string; name: string; input: string } | null = null
+          const assistantContent: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }> = []
+          let stopReason = ''
 
-              // Executar tool
-              console.log('[Chat API] Executando tool:', currentToolCall.name)
-              console.log('[Chat API] Tool input parsed:', JSON.stringify(toolInput))
+          for await (const event of stream) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const evt = event as any
 
-              const toolResult = await executarTool(currentToolCall.name, toolInput, user_id)
-
-              console.log('[Chat API] Tool result success:', toolResult.success)
-              console.log('[Chat API] Tool result has data:', !!toolResult.data)
-              if (toolResult.error) {
-                console.error('[Chat API] Tool error:', toolResult.error)
+            if (evt.type === 'content_block_start') {
+              if (evt.content_block?.type === 'tool_use') {
+                currentToolCall = { id: evt.content_block.id, name: evt.content_block.name, input: '' }
+              } else if (evt.content_block?.type === 'text') {
+                // Início de bloco de texto
               }
+            } else if (evt.type === 'content_block_delta') {
+              if (evt.delta.type === 'text_delta') {
+                const text = evt.delta.text
+                fullResponse += text
 
-              // Enviar resultado da tool como evento
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({
-                  type: 'tool_result',
-                  tool_name: currentToolCall.name,
-                  result: toolResult.data,
-                  error: toolResult.error
-                })}\n\n`)
-              )
-
-              // Adicionar resposta textual baseada no resultado
-              if (toolResult.success && toolResult.data) {
-                const toolResponseText = formatToolResponse(currentToolCall.name, toolResult.data)
-                fullResponse += toolResponseText
+                // Enviar chunk
                 controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({ type: 'text', content: toolResponseText })}\n\n`)
+                  encoder.encode(`data: ${JSON.stringify({ type: 'text', content: text })}\n\n`)
                 )
+              } else if (evt.delta.type === 'thinking_delta') {
+                thinking += evt.delta.thinking || ''
+              } else if (evt.delta.type === 'input_json_delta' && currentToolCall) {
+                currentToolCall.input += evt.delta.partial_json || ''
               }
-            } catch (parseError) {
-              console.error('[Chat API] Erro ao processar tool call:', parseError)
-              console.error('[Chat API] Tool name:', currentToolCall.name)
-              console.error('[Chat API] Tool input:', currentToolCall.input)
-            }
-            currentToolCall = null
-          } else if (evt.type === 'message_delta') {
-            if (evt.usage) {
-              tokensOutput = evt.usage.output_tokens || 0
-            }
-          } else if (evt.type === 'message_start') {
-            if (evt.message?.usage) {
-              tokensInput = evt.message.usage.input_tokens
+            } else if (evt.type === 'content_block_stop') {
+              if (currentToolCall) {
+                // Tool call completa, processar
+                try {
+                  const toolInput = JSON.parse(currentToolCall.input || '{}')
+
+                  // Executar tool
+                  console.log('[Chat API] Executando tool:', currentToolCall.name)
+
+                  const toolResult = await executarTool(currentToolCall.name, toolInput, user_id)
+
+                  console.log('[Chat API] Tool result success:', toolResult.success)
+                  if (toolResult.error) {
+                    console.error('[Chat API] Tool error:', toolResult.error)
+                  }
+
+                  // Enviar resultado da tool como evento para o frontend
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({
+                      type: 'tool_result',
+                      tool_name: currentToolCall.name,
+                      result: toolResult.data,
+                      error: toolResult.error
+                    })}\n\n`)
+                  )
+
+                  // Adicionar resposta textual formatada
+                  if (toolResult.success && toolResult.data) {
+                    const toolResponseText = formatToolResponse(currentToolCall.name, toolResult.data)
+                    fullResponse += toolResponseText
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify({ type: 'text', content: toolResponseText })}\n\n`)
+                    )
+                  }
+
+                  // Guardar para o próximo loop
+                  toolCallsThisIteration.push({
+                    id: currentToolCall.id,
+                    name: currentToolCall.name,
+                    input: toolInput,
+                    result: toolResult.data || { error: toolResult.error }
+                  })
+
+                  // Adicionar ao content do assistant
+                  assistantContent.push({
+                    type: 'tool_use',
+                    id: currentToolCall.id,
+                    name: currentToolCall.name,
+                    input: toolInput
+                  })
+                } catch (parseError) {
+                  console.error('[Chat API] Erro ao processar tool call:', parseError)
+                }
+                currentToolCall = null
+              }
+            } else if (evt.type === 'message_delta') {
+              if (evt.usage) {
+                tokensOutput += evt.usage.output_tokens || 0
+              }
+              if (evt.delta?.stop_reason) {
+                stopReason = evt.delta.stop_reason
+              }
+            } else if (evt.type === 'message_start') {
+              if (evt.message?.usage) {
+                tokensInput += evt.message.usage.input_tokens
+              }
             }
           }
+
+          // Se não houve tool calls ou o stop_reason é end_turn, terminamos
+          if (toolCallsThisIteration.length === 0 || stopReason === 'end_turn') {
+            console.log('[Chat API] Finalizando - stop_reason:', stopReason, 'tools:', toolCallsThisIteration.length)
+            break
+          }
+
+          // Preparar mensagens para próxima iteração (continuar após tool use)
+          console.log('[Chat API] Continuando após tool use...')
+
+          // Adicionar resposta do assistant com tool_use
+          currentMessages.push({
+            role: 'assistant',
+            content: assistantContent.length > 0 ? assistantContent : [{ type: 'text', text: fullResponse }]
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          } as any)
+
+          // Adicionar resultados das tools
+          const toolResults = toolCallsThisIteration.map(tc => ({
+            type: 'tool_result',
+            tool_use_id: tc.id,
+            content: JSON.stringify(tc.result)
+          }))
+
+          currentMessages.push({
+            role: 'user',
+            content: toolResults
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          } as any)
         }
 
         // Salvar resposta no banco
