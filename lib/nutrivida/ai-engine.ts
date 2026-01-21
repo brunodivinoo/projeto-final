@@ -161,8 +161,8 @@ Tente novamente mais tarde!`,
     proteinas: 20,
     carboidratos: 40,
     gorduras: 15,
-    observacao: 'Nao foi possivel analisar a imagem. Valores estimados.',
-    dica: 'Tente tirar uma foto mais clara e bem iluminada.'
+    dica: 'Tente tirar uma foto mais clara e bem iluminada.',
+    nota_saude: 5
   }
 }
 
