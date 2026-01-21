@@ -1,10 +1,10 @@
-const CACHE_NAME = 'nutrimae-v1';
-const OFFLINE_URL = '/nutrimae/offline';
+const CACHE_NAME = 'nutrivida-v1';
+const OFFLINE_URL = '/nutrivida/offline';
 
 // Assets to cache immediately
 const PRECACHE_ASSETS = [
-  '/nutrimae/login',
-  '/nutrimae/dashboard',
+  '/nutrivida/login',
+  '/nutrivida/dashboard',
   '/manifest.json'
 ];
 
@@ -87,17 +87,17 @@ self.addEventListener('push', (event) => {
   if (event.data) {
     const data = event.data.json();
     const options = {
-      body: data.body || 'Nova notificacao do NutriMae!',
-      icon: '/icons/nutrimae-192.png',
-      badge: '/icons/nutrimae-72.png',
+      body: data.body || 'Nova notificacao do NutriVida!',
+      icon: '/icons/nutrivida-192.png',
+      badge: '/icons/nutrivida-72.png',
       vibrate: [100, 50, 100],
       data: {
-        url: data.url || '/nutrimae/dashboard'
+        url: data.url || '/nutrivida/dashboard'
       }
     };
 
     event.waitUntil(
-      self.registration.showNotification(data.title || 'NutriMae', options)
+      self.registration.showNotification(data.title || 'NutriVida', options)
     );
   }
 });
@@ -110,13 +110,13 @@ self.addEventListener('notificationclick', (event) => {
     clients.matchAll({ type: 'window' }).then((clientList) => {
       // If app is already open, focus it
       for (const client of clientList) {
-        if (client.url.includes('/nutrimae') && 'focus' in client) {
+        if (client.url.includes('/nutrivida') && 'focus' in client) {
           return client.focus();
         }
       }
       // Otherwise open new window
       if (clients.openWindow) {
-        return clients.openWindow(event.notification.data.url || '/nutrimae/dashboard');
+        return clients.openWindow(event.notification.data.url || '/nutrivida/dashboard');
       }
     })
   );

@@ -1,69 +1,19 @@
 {
-  "name": "NutriMae - Sua Jornada Fitness",
-  "short_name": "NutriMae",
-  "description": "App de nutricao e saude para maes - Controle de alimentacao, agua, treinos e suplementos",
-  "start_url": "/nutrimae/login",
+  "name": "NutriVida - Saude Feminina",
+  "short_name": "NutriVida",
+  "description": "App de nutricao e bem-estar feminino - Gestantes, maes e mulheres em geral",
+  "start_url": "/nutrivida/login",
   "display": "standalone",
   "background_color": "#fdf2f8",
   "theme_color": "#ec4899",
   "orientation": "portrait-primary",
-  "scope": "/nutrimae",
+  "scope": "/nutrivida",
   "icons": [
     {
-      "src": "/icons/nutrimae-72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/nutrimae-96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/nutrimae-128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/nutrimae-144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/nutrimae-152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/nutrimae-192.png",
+      "src": "/icons/nutrivida-192.svg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/nutrimae-384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/nutrimae-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/screenshots/nutrimae-mobile.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
     }
   ],
   "categories": ["health", "fitness", "lifestyle"],

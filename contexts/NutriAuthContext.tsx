@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback,
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
-// Tipos específicos do NutriMãe
+// Tipos específicos do NutriVida (App de saude feminina)
 export interface ProfileNUTRI {
   id: string
   nome: string | null
@@ -113,7 +113,7 @@ export function NutriAuthProvider({ children }: { children: ReactNode }) {
           .from('profiles_nutri')
           .insert({
             id: userId,
-            nome: userName || userEmail?.split('@')[0] || 'Mamãe',
+            nome: userName || userEmail?.split('@')[0] || 'Usuaria',
             email: userEmail,
             plano: 'normal',
             amamentando: false
