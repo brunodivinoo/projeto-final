@@ -563,15 +563,11 @@ async function streamClaude(params: StreamClaudeParams) {
             }
           }
 
-          // Se não houve tool calls ou o stop_reason é end_turn, terminamos
-          if (toolCallsThisIteration.length === 0 || stopReason === 'end_turn') {
-            console.log('[Chat API] Finalizando - stop_reason:', stopReason, 'tools:', toolCallsThisIteration.length)
-            break
-          }
-
+          // IMPORTANTE: Verificar max_tokens PRIMEIRO, antes de verificar end_turn
           // Se a resposta foi cortada por max_tokens, CONTINUAR automaticamente
-          if (stopReason === 'max_tokens' && toolCallsThisIteration.length === 0) {
+          if (stopReason === 'max_tokens') {
             continuationCount++
+            console.log(`[Chat API] Resposta cortada por max_tokens (continuação ${continuationCount}/${MAX_CONTINUATIONS})`)
 
             // Se atingiu limite de continuações, parar
             if (continuationCount > MAX_CONTINUATIONS) {
@@ -584,7 +580,7 @@ async function streamClaude(params: StreamClaudeParams) {
               break
             }
 
-            console.log(`[Chat API] Resposta cortada por max_tokens - continuando automaticamente (${continuationCount}/${MAX_CONTINUATIONS})...`)
+            console.log(`[Chat API] Continuando automaticamente de onde parou...`)
 
             // Adicionar mensagem parcial do assistant e pedir para continuar
             currentMessages.push({
@@ -595,12 +591,18 @@ async function streamClaude(params: StreamClaudeParams) {
 
             currentMessages.push({
               role: 'user',
-              content: 'Continue exatamente de onde parou, sem repetir o que já foi dito. Mantenha a formatação.'
+              content: 'Continue exatamente de onde parou, sem repetir o que já foi dito. Mantenha a formatação e o contexto.'
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any)
 
             // Continuar para próxima iteração (vai chamar a API novamente)
             continue
+          }
+
+          // Se não houve tool calls ou o stop_reason é end_turn, terminamos
+          if (toolCallsThisIteration.length === 0 || stopReason === 'end_turn') {
+            console.log('[Chat API] Finalizando - stop_reason:', stopReason, 'tools:', toolCallsThisIteration.length)
+            break
           }
 
           // Preparar mensagens para próxima iteração (continuar após tool use)

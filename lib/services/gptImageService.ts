@@ -1595,40 +1595,43 @@ export function buildMedicalImagePrompt(params: MedicalImagePromptParams): strin
     if (mistakesLine) keyInfo += mistakesLine.substring(0, 200)
   }
 
+  // IMPORTANTE: Reforçar múltiplas vezes a proibição de texto para DALL-E respeitar
+  const noTextRules = `REGRA ABSOLUTA: A imagem NÃO PODE conter NENHUM texto, letra, número, palavra, legenda, rótulo, anotação, seta com texto, watermark ou qualquer forma de escrita. A imagem deve ser PURAMENTE VISUAL, como uma fotografia real ou ilustração de atlas médico SEM legendas. Se incluir qualquer texto, a imagem será rejeitada.`
+
   const templates: Record<string, string> = {
-    anatomy: `Ilustração anatômica médica profissional: ${structure}
+    anatomy: `Fotografia hiper-realista de alta resolução mostrando: ${structure}
 ${view ? `Vista: ${view}` : 'Vista anterior'}
 ${keyInfo}
-Estilo: Atlas Netter/Sobotta, fotorrealista. Cores anatômicas corretas (artérias=vermelho vivo, veias=azul escuro, nervos=amarelo, músculos=vermelho-rosado, ossos=bege). Iluminação profissional, fundo neutro.
-${additionalDetails ? `Detalhes: ${additionalDetails.substring(0, 200)}` : ''}
-PROIBIDO: texto, legendas, números, letras, setas com texto.`.trim(),
+Qualidade: Como fotografia de atlas anatômico real (Netter, Sobotta, Gray's Anatomy). FOTORREALISMO EXTREMO - deve parecer uma fotografia real de dissecção ou modelo anatômico 3D de alta fidelidade. Cores anatômicas precisas e realistas. Iluminação de estúdio profissional, fundo preto ou gradiente neutro escuro.
+${additionalDetails ? additionalDetails.substring(0, 150) : ''}
+${noTextRules}`.trim(),
 
-    histology: `Fotomicrografia histológica: ${structure}
-Coloração H&E, aumento 400x.
+    histology: `Fotomicrografia histológica REAL de ${structure}
+Coloração H&E padrão, aumento 400x, microscopia óptica de alta qualidade.
 ${keyInfo}
-Núcleos roxo/azul (hematoxilina), citoplasma rosa (eosina). Foco nítido, iluminação Köhler.
-${additionalDetails ? `Detalhes: ${additionalDetails.substring(0, 200)}` : ''}
-PROIBIDO: texto, escala, régua, números, letras.`.trim(),
+Qualidade: Deve parecer uma foto REAL tirada de microscópio óptico. Núcleos em roxo/azul escuro (hematoxilina), citoplasma em rosa/eosinófilo (eosina). Foco cristalino, iluminação Köhler perfeita, como em livro de histologia (Junqueira, Ross).
+${additionalDetails ? additionalDetails.substring(0, 150) : ''}
+${noTextRules}`.trim(),
 
-    radiology: `Imagem radiológica: ${structure}
-${view || 'Radiografia AP'}
+    radiology: `Imagem radiológica diagnóstica real: ${structure}
+${view || 'Radiografia PA'}
 ${keyInfo}
-Escala de cinza diagnóstica. Ossos=branco, ar=preto, tecidos moles=cinza. Contraste adequado, qualidade diagnóstica.
-${additionalDetails ? `Detalhes: ${additionalDetails.substring(0, 200)}` : ''}
-PROIBIDO: texto, lateralidade, dados paciente, marcadores.`.trim(),
+Qualidade: Deve parecer um exame de imagem REAL. Escala de cinza com contraste diagnóstico ideal. Ossos=branco brilhante, ar=preto, partes moles=tons de cinza. Qualidade de radiografia digital moderna.
+${additionalDetails ? additionalDetails.substring(0, 150) : ''}
+${noTextRules}`.trim(),
 
-    pathology: `Fotografia patológica: ${structure}
-${view || 'Macroscopia'}
+    pathology: `Fotografia macroscópica de peça anatômica real: ${structure}
+${view || 'Vista macroscópica'}
 ${keyInfo}
-Fotografia real de peça anatômica. Iluminação profissional, fundo neutro. Cores naturais do tecido.
-${additionalDetails ? `Detalhes: ${additionalDetails.substring(0, 200)}` : ''}
-PROIBIDO: texto, régua, etiquetas, números.`.trim(),
+Qualidade: Fotografia profissional de patologia como em Robbins ou atlas de patologia. Cores naturais realistas do tecido, iluminação de estúdio, fundo neutro (azul cirúrgico ou preto).
+${additionalDetails ? additionalDetails.substring(0, 150) : ''}
+${noTextRules}`.trim(),
 
-    diagram: `Diagrama médico educacional: ${structure}
+    diagram: `Ilustração médica educacional de alta qualidade: ${structure}
 ${keyInfo}
-Estilo limpo e profissional. Cores vibrantes, design moderno. Setas podem indicar fluxo (sem texto).
-${additionalDetails ? `Detalhes: ${additionalDetails.substring(0, 200)}` : ''}
-PROIBIDO: qualquer texto, palavra, letra, número ou legenda.`.trim()
+Qualidade: Estilo de ilustração científica moderna, cores vibrantes mas anatomicamente precisas. Design clean e profissional como em livros médicos contemporâneos. Pode usar setas simples para indicar fluxo, mas SEM NENHUM TEXTO nas setas.
+${additionalDetails ? additionalDetails.substring(0, 150) : ''}
+${noTextRules}`.trim()
   }
 
   return templates[type] || templates.anatomy
