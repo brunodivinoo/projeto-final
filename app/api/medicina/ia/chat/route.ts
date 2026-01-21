@@ -2,9 +2,10 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 
-// Configuração de runtime para permitir execução mais longa (geração de imagens)
+// Configuração de runtime para permitir execução mais longa
+// Imagem (25s) + Questões em lote (60s+) = precisa de pelo menos 90s
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60 // 60 segundos para acomodar geração de imagens
+export const maxDuration = 120 // 120 segundos (máximo do Vercel Pro para Serverless)
 import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
