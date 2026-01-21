@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { NutriAuthProvider, useNutriAuth } from '@/contexts/NutriAuthContext'
+import { ServiceWorkerRegistration } from '@/components/nutrimae/ServiceWorkerRegistration'
 import {
   Home,
   UtensilsCrossed,
@@ -259,6 +260,7 @@ export default function NutrimaeDashboardLayout({
 }) {
   return (
     <NutriAuthProvider>
+      <ServiceWorkerRegistration />
       <DashboardContent>{children}</DashboardContent>
     </NutriAuthProvider>
   )
