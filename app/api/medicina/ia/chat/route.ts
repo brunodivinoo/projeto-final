@@ -448,7 +448,8 @@ async function streamClaude(params: StreamClaudeParams) {
           const currentStreamParams = {
             ...streamParams,
             messages: currentMessages
-          }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          } as any
           const stream = await anthropic.messages.stream(currentStreamParams)
 
           const toolCallsThisIteration: Array<{ id: string; name: string; input: Record<string, unknown>; result: unknown }> = []
