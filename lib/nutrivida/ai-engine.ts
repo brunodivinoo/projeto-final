@@ -528,8 +528,7 @@ export async function analisarFotoPrato(
               },
               {
                 type: 'image',
-                image: imageBase64,
-                mimeType: mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+                image: `data:${mimeType};base64,${imageBase64}`
               }
             ]
           }
