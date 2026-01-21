@@ -395,11 +395,9 @@ async function streamClaude(params: StreamClaudeParams) {
   }
 
   // Configurar parâmetros
-  // max_tokens aumentado para evitar cortes em respostas longas
-  // Claude Opus suporta até 32k output, Sonnet até 16k
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   // max_tokens reduzido para evitar timeout do Vercel (120s)
   // Se a resposta for cortada, a auto-continuação vai pedir mais
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const streamParams: any = {
     model: modeloSelecionado,
     max_tokens: canUseExtendedThinking ? 16000 : 8000,
