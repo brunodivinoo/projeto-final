@@ -539,19 +539,40 @@ async function streamClaude(params: StreamClaudeParams) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } as any)
 
-          // Adicionar resultados das tools
-          const toolResults = toolCallsThisIteration.map(tc => ({
-            type: 'tool_result',
-            tool_use_id: tc.id,
-            content: JSON.stringify(tc.result)
-          }))
+          // Adicionar resultados das tools (com tratamento especial para imagens)
+          const toolResults = toolCallsThisIteration.map(tc => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let resultContent: any = tc.result
+
+            // Se for imagem, não passar o base64 de volta (muito grande)
+            // Passar apenas confirmação de que foi gerada
+            if (tc.name === 'gerar_imagem_medica' && resultContent?.imagem_url) {
+              resultContent = {
+                success: true,
+                estrutura: resultContent.estrutura,
+                descricao: resultContent.descricao,
+                tipo: resultContent.tipo,
+                mensagem: `Imagem de "${resultContent.estrutura}" gerada com sucesso e já exibida ao usuário.`
+              }
+            }
+
+            return {
+              type: 'tool_result',
+              tool_use_id: tc.id,
+              content: JSON.stringify(resultContent)
+            }
+          })
 
           currentMessages.push({
             role: 'user',
             content: toolResults
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } as any)
+
+          console.log('[Chat API] Mensagens atualizadas, iniciando próxima iteração...')
         }
+
+        console.log('[Chat API] Agentic loop finalizado após', iterationCount, 'iterações')
 
         // Salvar resposta no banco
         await supabase
