@@ -47,6 +47,7 @@ const useArtifactsSidebar = () => {
 interface ImagemGerada {
   id: string
   url: string
+  storageUrl?: string // URL permanente do Supabase Storage
   estrutura: string
   descricao: string
 }
@@ -260,15 +261,57 @@ export default function IAPage() {
       setActiveConversation(chatMode as StoreChatMode, conversaId)
 
       if (data.mensagens && Array.isArray(data.mensagens)) {
-        const msgs: Mensagem[] = data.mensagens.map((m: { id: string; role: string; content: string; created_at: string; has_image?: boolean; has_pdf?: boolean; tokens?: number }) => ({
-          id: m.id,
-          tipo: m.role === 'user' ? 'usuario' : 'ia',
-          conteudo: m.content,
-          timestamp: new Date(m.created_at),
-          hasImage: m.has_image,
-          hasPdf: m.has_pdf,
-          tokens: m.tokens
-        }))
+        const msgs: Mensagem[] = data.mensagens.map((m: { id: string; role: string; content: string; created_at: string; has_image?: boolean; has_pdf?: boolean; tokens?: number }) => {
+          const msg: Mensagem = {
+            id: m.id,
+            tipo: m.role === 'user' ? 'usuario' : 'ia',
+            conteudo: m.content,
+            timestamp: new Date(m.created_at),
+            hasImage: m.has_image,
+            hasPdf: m.has_pdf,
+            tokens: m.tokens
+          }
+
+          // Extrair imagens do conteúdo e reconstruir artefatos
+          // Formato: [GENERATED_IMAGE:id:storageUrl] ou [GENERATED_IMAGE:id]
+          const imageMatches = m.content.matchAll(/\[GENERATED_IMAGE:([^:\]]+)(?::([^\]]+))?\]/g)
+          for (const match of imageMatches) {
+            const imageId = match[1]
+            const storageUrl = match[2]
+
+            if (storageUrl && storageUrl.startsWith('http')) {
+              console.log('[IA Page] Reconstruindo artefato de imagem:', imageId)
+
+              // Adicionar ao store de artefatos
+              try {
+                const { addImageArtifact } = useArtifactsStore.getState()
+                addImageArtifact(
+                  {
+                    url: storageUrl,
+                    source: 'generated',
+                    imageType: 'anatomy'
+                  },
+                  'Imagem Médica Gerada',
+                  conversaId,
+                  m.id
+                )
+              } catch (err) {
+                console.error('[IA Page] Erro ao reconstruir artefato de imagem:', err)
+              }
+
+              // Adicionar info de imagem à mensagem
+              msg.imagemGerada = {
+                id: imageId,
+                url: storageUrl,
+                storageUrl: storageUrl,
+                estrutura: 'Imagem Médica',
+                descricao: ''
+              }
+            }
+          }
+
+          return msg
+        })
         console.log('[IA Page] Mensagens processadas:', msgs.length)
         setMensagens(msgs)
       } else {
@@ -475,16 +518,23 @@ export default function IAPage() {
                 console.log('[IA Page] Tool result recebido:', data.tool_name)
 
                 // Processar imagem gerada
-                if (data.tool_name === 'gerar_imagem_medica' && data.result?.imagem_url) {
+                if (data.tool_name === 'gerar_imagem_medica' && (data.result?.imagem_url || data.result?.imagem_base64)) {
                   console.log('[IA Page] Imagem gerada! Adicionando ao chat...')
-                  console.log('[IA Page] URL length:', data.result.imagem_url.length)
+
+                  // Preferir URL do storage, fallback para base64
+                  const storageUrl = data.result.imagem_url?.startsWith('http') ? data.result.imagem_url : null
+                  const displayUrl = data.result.imagem_base64 || data.result.imagem_url
+                  console.log('[IA Page] Storage URL:', storageUrl ? 'disponível' : 'não disponível')
+                  console.log('[IA Page] Display URL length:', displayUrl?.length || 0)
 
                   // Armazenar imagem para renderização
                   const imagemId = `img-${Date.now()}`
-                  const imagemUrl = data.result.imagem_url
 
-                  // Adicionar marcador especial no conteúdo (será substituído na renderização)
-                  const imagemMarcador = `\n\n[GENERATED_IMAGE:${imagemId}]\n\n*Imagem gerada com DALL-E 3 para fins educacionais.*`
+                  // Adicionar marcador especial no conteúdo com a URL do storage para persistência
+                  // Formato: [GENERATED_IMAGE:id:storageUrl]
+                  const imagemMarcador = storageUrl
+                    ? `\n\n[GENERATED_IMAGE:${imagemId}:${storageUrl}]\n\n*Imagem gerada com DALL-E 3 para fins educacionais.*`
+                    : `\n\n[GENERATED_IMAGE:${imagemId}]\n\n*Imagem gerada com DALL-E 3 para fins educacionais.*`
                   fullResponse += imagemMarcador
 
                   // Atualizar mensagem com marcador e dados da imagem
@@ -495,7 +545,8 @@ export default function IAPage() {
                           conteudo: fullResponse,
                           imagemGerada: {
                             id: imagemId,
-                            url: imagemUrl,
+                            url: displayUrl, // URL para exibição imediata (pode ser base64)
+                            storageUrl: storageUrl, // URL permanente do storage
                             estrutura: data.result.estrutura || 'Imagem Médica',
                             descricao: data.result.descricao || ''
                           }
@@ -510,7 +561,7 @@ export default function IAPage() {
 
                     const newArtifactId = addImageArtifact(
                       {
-                        url: imagemUrl,
+                        url: storageUrl || displayUrl, // Preferir storage URL para persistência
                         source: 'generated',
                         prompt: data.result.descricao || '',
                         structure: data.result.estrutura || '',
@@ -1099,14 +1150,20 @@ export default function IAPage() {
                               </p>
                             </div>
                             <img
-                              src={msg.imagemGerada.url}
+                              src={msg.imagemGerada.storageUrl || msg.imagemGerada.url}
                               alt={msg.imagemGerada.descricao || msg.imagemGerada.estrutura}
                               className="w-full max-w-lg mx-auto"
                               style={{ display: 'block' }}
                               onError={(e) => {
                                 console.error('[IA Page] Erro ao carregar imagem')
                                 const target = e.target as HTMLImageElement
-                                target.style.display = 'none'
+                                // Se falhar com storage URL, tentar URL original
+                                if (msg.imagemGerada?.storageUrl && target.src === msg.imagemGerada.storageUrl) {
+                                  console.log('[IA Page] Tentando fallback para URL original')
+                                  target.src = msg.imagemGerada.url
+                                } else {
+                                  target.style.display = 'none'
+                                }
                               }}
                               onLoad={() => {
                                 console.log('[IA Page] Imagem carregada com sucesso!')

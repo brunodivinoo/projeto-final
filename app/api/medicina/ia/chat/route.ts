@@ -19,6 +19,7 @@ import {
 import { SYSTEM_PROMPT_PREMIUM, SYSTEM_PROMPT_RESIDENCIA } from '@/lib/ai/prompts'
 import { MODELOS, DOMINIOS_MEDICOS } from '@/lib/ai/config'
 import { PREPARAMED_TOOLS, executarTool } from '@/lib/ai/tools'
+import { uploadImageToStorage, isBase64Image } from '@/lib/storage'
 
 // Formatar resposta de tool para exibição
 function formatToolResponse(toolName: string, data: unknown): string {
@@ -483,12 +484,34 @@ async function streamClaude(params: StreamClaudeParams) {
                     console.error('[Chat API] Tool error:', toolResult.error)
                   }
 
+                  // Se for imagem gerada, fazer upload para storage permanente
+                  let processedResult = toolResult.data
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const toolData = toolResult.data as Record<string, any> | undefined
+                  if (currentToolCall.name === 'gerar_imagem_medica' && toolData?.imagem_url) {
+                    const imageUrl = toolData.imagem_url as string
+                    if (isBase64Image(imageUrl)) {
+                      console.log('[Chat API] Fazendo upload da imagem para storage...')
+                      const storageUrl = await uploadImageToStorage(imageUrl, user_id, conversa_id)
+                      if (storageUrl) {
+                        console.log('[Chat API] Imagem salva no storage:', storageUrl)
+                        processedResult = {
+                          ...toolData,
+                          imagem_url: storageUrl,
+                          imagem_base64: imageUrl // Manter base64 para exibição imediata
+                        }
+                      } else {
+                        console.error('[Chat API] Falha ao salvar imagem no storage')
+                      }
+                    }
+                  }
+
                   // Enviar resultado da tool como evento para o frontend
                   controller.enqueue(
                     encoder.encode(`data: ${JSON.stringify({
                       type: 'tool_result',
                       tool_name: currentToolCall.name,
-                      result: toolResult.data,
+                      result: processedResult,
                       error: toolResult.error
                     })}\n\n`)
                   )
