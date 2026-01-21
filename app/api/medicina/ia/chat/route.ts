@@ -398,9 +398,11 @@ async function streamClaude(params: StreamClaudeParams) {
   // max_tokens aumentado para evitar cortes em respostas longas
   // Claude Opus suporta até 32k output, Sonnet até 16k
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // max_tokens reduzido para evitar timeout do Vercel (120s)
+  // Se a resposta for cortada, a auto-continuação vai pedir mais
   const streamParams: any = {
     model: modeloSelecionado,
-    max_tokens: canUseExtendedThinking ? 32000 : 16000,
+    max_tokens: canUseExtendedThinking ? 16000 : 8000,
     system: systemPrompt,
     messages,
     stream: true,
@@ -429,6 +431,15 @@ async function streamClaude(params: StreamClaudeParams) {
       let continuationCount = 0 // Contador de continuações por max_tokens
       const MAX_ITERATIONS = 10 // Limite de iterações (tools + continuações)
       const MAX_CONTINUATIONS = 3 // Limite de continuações automáticas por max_tokens
+
+      // Heartbeat para manter conexão viva (a cada 25s)
+      const heartbeatInterval = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(`: heartbeat\n\n`))
+        } catch {
+          // Controller já fechado, ignorar
+        }
+      }, 25000)
 
       try {
         // Agentic loop - continua até o Claude terminar ou atingir limite
@@ -683,8 +694,10 @@ async function streamClaude(params: StreamClaudeParams) {
           })}\n\n`)
         )
 
+        clearInterval(heartbeatInterval)
         controller.close()
       } catch (error) {
+        clearInterval(heartbeatInterval)
         console.error('Erro no stream Claude:', error)
         const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
 
