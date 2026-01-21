@@ -491,8 +491,10 @@ export default function IAPage() {
 
                   // Adicionar aos artefatos e abrir sidebar
                   try {
-                    const { addImageArtifact, setSidebarOpen, setCategoryFilter } = useArtifactsStore.getState()
-                    addImageArtifact(
+                    const { addImageArtifact, setSidebarOpen, artifacts } = useArtifactsStore.getState()
+                    console.log('[IA Page] Artefatos ANTES:', artifacts.length)
+
+                    const newArtifactId = addImageArtifact(
                       {
                         url: imagemUrl,
                         source: 'generated',
@@ -504,7 +506,13 @@ export default function IAPage() {
                       conversaAtual || '',
                       respostaId
                     )
-                    setCategoryFilter('images_generated')
+
+                    // Verificar estado após adicionar
+                    const stateAfter = useArtifactsStore.getState()
+                    console.log('[IA Page] Artefatos DEPOIS:', stateAfter.artifacts.length)
+                    console.log('[IA Page] Novo artefato ID:', newArtifactId)
+                    console.log('[IA Page] Sidebar open?:', stateAfter.isSidebarOpen)
+
                     setSidebarOpen(true)
                     console.log('[IA Page] Imagem adicionada aos artefatos!')
                   } catch (err) {
