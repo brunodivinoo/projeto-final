@@ -494,8 +494,6 @@ export async function chatNutriIA(
           })),
           { role: 'user' as const, content: mensagem }
         ],
-        maxTokens: 1000,
-        temperature: 0.7,
       })
       return text
     })
@@ -536,7 +534,6 @@ export async function analisarFotoPrato(
             ]
           }
         ],
-        maxTokens: 1000,
       })
       return object
     })
@@ -592,7 +589,6 @@ Inclua lista de compras organizada por categoria.`
         schema: PlanoSemanalSchema,
         system: SYSTEM_PROMPTS.plano_semanal,
         prompt,
-        maxTokens: 4000,
       })
       return object
     })
@@ -637,8 +633,6 @@ Siga o formato obrigatorio do sistema.`
         model: MODELS.primary,
         system: SYSTEM_PROMPTS.receita_ia,
         prompt,
-        maxTokens: 1500,
-        temperature: 0.8,
       })
       return text
     })
@@ -693,7 +687,6 @@ Forneca uma analise motivadora e sugestoes praticas considerando a situacao da u
         schema: CoachResponseSchema,
         system: SYSTEM_PROMPTS.nutri_coach,
         prompt,
-        maxTokens: 800,
       })
       return object
     })
@@ -737,7 +730,6 @@ Seja motivadora e especifica para essa fase da vida.`
       model: MODELS.fallback,
       system: 'Voce da dicas rapidas de nutricao e bem-estar feminino. Seja breve e pratica.',
       prompt,
-      maxTokens: 100,
     })
 
     setCache(cacheKey, text)
