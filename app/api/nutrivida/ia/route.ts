@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
 // =====================================================
 export async function PUT(request: NextRequest) {
   try {
-    const { tipo, ingredientes, restricoes, tempoMax, userId, observacao, perfil } = await request.json()
+    const { tipo, ingredientes, restricoes, tempoMax, userId, observacao, perfil, novaReceita } = await request.json()
 
     // Combinar restricoes com observacao do usuario
     let restricoesCompletas = restricoes || ''
@@ -147,8 +147,8 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Usar o novo engine de IA avancado
-    const receita = await gerarReceita(tipo, ingredientes, restricoesCompletas, tempoMax)
+    // Usar o novo engine de IA avancado - passa novaReceita para forcar nova geracao
+    const receita = await gerarReceita(tipo, ingredientes, restricoesCompletas, tempoMax, undefined, novaReceita === true)
 
     // NAO salvar automaticamente - deixar usuario decidir
     return NextResponse.json({ receita })

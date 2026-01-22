@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNutriAuth } from '@/contexts/NutriAuthContext'
 import { supabase } from '@/lib/supabase'
 import { ALIMENTOS_DATABASE } from '@/lib/nutrivida/data'
@@ -17,7 +17,8 @@ import {
   Bot,
   Loader2,
   Package,
-  Share2
+  Share2,
+  CheckCircle2
 } from 'lucide-react'
 
 interface ItemCarrinho {
@@ -37,6 +38,13 @@ interface AlimentoSugerido {
   quantidade_compra: string
   calorias: number
   proteinas: number
+}
+
+// Toast notification para feedback visual
+interface Toast {
+  id: number
+  mensagem: string
+  tipo: 'sucesso' | 'erro' | 'info'
 }
 
 const CATEGORIAS = Object.keys(ALIMENTOS_DATABASE)
@@ -65,6 +73,17 @@ export default function ComprasPage() {
   const [buscandoIA, setBuscandoIA] = useState(false)
   const [sugestoesIA, setSugestoesIA] = useState<AlimentoSugerido[]>([])
   const [modoIA, setModoIA] = useState(false)
+  const [toasts, setToasts] = useState<Toast[]>([])
+  const [adicionandoItem, setAdicionandoItem] = useState<string | null>(null)
+
+  // Funcao para mostrar toast
+  const mostrarToast = useCallback((mensagem: string, tipo: Toast['tipo'] = 'sucesso') => {
+    const id = Date.now()
+    setToasts(prev => [...prev, { id, mensagem, tipo }])
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id))
+    }, 2500)
+  }, [])
 
   useEffect(() => {
     const fetchLista = async () => {
@@ -144,14 +163,18 @@ export default function ComprasPage() {
     categoria: string,
     unidade: string = 'un',
     quantidade_compra: string = '1 unidade'
-  ) => {
-    if (!profile?.id) return
+  ): Promise<boolean> => {
+    if (!profile?.id) return false
+
+    setAdicionandoItem(nome)
 
     // Verificar se ja existe
     const existente = itens.find(i => i.nome.toLowerCase() === nome.toLowerCase())
     if (existente) {
       await alterarQuantidade(existente.id, 1)
-      return
+      mostrarToast(`${nome} - quantidade aumentada!`, 'info')
+      setAdicionandoItem(null)
+      return true
     }
 
     try {
@@ -179,9 +202,19 @@ export default function ComprasPage() {
           quantidade_compra: data.quantidade_compra || '1 unidade',
           comprado: data.comprado
         }])
+        mostrarToast(`✓ ${nome} adicionado à lista!`, 'sucesso')
+        setAdicionandoItem(null)
+        return true
+      } else {
+        mostrarToast(`Erro ao adicionar ${nome}`, 'erro')
+        setAdicionandoItem(null)
+        return false
       }
     } catch (err) {
       console.error('Erro ao adicionar item:', err)
+      mostrarToast(`Erro ao adicionar ${nome}`, 'erro')
+      setAdicionandoItem(null)
+      return false
     }
   }
 
@@ -336,6 +369,23 @@ export default function ComprasPage() {
 
   return (
     <div className="space-y-6 pb-20 lg:pb-6">
+      {/* Toast Notifications */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-in slide-in-from-top fade-in duration-300 ${
+              toast.tipo === 'sucesso' ? 'bg-green-500 text-white' :
+              toast.tipo === 'erro' ? 'bg-red-500 text-white' :
+              'bg-purple-500 text-white'
+            }`}
+          >
+            <CheckCircle2 className="w-5 h-5" />
+            <span className="font-medium text-sm">{toast.mensagem}</span>
+          </div>
+        ))}
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -560,29 +610,43 @@ export default function ComprasPage() {
                 {/* Resultados IA */}
                 {sugestoesIA.length > 0 && (
                   <div className="mt-4 space-y-2">
-                    <p className="text-sm text-gray-500 mb-2">Sugestoes da IA:</p>
-                    {sugestoesIA.map((sug, i) => (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          adicionarItem(sug.nome, sug.categoria, sug.unidade, sug.quantidade_compra)
-                          setSugestoesIA(prev => prev.filter((_, idx) => idx !== i))
-                        }}
-                        className="w-full p-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-xl text-left hover:from-purple-100 hover:to-pink-100 transition-colors"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="font-medium text-gray-800">{sug.nome}</p>
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full capitalize">
-                            {sug.categoria}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-gray-500">
-                          <span>{sug.calorias} kcal</span>
-                          <span>{sug.proteinas}g proteina</span>
-                          <span className="ml-auto">{sug.quantidade_compra}</span>
-                        </div>
-                      </button>
-                    ))}
+                    <p className="text-sm text-gray-500 mb-2">Sugestoes da IA: <span className="text-purple-600 font-medium">clique para adicionar</span></p>
+                    {sugestoesIA.map((sug, i) => {
+                      const isAdicionando = adicionandoItem === sug.nome
+                      return (
+                        <button
+                          key={i}
+                          onClick={async () => {
+                            const sucesso = await adicionarItem(sug.nome, sug.categoria, sug.unidade, sug.quantidade_compra)
+                            if (sucesso) {
+                              setSugestoesIA(prev => prev.filter((_, idx) => idx !== i))
+                            }
+                          }}
+                          disabled={isAdicionando}
+                          className={`w-full p-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-xl text-left transition-all ${
+                            isAdicionando ? 'opacity-70 scale-95' : 'hover:from-purple-100 hover:to-pink-100 hover:scale-[1.02]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-medium text-gray-800 flex items-center gap-2">
+                              {isAdicionando && <Loader2 className="w-4 h-4 animate-spin text-purple-500" />}
+                              {sug.nome}
+                            </p>
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full capitalize">
+                              {sug.categoria}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-gray-500">
+                            <span>{sug.calorias} kcal</span>
+                            <span>{sug.proteinas}g proteina</span>
+                            <span className="ml-auto flex items-center gap-1">
+                              <Plus className="w-3 h-3" />
+                              {sug.quantidade_compra}
+                            </span>
+                          </div>
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
 
@@ -637,30 +701,46 @@ export default function ComprasPage() {
                         </button>
                         {(categoriaAberta === cat || busca) && (
                           <div className="px-4 pb-4 grid grid-cols-2 gap-2">
-                            {alimentos.map((alimento) => (
-                              <button
-                                key={alimento.nome}
-                                onClick={() => {
-                                  adicionarItem(
-                                    alimento.nome,
-                                    cat,
-                                    alimento.unidade || 'un',
-                                    alimento.quantidade_compra || '1 unidade'
-                                  )
-                                  if (!busca) setModalAberto(false)
-                                }}
-                                className="p-3 bg-green-50 rounded-xl text-left hover:bg-green-100 transition-colors"
-                              >
-                                <p className="text-sm font-medium text-gray-800">{alimento.nome}</p>
-                                <p className="text-xs text-gray-500">{alimento.porcao}</p>
-                                {alimento.quantidade_compra && (
-                                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                                    <Package className="w-3 h-3" />
-                                    {alimento.quantidade_compra}
+                            {alimentos.map((alimento) => {
+                              const isAdicionando = adicionandoItem === alimento.nome
+                              const jaAdicionado = itens.some(i => i.nome.toLowerCase() === alimento.nome.toLowerCase())
+                              return (
+                                <button
+                                  key={alimento.nome}
+                                  onClick={async () => {
+                                    await adicionarItem(
+                                      alimento.nome,
+                                      cat,
+                                      alimento.unidade || 'un',
+                                      alimento.quantidade_compra || '1 unidade'
+                                    )
+                                  }}
+                                  disabled={isAdicionando}
+                                  className={`p-3 rounded-xl text-left transition-all relative ${
+                                    jaAdicionado
+                                      ? 'bg-green-100 border-2 border-green-300'
+                                      : 'bg-green-50 hover:bg-green-100'
+                                  } ${isAdicionando ? 'opacity-70 scale-95' : 'hover:scale-[1.02]'}`}
+                                >
+                                  {jaAdicionado && (
+                                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                      <Check className="w-3 h-3 text-white" />
+                                    </div>
+                                  )}
+                                  <p className="text-sm font-medium text-gray-800 flex items-center gap-1">
+                                    {isAdicionando && <Loader2 className="w-3 h-3 animate-spin text-green-600" />}
+                                    {alimento.nome}
                                   </p>
-                                )}
-                              </button>
-                            ))}
+                                  <p className="text-xs text-gray-500">{alimento.porcao}</p>
+                                  {alimento.quantidade_compra && (
+                                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                                      <Package className="w-3 h-3" />
+                                      {alimento.quantidade_compra}
+                                    </p>
+                                  )}
+                                </button>
+                              )
+                            })}
                           </div>
                         )}
                       </div>

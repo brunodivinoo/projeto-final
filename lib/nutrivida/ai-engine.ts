@@ -607,16 +607,40 @@ export async function gerarReceita(
   ingredientes?: string[],
   restricoes?: string,
   tempoMax?: number,
-  perfil?: ProfileContext
+  perfil?: ProfileContext,
+  forcarNovaReceita?: boolean // Adiciona parametro para forcar nova receita
 ): Promise<string> {
-  const cacheKey = getCacheKey(`receita:${tipo}`, ingredientes?.join(','))
-  const cached = getFromCache(cacheKey)
-  if (cached) return cached
+  // So usa cache se nao for pedido explicito por nova receita
+  if (!forcarNovaReceita) {
+    const cacheKey = getCacheKey(`receita:${tipo}`, ingredientes?.join(','))
+    const cached = getFromCache(cacheKey)
+    if (cached) return cached
+  }
 
   const isGestante = perfil?.semana_gestacao ? true : false
   const isAmamentando = perfil?.amamentando ? true : false
 
-  const prompt = `Crie uma receita ${tipo} saudavel.
+  // Variacoes para diversificar receitas
+  const estilos = ['caseira', 'rapida', 'criativa', 'fit', 'confortante', 'leve']
+  const estiloAleatorio = estilos[Math.floor(Math.random() * estilos.length)]
+
+  const variadores = [
+    'Use ingredientes diferentes da ultima vez.',
+    'Seja criativo com temperos e ervas.',
+    'Sugira uma versao inovadora.',
+    'Pense em uma combinacao inesperada mas deliciosa.',
+    'Foque em praticidade e sabor.',
+    'Priorize ingredientes da estacao.'
+  ]
+  const variadorAleatorio = variadores[Math.floor(Math.random() * variadores.length)]
+
+  // Timestamp para garantir unicidade
+  const timestamp = Date.now()
+
+  const prompt = `Crie uma receita ${tipo} ${estiloAleatorio} e saudavel.
+
+IMPORTANTE: ${variadorAleatorio}
+ID da receita: #${timestamp} (use isso para garantir que seja uma receita DIFERENTE a cada vez)
 
 ${ingredientes?.length ? `Ingredientes disponiveis: ${ingredientes.join(', ')}` : ''}
 ${restricoes ? `Restricoes: ${restricoes}` : ''}
@@ -624,7 +648,23 @@ ${tempoMax ? `Tempo maximo: ${tempoMax} minutos` : ''}
 ${isGestante ? 'IMPORTANTE: A receita deve ser SEGURA para gestantes!' : ''}
 ${isAmamentando ? 'IMPORTANTE: Priorizar ingredientes bons para lactacao!' : ''}
 
-Siga o formato obrigatorio do sistema.`
+Siga o formato obrigatorio:
+NOME: [nome criativo da receita]
+TEMPO: [XX minutos]
+RENDIMENTO: [X porcoes]
+CALORIAS: [XXX kcal por porcao]
+PROTEINAS: [XX g]
+
+INGREDIENTES:
+- [quantidade] [ingrediente]
+- [...]
+
+MODO DE PREPARO:
+1. [passo detalhado]
+2. [...]
+
+DICA NUTRI: [dica especial]
+VARIACAO: [sugestao de substituicao]`
 
   try {
     const result = await withRetry(async () => {
@@ -632,11 +672,16 @@ Siga o formato obrigatorio do sistema.`
         model: MODELS.primary,
         system: SYSTEM_PROMPTS.receita_ia,
         prompt,
+        temperature: 0.9, // Aumenta temperatura para mais variedade
       })
       return text
     })
 
-    setCache(cacheKey, result)
+    // So cacheia se nao for refresh forcado
+    if (!forcarNovaReceita) {
+      const cacheKey = getCacheKey(`receita:${tipo}`, ingredientes?.join(','))
+      setCache(cacheKey, result)
+    }
     return result
   } catch (error) {
     console.error('Erro ao gerar receita:', error)

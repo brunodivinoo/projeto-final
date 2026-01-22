@@ -167,64 +167,138 @@ export default function ReceitasPage() {
     ? favoritas.filter(r => r.tipo === filtroTipo)
     : favoritas
 
-  // Formatar receita com estilo bonito
+  // Formatar receita com estilo bonito - suporta multiplos formatos de IA
   const formatarReceita = (texto: string) => {
+    // Pre-processar o texto para normalizar formato
+    let textoNormalizado = texto
+      // Normalizar asteriscos de markdown para quebras de secao
+      .replace(/\*\*([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s]+?):\*\*/gi, '\n$1:')
+      // Remover asteriscos soltos
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      // Normalizar bullets
+      .replace(/•/g, '-')
+      // Adicionar quebra antes de secoes conhecidas que nao tem
+      .replace(/(INGREDIENTES|MODO DE PREPARO|PREPARO|DICA|VARIAÇÃO|VARIACAO|CALORIAS|PROTEÍNAS|PROTEINAS|TEMPO|RENDIMENTO):/gi, '\n$1:')
+
     // Dividir em secoes
-    const linhas = texto.split('\n')
+    const linhas = textoNormalizado.split('\n')
     const secoes: { titulo: string; conteudo: string[] }[] = []
     let secaoAtual: { titulo: string; conteudo: string[] } | null = null
+    let nomeReceita = ''
 
     for (const linha of linhas) {
       const linhaLimpa = linha.trim()
       if (!linhaLimpa) continue
 
-      // Verificar se e um titulo de secao
-      if (linhaLimpa.match(/^(NOME|TEMPO|RENDIMENTO|CALORIAS|PROTE[IÍ]NAS?|INGREDIENTES|MODO DE PREPARO|DICA|VARIA[ÇC][AÃ]O|SEGURA?):/i)) {
+      // Padroes de titulos de secao (mais abrangente)
+      const matchSecao = linhaLimpa.match(/^(NOME|TEMPO|RENDIMENTO|CALORIAS|PROTE[IÍ]NAS?|INGREDIENTES|MODO DE PREPARO|PREPARO|DICA|VARIA[ÇC][AÃ]O|SEGURA?|INFO(?:RMAÇÕES)?(?:\s+NUTRICIONAIS)?)\s*:/i)
+
+      if (matchSecao) {
         if (secaoAtual) {
           secoes.push(secaoAtual)
         }
-        const [titulo, ...resto] = linhaLimpa.split(':')
+        const tituloMatch = matchSecao[1].toUpperCase()
+        const conteudoRestante = linhaLimpa.slice(matchSecao[0].length).trim()
+
+        // Guardar nome da receita separadamente
+        if (tituloMatch === 'NOME' && conteudoRestante) {
+          nomeReceita = conteudoRestante
+        }
+
         secaoAtual = {
-          titulo: titulo.toUpperCase(),
-          conteudo: resto.join(':').trim() ? [resto.join(':').trim()] : []
+          titulo: tituloMatch,
+          conteudo: conteudoRestante ? [conteudoRestante] : []
         }
       } else if (secaoAtual) {
-        secaoAtual.conteudo.push(linhaLimpa)
+        // Limpar item de lista
+        const itemLimpo = linhaLimpa
+          .replace(/^[-•]\s*/, '')
+          .replace(/^\d+[\.\)]\s*/, '')
+          .trim()
+        if (itemLimpo) {
+          secaoAtual.conteudo.push(itemLimpo)
+        }
+      } else {
+        // Texto antes de qualquer secao - pode ser o nome
+        if (!nomeReceita && linhaLimpa.length > 3 && linhaLimpa.length < 100) {
+          nomeReceita = linhaLimpa
+        }
       }
     }
     if (secaoAtual) {
       secoes.push(secaoAtual)
     }
 
+    // Se nao encontrou secoes estruturadas, tenta parse mais agressivo
+    if (secoes.length === 0) {
+      return (
+        <div className="bg-gray-50 rounded-xl p-4">
+          <p className="text-gray-700 whitespace-pre-wrap">{texto}</p>
+        </div>
+      )
+    }
+
+    // Extrair info nutricional do header
+    const headerInfos: { label: string; valor: string }[] = []
+    const secoesPrincipais: typeof secoes = []
+
+    for (const secao of secoes) {
+      if (['NOME', 'TEMPO', 'RENDIMENTO', 'CALORIAS', 'PROTEINAS', 'PROTEÍNAS'].includes(secao.titulo)) {
+        if (secao.titulo !== 'NOME' && secao.conteudo.length > 0) {
+          headerInfos.push({
+            label: secao.titulo,
+            valor: secao.conteudo.join(' ')
+          })
+        }
+      } else {
+        secoesPrincipais.push(secao)
+      }
+    }
+
     return (
       <div className="space-y-4">
-        {secoes.map((secao, i) => {
-          const isHeader = ['NOME', 'TEMPO', 'RENDIMENTO', 'CALORIAS', 'PROTEINAS', 'PROTEÍNAS'].includes(secao.titulo)
-          const isIngredientes = secao.titulo === 'INGREDIENTES'
-          const isModo = secao.titulo.includes('MODO') || secao.titulo.includes('PREPARO')
-          const isDica = secao.titulo.includes('DICA') || secao.titulo.includes('VARIA')
+        {/* Nome da receita */}
+        {nomeReceita && (
+          <div className="pb-3 border-b border-pink-100">
+            <h3 className="text-xl font-bold text-gray-800">{nomeReceita}</h3>
+          </div>
+        )}
 
-          if (isHeader) {
-            return (
-              <div key={i} className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-pink-600 uppercase">{secao.titulo}:</span>
-                <span className="text-gray-800">{secao.conteudo.join(' ')}</span>
+        {/* Info cards (tempo, calorias, etc) */}
+        {headerInfos.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {headerInfos.map((info, i) => (
+              <div key={i} className="px-3 py-1.5 bg-gradient-to-r from-pink-50 to-purple-50 rounded-full flex items-center gap-1.5 border border-pink-100">
+                {info.label === 'TEMPO' && <Clock className="w-3.5 h-3.5 text-pink-500" />}
+                {(info.label === 'CALORIAS') && <Flame className="w-3.5 h-3.5 text-orange-500" />}
+                {(info.label === 'PROTEINAS' || info.label === 'PROTEÍNAS') && <Dumbbell className="w-3.5 h-3.5 text-purple-500" />}
+                {info.label === 'RENDIMENTO' && <Utensils className="w-3.5 h-3.5 text-green-500" />}
+                <span className="text-xs font-medium text-gray-700">{info.valor}</span>
               </div>
-            )
-          }
+            ))}
+          </div>
+        )}
+
+        {/* Secoes principais */}
+        {secoesPrincipais.map((secao, i) => {
+          const isIngredientes = secao.titulo === 'INGREDIENTES'
+          const isModo = secao.titulo.includes('MODO') || secao.titulo === 'PREPARO'
+          const isDica = secao.titulo.includes('DICA') || secao.titulo.includes('VARIA')
+          const isInfo = secao.titulo.includes('INFO')
 
           if (isIngredientes) {
             return (
               <div key={i} className="bg-pink-50 rounded-xl p-4">
-                <h4 className="font-semibold text-pink-700 mb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-pink-700 mb-3 flex items-center gap-2">
                   <Utensils className="w-4 h-4" />
                   Ingredientes
                 </h4>
-                <ul className="space-y-1">
+                <ul className="space-y-2">
                   {secao.conteudo.map((item, j) => (
                     <li key={j} className="text-gray-700 text-sm flex items-start gap-2">
-                      <span className="text-pink-400 mt-1">•</span>
-                      {item.replace(/^-\s*/, '')}
+                      <span className="w-1.5 h-1.5 bg-pink-400 rounded-full mt-2 flex-shrink-0"></span>
+                      <span>{item}</span>
                     </li>
                   ))}
                 </ul>
@@ -235,17 +309,17 @@ export default function ReceitasPage() {
           if (isModo) {
             return (
               <div key={i} className="bg-purple-50 rounded-xl p-4">
-                <h4 className="font-semibold text-purple-700 mb-2 flex items-center gap-2">
+                <h4 className="font-semibold text-purple-700 mb-3 flex items-center gap-2">
                   <ChefHat className="w-4 h-4" />
                   Modo de Preparo
                 </h4>
-                <ol className="space-y-2">
+                <ol className="space-y-3">
                   {secao.conteudo.map((item, j) => (
-                    <li key={j} className="text-gray-700 text-sm flex items-start gap-2">
-                      <span className="flex-shrink-0 w-5 h-5 bg-purple-200 text-purple-700 rounded-full text-xs flex items-center justify-center font-semibold">
+                    <li key={j} className="text-gray-700 text-sm flex items-start gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 bg-purple-200 text-purple-700 rounded-full text-xs flex items-center justify-center font-bold">
                         {j + 1}
                       </span>
-                      <span>{item.replace(/^\d+\.\s*/, '')}</span>
+                      <span className="pt-0.5">{item}</span>
                     </li>
                   ))}
                 </ol>
@@ -256,9 +330,21 @@ export default function ReceitasPage() {
           if (isDica) {
             return (
               <div key={i} className="bg-green-50 rounded-xl p-4 border border-green-100">
-                <h4 className="font-semibold text-green-700 mb-1 flex items-center gap-2">
+                <h4 className="font-semibold text-green-700 mb-2 flex items-center gap-2">
                   <Leaf className="w-4 h-4" />
-                  {secao.titulo.includes('VARIA') ? 'Variacao' : 'Dica Nutri'}
+                  {secao.titulo.includes('VARIA') ? 'Variação' : 'Dica Nutri'}
+                </h4>
+                <p className="text-gray-700 text-sm leading-relaxed">{secao.conteudo.join(' ')}</p>
+              </div>
+            )
+          }
+
+          if (isInfo) {
+            return (
+              <div key={i} className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                <h4 className="font-semibold text-blue-700 mb-2 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Informações Nutricionais
                 </h4>
                 <p className="text-gray-700 text-sm">{secao.conteudo.join(' ')}</p>
               </div>

@@ -1704,7 +1704,7 @@ export function buildMedicalImagePrompt(params: MedicalImagePromptParams): strin
 
   const templates: Record<string, string> = {
     anatomy: `Fotografia hiper-realista de alta resolução mostrando: ${structure}
-${view ? `Vista: ${view}` : 'Vista anterior'}
+VISTA OBRIGATÓRIA: ${vistaDetectada}
 ${keyInfo}
 Qualidade: Como fotografia de atlas anatômico real (Netter, Sobotta, Gray's Anatomy). FOTORREALISMO EXTREMO - deve parecer uma fotografia real de dissecção ou modelo anatômico 3D de alta fidelidade. Cores anatômicas precisas e realistas. Iluminação de estúdio profissional, fundo preto ou gradiente neutro escuro.
 ${additionalDetails ? additionalDetails.substring(0, 150) : ''}

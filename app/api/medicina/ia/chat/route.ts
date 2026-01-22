@@ -427,7 +427,7 @@ async function streamClaude(params: StreamClaudeParams) {
       let iterationCount = 0
       let continuationCount = 0 // Contador de continuações por max_tokens
       const MAX_ITERATIONS = 10 // Limite de iterações (tools + continuações)
-      const MAX_CONTINUATIONS = 3 // Limite de continuações automáticas por max_tokens
+      const MAX_CONTINUATIONS = 5 // Limite de continuações automáticas por max_tokens (aumentado para garantir respostas completas)
 
       // Heartbeat para manter conexão viva (a cada 25s)
       const heartbeatInterval = setInterval(() => {
@@ -591,6 +591,21 @@ async function streamClaude(params: StreamClaudeParams) {
 
             console.log(`[Chat API] Continuando automaticamente de onde parou...`)
 
+            // MELHORIA: Detectar o que foi cortado para pedir continuação específica
+            const faltaReferencias = !fullResponse.includes('Referências') && !fullResponse.includes('📚')
+            const faltaQuestoes = fullResponse.includes('questões') && 
+              (fullResponse.match(/\*\*\d+\./g) || []).length < 5 // Se prometeu questões mas tem menos de 5
+            
+            let promptContinuacao = 'Continue EXATAMENTE de onde parou, sem repetir o que já foi dito. Mantenha a formatação e complete TODO o conteúdo prometido.'
+            
+            if (faltaQuestoes) {
+              promptContinuacao = 'Continue de onde parou. COMPLETE TODAS as questões prometidas (até chegar no número total pedido) e depois adicione as referências bibliográficas em formato ABNT.'
+            } else if (faltaReferencias) {
+              promptContinuacao = 'Continue de onde parou e COMPLETE com as referências bibliográficas em formato ABNT ao final.'
+            }
+            
+            console.log(`[Chat API] Prompt de continuação: ${promptContinuacao.substring(0, 50)}...`)
+
             // Adicionar mensagem parcial do assistant e pedir para continuar
             currentMessages.push({
               role: 'assistant',
@@ -600,7 +615,7 @@ async function streamClaude(params: StreamClaudeParams) {
 
             currentMessages.push({
               role: 'user',
-              content: 'Continue exatamente de onde parou, sem repetir o que já foi dito. Mantenha a formatação e o contexto.'
+              content: promptContinuacao
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any)
 
