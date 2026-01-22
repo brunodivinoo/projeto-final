@@ -1,12 +1,13 @@
 'use client'
 
-import { useMemo, useEffect, useRef, useState } from 'react'
+import { useMemo, useEffect, useRef, useState, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism'
 import { useArtifactsStore, detectArtifactType, Question, type ChatModeType } from '@/stores/artifactsStore'
+import { extractReferences, processCitations, type Reference, CITATION_REGEX } from './CitationTooltip'
 
 // Importar MermaidDiagram dinamicamente para evitar SSR issues
 const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
@@ -1286,6 +1287,16 @@ export default function ArtifactRenderer({
   // Extrair termos de busca de imagens médicas reais
   const imageSearchTerms = useMemo(() => extractImageSearchTerms(content), [content])
 
+  // Extrair referências/fontes do conteúdo para citações interativas
+  const references = useMemo(() => extractReferences(content), [content])
+
+  // Função para renderizar texto com citações interativas
+  const renderTextWithCitations = useCallback((text: string | React.ReactNode): React.ReactNode => {
+    if (typeof text !== 'string') return text
+    if (references.length === 0 || !CITATION_REGEX.test(text)) return text
+    return processCitations(text, references)
+  }, [references])
+
   // Adicionar artefatos à store quando detectados
   useEffect(() => {
     if (artifacts.length === 0) return
@@ -1399,12 +1410,25 @@ export default function ArtifactRenderer({
                   </h4>
                 ),
 
-                // Paragraphs - texto menor
-                p: ({ children }) => (
-                  <p className="text-white/80 leading-relaxed mb-2 text-sm">
-                    {children}
-                  </p>
-                ),
+                // Paragraphs - texto menor com suporte a citações interativas
+                p: ({ children }) => {
+                  // Processar citações no texto
+                  const processedChildren = Array.isArray(children)
+                    ? children.map((child, i) =>
+                        typeof child === 'string'
+                          ? <span key={i}>{renderTextWithCitations(child)}</span>
+                          : child
+                      )
+                    : typeof children === 'string'
+                      ? renderTextWithCitations(children)
+                      : children
+
+                  return (
+                    <p className="text-white/80 leading-relaxed mb-2 text-sm">
+                      {processedChildren}
+                    </p>
+                  )
+                },
 
                 // Lists - espaçamento reduzido
                 ul: ({ children }) => (
@@ -1417,11 +1441,24 @@ export default function ArtifactRenderer({
                     {children}
                   </ol>
                 ),
-                li: ({ children }) => (
-                  <li className="text-white/80 text-sm">
-                    {children}
-                  </li>
-                ),
+                li: ({ children }) => {
+                  // Processar citações em itens de lista
+                  const processedChildren = Array.isArray(children)
+                    ? children.map((child, i) =>
+                        typeof child === 'string'
+                          ? <span key={i}>{renderTextWithCitations(child)}</span>
+                          : child
+                      )
+                    : typeof children === 'string'
+                      ? renderTextWithCitations(children)
+                      : children
+
+                  return (
+                    <li className="text-white/80 text-sm">
+                      {processedChildren}
+                    </li>
+                  )
+                },
 
                 // Strong and emphasis
                 strong: ({ children }) => (

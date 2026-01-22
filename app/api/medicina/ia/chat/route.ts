@@ -395,11 +395,11 @@ async function streamClaude(params: StreamClaudeParams) {
   }
 
   // Configurar parâmetros
-  // max_tokens reduzido para evitar timeout do Vercel (120s)
-  // Se a resposta for cortada, a auto-continuação vai pedir mais
+  // max_tokens aumentado para respostas mais completas
+  // A auto-continuação vai pedir mais se necessário
   const streamParams: Record<string, unknown> = {
     model: modeloSelecionado,
-    max_tokens: canUseExtendedThinking ? 16000 : 8000,
+    max_tokens: canUseExtendedThinking ? 16000 : 12000, // Aumentado para evitar cortes
     system: systemPrompt,
     messages,
     stream: true,
@@ -592,19 +592,27 @@ async function streamClaude(params: StreamClaudeParams) {
             console.log(`[Chat API] Continuando automaticamente de onde parou...`)
 
             // MELHORIA: Detectar o que foi cortado para pedir continuação específica
-            const faltaReferencias = !fullResponse.includes('Referências') && !fullResponse.includes('📚')
-            const faltaQuestoes = fullResponse.includes('questões') && 
+            const faltaFontes = !fullResponse.includes('📚 **Fontes:**') &&
+                               !fullResponse.includes('Referências') &&
+                               !fullResponse.includes('**Fontes:**') &&
+                               !fullResponse.includes('[1]') // Se não tem nem a primeira citação inline
+            const faltaQuestoes = fullResponse.includes('questões') &&
               (fullResponse.match(/\*\*\d+\./g) || []).length < 5 // Se prometeu questões mas tem menos de 5
-            
+            const terminouAbruptamente = fullResponse.endsWith('...') ||
+              fullResponse.endsWith('-') ||
+              /[a-z,]$/.test(fullResponse.trim()) // Termina com letra minúscula ou vírgula
+
             let promptContinuacao = 'Continue EXATAMENTE de onde parou, sem repetir o que já foi dito. Mantenha a formatação e complete TODO o conteúdo prometido.'
-            
+
             if (faltaQuestoes) {
-              promptContinuacao = 'Continue de onde parou. COMPLETE TODAS as questões prometidas (até chegar no número total pedido) e depois adicione as referências bibliográficas em formato ABNT.'
-            } else if (faltaReferencias) {
-              promptContinuacao = 'Continue de onde parou e COMPLETE com as referências bibliográficas em formato ABNT ao final.'
+              promptContinuacao = 'Continue de onde parou. COMPLETE TODAS as questões prometidas (até chegar no número total pedido) e depois adicione a seção de fontes no formato: 📚 **Fontes:** [1] Autor...'
+            } else if (faltaFontes && !terminouAbruptamente) {
+              promptContinuacao = 'Continue de onde parou. ADICIONE OBRIGATORIAMENTE a seção de fontes no final no formato: 📚 **Fontes:** seguido de [1], [2], [3]... com as referências bibliográficas.'
+            } else if (terminouAbruptamente) {
+              promptContinuacao = 'Continue EXATAMENTE de onde parou (a resposta foi cortada no meio). Complete o conteúdo e NÃO ESQUEÇA de incluir a seção 📚 **Fontes:** ao final.'
             }
-            
-            console.log(`[Chat API] Prompt de continuação: ${promptContinuacao.substring(0, 50)}...`)
+
+            console.log(`[Chat API] Prompt de continuação: ${promptContinuacao.substring(0, 80)}...`)
 
             // Adicionar mensagem parcial do assistant e pedir para continuar
             currentMessages.push({

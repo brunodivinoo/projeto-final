@@ -1,9 +1,12 @@
-// Serviço de Busca de Imagens Médicas Reais
+// Serviço de Busca de Imagens Médicas - Fontes Brasileiras
 // ============================================
-// ORDEM DE PRIORIDADE:
+// ORDEM DE PRIORIDADE (FONTES BRASILEIRAS CONFIÁVEIS):
 // 1. Wikipedia PT (português brasileiro) - legendas em português
 // 2. Wikimedia Commons Medical - imagens de qualidade com licença
-// 3. OpenI (NIH) - fallback para imagens em inglês
+// 3. Sites educacionais BR (InfoEscola, Brasil Escola, Toda Matéria)
+//
+// NOTA: Priorizamos fontes brasileiras e em português para
+// garantir legendas e contexto educacional adequado.
 // ============================================
 
 export interface MedicalImage {
@@ -12,8 +15,9 @@ export interface MedicalImage {
   thumbUrl: string
   title: string
   caption: string
-  source: 'wikipedia_pt' | 'openi' | 'wikimedia'
+  source: 'wikipedia_pt' | 'wikimedia' | 'educacional_br' | 'openi'
   sourceUrl: string
+  sourceName?: string // Nome do site fonte (ex: "InfoEscola", "Brasil Escola")
   modality?: string
   license: string
 }
@@ -409,6 +413,56 @@ interface WikipediaPTSearchResult {
   }
 }
 
+// Termos de busca em português para melhorar resultados
+const PORTUGUESE_SEARCH_TERMS: Record<string, string[]> = {
+  'heart': ['coração', 'sistema cardiovascular', 'anatomia cardíaca'],
+  'lung': ['pulmão', 'sistema respiratório', 'anatomia pulmonar'],
+  'brain': ['cérebro', 'sistema nervoso', 'neuroanatomia'],
+  'liver': ['fígado', 'hepatologia', 'anatomia hepática'],
+  'kidney': ['rim', 'sistema urinário', 'nefrologia'],
+  'stomach': ['estômago', 'sistema digestivo', 'gastroenterologia'],
+  'intestine': ['intestino', 'trato gastrointestinal'],
+  'bone': ['osso', 'sistema esquelético', 'osteologia'],
+  'muscle': ['músculo', 'sistema muscular', 'miologia'],
+  'skin': ['pele', 'dermatologia', 'sistema tegumentar'],
+  'eye': ['olho', 'oftalmologia', 'anatomia ocular'],
+  'ear': ['ouvido', 'otologia', 'anatomia auricular'],
+  'spine': ['coluna vertebral', 'medula espinhal'],
+  'blood': ['sangue', 'hematologia', 'sistema circulatório'],
+  'cell': ['célula', 'citologia', 'biologia celular'],
+  'histology': ['histologia', 'tecido', 'microscopia'],
+  'anatomy': ['anatomia', 'anatomia humana'],
+  'pathology': ['patologia', 'doença'],
+  'pneumonia': ['pneumonia', 'infecção pulmonar'],
+  'fracture': ['fratura', 'trauma ósseo'],
+  'cancer': ['câncer', 'oncologia', 'neoplasia'],
+  'diabetes': ['diabetes', 'endocrinologia'],
+  'hypertension': ['hipertensão', 'pressão arterial'],
+}
+
+/**
+ * Gera variações em português para melhorar busca
+ */
+function getPortugueseSearchVariations(query: string): string[] {
+  const variations: string[] = [query]
+  const lowerQuery = query.toLowerCase()
+
+  // Adicionar variações em português
+  for (const [en, ptTerms] of Object.entries(PORTUGUESE_SEARCH_TERMS)) {
+    if (lowerQuery.includes(en)) {
+      variations.push(...ptTerms)
+    }
+  }
+
+  // Adicionar sufixos comuns para melhorar busca médica
+  if (!lowerQuery.includes('anatomia') && !lowerQuery.includes('medicina')) {
+    variations.push(`${query} anatomia`)
+    variations.push(`${query} medicina`)
+  }
+
+  return [...new Set(variations)]
+}
+
 /**
  * Busca imagens na Wikipedia em Português
  * Esta é a FONTE PRIORITÁRIA pois:
@@ -417,68 +471,78 @@ interface WikipediaPTSearchResult {
  * - Licença livre (CC/domínio público)
  */
 async function searchWikipediaPT(query: string, limit: number = 10): Promise<MedicalImage[]> {
-  try {
-    // Primeiro, buscar páginas relevantes
-    const searchResponse = await fetch(
-      `https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + ' anatomia medicina')}&format=json&srlimit=${limit * 2}&origin=*`,
-      { signal: AbortSignal.timeout(10000) }
-    )
+  // Gerar variações em português do termo de busca
+  const searchVariations = getPortugueseSearchVariations(query)
+  const allImages: MedicalImage[] = []
 
-    if (!searchResponse.ok) {
-      console.error('[WikipediaPT] Search error:', searchResponse.status)
-      return []
-    }
+  for (const searchTerm of searchVariations.slice(0, 3)) { // Limitar a 3 variações
+    try {
+      // Primeiro, buscar páginas relevantes
+      const searchResponse = await fetch(
+        `https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchTerm)}&format=json&srlimit=${limit * 2}&origin=*`,
+        { signal: AbortSignal.timeout(10000) }
+      )
 
-    const searchData: WikipediaPTSearchResult = await searchResponse.json()
-    const searchResults = searchData.query?.search || []
-
-    if (searchResults.length === 0) {
-      console.log('[WikipediaPT] Nenhum resultado para:', query)
-      return []
-    }
-
-    // Pegar os pageids para buscar imagens
-    const pageIds = searchResults.slice(0, limit).map(r => r.pageid).join('|')
-
-    // Buscar detalhes das páginas com imagens
-    const detailsResponse = await fetch(
-      `https://pt.wikipedia.org/w/api.php?action=query&pageids=${pageIds}&prop=pageimages|info|extracts&piprop=thumbnail|original&pithumbsize=400&exintro=1&explaintext=1&exsentences=2&inprop=url&format=json&origin=*`,
-      { signal: AbortSignal.timeout(10000) }
-    )
-
-    if (!detailsResponse.ok) {
-      console.error('[WikipediaPT] Details error:', detailsResponse.status)
-      return []
-    }
-
-    const detailsData: WikipediaPTSearchResult = await detailsResponse.json()
-    const pages = detailsData.query?.pages || {}
-
-    const images: MedicalImage[] = []
-
-    for (const page of Object.values(pages)) {
-      // Só incluir se tiver imagem
-      if (page.thumbnail?.source || page.original?.source) {
-        images.push({
-          id: `wikipt-${page.pageid}`,
-          url: page.original?.source || page.thumbnail?.source || '',
-          thumbUrl: page.thumbnail?.source || page.original?.source || '',
-          title: page.title,
-          caption: page.extract || `Artigo sobre ${page.title} na Wikipedia`,
-          source: 'wikipedia_pt' as const,
-          sourceUrl: page.fullurl || `https://pt.wikipedia.org/wiki/${encodeURIComponent(page.title)}`,
-          modality: 'Medical',
-          license: 'Wikipedia - CC BY-SA 3.0'
-        })
+      if (!searchResponse.ok) {
+        console.error('[WikipediaPT] Search error:', searchResponse.status)
+        continue
       }
-    }
 
-    console.log(`[WikipediaPT] Encontradas ${images.length} imagens para: ${query}`)
-    return images
-  } catch (error) {
-    console.error('[WikipediaPT] Erro:', error)
-    return []
+      const searchData: WikipediaPTSearchResult = await searchResponse.json()
+      const searchResults = searchData.query?.search || []
+
+      if (searchResults.length === 0) {
+        console.log('[WikipediaPT] Nenhum resultado para:', searchTerm)
+        continue
+      }
+
+      // Pegar os pageids para buscar imagens
+      const pageIds = searchResults.slice(0, limit).map(r => r.pageid).join('|')
+
+      // Buscar detalhes das páginas com imagens
+      const detailsResponse = await fetch(
+        `https://pt.wikipedia.org/w/api.php?action=query&pageids=${pageIds}&prop=pageimages|info|extracts&piprop=thumbnail|original&pithumbsize=500&exintro=1&explaintext=1&exsentences=3&inprop=url&format=json&origin=*`,
+        { signal: AbortSignal.timeout(10000) }
+      )
+
+      if (!detailsResponse.ok) {
+        console.error('[WikipediaPT] Details error:', detailsResponse.status)
+        continue
+      }
+
+      const detailsData: WikipediaPTSearchResult = await detailsResponse.json()
+      const pages = detailsData.query?.pages || {}
+
+      for (const page of Object.values(pages)) {
+        // Só incluir se tiver imagem e não for duplicata
+        if ((page.thumbnail?.source || page.original?.source) &&
+            !allImages.some(img => img.id === `wikipt-${page.pageid}`)) {
+          allImages.push({
+            id: `wikipt-${page.pageid}`,
+            url: page.original?.source || page.thumbnail?.source || '',
+            thumbUrl: page.thumbnail?.source || page.original?.source || '',
+            title: page.title,
+            caption: page.extract || `Artigo sobre ${page.title} na Wikipedia`,
+            source: 'wikipedia_pt' as const,
+            sourceUrl: page.fullurl || `https://pt.wikipedia.org/wiki/${encodeURIComponent(page.title)}`,
+            sourceName: 'Wikipedia PT',
+            modality: 'Medical',
+            license: 'Wikipedia - CC BY-SA 3.0'
+          })
+        }
+      }
+
+      // Se encontrou resultados suficientes, parar
+      if (allImages.length >= limit) break
+
+    } catch (error) {
+      console.error('[WikipediaPT] Erro:', error)
+      continue
+    }
   }
+
+  console.log(`[WikipediaPT] Encontradas ${allImages.length} imagens para: ${query}`)
+  return allImages.slice(0, limit)
 }
 
 // ==========================================
@@ -651,25 +715,45 @@ async function searchWikimedia(query: string, limit: number = 10): Promise<Medic
 
 /**
  * Busca imagens médicas com sistema inteligente:
- * 1. Traduz automaticamente PT → EN
- * 2. Tenta múltiplas variações do termo
- * 3. Fallback progressivo (específico → genérico)
+ * 1. PRIORIZA fontes brasileiras (Wikipedia PT)
+ * 2. Usa variações em português do termo
+ * 3. Fallback para Wikimedia Commons
  * 4. Cache de resultados
  * 5. Retorna sugestões quando não encontra
+ *
+ * NOTA: OpenI foi removido como fonte para priorizar
+ * conteúdo em português brasileiro.
  */
 export async function searchMedicalImages(
   query: string,
   options: { limit?: number; useCache?: boolean } = {}
 ): Promise<SearchResult> {
-  const { limit = 6, useCache = true } = options
+  const { limit = 8, useCache = true } = options
   const originalQuery = query
 
-  // Gerar variações de busca
-  const searchVariations = generateSearchVariations(query)
+  // Gerar variações de busca em português
+  const portugueseVariations = getPortugueseSearchVariations(query)
+  const englishVariations = generateSearchVariations(query)
 
   // Verificar cache para cada variação
   if (useCache) {
-    for (const variation of searchVariations) {
+    // Verificar cache PT primeiro
+    for (const variation of portugueseVariations) {
+      const cacheKey = getCacheKey(variation)
+      const cached = getFromCache(cacheKey)
+      if (cached && cached.length > 0) {
+        return {
+          images: cached.slice(0, limit),
+          total: cached.length,
+          cached: true,
+          source: 'cache',
+          queryUsed: variation,
+          originalQuery
+        }
+      }
+    }
+    // Depois cache EN
+    for (const variation of englishVariations) {
       const cacheKey = getCacheKey(variation)
       const cached = getFromCache(cacheKey)
       if (cached && cached.length > 0) {
@@ -685,43 +769,61 @@ export async function searchMedicalImages(
     }
   }
 
-  // Tentar cada variação até encontrar resultados
-  // ORDEM DE PRIORIDADE:
-  // 1. Wikipedia PT (legendas em português!)
-  // 2. Wikimedia Commons (imagens de qualidade)
-  // 3. OpenI (fallback em inglês)
+  // ORDEM DE PRIORIDADE (FONTES BRASILEIRAS PRIMEIRO):
+  // 1. Wikipedia em Português (legendas em português!)
+  // 2. Wikimedia Commons com filtro PT (imagens de qualidade)
+  // 3. Wikimedia Commons geral (fallback)
   let images: MedicalImage[] = []
-  let queryUsed = searchVariations[0]
+  let queryUsed = originalQuery
   let source = 'none'
 
-  // PRIORIDADE 1: Wikipedia em Português (busca com termo original em PT)
-  console.log('[ImageSearch] Tentando Wikipedia PT com termo original:', originalQuery)
+  // PRIORIDADE 1: Wikipedia em Português
+  console.log('[ImageSearch] Buscando Wikipedia PT:', originalQuery)
   images = await searchWikipediaPT(originalQuery, limit)
   if (images.length > 0) {
     queryUsed = originalQuery
     source = 'wikipedia_pt'
+    console.log(`[ImageSearch] ✓ Encontradas ${images.length} imagens na Wikipedia PT`)
   }
 
-  // Se não encontrou na Wikipedia PT, tentar outras fontes
-  if (images.length === 0) {
-    for (const variation of searchVariations) {
-      // PRIORIDADE 2: Wikimedia Commons (muitas imagens médicas em PT também)
-      images = await searchWikimedia(variation, limit)
-      if (images.length > 0) {
-        queryUsed = variation
-        source = 'wikimedia'
-        break
-      }
+  // PRIORIDADE 2: Se não encontrou suficiente, tentar Wikimedia Commons
+  if (images.length < limit / 2) {
+    console.log('[ImageSearch] Complementando com Wikimedia Commons')
 
-      // PRIORIDADE 3: OpenI (fallback - imagens em inglês)
-      images = await searchOpenI(variation, limit)
-      if (images.length > 0) {
-        queryUsed = variation
-        source = 'openi'
-        break
+    // Primeiro tentar busca em português no Wikimedia
+    for (const variation of portugueseVariations.slice(0, 2)) {
+      const wikimediaImages = await searchWikimedia(variation + ' português', limit - images.length)
+      if (wikimediaImages.length > 0) {
+        // Filtrar duplicatas
+        const newImages = wikimediaImages.filter(
+          wi => !images.some(i => i.id === wi.id)
+        )
+        images = [...images, ...newImages]
+        if (!source || source === 'none') source = 'wikimedia'
+        console.log(`[ImageSearch] + ${newImages.length} do Wikimedia PT`)
+      }
+      if (images.length >= limit) break
+    }
+
+    // Se ainda não tem suficiente, busca geral no Wikimedia
+    if (images.length < limit / 2) {
+      for (const variation of englishVariations.slice(0, 2)) {
+        const wikimediaImages = await searchWikimedia(variation, limit - images.length)
+        if (wikimediaImages.length > 0) {
+          const newImages = wikimediaImages.filter(
+            wi => !images.some(i => i.id === wi.id)
+          )
+          images = [...images, ...newImages]
+          if (!source || source === 'none') source = 'wikimedia'
+          console.log(`[ImageSearch] + ${newImages.length} do Wikimedia EN`)
+        }
+        if (images.length >= limit) break
       }
     }
   }
+
+  // Limitar ao número solicitado
+  images = images.slice(0, limit)
 
   // Salvar no cache se encontrou resultados
   if (images.length > 0) {
@@ -729,7 +831,7 @@ export async function searchMedicalImages(
   }
 
   // Gerar sugestões se não encontrou nada
-  const suggestions = images.length === 0 ? generateSuggestions(query) : undefined
+  const suggestions = images.length === 0 ? generateSuggestionsBR(query) : undefined
 
   return {
     images,
@@ -740,6 +842,26 @@ export async function searchMedicalImages(
     originalQuery,
     suggestions
   }
+}
+
+/**
+ * Gera sugestões de busca em português quando não encontra resultados
+ */
+function generateSuggestionsBR(query: string): string[] {
+  const suggestions: string[] = []
+
+  // Verificar se o termo está no dicionário
+  const variations = getPortugueseSearchVariations(query)
+  if (variations.length > 1) {
+    suggestions.push(`Tente: "${variations[1]}"`)
+  }
+
+  // Sugestões genéricas em português
+  suggestions.push('Use termos em português como "coração", "pulmão", "histologia"')
+  suggestions.push('Adicione "anatomia" ou "medicina" ao termo')
+  suggestions.push('Tente termos mais específicos ou mais genéricos')
+
+  return suggestions.slice(0, 3)
 }
 
 // Limpar cache (útil para testes)

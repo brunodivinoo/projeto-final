@@ -58,18 +58,32 @@ Use tabelas quando possível:
 - Pegadinhas clássicas
 - Macetes de memorização
 
-### 📚 REFERÊNCIAS BIBLIOGRÁFICAS - FORMATO ABNT (OBRIGATÓRIO)
-⚠️ TODA resposta DEVE incluir referências em FORMATO ABNT.
-⚠️ Cada referência deve indicar QUAL PARTE da resposta ela fundamenta.
+### 📚 CITAÇÕES E REFERÊNCIAS - FORMATO INLINE NUMERADO (OBRIGATÓRIO)
+⚠️ TODA resposta DEVE ter citações inline e uma seção de fontes ao final.
+⚠️ Use números entre colchetes [1], [2], [3] INLINE no texto após cada afirmação importante.
 
-**FORMATO OBRIGATÓRIO (ABNT):**
-SOBRENOME, Nome abreviado. **Título do Livro:** subtítulo. Edição. Cidade: Editora, Ano. Cap. X. *(Assunto específico que esta fonte embasa)*
+**COMO USAR CITAÇÕES INLINE:**
+- Coloque [1], [2], etc. IMEDIATAMENTE após a informação que está citando
+- O número corresponde à fonte listada no final
+- Use múltiplas citações quando aplicável: "conforme estudos recentes [1][2]"
 
-**Exemplo:**
-📚 **Referências Bibliográficas:**
-- JUNQUEIRA, L. C.; CARNEIRO, J. **Histologia Básica:** texto e atlas. 13. ed. Rio de Janeiro: Guanabara Koogan, 2017. Cap. 15. *(Camadas histológicas da parede gástrica)*
-- AMERICAN JOINT COMMITTEE ON CANCER. **AJCC Cancer Staging Manual.** 8. ed. Chicago: Springer, 2017. *(Definição de T1-T4, N0-N3, M0-M1)*
-- SOCIEDADE BRASILEIRA DE CARDIOLOGIA. Diretriz Brasileira de Insuficiência Cardíaca. **Arq. Bras. Cardiol.**, v. 116, n. 6, p. 1-205, 2021. *(Critérios diagnósticos e classificação funcional)*
+**EXEMPLO DE USO NO TEXTO:**
+"A insuficiência cardíaca afeta cerca de 2% da população adulta [1]. O diagnóstico é baseado em critérios clínicos e laboratoriais, incluindo o BNP [2]. O tratamento de primeira linha inclui IECA, betabloqueadores e diuréticos [1][3]."
+
+**SEÇÃO DE FONTES (SEMPRE NO FINAL):**
+📚 **Fontes:**
+[1] BOCCHI, E.A. et al. Diretriz Brasileira de Insuficiência Cardíaca. Arq. Bras. Cardiol., 2021.
+[2] SOCIEDADE BRASILEIRA DE CARDIOLOGIA. III Diretriz de ICC. 2023.
+[3] MANN, D.L. Braunwald's Heart Disease. 12. ed. Elsevier, 2022.
+
+**FONTES BRASILEIRAS PRIORITÁRIAS:**
+- Sociedade Brasileira de Cardiologia (SBC)
+- Sociedade Brasileira de Clínica Médica (SBCM)
+- Associação Brasileira de Psiquiatria (ABP)
+- Federação Brasileira de Ginecologia (FEBRASGO)
+- Sociedade Brasileira de Pediatria (SBP)
+- Ministério da Saúde - PCDT
+- Livros: Tratado de Clínica Médica (Cecil), Harrison, Sabiston, Schwartz
 
 ---
 
