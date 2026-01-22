@@ -631,8 +631,43 @@ async function streamClaude(params: StreamClaudeParams) {
             continue
           }
 
-          // Se não houve tool calls ou o stop_reason é end_turn, terminamos
+          // Verificar se a resposta parece incompleta mesmo com end_turn
+          const pareceIncompleta = (
+            // Termina abruptamente
+            fullResponse.endsWith('...') ||
+            fullResponse.endsWith('-') ||
+            fullResponse.endsWith(',') ||
+            /[a-z]$/i.test(fullResponse.trim()) || // Termina com letra
+            // Falta seção de fontes quando deveria ter
+            (!fullResponse.includes('📚 **Fontes') &&
+             !fullResponse.includes('**Fontes:**') &&
+             !fullResponse.includes('Referências') &&
+             fullResponse.length > 500 && // Resposta substancial
+             continuationCount < MAX_CONTINUATIONS)
+          )
+
+          // Se não houve tool calls ou o stop_reason é end_turn, verificar se realmente terminou
           if (toolCallsThisIteration.length === 0 || stopReason === 'end_turn') {
+            // Se parece incompleta e ainda temos continuações disponíveis, continuar
+            if (pareceIncompleta && continuationCount < MAX_CONTINUATIONS) {
+              console.log('[Chat API] Resposta parece incompleta, forçando continuação...')
+              continuationCount++
+
+              currentMessages.push({
+                role: 'assistant',
+                content: fullResponse
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              } as any)
+
+              currentMessages.push({
+                role: 'user',
+                content: 'A resposta foi cortada. Continue de onde parou e INCLUA OBRIGATORIAMENTE a seção 📚 **Fontes:** ao final com as referências bibliográficas numeradas [1], [2], [3]...'
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              } as any)
+
+              continue
+            }
+
             console.log('[Chat API] Finalizando - stop_reason:', stopReason, 'tools:', toolCallsThisIteration.length)
             break
           }
