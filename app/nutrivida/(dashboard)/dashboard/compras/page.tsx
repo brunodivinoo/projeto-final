@@ -13,7 +13,11 @@ import {
   Search,
   X,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Bot,
+  Loader2,
+  Package,
+  Share2
 } from 'lucide-react'
 
 interface ItemCarrinho {
@@ -21,10 +25,34 @@ interface ItemCarrinho {
   nome: string
   categoria: string
   quantidade: number
+  unidade: string
+  quantidade_compra: string
   comprado: boolean
 }
 
+interface AlimentoSugerido {
+  nome: string
+  categoria: string
+  unidade: string
+  quantidade_compra: string
+  calorias: number
+  proteinas: number
+}
+
 const CATEGORIAS = Object.keys(ALIMENTOS_DATABASE)
+
+// Icones por categoria
+const CATEGORIA_ICONS: Record<string, string> = {
+  frutas: '🍎',
+  vegetais: '🥬',
+  proteinas: '🥩',
+  laticinios: '🥛',
+  carboidratos: '🍞',
+  gorduras: '🥑',
+  bebidas: '🥤',
+  temperos: '🧂',
+  congelados: '🧊'
+}
 
 export default function ComprasPage() {
   const { profile } = useNutriAuth()
@@ -33,6 +61,10 @@ export default function ComprasPage() {
   const [modalAberto, setModalAberto] = useState(false)
   const [categoriaAberta, setCategoriaAberta] = useState<string | null>(null)
   const [busca, setBusca] = useState('')
+  const [buscaIA, setBuscaIA] = useState('')
+  const [buscandoIA, setBuscandoIA] = useState(false)
+  const [sugestoesIA, setSugestoesIA] = useState<AlimentoSugerido[]>([])
+  const [modoIA, setModoIA] = useState(false)
 
   useEffect(() => {
     const fetchLista = async () => {
@@ -51,6 +83,8 @@ export default function ComprasPage() {
             nome: d.item_nome,
             categoria: d.categoria || '',
             quantidade: d.quantidade,
+            unidade: d.unidade || 'un',
+            quantidade_compra: d.quantidade_compra || '1 unidade',
             comprado: d.comprado
           })))
         }
@@ -64,11 +98,57 @@ export default function ComprasPage() {
     fetchLista()
   }, [profile?.id])
 
-  const adicionarItem = async (nome: string, categoria: string) => {
+  // Buscar sugestoes com IA
+  const buscarComIA = async () => {
+    if (!buscaIA.trim()) return
+
+    setBuscandoIA(true)
+    setSugestoesIA([])
+
+    try {
+      const response = await fetch('/api/nutrivida/ia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mensagem: `Liste 5 alimentos relacionados a "${buscaIA}" com informacoes nutricionais basicas.
+          Responda APENAS no formato JSON assim:
+          [{"nome": "nome do alimento", "categoria": "categoria (frutas/vegetais/proteinas/laticinios/carboidratos/gorduras/bebidas/temperos/congelados)", "unidade": "unidade de medida", "quantidade_compra": "quantidade sugerida para compra semanal", "calorias": numero, "proteinas": numero}]
+          Nao inclua texto adicional, apenas o JSON.`,
+          modo: 'nutricao'
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.resposta) {
+        try {
+          // Extrair JSON da resposta
+          const jsonMatch = data.resposta.match(/\[[\s\S]*\]/)
+          if (jsonMatch) {
+            const sugestoes = JSON.parse(jsonMatch[0])
+            setSugestoesIA(sugestoes)
+          }
+        } catch {
+          console.error('Erro ao parsear sugestoes')
+        }
+      }
+    } catch (err) {
+      console.error('Erro na busca IA:', err)
+    } finally {
+      setBuscandoIA(false)
+    }
+  }
+
+  const adicionarItem = async (
+    nome: string,
+    categoria: string,
+    unidade: string = 'un',
+    quantidade_compra: string = '1 unidade'
+  ) => {
     if (!profile?.id) return
 
     // Verificar se ja existe
-    const existente = itens.find(i => i.nome === nome)
+    const existente = itens.find(i => i.nome.toLowerCase() === nome.toLowerCase())
     if (existente) {
       await alterarQuantidade(existente.id, 1)
       return
@@ -82,6 +162,8 @@ export default function ComprasPage() {
           item_nome: nome,
           categoria,
           quantidade: 1,
+          unidade,
+          quantidade_compra,
           comprado: false
         })
         .select()
@@ -93,6 +175,8 @@ export default function ComprasPage() {
           nome: data.item_nome,
           categoria: data.categoria || '',
           quantidade: data.quantidade,
+          unidade: data.unidade || 'un',
+          quantidade_compra: data.quantidade_compra || '1 unidade',
           comprado: data.comprado
         }])
       }
@@ -190,21 +274,47 @@ export default function ComprasPage() {
           const refeicao = ref.refeicao_selecionada as { ingredientes?: string[] }
           if (refeicao?.ingredientes) {
             for (const ing of refeicao.ingredientes) {
-              // Encontrar categoria do ingrediente
+              // Encontrar categoria e info do ingrediente
               let categoria = 'outros'
+              let unidade = 'un'
+              let quantidade_compra = '1 unidade'
+
               for (const [cat, alimentos] of Object.entries(ALIMENTOS_DATABASE)) {
-                if (alimentos.some(a => a.nome === ing)) {
+                const alimento = alimentos.find(a => a.nome === ing)
+                if (alimento) {
                   categoria = cat
+                  unidade = alimento.unidade || 'un'
+                  quantidade_compra = alimento.quantidade_compra || '1 unidade'
                   break
                 }
               }
-              await adicionarItem(ing, categoria)
+              await adicionarItem(ing, categoria, unidade, quantidade_compra)
             }
           }
         }
       }
     } catch (err) {
       console.error('Erro ao sincronizar:', err)
+    }
+  }
+
+  // Compartilhar lista
+  const compartilharLista = () => {
+    const listaTexto = itens
+      .filter(i => !i.comprado)
+      .map(i => `- ${i.nome} (${i.quantidade}x ${i.quantidade_compra})`)
+      .join('\n')
+
+    const texto = `🛒 Lista de Compras NutriVida\n\n${listaTexto}`
+
+    if (navigator.share) {
+      navigator.share({
+        title: 'Lista de Compras',
+        text: texto
+      })
+    } else {
+      navigator.clipboard.writeText(texto)
+      alert('Lista copiada para a area de transferencia!')
     }
   }
 
@@ -232,12 +342,23 @@ export default function ComprasPage() {
           <h1 className="text-2xl font-bold text-gray-800">Lista de Compras</h1>
           <p className="text-gray-500">{totalItens} {totalItens === 1 ? 'item' : 'itens'} pendentes</p>
         </div>
-        <button
-          onClick={() => setModalAberto(true)}
-          className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl shadow-lg hover:from-green-600 hover:to-emerald-600 transition-all"
-        >
-          <Plus className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {totalItens > 0 && (
+            <button
+              onClick={compartilharLista}
+              className="p-3 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 transition-all"
+              title="Compartilhar lista"
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+          )}
+          <button
+            onClick={() => setModalAberto(true)}
+            className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl shadow-lg hover:from-green-600 hover:to-emerald-600 transition-all"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Sincronizar */}
@@ -260,23 +381,33 @@ export default function ComprasPage() {
         <div className="space-y-4">
           {CATEGORIAS.map((cat) => {
             const itensCategoria = itensPorCategoria[cat]
-            if (itensCategoria.length === 0) return null
+            if (!itensCategoria || itensCategoria.length === 0) return null
 
             return (
-              <div key={cat} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                <div className="p-4 bg-gray-50 border-b border-gray-100">
+              <div key={cat} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+                <div className="p-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 flex items-center gap-2">
+                  <span className="text-xl">{CATEGORIA_ICONS[cat] || '📦'}</span>
                   <h2 className="font-semibold text-gray-800 capitalize">{cat}</h2>
+                  <span className="ml-auto text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                    {itensCategoria.length}
+                  </span>
                 </div>
                 <div className="divide-y divide-gray-50">
                   {itensCategoria.map((item) => (
-                    <div key={item.id} className="p-4 flex items-center gap-4">
+                    <div key={item.id} className="p-4 flex items-center gap-3">
                       <button
                         onClick={() => toggleComprado(item.id)}
-                        className="w-6 h-6 rounded-full border-2 border-green-400 flex items-center justify-center hover:bg-green-50 transition-colors"
+                        className="w-6 h-6 rounded-full border-2 border-green-400 flex items-center justify-center hover:bg-green-50 transition-colors flex-shrink-0"
                       >
                         {item.comprado && <Check className="w-4 h-4 text-green-500" />}
                       </button>
-                      <span className="flex-1 text-gray-800">{item.nome}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-800">{item.nome}</p>
+                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                          <Package className="w-3 h-3" />
+                          {item.quantidade_compra}
+                        </p>
+                      </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => alterarQuantidade(item.id, -1)}
@@ -284,7 +415,7 @@ export default function ComprasPage() {
                         >
                           <Minus className="w-4 h-4 text-gray-600" />
                         </button>
-                        <span className="w-8 text-center font-medium">{item.quantidade}</span>
+                        <span className="w-8 text-center font-medium text-gray-800">{item.quantidade}</span>
                         <button
                           onClick={() => alterarQuantidade(item.id, 1)}
                           className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200"
@@ -311,20 +442,24 @@ export default function ComprasPage() {
       {itensComprados.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="p-4 bg-green-50 border-b border-green-100 flex items-center justify-between">
-            <h2 className="font-semibold text-green-800">Comprados ({itensComprados.length})</h2>
+            <div className="flex items-center gap-2">
+              <Check className="w-5 h-5 text-green-600" />
+              <h2 className="font-semibold text-green-800">Comprados ({itensComprados.length})</h2>
+            </div>
             <button
               onClick={limparComprados}
-              className="text-sm text-red-500 hover:text-red-600"
+              className="text-sm text-red-500 hover:text-red-600 flex items-center gap-1"
             >
+              <Trash2 className="w-4 h-4" />
               Limpar
             </button>
           </div>
           <div className="divide-y divide-gray-50">
             {itensComprados.map((item) => (
-              <div key={item.id} className="p-4 flex items-center gap-4 opacity-50">
+              <div key={item.id} className="p-4 flex items-center gap-3 opacity-60">
                 <button
                   onClick={() => toggleComprado(item.id)}
-                  className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center"
+                  className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0"
                 >
                   <Check className="w-4 h-4 text-white" />
                 </button>
@@ -344,15 +479,17 @@ export default function ComprasPage() {
       {/* Modal Adicionar */}
       {modalAberto && (
         <div className="fixed inset-0 bg-black/50 flex items-end lg:items-center justify-center z-50">
-          <div className="bg-white w-full lg:max-w-md lg:rounded-2xl rounded-t-3xl max-h-[85vh] overflow-hidden">
+          <div className="bg-white w-full lg:max-w-lg lg:rounded-2xl rounded-t-3xl max-h-[85vh] overflow-hidden">
             {/* Header */}
-            <div className="p-4 bg-green-500 text-white flex items-center justify-between">
+            <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white flex items-center justify-between">
               <h2 className="text-lg font-semibold">Adicionar Item</h2>
               <button
                 onClick={() => {
                   setModalAberto(false)
                   setCategoriaAberta(null)
                   setBusca('')
+                  setModoIA(false)
+                  setSugestoesIA([])
                 }}
                 className="p-2 hover:bg-white/20 rounded-lg"
               >
@@ -360,61 +497,178 @@ export default function ComprasPage() {
               </button>
             </div>
 
-            {/* Busca */}
-            <div className="p-4 border-b border-gray-100">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  placeholder="Buscar alimento..."
-                  className="w-full pl-10 pr-4 py-3 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400"
-                />
-              </div>
+            {/* Tabs */}
+            <div className="flex border-b border-gray-100">
+              <button
+                onClick={() => {
+                  setModoIA(false)
+                  setSugestoesIA([])
+                }}
+                className={`flex-1 py-3 text-sm font-medium transition-colors ${
+                  !modoIA
+                    ? 'text-green-600 border-b-2 border-green-500'
+                    : 'text-gray-500'
+                }`}
+              >
+                📋 Catalogo
+              </button>
+              <button
+                onClick={() => setModoIA(true)}
+                className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                  modoIA
+                    ? 'text-purple-600 border-b-2 border-purple-500'
+                    : 'text-gray-500'
+                }`}
+              >
+                <Bot className="w-4 h-4" />
+                Buscar com IA
+              </button>
             </div>
 
-            {/* Categorias */}
-            <div className="overflow-y-auto max-h-[60vh]">
-              {CATEGORIAS.map((cat) => {
-                const alimentos = ALIMENTOS_DATABASE[cat].filter(a =>
-                  busca ? a.nome.toLowerCase().includes(busca.toLowerCase()) : true
-                )
+            {modoIA ? (
+              /* Busca IA */
+              <div className="p-4">
+                <div className="relative mb-4">
+                  <Bot className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
+                  <input
+                    type="text"
+                    value={buscaIA}
+                    onChange={(e) => setBuscaIA(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && buscarComIA()}
+                    placeholder="Ex: alimentos ricos em proteina..."
+                    className="w-full pl-10 pr-4 py-3 bg-purple-50 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
+                <button
+                  onClick={buscarComIA}
+                  disabled={buscandoIA || !buscaIA.trim()}
+                  className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {buscandoIA ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Buscando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5" />
+                      Buscar Sugestoes
+                    </>
+                  )}
+                </button>
 
-                if (busca && alimentos.length === 0) return null
-
-                return (
-                  <div key={cat}>
-                    <button
-                      onClick={() => setCategoriaAberta(categoriaAberta === cat ? null : cat)}
-                      className="w-full p-4 flex items-center justify-between hover:bg-gray-50"
-                    >
-                      <span className="font-semibold text-gray-800 capitalize">{cat}</span>
-                      <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${
-                        categoriaAberta === cat ? 'rotate-90' : ''
-                      }`} />
-                    </button>
-                    {(categoriaAberta === cat || busca) && (
-                      <div className="px-4 pb-4 grid grid-cols-2 gap-2">
-                        {alimentos.map((alimento) => (
-                          <button
-                            key={alimento.nome}
-                            onClick={() => {
-                              adicionarItem(alimento.nome, cat)
-                              if (!busca) setModalAberto(false)
-                            }}
-                            className="p-3 bg-green-50 rounded-xl text-left hover:bg-green-100 transition-colors"
-                          >
-                            <p className="text-sm font-medium text-gray-800">{alimento.nome}</p>
-                            <p className="text-xs text-gray-500">{alimento.porcao}</p>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                {/* Resultados IA */}
+                {sugestoesIA.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm text-gray-500 mb-2">Sugestoes da IA:</p>
+                    {sugestoesIA.map((sug, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          adicionarItem(sug.nome, sug.categoria, sug.unidade, sug.quantidade_compra)
+                          setSugestoesIA(prev => prev.filter((_, idx) => idx !== i))
+                        }}
+                        className="w-full p-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-xl text-left hover:from-purple-100 hover:to-pink-100 transition-colors"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-medium text-gray-800">{sug.nome}</p>
+                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full capitalize">
+                            {sug.categoria}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                          <span>{sug.calorias} kcal</span>
+                          <span>{sug.proteinas}g proteina</span>
+                          <span className="ml-auto">{sug.quantidade_compra}</span>
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                )
-              })}
-            </div>
+                )}
+
+                {!buscandoIA && sugestoesIA.length === 0 && buscaIA && (
+                  <p className="text-center text-gray-400 text-sm mt-4">
+                    Digite sua busca e clique em &quot;Buscar Sugestoes&quot;
+                  </p>
+                )}
+              </div>
+            ) : (
+              /* Catalogo normal */
+              <>
+                {/* Busca */}
+                <div className="p-4 border-b border-gray-100">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={busca}
+                      onChange={(e) => setBusca(e.target.value)}
+                      placeholder="Buscar alimento..."
+                      className="w-full pl-10 pr-4 py-3 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400"
+                    />
+                  </div>
+                </div>
+
+                {/* Categorias */}
+                <div className="overflow-y-auto max-h-[50vh]">
+                  {CATEGORIAS.map((cat) => {
+                    const alimentos = ALIMENTOS_DATABASE[cat].filter(a =>
+                      busca ? a.nome.toLowerCase().includes(busca.toLowerCase()) : true
+                    )
+
+                    if (busca && alimentos.length === 0) return null
+
+                    return (
+                      <div key={cat}>
+                        <button
+                          onClick={() => setCategoriaAberta(categoriaAberta === cat ? null : cat)}
+                          className="w-full p-4 flex items-center justify-between hover:bg-gray-50"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">{CATEGORIA_ICONS[cat] || '📦'}</span>
+                            <span className="font-semibold text-gray-800 capitalize">{cat}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-400">{alimentos.length}</span>
+                            <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${
+                              categoriaAberta === cat ? 'rotate-90' : ''
+                            }`} />
+                          </div>
+                        </button>
+                        {(categoriaAberta === cat || busca) && (
+                          <div className="px-4 pb-4 grid grid-cols-2 gap-2">
+                            {alimentos.map((alimento) => (
+                              <button
+                                key={alimento.nome}
+                                onClick={() => {
+                                  adicionarItem(
+                                    alimento.nome,
+                                    cat,
+                                    alimento.unidade || 'un',
+                                    alimento.quantidade_compra || '1 unidade'
+                                  )
+                                  if (!busca) setModalAberto(false)
+                                }}
+                                className="p-3 bg-green-50 rounded-xl text-left hover:bg-green-100 transition-colors"
+                              >
+                                <p className="text-sm font-medium text-gray-800">{alimento.nome}</p>
+                                <p className="text-xs text-gray-500">{alimento.porcao}</p>
+                                {alimento.quantidade_compra && (
+                                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                                    <Package className="w-3 h-3" />
+                                    {alimento.quantidade_compra}
+                                  </p>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

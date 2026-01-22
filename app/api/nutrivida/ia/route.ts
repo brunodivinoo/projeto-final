@@ -127,36 +127,30 @@ export async function POST(request: NextRequest) {
 // =====================================================
 export async function PUT(request: NextRequest) {
   try {
-    const { tipo, ingredientes, restricoes, tempoMax, userId } = await request.json()
+    const { tipo, ingredientes, restricoes, tempoMax, userId, observacao, perfil } = await request.json()
 
-    // Usar o novo engine de IA avançado
-    const receita = await gerarReceita(tipo, ingredientes, restricoes, tempoMax)
+    // Combinar restricoes com observacao do usuario
+    let restricoesCompletas = restricoes || ''
+    if (observacao) {
+      restricoesCompletas = restricoesCompletas
+        ? `${restricoesCompletas}. Preferencias especiais: ${observacao}`
+        : `Preferencias especiais: ${observacao}`
+    }
 
-    // Salvar receita favorita se tiver userId
-    if (userId) {
-      try {
-        const nomeMatch = receita.match(/NOME:\s*(.+)/i)
-        const caloriasMatch = receita.match(/CALORIAS:\s*(\d+)/i)
-        const proteinasMatch = receita.match(/PROTEINAS:\s*(\d+)/i)
-
-        if (nomeMatch) {
-          await supabase
-            .from('receitas_favoritas_nutri')
-            .insert({
-              user_id: userId,
-              nome: nomeMatch[1].trim(),
-              descricao: receita,
-              calorias: caloriasMatch ? parseInt(caloriasMatch[1]) : null,
-              proteinas: proteinasMatch ? parseInt(proteinasMatch[1]) : null,
-              tipo: tipo || 'geral',
-              gerada_ia: true
-            })
-        }
-      } catch (dbError) {
-        console.error('Erro ao salvar receita:', dbError)
+    // Adicionar info do perfil se disponivel
+    if (perfil) {
+      if (perfil.plano === 'restritivo') {
+        restricoesCompletas += '. Plano restritivo: baixo carboidrato, max 1300 kcal'
+      }
+      if (perfil.amamentando) {
+        restricoesCompletas += '. Amamentando: evitar ingredientes nao recomendados'
       }
     }
 
+    // Usar o novo engine de IA avancado
+    const receita = await gerarReceita(tipo, ingredientes, restricoesCompletas, tempoMax)
+
+    // NAO salvar automaticamente - deixar usuario decidir
     return NextResponse.json({ receita })
   } catch (error) {
     console.error('Erro ao gerar receita:', error)

@@ -9,6 +9,99 @@ const openai = new OpenAI({
 const DEBUG_IMAGE_GENERATION = true
 
 // ============================================
+// DETECÇÃO AUTOMÁTICA DE VISTA APROPRIADA
+// Garante que estruturas internas sejam mostradas com corte
+// ============================================
+
+interface VistaConfig {
+  vistaDefault: string
+  palavrasQueExigemCorte: string[]
+  descricaoCorte: string
+}
+
+const ESTRUTURAS_COM_CORTE_OBRIGATORIO: Record<string, VistaConfig> = {
+  'coração': {
+    vistaDefault: 'Corte frontal/coronal do coração ABERTO mostrando interior',
+    palavrasQueExigemCorte: ['câmara', 'camara', 'interno', 'interior', 'septo', 'valva', 'átrio', 'atrio', 'ventrículo', 'ventriculo', '4 câmaras', '4 camaras', 'quatro câmaras'],
+    descricaoCorte: 'CORTE FRONTAL (coronal) do coração humano ABERTO, mostrando INTERIOR com as 4 câmaras cardíacas visíveis (átrio direito, átrio esquerdo, ventrículo direito, ventrículo esquerdo), septo interventricular, valvas cardíacas. Como se o coração fosse cortado ao meio verticalmente para revelar todas as estruturas internas.'
+  },
+  'rim': {
+    vistaDefault: 'Corte coronal do rim mostrando interior',
+    palavrasQueExigemCorte: ['córtex', 'cortex', 'medula', 'pirâmide', 'piramide', 'cálice', 'calice', 'pelve', 'interno', 'néfron', 'nefron'],
+    descricaoCorte: 'CORTE CORONAL (frontal) do rim ABERTO, mostrando INTERIOR com córtex renal externo, medula com pirâmides renais, papilas, cálices menores e maiores, pelve renal e início do ureter.'
+  },
+  'olho': {
+    vistaDefault: 'Corte sagital do olho mostrando interior',
+    palavrasQueExigemCorte: ['retina', 'cristalino', 'vítreo', 'vitreo', 'córnea', 'cornea', 'interno', 'câmara', 'camara', 'fóvea', 'fovea'],
+    descricaoCorte: 'CORTE SAGITAL (horizontal) do olho humano ABERTO, mostrando INTERIOR com córnea, íris, cristalino, humor vítreo, retina, disco óptico, fóvea, esclera.'
+  },
+  'útero': {
+    vistaDefault: 'Corte coronal do útero mostrando interior',
+    palavrasQueExigemCorte: ['endométrio', 'endometrio', 'miométrio', 'miometrio', 'cavidade', 'interno', 'camada'],
+    descricaoCorte: 'CORTE CORONAL do útero ABERTO, mostrando INTERIOR com endométrio, miométrio, cavidade uterina, colo do útero.'
+  },
+  'encéfalo': {
+    vistaDefault: 'Corte sagital mediano do encéfalo',
+    palavrasQueExigemCorte: ['corpo caloso', 'tálamo', 'talamo', 'hipotálamo', 'hipotalamo', 'ventrículo', 'ventriculo', 'interno', 'substância', 'substancia'],
+    descricaoCorte: 'CORTE SAGITAL MEDIANO do encéfalo, mostrando corpo caloso, tálamo, hipotálamo, tronco encefálico, cerebelo, ventrículos.'
+  },
+  'cérebro': {
+    vistaDefault: 'Corte sagital mediano do cérebro',
+    palavrasQueExigemCorte: ['corpo caloso', 'ventrículo', 'ventriculo', 'substância branca', 'substancia branca', 'interno'],
+    descricaoCorte: 'CORTE SAGITAL MEDIANO do cérebro, mostrando hemisférios, corpo caloso, ventrículos laterais, substância branca e cinzenta.'
+  }
+}
+
+/**
+ * Detecta automaticamente a vista apropriada baseado na estrutura e palavras-chave
+ * GARANTE que estruturas internas sejam mostradas com CORTE quando necessário
+ */
+function detectarVistaApropriada(estrutura: string, detalhesAdicionais?: string, vistaFornecida?: string): string {
+  // Se já foi fornecida uma vista específica de corte, usar ela
+  if (vistaFornecida) {
+    const vistaLower = vistaFornecida.toLowerCase()
+    if (vistaLower.includes('corte') || vistaLower.includes('sagital') || vistaLower.includes('coronal') || vistaLower.includes('transversal') || vistaLower.includes('interno')) {
+      return vistaFornecida
+    }
+  }
+
+  const estruturaLower = estrutura.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const detalhesLower = (detalhesAdicionais || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const textoCompleto = `${estruturaLower} ${detalhesLower}`
+
+  // Verificar cada estrutura que pode precisar de corte
+  for (const [nomeEstrutura, config] of Object.entries(ESTRUTURAS_COM_CORTE_OBRIGATORIO)) {
+    const nomeNormalizado = nomeEstrutura.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    
+    if (estruturaLower.includes(nomeNormalizado)) {
+      // Verificar se alguma palavra-chave exige corte
+      const precisaCorte = config.palavrasQueExigemCorte.some(palavra => {
+        const palavraNormalizada = palavra.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        return textoCompleto.includes(palavraNormalizada)
+      })
+
+      if (precisaCorte) {
+        console.log(`[GPT Image] Detectado: "${estrutura}" com palavras que exigem CORTE INTERNO`)
+        console.log(`[GPT Image] Vista forçada: ${config.descricaoCorte.substring(0, 80)}...`)
+        return config.descricaoCorte
+      }
+    }
+  }
+
+  // Palavras genéricas que SEMPRE indicam necessidade de corte
+  const palavrasGenericasCorte = ['interno', 'interior', 'corte', 'secção', 'seccao', 'transversal', 'sagital', 'coronal', 'aberto']
+  const precisaCorteGenerico = palavrasGenericasCorte.some(p => textoCompleto.includes(p))
+  
+  if (precisaCorteGenerico) {
+    console.log(`[GPT Image] Palavras genéricas de corte detectadas`)
+    return `Corte anatômico mostrando estruturas INTERNAS de ${estrutura}`
+  }
+
+  // Vista padrão se nenhum corte for necessário
+  return vistaFornecida || 'Vista anterior anatômica'
+}
+
+// ============================================
 // BASE DE CONHECIMENTO ANATÔMICO - VERSÃO COMPACTA
 // Cada entrada tem máximo ~800 caracteres para caber no prompt final
 // Limite do DALL-E 3: 4000 caracteres
