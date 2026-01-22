@@ -83,6 +83,7 @@ export default function RefeicoesPage() {
   })
   const [modalAberto, setModalAberto] = useState<TipoRefeicao | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadingDia, setLoadingDia] = useState(false) // Loading suave para troca de dia
   const [sugestaoIA, setSugestaoIA] = useState<string | null>(null)
   const [buscandoSugestao, setBuscandoSugestao] = useState(false)
   const [filtroRestritivo, setFiltroRestritivo] = useState(false)
@@ -200,44 +201,62 @@ export default function RefeicoesPage() {
     }
   }, [profile?.id])
 
-  useEffect(() => {
-    const fetchRefeicoes = async () => {
-      if (!profile?.id) return
+  // Buscar refeicoes do dia (com loading suave)
+  const fetchRefeicoes = useCallback(async (isInitial: boolean = false) => {
+    if (!profile?.id) return
 
+    // Loading completo apenas no carregamento inicial
+    if (isInitial) {
       setLoading(true)
-      try {
-        const { data } = await supabase
-          .from('refeicoes_diarias_nutri')
-          .select('tipo_refeicao, refeicao_selecionada')
-          .eq('user_id', profile.id)
-          .eq('data', hoje)
-
-        // Resetar refeicoes ao trocar de dia
-        const novasRefeicoes: Record<TipoRefeicao, OpcaoRefeicao | null> = {
-          cafe: null,
-          lanche_manha: null,
-          almoco: null,
-          lanche_tarde: null,
-          jantar: null,
-          ceia: null
-        }
-
-        if (data) {
-          data.forEach((item) => {
-            const tipo = item.tipo_refeicao as TipoRefeicao
-            novasRefeicoes[tipo] = item.refeicao_selecionada as OpcaoRefeicao
-          })
-        }
-        setRefeicoesSelecionadas(novasRefeicoes)
-      } catch (err) {
-        console.error('Erro ao buscar refeicoes:', err)
-      } finally {
-        setLoading(false)
-      }
+    } else {
+      setLoadingDia(true)
     }
 
-    fetchRefeicoes()
+    try {
+      const { data } = await supabase
+        .from('refeicoes_diarias_nutri')
+        .select('tipo_refeicao, refeicao_selecionada')
+        .eq('user_id', profile.id)
+        .eq('data', hoje)
+
+      // Resetar refeicoes ao trocar de dia
+      const novasRefeicoes: Record<TipoRefeicao, OpcaoRefeicao | null> = {
+        cafe: null,
+        lanche_manha: null,
+        almoco: null,
+        lanche_tarde: null,
+        jantar: null,
+        ceia: null
+      }
+
+      if (data) {
+        data.forEach((item) => {
+          const tipo = item.tipo_refeicao as TipoRefeicao
+          novasRefeicoes[tipo] = item.refeicao_selecionada as OpcaoRefeicao
+        })
+      }
+      setRefeicoesSelecionadas(novasRefeicoes)
+    } catch (err) {
+      console.error('Erro ao buscar refeicoes:', err)
+    } finally {
+      setLoading(false)
+      setLoadingDia(false)
+    }
   }, [profile?.id, hoje])
+
+  // Carregamento inicial
+  useEffect(() => {
+    fetchRefeicoes(true)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id])
+
+  // Recarregar ao mudar de dia (sem loading completo)
+  useEffect(() => {
+    if (!loading) {
+      fetchRefeicoes(false)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hoje])
 
   // Buscar sugestao da IA
   const buscarSugestaoIA = async (tipo: TipoRefeicao) => {
@@ -422,20 +441,26 @@ export default function RefeicoesPage() {
         </div>
 
         {/* Navegacao de dias */}
-        <div className="flex items-center justify-between bg-white rounded-2xl p-3 border border-gray-100">
+        <div className={`flex items-center justify-between bg-white rounded-2xl p-3 border border-gray-100 transition-opacity ${loadingDia ? 'opacity-70' : ''}`}>
           <button
             onClick={() => navegarDia('anterior')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            disabled={loadingDia}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
           >
             <ChevronLeft className="w-5 h-5 text-gray-600" />
           </button>
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-pink-500" />
+            {loadingDia ? (
+              <Loader2 className="w-4 h-4 text-pink-500 animate-spin" />
+            ) : (
+              <Calendar className="w-4 h-4 text-pink-500" />
+            )}
             <span className="font-medium text-gray-800">{formatarData(dataAtual)}</span>
             {!isHoje && (
               <button
                 onClick={() => setDataAtual(new Date())}
-                className="text-xs text-pink-500 hover:underline ml-2"
+                disabled={loadingDia}
+                className="text-xs text-pink-500 hover:underline ml-2 disabled:opacity-50"
               >
                 Ir para hoje
               </button>
@@ -443,7 +468,7 @@ export default function RefeicoesPage() {
           </div>
           <button
             onClick={() => navegarDia('proximo')}
-            disabled={isHoje}
+            disabled={isHoje || loadingDia}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30"
           >
             <ChevronRight className="w-5 h-5 text-gray-600" />

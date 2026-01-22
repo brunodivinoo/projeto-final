@@ -32,8 +32,8 @@ export function extractReferences(content: string): Reference[] {
   // Pegar texto após a seção de fontes
   const afterSources = content.substring(content.indexOf(sourcesMatch[0]) + sourcesMatch[0].length)
 
-  // Extrair cada referência numerada
-  const refPattern = /\[(\d+)\]\s*(.+?)(?=\n\[|\n\n|$)/gs
+  // Extrair cada referência numerada (usando [\s\S] em vez de . com flag s)
+  const refPattern = /\[(\d+)\]\s*([\s\S]+?)(?=\n\[|\n\n|$)/g
   let match
   while ((match = refPattern.exec(afterSources)) !== null) {
     const number = parseInt(match[1])
