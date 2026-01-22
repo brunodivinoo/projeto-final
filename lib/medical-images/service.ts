@@ -47,13 +47,15 @@ interface GoogleSearchResponse {
 async function searchGoogleImages(query: string, limit: number = 8): Promise<MedicalImage[]> {
   // Verificar se as credenciais estão configuradas
   if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_SEARCH_ENGINE_ID) {
-    console.log('[GoogleSearch] API não configurada, pulando...')
+    console.log('[GoogleSearch] API não configurada')
+    console.log('[GoogleSearch] API_KEY presente:', !!GOOGLE_SEARCH_API_KEY)
+    console.log('[GoogleSearch] ENGINE_ID presente:', !!GOOGLE_SEARCH_ENGINE_ID)
     return []
   }
 
   try {
-    // Adicionar termos médicos para melhorar resultados
-    const searchQuery = `${query} anatomia medicina`
+    // Usar query diretamente - os sites já estão filtrados no Search Engine
+    const searchQuery = query
 
     const url = new URL('https://www.googleapis.com/customsearch/v1')
     url.searchParams.set('key', GOOGLE_SEARCH_API_KEY)
@@ -62,19 +64,19 @@ async function searchGoogleImages(query: string, limit: number = 8): Promise<Med
     url.searchParams.set('searchType', 'image')
     url.searchParams.set('num', Math.min(limit, 10).toString()) // Max 10 por request
     url.searchParams.set('safe', 'active')
-    url.searchParams.set('imgType', 'photo')
-    // Filtrar por sites brasileiros e educacionais
-    url.searchParams.set('lr', 'lang_pt') // Preferir português
+    // Removido imgType para aceitar todos os tipos (foto, diagrama, etc)
 
     console.log('[GoogleSearch] Buscando:', searchQuery)
+    console.log('[GoogleSearch] URL:', url.toString().replace(GOOGLE_SEARCH_API_KEY, 'API_KEY_HIDDEN'))
 
     const response = await fetch(url.toString(), {
-      signal: AbortSignal.timeout(10000)
+      signal: AbortSignal.timeout(15000) // Aumentar timeout
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('[GoogleSearch] Erro:', response.status, errorText)
+      console.error('[GoogleSearch] Erro HTTP:', response.status)
+      console.error('[GoogleSearch] Resposta:', errorText.substring(0, 500))
       return []
     }
 
@@ -85,21 +87,27 @@ async function searchGoogleImages(query: string, limit: number = 8): Promise<Med
       return []
     }
 
+    console.log('[GoogleSearch] Itens retornados:', data.items.length)
+
     const images: MedicalImage[] = data.items
       .filter(item => {
         // Filtrar resultados irrelevantes
         const title = item.title.toLowerCase()
-        const irrelevantTerms = ['novela', 'série', 'filme', 'música', 'banda', 'show', 'tv', 'programa']
+        const irrelevantTerms = ['novela', 'série', 'filme', 'música', 'banda', 'show', 'tv', 'programa', 'telenovela']
         return !irrelevantTerms.some(term => title.includes(term))
       })
       .map((item, index) => {
-        // Extrair nome do site
-        const siteName = item.displayLink
+        // Extrair nome do site de forma mais robusta
+        let siteName = item.displayLink
           .replace('www.', '')
           .replace('.com.br', '')
           .replace('.com', '')
           .replace('.org', '')
+          .replace('.br', '')
           .split('.')[0]
+
+        // Capitalizar primeira letra
+        siteName = siteName.charAt(0).toUpperCase() + siteName.slice(1)
 
         return {
           id: `google-${index}-${Date.now()}`,
@@ -109,17 +117,17 @@ async function searchGoogleImages(query: string, limit: number = 8): Promise<Med
           caption: item.snippet || item.title,
           source: 'google' as const,
           sourceUrl: item.image?.contextLink || item.link,
-          sourceName: siteName.charAt(0).toUpperCase() + siteName.slice(1),
+          sourceName: siteName,
           modality: 'Medical',
           license: 'Fonte: ' + item.displayLink
         }
       })
 
-    console.log(`[GoogleSearch] Encontradas ${images.length} imagens`)
+    console.log(`[GoogleSearch] ✓ Retornando ${images.length} imagens válidas`)
     return images.slice(0, limit)
 
   } catch (error) {
-    console.error('[GoogleSearch] Erro:', error)
+    console.error('[GoogleSearch] Erro de execução:', error)
     return []
   }
 }
