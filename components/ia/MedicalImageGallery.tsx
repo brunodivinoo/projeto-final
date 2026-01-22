@@ -584,7 +584,7 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
 
         {/* Footer */}
         <p className="text-white/40 text-xs mt-2">
-          Clique para ampliar • Fonte: {validImages[0]?.source === 'openi' ? 'OpenI/NIH' : 'Wikimedia Commons'}
+          Clique para ampliar • Fonte: {validImages[0]?.source === 'wikipedia_pt' ? 'Wikipedia PT' : validImages[0]?.source === 'openi' ? 'OpenI/NIH' : 'Wikimedia Commons'}
         </p>
       </div>
 
