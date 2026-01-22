@@ -74,6 +74,7 @@ export default function NutriDashboardPage() {
   // Onboarding Modal
   const OnboardingModal = () => {
     const [step, setStep] = useState(1)
+    const [temFilho, setTemFilho] = useState(false)
     const [formData, setFormData] = useState({
       nome: profile?.nome || '',
       idade: profile?.idade || 25,
@@ -81,16 +82,20 @@ export default function NutriDashboardPage() {
       peso_inicial: profile?.peso_inicial || 70,
       peso_atual: profile?.peso_atual || 70,
       peso_meta: profile?.peso_meta || 60,
-      idade_bebe: profile?.idade_bebe || 30,
+      idade_bebe: profile?.idade_bebe || 0,
       amamentando: profile?.amamentando || false,
       plano: profile?.plano || 'normal'
     })
 
     const handleSave = async () => {
-      const success = await updateProfile({
+      const dataToSave = {
         ...formData,
-        peso_inicial: formData.peso_inicial || formData.peso_atual
-      })
+        peso_inicial: formData.peso_inicial || formData.peso_atual,
+        // Se nao tem filho, limpa os campos relacionados
+        idade_bebe: temFilho ? formData.idade_bebe : null,
+        amamentando: temFilho ? formData.amamentando : false
+      }
+      const success = await updateProfile(dataToSave)
       if (success) {
         setShowOnboarding(false)
       }
@@ -153,9 +158,9 @@ export default function NutriDashboardPage() {
 
           {step === 2 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Peso Atual</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Peso Atual (kg)</label>
                   <input
                     type="number"
                     step="0.1"
@@ -165,7 +170,7 @@ export default function NutriDashboardPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Peso Meta</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Peso Meta (kg)</label>
                   <input
                     type="number"
                     step="0.1"
@@ -174,28 +179,49 @@ export default function NutriDashboardPage() {
                     className="w-full px-3 py-3 bg-pink-50 border border-pink-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Dias bebe</label>
-                  <input
-                    type="number"
-                    value={formData.idade_bebe || ''}
-                    onChange={(e) => setFormData({ ...formData, idade_bebe: Number(e.target.value) })}
-                    className="w-full px-3 py-3 bg-pink-50 border border-pink-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400"
-                  />
-                </div>
               </div>
-              <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl">
+
+              {/* Pergunta sobre maternidade - opcional */}
+              <div className="flex items-center justify-between p-4 bg-pink-50 rounded-xl">
                 <div className="flex items-center gap-3">
-                  <Baby className="w-5 h-5 text-purple-500" />
-                  <span className="font-medium text-gray-700">Esta amamentando?</span>
+                  <Baby className="w-5 h-5 text-pink-500" />
+                  <span className="font-medium text-gray-700">Voce tem filho(a)?</span>
                 </div>
                 <button
-                  onClick={() => setFormData({ ...formData, amamentando: !formData.amamentando })}
-                  className={`w-12 h-7 rounded-full transition-all ${formData.amamentando ? 'bg-purple-500' : 'bg-gray-300'}`}
+                  onClick={() => setTemFilho(!temFilho)}
+                  className={`w-12 h-7 rounded-full transition-all ${temFilho ? 'bg-pink-500' : 'bg-gray-300'}`}
                 >
-                  <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${formData.amamentando ? 'translate-x-6' : 'translate-x-1'}`} />
+                  <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${temFilho ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
               </div>
+
+              {/* Campos de maternidade - aparecem apenas se tem filho */}
+              {temFilho && (
+                <div className="space-y-3 p-4 bg-purple-50/50 rounded-xl border border-purple-100">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Idade do bebe (dias)</label>
+                    <input
+                      type="number"
+                      value={formData.idade_bebe || ''}
+                      onChange={(e) => setFormData({ ...formData, idade_bebe: Number(e.target.value) })}
+                      className="w-full px-3 py-3 bg-white border border-purple-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      placeholder="Ex: 30"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium text-gray-700">Esta amamentando?</span>
+                    </div>
+                    <button
+                      onClick={() => setFormData({ ...formData, amamentando: !formData.amamentando })}
+                      className={`w-12 h-7 rounded-full transition-all ${formData.amamentando ? 'bg-purple-500' : 'bg-gray-300'}`}
+                    >
+                      <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${formData.amamentando ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-2">Escolha seu plano</label>
                 <div className="grid grid-cols-2 gap-3">
@@ -261,8 +287,8 @@ export default function NutriDashboardPage() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-bold">Ola, {profile?.nome || 'Usuaria'}!</h1>
-            {profile?.idade_bebe && (
-              <p className="text-pink-100 text-sm mt-1">Bebe com {profile.idade_bebe} dias</p>
+            {profile?.idade_bebe && profile.idade_bebe > 0 && (
+              <p className="text-pink-100 text-sm mt-1">Bebe com {profile.idade_bebe} dias {profile.amamentando && '• Amamentando'}</p>
             )}
           </div>
           <div className="text-right">
