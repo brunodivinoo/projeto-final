@@ -5,12 +5,7 @@
 // tenta acessar uma pagina que nao esta em cache e esta offline
 // ============================================================
 
-import type { Metadata } from 'next'
-
-export const metadata: Metadata = {
-  title: 'Offline | StudyHub',
-  description: 'Voce esta offline. Conecte-se a internet para continuar.',
-}
+'use client'
 
 export default function OfflinePage() {
   return (

@@ -154,18 +154,7 @@ export default function RootLayout({
         {/* === SERVICE WORKER REGISTRATION === */}
         {/* Componente que registra e gerencia o Service Worker */}
         {/* Inclui banner de atualizacao quando nova versao esta disponivel */}
-        <ServiceWorkerRegistration
-          showUpdateUI={true}
-          onRegistered={(reg) => {
-            console.log('[App] SW registrado, escopo:', reg.scope)
-          }}
-          onUpdateAvailable={() => {
-            console.log('[App] Nova versao do app disponivel!')
-          }}
-          onError={(error) => {
-            console.error('[App] Erro no SW:', error.message)
-          }}
-        />
+        <ServiceWorkerRegistration showUpdateUI={true} />
       </body>
     </html>
   )
