@@ -1,13 +1,128 @@
-// Serviço de Busca de Imagens Médicas - Fontes Brasileiras
+// Serviço de Busca de Imagens Médicas - Google Custom Search
 // ============================================
-// ORDEM DE PRIORIDADE (FONTES BRASILEIRAS CONFIÁVEIS):
-// 1. Wikipedia PT (português brasileiro) - legendas em português
-// 2. Wikimedia Commons Medical - imagens de qualidade com licença
-// 3. Sites educacionais BR (InfoEscola, Brasil Escola, Toda Matéria)
+// ESTRATÉGIA DE BUSCA:
+// 1. Google Custom Search API (busca em sites médicos confiáveis)
+// 2. Fallback: Wikimedia Commons com filtros médicos
 //
-// NOTA: Priorizamos fontes brasileiras e em português para
-// garantir legendas e contexto educacional adequado.
+// Sites configurados no Custom Search Engine:
+// - Wikipedia, Wikimedia Commons
+// - Kenhub, Anatomy.com
+// - Sites educacionais BR (InfoEscola, Brasil Escola, Toda Matéria)
+// - MSD Manuals, MedicinaNet
 // ============================================
+
+// Configuração do Google Custom Search
+const GOOGLE_SEARCH_API_KEY = process.env.GOOGLE_SEARCH_API_KEY || ''
+const GOOGLE_SEARCH_ENGINE_ID = process.env.GOOGLE_SEARCH_ENGINE_ID || ''
+
+// ==========================================
+// GOOGLE CUSTOM SEARCH - BUSCA PRINCIPAL
+// ==========================================
+interface GoogleSearchItem {
+  title: string
+  link: string
+  displayLink: string
+  snippet: string
+  image?: {
+    contextLink: string
+    thumbnailLink: string
+  }
+  pagemap?: {
+    cse_image?: Array<{ src: string }>
+    cse_thumbnail?: Array<{ src: string; width: string; height: string }>
+  }
+}
+
+interface GoogleSearchResponse {
+  items?: GoogleSearchItem[]
+  searchInformation?: {
+    totalResults: string
+  }
+}
+
+/**
+ * Busca imagens usando Google Custom Search API
+ * Configurado para buscar apenas em sites médicos/educacionais confiáveis
+ */
+async function searchGoogleImages(query: string, limit: number = 8): Promise<MedicalImage[]> {
+  // Verificar se as credenciais estão configuradas
+  if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_SEARCH_ENGINE_ID) {
+    console.log('[GoogleSearch] API não configurada, pulando...')
+    return []
+  }
+
+  try {
+    // Adicionar termos médicos para melhorar resultados
+    const searchQuery = `${query} anatomia medicina`
+
+    const url = new URL('https://www.googleapis.com/customsearch/v1')
+    url.searchParams.set('key', GOOGLE_SEARCH_API_KEY)
+    url.searchParams.set('cx', GOOGLE_SEARCH_ENGINE_ID)
+    url.searchParams.set('q', searchQuery)
+    url.searchParams.set('searchType', 'image')
+    url.searchParams.set('num', Math.min(limit, 10).toString()) // Max 10 por request
+    url.searchParams.set('safe', 'active')
+    url.searchParams.set('imgType', 'photo')
+    // Filtrar por sites brasileiros e educacionais
+    url.searchParams.set('lr', 'lang_pt') // Preferir português
+
+    console.log('[GoogleSearch] Buscando:', searchQuery)
+
+    const response = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(10000)
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[GoogleSearch] Erro:', response.status, errorText)
+      return []
+    }
+
+    const data: GoogleSearchResponse = await response.json()
+
+    if (!data.items || data.items.length === 0) {
+      console.log('[GoogleSearch] Nenhum resultado para:', searchQuery)
+      return []
+    }
+
+    const images: MedicalImage[] = data.items
+      .filter(item => {
+        // Filtrar resultados irrelevantes
+        const title = item.title.toLowerCase()
+        const irrelevantTerms = ['novela', 'série', 'filme', 'música', 'banda', 'show', 'tv', 'programa']
+        return !irrelevantTerms.some(term => title.includes(term))
+      })
+      .map((item, index) => {
+        // Extrair nome do site
+        const siteName = item.displayLink
+          .replace('www.', '')
+          .replace('.com.br', '')
+          .replace('.com', '')
+          .replace('.org', '')
+          .split('.')[0]
+
+        return {
+          id: `google-${index}-${Date.now()}`,
+          url: item.link,
+          thumbUrl: item.pagemap?.cse_thumbnail?.[0]?.src || item.pagemap?.cse_image?.[0]?.src || item.link,
+          title: item.title,
+          caption: item.snippet || item.title,
+          source: 'google' as const,
+          sourceUrl: item.image?.contextLink || item.link,
+          sourceName: siteName.charAt(0).toUpperCase() + siteName.slice(1),
+          modality: 'Medical',
+          license: 'Fonte: ' + item.displayLink
+        }
+      })
+
+    console.log(`[GoogleSearch] Encontradas ${images.length} imagens`)
+    return images.slice(0, limit)
+
+  } catch (error) {
+    console.error('[GoogleSearch] Erro:', error)
+    return []
+  }
+}
 
 export interface MedicalImage {
   id: string
@@ -15,9 +130,9 @@ export interface MedicalImage {
   thumbUrl: string
   title: string
   caption: string
-  source: 'wikipedia_pt' | 'wikimedia' | 'educacional_br' | 'openi'
+  source: 'google' | 'wikimedia' | 'atlas' | 'wikipedia_pt' | 'openi'
   sourceUrl: string
-  sourceName?: string // Nome do site fonte (ex: "InfoEscola", "Brasil Escola")
+  sourceName?: string // Nome do site fonte (ex: "Kenhub", "Wikipedia")
   modality?: string
   license: string
 }
@@ -715,14 +830,13 @@ async function searchWikimedia(query: string, limit: number = 10): Promise<Medic
 
 /**
  * Busca imagens médicas com sistema inteligente:
- * 1. PRIORIZA fontes brasileiras (Wikipedia PT)
- * 2. Usa variações em português do termo
- * 3. Fallback para Wikimedia Commons
- * 4. Cache de resultados
- * 5. Retorna sugestões quando não encontra
+ * 1. PRIORIDADE: Google Custom Search (sites médicos confiáveis)
+ * 2. Fallback: Wikimedia Commons com filtros médicos
+ * 3. Cache de resultados
+ * 4. Retorna sugestões quando não encontra
  *
- * NOTA: OpenI foi removido como fonte para priorizar
- * conteúdo em português brasileiro.
+ * NOTA: Google Custom Search é configurado para buscar apenas
+ * em sites educacionais e médicos confiáveis.
  */
 export async function searchMedicalImages(
   query: string,
@@ -731,94 +845,63 @@ export async function searchMedicalImages(
   const { limit = 8, useCache = true } = options
   const originalQuery = query
 
-  // Gerar variações de busca em português
-  const portugueseVariations = getPortugueseSearchVariations(query)
+  // Gerar variações de busca
   const englishVariations = generateSearchVariations(query)
 
-  // Verificar cache para cada variação
+  // Verificar cache
   if (useCache) {
-    // Verificar cache PT primeiro
-    for (const variation of portugueseVariations) {
-      const cacheKey = getCacheKey(variation)
-      const cached = getFromCache(cacheKey)
-      if (cached && cached.length > 0) {
-        return {
-          images: cached.slice(0, limit),
-          total: cached.length,
-          cached: true,
-          source: 'cache',
-          queryUsed: variation,
-          originalQuery
-        }
-      }
-    }
-    // Depois cache EN
-    for (const variation of englishVariations) {
-      const cacheKey = getCacheKey(variation)
-      const cached = getFromCache(cacheKey)
-      if (cached && cached.length > 0) {
-        return {
-          images: cached.slice(0, limit),
-          total: cached.length,
-          cached: true,
-          source: 'cache',
-          queryUsed: variation,
-          originalQuery
-        }
+    const cacheKey = getCacheKey(query)
+    const cached = getFromCache(cacheKey)
+    if (cached && cached.length > 0) {
+      return {
+        images: cached.slice(0, limit),
+        total: cached.length,
+        cached: true,
+        source: 'cache',
+        queryUsed: query,
+        originalQuery
       }
     }
   }
 
-  // ORDEM DE PRIORIDADE (FONTES BRASILEIRAS PRIMEIRO):
-  // 1. Wikipedia em Português (legendas em português!)
-  // 2. Wikimedia Commons com filtro PT (imagens de qualidade)
-  // 3. Wikimedia Commons geral (fallback)
   let images: MedicalImage[] = []
   let queryUsed = originalQuery
   let source = 'none'
 
-  // PRIORIDADE 1: Wikipedia em Português
-  console.log('[ImageSearch] Buscando Wikipedia PT:', originalQuery)
-  images = await searchWikipediaPT(originalQuery, limit)
-  if (images.length > 0) {
-    queryUsed = originalQuery
-    source = 'wikipedia_pt'
-    console.log(`[ImageSearch] ✓ Encontradas ${images.length} imagens na Wikipedia PT`)
+  // PRIORIDADE 1: Google Custom Search (sites médicos confiáveis)
+  if (GOOGLE_SEARCH_API_KEY && GOOGLE_SEARCH_ENGINE_ID) {
+    console.log('[ImageSearch] Buscando Google Custom Search:', originalQuery)
+    images = await searchGoogleImages(originalQuery, limit)
+    if (images.length > 0) {
+      queryUsed = originalQuery
+      source = 'google'
+      console.log(`[ImageSearch] ✓ Encontradas ${images.length} imagens do Google`)
+    }
   }
 
-  // PRIORIDADE 2: Se não encontrou suficiente, tentar Wikimedia Commons
+  // PRIORIDADE 2: Se Google não retornou ou não está configurado, usar Wikimedia
   if (images.length < limit / 2) {
     console.log('[ImageSearch] Complementando com Wikimedia Commons')
 
-    // Primeiro tentar busca em português no Wikimedia
-    for (const variation of portugueseVariations.slice(0, 2)) {
-      const wikimediaImages = await searchWikimedia(variation + ' português', limit - images.length)
+    // Buscar no Wikimedia Commons com termos médicos específicos
+    for (const variation of englishVariations.slice(0, 3)) {
+      const searchTerm = `${variation} anatomy medical diagram`
+      const wikimediaImages = await searchWikimedia(searchTerm, limit - images.length)
       if (wikimediaImages.length > 0) {
-        // Filtrar duplicatas
-        const newImages = wikimediaImages.filter(
-          wi => !images.some(i => i.id === wi.id)
-        )
+        // Filtrar duplicatas e imagens irrelevantes
+        const newImages = wikimediaImages.filter(wi => {
+          // Excluir se já existe
+          if (images.some(i => i.id === wi.id)) return false
+          // Excluir imagens com títulos irrelevantes
+          const title = wi.title.toLowerCase()
+          const irrelevantTerms = ['logo', 'icon', 'banner', 'poster', 'novela', 'filme', 'série']
+          return !irrelevantTerms.some(term => title.includes(term))
+        })
         images = [...images, ...newImages]
         if (!source || source === 'none') source = 'wikimedia'
-        console.log(`[ImageSearch] + ${newImages.length} do Wikimedia PT`)
+        console.log(`[ImageSearch] + ${newImages.length} do Wikimedia`)
       }
       if (images.length >= limit) break
-    }
-
-    // Se ainda não tem suficiente, busca geral no Wikimedia
-    if (images.length < limit / 2) {
-      for (const variation of englishVariations.slice(0, 2)) {
-        const wikimediaImages = await searchWikimedia(variation, limit - images.length)
-        if (wikimediaImages.length > 0) {
-          const newImages = wikimediaImages.filter(
-            wi => !images.some(i => i.id === wi.id)
-          )
-          images = [...images, ...newImages]
-          if (!source || source === 'none') source = 'wikimedia'
-          console.log(`[ImageSearch] + ${newImages.length} do Wikimedia EN`)
-        }
-        if (images.length >= limit) break
-      }
     }
   }
 

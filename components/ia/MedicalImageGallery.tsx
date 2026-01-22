@@ -582,13 +582,14 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
           ))}
         </div>
 
-        {/* Footer - mostra fontes brasileiras */}
+        {/* Footer - mostra fonte */}
         <p className="text-white/40 text-xs mt-2">
           Clique para ampliar • Fonte: {
+            validImages[0]?.source === 'google' ? `🔍 ${validImages[0]?.sourceName || 'Google'}` :
             validImages[0]?.source === 'wikipedia_pt' ? '🇧🇷 Wikipedia PT' :
-            validImages[0]?.source === 'educacional_br' ? `🇧🇷 ${validImages[0]?.sourceName || 'Site Educacional BR'}` :
-            validImages[0]?.source === 'wikimedia' ? 'Wikimedia Commons' :
-            'Fonte Médica'
+            validImages[0]?.source === 'wikimedia' ? '📚 Wikimedia Commons' :
+            validImages[0]?.source === 'openi' ? '🏥 PubMed/OpenI' :
+            `📷 ${validImages[0]?.sourceName || 'Fonte Médica'}`
           }
         </p>
       </div>
