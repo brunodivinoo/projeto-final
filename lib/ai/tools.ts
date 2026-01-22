@@ -238,12 +238,13 @@ A imagem gerada será inserida na resposta automaticamente.`,
 // LISTA DE TODAS AS TOOLS
 // ==========================================
 
+// NOTA: TOOL_GERAR_IMAGEM_MEDICA foi removida - agora usamos busca de imagens reais
+// via marcador [IMAGE_SEARCH: termo] que busca em OpenI (NIH) e Wikimedia
 export const PREPARAMED_TOOLS: Anthropic.Tool[] = [
   TOOL_BUSCAR_QUESTOES,
   TOOL_CRIAR_PLANO_ESTUDOS,
   TOOL_EXPLICAR_QUESTAO,
-  TOOL_CALCULAR_IMC,
-  TOOL_GERAR_IMAGEM_MEDICA
+  TOOL_CALCULAR_IMC
 ]
 
 export const STRUCTURED_OUTPUT_TOOLS: Anthropic.Tool[] = [

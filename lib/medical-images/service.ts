@@ -1,7 +1,10 @@
 // Serviço de Busca de Imagens Médicas Reais
-// Fonte principal: OpenI (NIH) - API gratuita sem autenticação
-// Fallback: Wikimedia Commons
-// Sistema inteligente de busca com tradução e termos alternativos
+// ============================================
+// ORDEM DE PRIORIDADE:
+// 1. Wikipedia PT (português brasileiro) - legendas em português
+// 2. Wikimedia Commons Medical - imagens de qualidade com licença
+// 3. OpenI (NIH) - fallback para imagens em inglês
+// ============================================
 
 export interface MedicalImage {
   id: string
@@ -9,7 +12,7 @@ export interface MedicalImage {
   thumbUrl: string
   title: string
   caption: string
-  source: 'openi' | 'wikimedia'
+  source: 'wikipedia_pt' | 'openi' | 'wikimedia'
   sourceUrl: string
   modality?: string
   license: string
@@ -381,6 +384,104 @@ function detectModality(item: OpenIItem): string {
 }
 
 // ==========================================
+// BUSCA NA WIKIPEDIA EM PORTUGUÊS (PRIORITÁRIA!)
+// ==========================================
+interface WikipediaPTPage {
+  pageid: number
+  title: string
+  thumbnail?: {
+    source: string
+    width: number
+    height: number
+  }
+  original?: {
+    source: string
+  }
+  pageimage?: string
+  extract?: string
+  fullurl?: string
+}
+
+interface WikipediaPTSearchResult {
+  query?: {
+    pages?: Record<string, WikipediaPTPage>
+    search?: Array<{ pageid: number; title: string }>
+  }
+}
+
+/**
+ * Busca imagens na Wikipedia em Português
+ * Esta é a FONTE PRIORITÁRIA pois:
+ * - Legendas já vêm em português
+ * - Conteúdo de qualidade verificado
+ * - Licença livre (CC/domínio público)
+ */
+async function searchWikipediaPT(query: string, limit: number = 10): Promise<MedicalImage[]> {
+  try {
+    // Primeiro, buscar páginas relevantes
+    const searchResponse = await fetch(
+      `https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + ' anatomia medicina')}&format=json&srlimit=${limit * 2}&origin=*`,
+      { signal: AbortSignal.timeout(10000) }
+    )
+
+    if (!searchResponse.ok) {
+      console.error('[WikipediaPT] Search error:', searchResponse.status)
+      return []
+    }
+
+    const searchData: WikipediaPTSearchResult = await searchResponse.json()
+    const searchResults = searchData.query?.search || []
+
+    if (searchResults.length === 0) {
+      console.log('[WikipediaPT] Nenhum resultado para:', query)
+      return []
+    }
+
+    // Pegar os pageids para buscar imagens
+    const pageIds = searchResults.slice(0, limit).map(r => r.pageid).join('|')
+
+    // Buscar detalhes das páginas com imagens
+    const detailsResponse = await fetch(
+      `https://pt.wikipedia.org/w/api.php?action=query&pageids=${pageIds}&prop=pageimages|info|extracts&piprop=thumbnail|original&pithumbsize=400&exintro=1&explaintext=1&exsentences=2&inprop=url&format=json&origin=*`,
+      { signal: AbortSignal.timeout(10000) }
+    )
+
+    if (!detailsResponse.ok) {
+      console.error('[WikipediaPT] Details error:', detailsResponse.status)
+      return []
+    }
+
+    const detailsData: WikipediaPTSearchResult = await detailsResponse.json()
+    const pages = detailsData.query?.pages || {}
+
+    const images: MedicalImage[] = []
+
+    for (const page of Object.values(pages)) {
+      // Só incluir se tiver imagem
+      if (page.thumbnail?.source || page.original?.source) {
+        images.push({
+          id: `wikipt-${page.pageid}`,
+          url: page.original?.source || page.thumbnail?.source || '',
+          thumbUrl: page.thumbnail?.source || page.original?.source || '',
+          title: page.title,
+          caption: page.extract || `Artigo sobre ${page.title} na Wikipedia`,
+          source: 'wikipedia_pt' as const,
+          sourceUrl: page.fullurl || `https://pt.wikipedia.org/wiki/${encodeURIComponent(page.title)}`,
+          modality: 'Medical',
+          license: 'Wikipedia - CC BY-SA 3.0'
+        })
+      }
+    }
+
+    console.log(`[WikipediaPT] Encontradas ${images.length} imagens para: ${query}`)
+    return images
+  } catch (error) {
+    console.error('[WikipediaPT] Erro:', error)
+    return []
+  }
+}
+
+// ==========================================
 // BUSCA NO OPENI
 // ==========================================
 interface OpenIResponse {
@@ -585,25 +686,40 @@ export async function searchMedicalImages(
   }
 
   // Tentar cada variação até encontrar resultados
+  // ORDEM DE PRIORIDADE:
+  // 1. Wikipedia PT (legendas em português!)
+  // 2. Wikimedia Commons (imagens de qualidade)
+  // 3. OpenI (fallback em inglês)
   let images: MedicalImage[] = []
   let queryUsed = searchVariations[0]
   let source = 'none'
 
-  for (const variation of searchVariations) {
-    // Tentar OpenI primeiro
-    images = await searchOpenI(variation, limit)
-    if (images.length > 0) {
-      queryUsed = variation
-      source = 'openi'
-      break
-    }
+  // PRIORIDADE 1: Wikipedia em Português (busca com termo original em PT)
+  console.log('[ImageSearch] Tentando Wikipedia PT com termo original:', originalQuery)
+  images = await searchWikipediaPT(originalQuery, limit)
+  if (images.length > 0) {
+    queryUsed = originalQuery
+    source = 'wikipedia_pt'
+  }
 
-    // Tentar Wikimedia como fallback
-    images = await searchWikimedia(variation, limit)
-    if (images.length > 0) {
-      queryUsed = variation
-      source = 'wikimedia'
-      break
+  // Se não encontrou na Wikipedia PT, tentar outras fontes
+  if (images.length === 0) {
+    for (const variation of searchVariations) {
+      // PRIORIDADE 2: Wikimedia Commons (muitas imagens médicas em PT também)
+      images = await searchWikimedia(variation, limit)
+      if (images.length > 0) {
+        queryUsed = variation
+        source = 'wikimedia'
+        break
+      }
+
+      // PRIORIDADE 3: OpenI (fallback - imagens em inglês)
+      images = await searchOpenI(variation, limit)
+      if (images.length > 0) {
+        queryUsed = variation
+        source = 'openi'
+        break
+      }
     }
   }
 
