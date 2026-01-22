@@ -1,14 +1,14 @@
 // Serviço de Busca de Imagens Médicas - Google Custom Search
 // ============================================
 // ESTRATÉGIA DE BUSCA:
-// 1. Google Custom Search API (busca em sites médicos confiáveis)
-// 2. Fallback: Wikimedia Commons com filtros médicos
+// - Google Custom Search API APENAS (sites médicos brasileiros confiáveis)
+// - Wikimedia Commons foi DESATIVADO (retornava imagens irrelevantes)
 //
-// Sites configurados no Custom Search Engine:
-// - Wikipedia, Wikimedia Commons
-// - Kenhub, Anatomy.com
-// - Sites educacionais BR (InfoEscola, Brasil Escola, Toda Matéria)
-// - MSD Manuals, MedicinaNet
+// Sites configurados no Custom Search Engine (ID: 266b40ccc6406482d):
+// - Sites educacionais BR: InfoEscola, Brasil Escola, Toda Matéria
+// - Sites médicos BR: MedicinaNet, MSD Manuals, Drauzio Varella
+// - Universidades: USP, UFRJ, UFMG
+// - Artigos científicos: SciELO, RBGO
 // ============================================
 
 // Configuração do Google Custom Search
@@ -758,79 +758,11 @@ async function searchOpenI(query: string, limit: number = 10): Promise<MedicalIm
 }
 
 // ==========================================
-// BUSCA NO WIKIMEDIA
+// BUSCA NO WIKIMEDIA - DESATIVADA
 // ==========================================
-interface WikimediaSearchItem {
-  title: string
-  pageid: number
-}
-
-interface WikimediaImageInfo {
-  url: string
-  extmetadata?: {
-    ImageDescription?: { value: string }
-    License?: { value: string }
-  }
-}
-
-interface WikimediaPage {
-  pageid: number
-  title: string
-  imageinfo?: WikimediaImageInfo[]
-}
-
-async function searchWikimedia(query: string, limit: number = 10): Promise<MedicalImage[]> {
-  try {
-    const searchResponse = await fetch(
-      `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + ' medical')}&srnamespace=6&format=json&srlimit=${limit}&origin=*`,
-      { signal: AbortSignal.timeout(10000) }
-    )
-
-    if (!searchResponse.ok) {
-      throw new Error(`Wikimedia search error: ${searchResponse.status}`)
-    }
-
-    const searchData = await searchResponse.json()
-    const items: WikimediaSearchItem[] = searchData.query?.search || []
-
-    if (items.length === 0) return []
-
-    const titles = items.map((item) => item.title).join('|')
-    const infoResponse = await fetch(
-      `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(titles)}&prop=imageinfo&iiprop=url|extmetadata&format=json&origin=*`,
-      { signal: AbortSignal.timeout(10000) }
-    )
-
-    if (!infoResponse.ok) {
-      throw new Error(`Wikimedia info error: ${infoResponse.status}`)
-    }
-
-    const infoData = await infoResponse.json()
-    const pages: WikimediaPage[] = Object.values(infoData.query?.pages || {})
-
-    return pages
-      .filter((page) => page.imageinfo?.[0]?.url)
-      .map((page) => {
-        const info = page.imageinfo![0]
-        const fileName = page.title.replace('File:', '').replace(/_/g, ' ')
-
-        return {
-          id: `wiki-${page.pageid}`,
-          url: info.url,
-          thumbUrl: info.url,
-          title: fileName,
-          caption: info.extmetadata?.ImageDescription?.value || '',
-          source: 'wikimedia' as const,
-          sourceUrl: `https://commons.wikimedia.org/wiki/${encodeURIComponent(page.title)}`,
-          modality: 'Medical',
-          license: info.extmetadata?.License?.value || 'Creative Commons'
-        }
-      })
-  } catch (error) {
-    console.error('Wikimedia search error:', error)
-    return []
-  }
-}
+// NOTA: Busca no Wikimedia Commons foi desativada pois retornava
+// imagens irrelevantes (novelas, séries de TV, etc).
+// Mantendo apenas Google Custom Search para sites médicos brasileiros.
 
 // ==========================================
 // FUNÇÃO PRINCIPAL - BUSCA INTELIGENTE
@@ -838,13 +770,14 @@ async function searchWikimedia(query: string, limit: number = 10): Promise<Medic
 
 /**
  * Busca imagens médicas com sistema inteligente:
- * 1. PRIORIDADE: Google Custom Search (sites médicos confiáveis)
- * 2. Fallback: Wikimedia Commons com filtros médicos
- * 3. Cache de resultados
- * 4. Retorna sugestões quando não encontra
+ * 1. Google Custom Search API (busca em sites médicos brasileiros confiáveis)
+ * 2. Cache de resultados
+ * 3. Retorna sugestões quando não encontra
  *
  * NOTA: Google Custom Search é configurado para buscar apenas
- * em sites educacionais e médicos confiáveis.
+ * em sites educacionais e médicos brasileiros confiáveis.
+ * O fallback para Wikimedia Commons foi DESATIVADO pois retornava
+ * imagens irrelevantes (novelas, etc).
  */
 export async function searchMedicalImages(
   query: string,
@@ -852,9 +785,6 @@ export async function searchMedicalImages(
 ): Promise<SearchResult> {
   const { limit = 8, useCache = true } = options
   const originalQuery = query
-
-  // Gerar variações de busca
-  const englishVariations = generateSearchVariations(query)
 
   // Verificar cache
   if (useCache) {
@@ -876,7 +806,7 @@ export async function searchMedicalImages(
   let queryUsed = originalQuery
   let source = 'none'
 
-  // PRIORIDADE 1: Google Custom Search (sites médicos confiáveis)
+  // ÚNICA FONTE: Google Custom Search (sites médicos brasileiros confiáveis)
   if (GOOGLE_SEARCH_API_KEY && GOOGLE_SEARCH_ENGINE_ID) {
     console.log('[ImageSearch] Buscando Google Custom Search:', originalQuery)
     images = await searchGoogleImages(originalQuery, limit)
@@ -884,34 +814,17 @@ export async function searchMedicalImages(
       queryUsed = originalQuery
       source = 'google'
       console.log(`[ImageSearch] ✓ Encontradas ${images.length} imagens do Google`)
+    } else {
+      console.log('[ImageSearch] Google não retornou resultados')
     }
+  } else {
+    console.log('[ImageSearch] ⚠️ Google Custom Search não configurado!')
+    console.log('[ImageSearch] API_KEY presente:', !!GOOGLE_SEARCH_API_KEY)
+    console.log('[ImageSearch] ENGINE_ID presente:', !!GOOGLE_SEARCH_ENGINE_ID)
   }
 
-  // PRIORIDADE 2: Se Google não retornou ou não está configurado, usar Wikimedia
-  if (images.length < limit / 2) {
-    console.log('[ImageSearch] Complementando com Wikimedia Commons')
-
-    // Buscar no Wikimedia Commons com termos médicos específicos
-    for (const variation of englishVariations.slice(0, 3)) {
-      const searchTerm = `${variation} anatomy medical diagram`
-      const wikimediaImages = await searchWikimedia(searchTerm, limit - images.length)
-      if (wikimediaImages.length > 0) {
-        // Filtrar duplicatas e imagens irrelevantes
-        const newImages = wikimediaImages.filter(wi => {
-          // Excluir se já existe
-          if (images.some(i => i.id === wi.id)) return false
-          // Excluir imagens com títulos irrelevantes
-          const title = wi.title.toLowerCase()
-          const irrelevantTerms = ['logo', 'icon', 'banner', 'poster', 'novela', 'filme', 'série']
-          return !irrelevantTerms.some(term => title.includes(term))
-        })
-        images = [...images, ...newImages]
-        if (!source || source === 'none') source = 'wikimedia'
-        console.log(`[ImageSearch] + ${newImages.length} do Wikimedia`)
-      }
-      if (images.length >= limit) break
-    }
-  }
+  // NOTA: Fallback para Wikimedia Commons foi DESATIVADO
+  // pois retornava imagens irrelevantes (novelas, séries de TV, etc)
 
   // Limitar ao número solicitado
   images = images.slice(0, limit)
