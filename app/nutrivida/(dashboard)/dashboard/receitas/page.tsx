@@ -116,7 +116,9 @@ export default function ReceitasPage() {
     try {
       // Extrair nome da receita (primeira linha que comeca com NOME:)
       const nomeMatch = receita.match(/NOME:\s*(.+)/i)
-      const nome = nomeMatch ? nomeMatch[1].trim() : `Receita de ${tipoSelecionado}`
+      let nome = nomeMatch ? nomeMatch[1].trim() : `Receita de ${tipoSelecionado}`
+      // Remover timestamps ou numeros indesejados que podem aparecer no nome
+      nome = nome.replace(/#\d+/g, '').replace(/\(\d+\)/g, '').trim()
 
       // Extrair calorias e proteinas se disponiveis
       const caloriasMatch = receita.match(/CALORIAS?:\s*(\d+)/i)

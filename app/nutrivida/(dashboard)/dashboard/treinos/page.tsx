@@ -330,13 +330,26 @@ export default function TreinosPage() {
     setDicaDetalhada(detalhada)
 
     const tipoMensagem = detalhada
-      ? `Explique detalhadamente como executar o exercicio "${exercicio.nome}" para uma mulher, incluindo:
-         1. Posicao inicial correta
-         2. Movimento passo a passo
-         3. Erros comuns a evitar
-         4. Respiracao adequada
-         5. Variacoes (mais facil/mais dificil)
-         Seja clara e pratica.`
+      ? `Explique como executar o exercicio "${exercicio.nome}" de forma clara e visual.
+
+FORMATO OBRIGATORIO (use exatamente esses titulos):
+
+1. POSIÇÃO INICIAL
+[Descreva em 1-2 frases curtas]
+
+2. MOVIMENTO
+[Descreva o movimento em passos simples e curtos]
+
+3. ERROS A EVITAR
+[Liste 2-3 erros comuns em frases curtas]
+
+4. RESPIRAÇÃO
+[1 frase sobre quando inspirar/expirar]
+
+5. VARIAÇÕES
+[1 opcao mais facil e 1 mais dificil]
+
+Seja CONCISA. Frases curtas. Facil de ler rapidamente.`
       : `Me de uma dica rapida e pratica (max 2 frases) sobre como executar corretamente o exercicio "${exercicio.nome}" para uma mulher. Foque na tecnica e seguranca.`
 
     try {
@@ -528,15 +541,15 @@ export default function TreinosPage() {
 
         {/* Dica da IA */}
         {(dicaIA || buscandoDica) && (
-          <div className={`bg-gradient-to-r from-blue-50 to-purple-50 border border-purple-200 rounded-2xl p-4 ${dicaDetalhada ? 'max-h-[40vh] overflow-y-auto' : ''}`}>
+          <div className={`bg-gradient-to-r from-blue-50 to-purple-50 border border-purple-200 rounded-2xl p-4 ${dicaDetalhada ? 'max-h-[50vh] overflow-y-auto' : ''}`}>
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Bot className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-purple-600 font-medium">
-                    {dicaDetalhada ? 'Tutorial Detalhado' : 'Dica da Nutri IA'}
+                    {dicaDetalhada ? 'Tutorial Visual' : 'Dica da Nutri IA'}
                   </p>
                   {dicaIA && (
                     <button
@@ -550,7 +563,45 @@ export default function TreinosPage() {
                 {buscandoDica ? (
                   <div className="flex items-center gap-2 text-gray-500">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">{dicaDetalhada ? 'Gerando tutorial detalhado...' : 'Gerando dica...'}</span>
+                    <span className="text-sm">{dicaDetalhada ? 'Gerando tutorial visual...' : 'Gerando dica...'}</span>
+                  </div>
+                ) : dicaDetalhada ? (
+                  // Tutorial visual formatado
+                  <div className="space-y-3">
+                    {dicaIA?.split(/\n\n|\n(?=\d\.)/g).map((secao, i) => {
+                      const linhas = secao.trim().split('\n')
+                      const primeiraLinha = linhas[0]
+                      const resto = linhas.slice(1).join('\n')
+
+                      // Detectar se e um titulo/secao numerada
+                      const isTitulo = /^(\d+\.|•|-|\*|POSIÇÃO|MOVIMENTO|ERROS|RESPIRAÇÃO|VARIAÇÕES|DICA)/i.test(primeiraLinha)
+
+                      // Icones por tipo de secao
+                      let icon = '💡'
+                      let bgColor = 'bg-gray-50'
+                      if (/posição|inicial/i.test(primeiraLinha)) { icon = '🧍'; bgColor = 'bg-green-50' }
+                      else if (/movimento|passo|como/i.test(primeiraLinha)) { icon = '🔄'; bgColor = 'bg-blue-50' }
+                      else if (/erro|evitar|cuidado/i.test(primeiraLinha)) { icon = '⚠️'; bgColor = 'bg-red-50' }
+                      else if (/respiração|respir/i.test(primeiraLinha)) { icon = '🌬️'; bgColor = 'bg-cyan-50' }
+                      else if (/variação|alternativa|modific/i.test(primeiraLinha)) { icon = '✨'; bgColor = 'bg-purple-50' }
+                      else if (/dica|lembre/i.test(primeiraLinha)) { icon = '💪'; bgColor = 'bg-yellow-50' }
+
+                      if (!isTitulo && primeiraLinha.length < 10) return null
+
+                      return (
+                        <div key={i} className={`${bgColor} rounded-xl p-3`}>
+                          <div className="flex items-start gap-2">
+                            <span className="text-lg flex-shrink-0">{icon}</span>
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">{primeiraLinha.replace(/^(\d+\.|•|-|\*)\s*/, '')}</p>
+                              {resto && (
+                                <p className="text-xs text-gray-600 mt-1 leading-relaxed">{resto}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{dicaIA}</div>

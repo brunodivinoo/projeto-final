@@ -703,7 +703,7 @@ export async function gerarReceita(
   const prompt = `Crie uma receita ${tipo} ${estiloAleatorio} e saudavel.
 
 IMPORTANTE: ${variadorAleatorio}
-ID da receita: #${timestamp} (use isso para garantir que seja uma receita DIFERENTE a cada vez)
+Gere uma receita UNICA e criativa. NAO inclua numeros ou codigos no nome da receita.
 
 ${ingredientes?.length ? `Ingredientes disponiveis: ${ingredientes.join(', ')}` : ''}
 ${restricoes ? `Restricoes: ${restricoes}` : ''}
