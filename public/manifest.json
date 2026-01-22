@@ -1,105 +1,148 @@
 {
-  "name": "NutriVida - Sua Nutricionista Virtual",
-  "short_name": "NutriVida",
-  "description": "App de nutrição inteligente para mulheres. Planeje refeições, treinos, receitas e alcance seus objetivos de saúde com ajuda de IA.",
+  "name": "StudyHub - Plataforma de Estudos Inteligente",
+  "short_name": "StudyHub",
+  "description": "Plataforma completa de estudos com IA. Inclui PREPARA MED para estudantes de medicina e NutriVida para nutrição personalizada.",
   "lang": "pt-BR",
   "dir": "ltr",
-  "start_url": "/nutrivida",
+  "start_url": "/",
   "scope": "/",
+  "id": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
-  "theme_color": "#ec4899",
-  "background_color": "#fdf2f8",
-  "categories": ["health", "fitness", "food", "lifestyle"],
+  "theme_color": "#6366f1",
+  "background_color": "#f6f7f8",
+  "categories": ["education", "health", "fitness", "productivity"],
+
   "icons": [
+    {
+      "src": "/icons/icon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
     {
       "src": "/icons/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-96x96.png",
       "sizes": "96x96",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-128x128.png",
       "sizes": "128x128",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-152x152.png",
       "sizes": "152x152",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-167x167.png",
+      "sizes": "167x167",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-180x180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-384x384.png",
       "sizes": "384x384",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
+
   "screenshots": [
     {
       "src": "/screenshots/screenshot-mobile.png",
       "sizes": "750x1334",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Tela inicial do NutriVida"
+      "label": "Dashboard Principal"
     },
     {
       "src": "/screenshots/screenshot-desktop.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Dashboard NutriVida"
+      "label": "Visão Desktop"
     }
   ],
+
   "shortcuts": [
     {
-      "name": "Chat com IA",
-      "short_name": "IA",
-      "description": "Converse com sua nutricionista virtual",
-      "url": "/nutrivida/dashboard/ia",
-      "icons": [{ "src": "/icons/shortcut-ia.png", "sizes": "96x96" }]
+      "name": "PREPARA MED - IA Médica",
+      "short_name": "PREPARA MED",
+      "description": "Assistente IA para estudantes de medicina",
+      "url": "/medicina/dashboard/ia",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
-      "name": "Receitas",
-      "short_name": "Receitas",
-      "description": "Gerar receitas saudáveis",
-      "url": "/nutrivida/dashboard/receitas",
-      "icons": [{ "src": "/icons/shortcut-receitas.png", "sizes": "96x96" }]
+      "name": "NutriVida - Nutrição",
+      "short_name": "NutriVida",
+      "description": "Sua nutricionista virtual com IA",
+      "url": "/nutrivida/dashboard",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
-      "name": "Treinos",
-      "short_name": "Treinos",
-      "description": "Seus treinos do dia",
-      "url": "/nutrivida/dashboard/treinos",
-      "icons": [{ "src": "/icons/shortcut-treinos.png", "sizes": "96x96" }]
+      "name": "Questões - Simulados",
+      "short_name": "Questões",
+      "description": "Pratique com questões de residência",
+      "url": "/medicina/dashboard/questoes",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ],
+
   "related_applications": [],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }

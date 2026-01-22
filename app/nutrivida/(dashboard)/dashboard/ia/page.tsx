@@ -43,15 +43,31 @@ interface Conversa {
   updated_at: string
 }
 
-// Sugestoes por categoria
-const SUGESTOES = [
-  { icon: ChefHat, texto: 'Me de uma receita rapida e saudavel', categoria: 'receita', cor: 'from-orange-400 to-red-400' },
-  { icon: Droplets, texto: 'Como posso beber mais agua no dia?', categoria: 'hidratacao', cor: 'from-blue-400 to-cyan-400' },
-  { icon: Dumbbell, texto: 'Qual o melhor exercicio para emagrecer?', categoria: 'treino', cor: 'from-green-400 to-emerald-400' },
-  { icon: Apple, texto: 'Qual fruta e mais nutritiva?', categoria: 'nutricao', cor: 'from-pink-400 to-rose-400' },
-  { icon: Scale, texto: 'Dicas para perder peso de forma saudavel', categoria: 'emagrecimento', cor: 'from-purple-400 to-violet-400' },
-  { icon: Moon, texto: 'Alimentos que ajudam a dormir melhor', categoria: 'sono', cor: 'from-indigo-400 to-blue-400' },
+// Sugestoes por categoria - variam para nao ser repetitivo
+const SUGESTOES_BASE = [
+  // Receitas
+  { icon: ChefHat, textos: ['Me de uma receita rapida e saudavel', 'Sugira um cafe da manha fit', 'Ideia de lanche proteico', 'Receita low carb para jantar'], categoria: 'receita', cor: 'from-orange-400 to-red-400' },
+  // Hidratacao
+  { icon: Droplets, textos: ['Como posso beber mais agua no dia?', 'Dicas para hidratar melhor', 'Agua aromatizada caseira', 'Sinais de desidratacao'], categoria: 'hidratacao', cor: 'from-blue-400 to-cyan-400' },
+  // Treino
+  { icon: Dumbbell, textos: ['Qual o melhor exercicio para emagrecer?', 'Treino rapido para fazer em casa', 'Exercicios para gluteos', 'Alongamento pos-treino'], categoria: 'treino', cor: 'from-green-400 to-emerald-400' },
+  // Nutricao
+  { icon: Apple, textos: ['Qual fruta e mais nutritiva?', 'Alimentos ricos em proteina', 'O que comer antes de treinar?', 'Substituicoes saudaveis'], categoria: 'nutricao', cor: 'from-pink-400 to-rose-400' },
+  // Emagrecimento
+  { icon: Scale, textos: ['Dicas para perder peso de forma saudavel', 'Como acelerar o metabolismo', 'Alimentos que saciam a fome', 'Estrategias para nao desistir'], categoria: 'emagrecimento', cor: 'from-purple-400 to-violet-400' },
+  // Sono/Bem-estar
+  { icon: Moon, textos: ['Alimentos que ajudam a dormir melhor', 'Rotina noturna para relaxar', 'Chas para ansiedade', 'Como reduzir o estresse'], categoria: 'sono', cor: 'from-indigo-400 to-blue-400' },
 ]
+
+// Seleciona sugestoes aleatorias para variar
+const getSugestoes = () => {
+  return SUGESTOES_BASE.map(cat => ({
+    icon: cat.icon,
+    texto: cat.textos[Math.floor(Math.random() * cat.textos.length)],
+    categoria: cat.categoria,
+    cor: cat.cor
+  }))
+}
 
 // Modos de chat
 const MODOS = [
@@ -73,6 +89,7 @@ export default function NutriIAPage() {
   const [modo, setModo] = useState('normal')
   const [copiado, setCopiado] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [sugestoes, setSugestoes] = useState(getSugestoes())
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -158,6 +175,8 @@ export default function NutriIAPage() {
     setMensagens([])
     setConversaId(null)
     setShowSidebar(false)
+    // Renovar sugestoes para variar
+    setSugestoes(getSugestoes())
   }
 
   // Copiar resposta
@@ -499,7 +518,7 @@ export default function NutriIAPage() {
 
               {/* Sugestoes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 w-full max-w-3xl">
-                {SUGESTOES.map((sugestao, i) => (
+                {sugestoes.map((sugestao, i) => (
                   <button
                     key={i}
                     onClick={() => enviarMensagem(sugestao.texto)}
@@ -512,6 +531,15 @@ export default function NutriIAPage() {
                   </button>
                 ))}
               </div>
+
+              {/* Botao para novas sugestoes */}
+              <button
+                onClick={() => setSugestoes(getSugestoes())}
+                className="mt-4 text-sm text-pink-500 hover:text-pink-600 flex items-center gap-1 mx-auto"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Outras sugestoes
+              </button>
             </div>
           ) : (
             <>

@@ -467,38 +467,101 @@ export async function chatNutriIA(
   mensagem: string,
   historico: Array<{ role: 'user' | 'assistant'; content: string }> = [],
   perfil?: ProfileContext,
-  modoForce?: 'normal' | 'gestante'
+  modoForce?: 'normal' | 'gestante' | 'receitas' | 'treino' | 'nutricao'
 ): Promise<{ resposta: string; fromCache: boolean }> {
-  const cacheKey = getCacheKey(mensagem, JSON.stringify(perfil))
-  const cached = getFromCache(cacheKey)
-  if (cached) {
-    return { resposta: cached, fromCache: true }
+  // Verificar se e uma pergunta muito curta ou generica que nao deve usar cache
+  const perguntaCurta = mensagem.length < 30
+  const perguntasVariaveis = ['dica', 'sugir', 'receita', 'ideia', 'exemplo', 'outro', 'mais', 'diferente']
+  const deveVariar = perguntasVariaveis.some(p => mensagem.toLowerCase().includes(p))
+
+  // So usa cache para perguntas especificas e longas
+  if (!deveVariar && !perguntaCurta) {
+    const cacheKey = getCacheKey(mensagem, JSON.stringify(perfil))
+    const cached = getFromCache(cacheKey)
+    if (cached) {
+      return { resposta: cached, fromCache: true }
+    }
   }
 
   const modo = modoForce || determinarModo(perfil)
-  const systemPrompt = modo === 'gestante'
-    ? SYSTEM_PROMPTS.gestante
-    : SYSTEM_PROMPTS.nutri_coach
+
+  // Selecionar system prompt baseado no modo
+  let systemPrompt = SYSTEM_PROMPTS.nutri_coach
+  if (modo === 'gestante') {
+    systemPrompt = SYSTEM_PROMPTS.gestante
+  } else if (modo === 'receitas') {
+    systemPrompt = SYSTEM_PROMPTS.receita_ia
+  } else if (modo === 'treino') {
+    systemPrompt = `Voce e a NutriVida IA, especializada em exercicios e treinos para mulheres.
+
+ESPECIALIDADES:
+- Treinos funcionais e em casa
+- Yoga e alongamento
+- Exercicios pos-parto seguros
+- Treinos para gestantes (com restricoes)
+- HIIT e cardio adaptado
+- Fortalecimento muscular
+
+FORMATO:
+- Seja especifica com series, repeticoes e descanso
+- Indique nivel de dificuldade
+- Sempre mencione cuidados de seguranca
+- Adapte para o nivel da usuaria
+
+IMPORTANTE: Varie suas sugestoes e exemplos a cada resposta.`
+  } else if (modo === 'nutricao') {
+    systemPrompt = `Voce e a NutriVida IA, nutricionista virtual focada em alimentacao saudavel.
+
+ESPECIALIDADES:
+- Planos alimentares personalizados
+- Substituicoes inteligentes
+- Analise de refeicoes
+- Dicas de preparo saudavel
+- Leitura de rotulos
+- Suplementacao segura
+
+FORMATO:
+- Use exemplos praticos e acessiveis
+- Inclua opcoes de substituicao
+- Mencione valores nutricionais quando relevante
+- Seja empatica e motivadora
+
+IMPORTANTE: Varie seus exemplos e sugestoes a cada interacao para nao parecer robotica.`
+  }
 
   const contexto = gerarContexto(perfil)
+
+  // Adicionar instrucao de variacao
+  const instrucaoVariacao = `
+
+IMPORTANTE NESTA RESPOSTA:
+- Seja natural e conversacional, nao robotica
+- Varie suas sugestoes - nao repita exemplos das mensagens anteriores
+- Use linguagem acolhedora e empoderada
+- Timestamp para unicidade: ${Date.now()}`
 
   try {
     const result = await withRetry(async () => {
       const { text } = await generateText({
         model: MODELS.primary,
-        system: systemPrompt + '\n\n' + contexto,
+        system: systemPrompt + '\n\n' + contexto + instrucaoVariacao,
         messages: [
-          ...historico.map(msg => ({
+          ...historico.slice(-6).map(msg => ({
             role: msg.role as 'user' | 'assistant',
             content: msg.content
           })),
           { role: 'user' as const, content: mensagem }
         ],
+        temperature: deveVariar ? 0.85 : 0.7, // Mais variacao quando pede sugestoes
       })
       return text
     })
 
-    setCache(cacheKey, result)
+    // So cacheia se nao for pergunta variavel
+    if (!deveVariar && !perguntaCurta) {
+      const cacheKey = getCacheKey(mensagem, JSON.stringify(perfil))
+      setCache(cacheKey, result)
+    }
     return { resposta: result, fromCache: false }
   } catch (error) {
     console.error('Erro no chat IA:', error)

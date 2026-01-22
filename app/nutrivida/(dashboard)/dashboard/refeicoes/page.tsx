@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNutriAuth } from '@/contexts/NutriAuthContext'
 import { supabase } from '@/lib/supabase'
 import { REFEICOES_COMPLETAS, OpcaoRefeicao } from '@/lib/nutrivida/data'
@@ -22,7 +22,14 @@ import {
   Loader2,
   RefreshCw,
   TrendingUp,
-  Apple
+  Apple,
+  Calendar,
+  ChevronLeft,
+  Plus,
+  History,
+  Target,
+  Award,
+  PieChart
 } from 'lucide-react'
 
 type TipoRefeicao = 'cafe' | 'lanche_manha' | 'almoco' | 'lanche_tarde' | 'jantar' | 'ceia'
@@ -45,6 +52,25 @@ const TIPO_COLORS: Record<TipoRefeicao, { bg: string; text: string; light: strin
   ceia: { bg: 'bg-indigo-500', text: 'text-indigo-500', light: 'bg-indigo-50' }
 }
 
+// Interface para refeicao manual
+interface RefeicaoManual {
+  nome: string
+  calorias: number
+  proteinas: number
+  carboidratos: number
+  gorduras: number
+}
+
+// Interface para historico
+interface HistoricoItem {
+  data: string
+  totalCalorias: number
+  totalProteinas: number
+  totalCarboidratos: number
+  totalGorduras: number
+  refeicoesCount: number
+}
+
 export default function RefeicoesPage() {
   const { profile, metaCalorias } = useNutriAuth()
   const [refeicoesSelecionadas, setRefeicoesSelecionadas] = useState<Record<TipoRefeicao, OpcaoRefeicao | null>>({
@@ -61,8 +87,48 @@ export default function RefeicoesPage() {
   const [buscandoSugestao, setBuscandoSugestao] = useState(false)
   const [filtroRestritivo, setFiltroRestritivo] = useState(false)
 
-  const hoje = new Date().toISOString().split('T')[0]
+  // Novos estados
+  const [dataAtual, setDataAtual] = useState(new Date())
+  const [mostrarHistorico, setMostrarHistorico] = useState(false)
+  const [historico, setHistorico] = useState<HistoricoItem[]>([])
+  const [loadingHistorico, setLoadingHistorico] = useState(false)
+  const [mostrarAddManual, setMostrarAddManual] = useState(false)
+  const [refeicaoManual, setRefeicaoManual] = useState<RefeicaoManual>({
+    nome: '',
+    calorias: 0,
+    proteinas: 0,
+    carboidratos: 0,
+    gorduras: 0
+  })
+  const [tipoManual, setTipoManual] = useState<TipoRefeicao>('almoco')
+
+  const hoje = dataAtual.toISOString().split('T')[0]
+  const isHoje = hoje === new Date().toISOString().split('T')[0]
   const planoRestritivo = profile?.plano === 'restritivo'
+
+  // Navegar entre dias
+  const navegarDia = (direcao: 'anterior' | 'proximo') => {
+    const novaData = new Date(dataAtual)
+    if (direcao === 'anterior') {
+      novaData.setDate(novaData.getDate() - 1)
+    } else {
+      novaData.setDate(novaData.getDate() + 1)
+    }
+    setDataAtual(novaData)
+  }
+
+  const formatarData = (data: Date) => {
+    const hojeStr = new Date().toISOString().split('T')[0]
+    const dataStr = data.toISOString().split('T')[0]
+
+    if (dataStr === hojeStr) return 'Hoje'
+
+    const ontem = new Date()
+    ontem.setDate(ontem.getDate() - 1)
+    if (dataStr === ontem.toISOString().split('T')[0]) return 'Ontem'
+
+    return data.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })
+  }
 
   // Calcular macros do dia
   const macrosDia = Object.values(refeicoesSelecionadas).reduce(
@@ -78,10 +144,67 @@ export default function RefeicoesPage() {
   const refeicoesCompletas = Object.values(refeicoesSelecionadas).filter(r => r !== null).length
   const percentualCalorias = Math.min(100, (macrosDia.calorias / metaCalorias) * 100)
 
+  // Calculos adicionais
+  const percentualProteinas = metaCalorias > 0 ? Math.round((macrosDia.proteinas * 4 / metaCalorias) * 100) : 0
+  const percentualCarbos = metaCalorias > 0 ? Math.round((macrosDia.carboidratos * 4 / metaCalorias) * 100) : 0
+  const percentualGorduras = metaCalorias > 0 ? Math.round((macrosDia.gorduras * 9 / metaCalorias) * 100) : 0
+  const caloriasRestantes = metaCalorias - macrosDia.calorias
+
+  // Buscar historico
+  const buscarHistorico = useCallback(async () => {
+    if (!profile?.id) return
+
+    setLoadingHistorico(true)
+    try {
+      const seteDiasAtras = new Date()
+      seteDiasAtras.setDate(seteDiasAtras.getDate() - 7)
+
+      const { data } = await supabase
+        .from('refeicoes_diarias_nutri')
+        .select('data, refeicao_selecionada')
+        .eq('user_id', profile.id)
+        .gte('data', seteDiasAtras.toISOString().split('T')[0])
+        .order('data', { ascending: false })
+
+      if (data) {
+        // Agrupar por data
+        const agrupado = data.reduce((acc, item) => {
+          const dataStr = item.data
+          if (!acc[dataStr]) {
+            acc[dataStr] = {
+              data: dataStr,
+              totalCalorias: 0,
+              totalProteinas: 0,
+              totalCarboidratos: 0,
+              totalGorduras: 0,
+              refeicoesCount: 0
+            }
+          }
+          const refeicao = item.refeicao_selecionada as OpcaoRefeicao
+          if (refeicao) {
+            acc[dataStr].totalCalorias += refeicao.calorias || 0
+            acc[dataStr].totalProteinas += refeicao.proteinas || 0
+            acc[dataStr].totalCarboidratos += refeicao.carboidratos || 0
+            acc[dataStr].totalGorduras += refeicao.gorduras || 0
+            acc[dataStr].refeicoesCount++
+          }
+          return acc
+        }, {} as Record<string, HistoricoItem>)
+
+        setHistorico(Object.values(agrupado).sort((a, b) => b.data.localeCompare(a.data)))
+      }
+    } catch (err) {
+      console.error('Erro ao buscar historico:', err)
+    } finally {
+      setLoadingHistorico(false)
+    }
+  }, [profile?.id])
+
   useEffect(() => {
     const fetchRefeicoes = async () => {
       if (!profile?.id) return
 
+      setLoading(true)
       try {
         const { data } = await supabase
           .from('refeicoes_diarias_nutri')
@@ -89,14 +212,23 @@ export default function RefeicoesPage() {
           .eq('user_id', profile.id)
           .eq('data', hoje)
 
+        // Resetar refeicoes ao trocar de dia
+        const novasRefeicoes: Record<TipoRefeicao, OpcaoRefeicao | null> = {
+          cafe: null,
+          lanche_manha: null,
+          almoco: null,
+          lanche_tarde: null,
+          jantar: null,
+          ceia: null
+        }
+
         if (data) {
-          const novasRefeicoes = { ...refeicoesSelecionadas }
           data.forEach((item) => {
             const tipo = item.tipo_refeicao as TipoRefeicao
             novasRefeicoes[tipo] = item.refeicao_selecionada as OpcaoRefeicao
           })
-          setRefeicoesSelecionadas(novasRefeicoes)
         }
+        setRefeicoesSelecionadas(novasRefeicoes)
       } catch (err) {
         console.error('Erro ao buscar refeicoes:', err)
       } finally {
@@ -105,7 +237,6 @@ export default function RefeicoesPage() {
     }
 
     fetchRefeicoes()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id, hoje])
 
   // Buscar sugestao da IA
@@ -206,6 +337,50 @@ export default function RefeicoesPage() {
     }
   }
 
+  // Adicionar refeicao manual
+  const adicionarRefeicaoManual = async () => {
+    if (!profile?.id || !refeicaoManual.nome.trim()) return
+
+    const novaOpcao: OpcaoRefeicao = {
+      id: `manual_${Date.now()}`,
+      nome: refeicaoManual.nome,
+      descricao: 'Adicionado manualmente',
+      calorias: refeicaoManual.calorias,
+      proteinas: refeicaoManual.proteinas,
+      carboidratos: refeicaoManual.carboidratos,
+      gorduras: refeicaoManual.gorduras,
+      ingredientes: [],
+      restritivo: false
+    }
+
+    try {
+      const { error } = await supabase
+        .from('refeicoes_diarias_nutri')
+        .upsert({
+          user_id: profile.id,
+          tipo_refeicao: tipoManual,
+          refeicao_selecionada: novaOpcao,
+          data: hoje
+        }, {
+          onConflict: 'user_id,tipo_refeicao,data'
+        })
+
+      if (!error) {
+        setRefeicoesSelecionadas(prev => ({ ...prev, [tipoManual]: novaOpcao }))
+        setMostrarAddManual(false)
+        setRefeicaoManual({
+          nome: '',
+          calorias: 0,
+          proteinas: 0,
+          carboidratos: 0,
+          gorduras: 0
+        })
+      }
+    } catch (err) {
+      console.error('Erro ao adicionar refeicao manual:', err)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -216,22 +391,136 @@ export default function RefeicoesPage() {
 
   return (
     <div className="space-y-6 pb-20 lg:pb-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Refeicoes</h1>
-          <p className="text-gray-500">Planeje suas refeicoes do dia</p>
+      {/* Header com navegacao de dias */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Refeicoes</h1>
+            <p className="text-gray-500">Planeje suas refeicoes do dia</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                buscarHistorico()
+                setMostrarHistorico(!mostrarHistorico)
+              }}
+              className={`p-2.5 rounded-xl transition-all ${
+                mostrarHistorico
+                  ? 'bg-pink-500 text-white'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+            >
+              <History className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setMostrarAddManual(true)}
+              className="p-2.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
         </div>
-        {refeicoesCompletas > 0 && (
+
+        {/* Navegacao de dias */}
+        <div className="flex items-center justify-between bg-white rounded-2xl p-3 border border-gray-100">
+          <button
+            onClick={() => navegarDia('anterior')}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
+          </button>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-pink-500" />
+            <span className="font-medium text-gray-800">{formatarData(dataAtual)}</span>
+            {!isHoje && (
+              <button
+                onClick={() => setDataAtual(new Date())}
+                className="text-xs text-pink-500 hover:underline ml-2"
+              >
+                Ir para hoje
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => navegarDia('proximo')}
+            disabled={isHoje}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30"
+          >
+            <ChevronRight className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+
+        {/* Acoes rapidas */}
+        {refeicoesCompletas > 0 && isHoje && (
           <button
             onClick={limparTodas}
             className="text-sm text-red-500 hover:text-red-600 flex items-center gap-1"
           >
             <RefreshCw className="w-4 h-4" />
-            Resetar
+            Resetar dia
           </button>
         )}
       </div>
+
+      {/* Historico */}
+      {mostrarHistorico && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+              <History className="w-5 h-5 text-pink-500" />
+              Historico (ultimos 7 dias)
+            </h3>
+            <button
+              onClick={() => setMostrarHistorico(false)}
+              className="p-1 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {loadingHistorico ? (
+            <div className="text-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin text-pink-500 mx-auto" />
+            </div>
+          ) : historico.length > 0 ? (
+            <div className="space-y-2">
+              {historico.map((item) => {
+                const percentMeta = Math.round((item.totalCalorias / metaCalorias) * 100)
+                const dataFormatada = new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short'
+                })
+                return (
+                  <button
+                    key={item.data}
+                    onClick={() => {
+                      setDataAtual(new Date(item.data + 'T00:00:00'))
+                      setMostrarHistorico(false)
+                    }}
+                    className="w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-xl flex items-center justify-between transition-colors"
+                  >
+                    <div className="text-left">
+                      <p className="font-medium text-gray-800 capitalize">{dataFormatada}</p>
+                      <p className="text-xs text-gray-500">{item.refeicoesCount} refeicoes registradas</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-semibold ${percentMeta > 100 ? 'text-red-500' : percentMeta >= 80 ? 'text-green-500' : 'text-orange-500'}`}>
+                        {item.totalCalorias} kcal
+                      </p>
+                      <p className="text-xs text-gray-400">{percentMeta}% da meta</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-center text-gray-400 text-sm py-4">
+              Nenhum registro encontrado
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Macros do Dia */}
       <div className="bg-gradient-to-r from-orange-500 to-pink-500 rounded-2xl p-5 text-white">
@@ -271,6 +560,7 @@ export default function RefeicoesPage() {
             <p className="text-xs text-orange-100">gorduras</p>
           </div>
         </div>
+
         {/* Progress bar */}
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs mb-1">
@@ -283,13 +573,50 @@ export default function RefeicoesPage() {
               style={{ width: `${percentualCalorias}%` }}
             />
           </div>
-          {macrosDia.calorias > metaCalorias && (
+          {macrosDia.calorias > metaCalorias ? (
             <p className="text-xs text-yellow-200 mt-1 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
               {macrosDia.calorias - metaCalorias} kcal acima da meta
             </p>
+          ) : caloriasRestantes > 0 && (
+            <p className="text-xs text-green-200 mt-1 flex items-center gap-1">
+              <Target className="w-3 h-3" />
+              {caloriasRestantes} kcal restantes
+            </p>
           )}
         </div>
+
+        {/* Distribuicao de macros */}
+        {macrosDia.calorias > 0 && (
+          <div className="mt-4 pt-4 border-t border-white/20">
+            <div className="flex items-center gap-2 mb-2">
+              <PieChart className="w-4 h-4" />
+              <p className="text-xs font-medium">Distribuicao</p>
+            </div>
+            <div className="flex gap-2">
+              <div className="flex-1 bg-white/10 rounded-lg p-2 text-center">
+                <p className="text-xs opacity-70">Prot</p>
+                <p className="font-bold text-sm">{percentualProteinas}%</p>
+              </div>
+              <div className="flex-1 bg-white/10 rounded-lg p-2 text-center">
+                <p className="text-xs opacity-70">Carb</p>
+                <p className="font-bold text-sm">{percentualCarbos}%</p>
+              </div>
+              <div className="flex-1 bg-white/10 rounded-lg p-2 text-center">
+                <p className="text-xs opacity-70">Gord</p>
+                <p className="font-bold text-sm">{percentualGorduras}%</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Medalha se bateu a meta */}
+        {macrosDia.calorias >= metaCalorias * 0.8 && macrosDia.calorias <= metaCalorias && (
+          <div className="mt-3 flex items-center justify-center gap-2 bg-white/20 rounded-xl py-2">
+            <Award className="w-5 h-5 text-yellow-300" />
+            <span className="text-sm font-medium">Otimo trabalho! Na meta!</span>
+          </div>
+        )}
       </div>
 
       {/* Lista de Refeicoes */}
@@ -495,6 +822,149 @@ export default function RefeicoesPage() {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Adicionar Refeicao Manual */}
+      {mostrarAddManual && (
+        <div className="fixed inset-0 bg-black/50 flex items-end lg:items-center justify-center z-50">
+          <div className="bg-white w-full lg:max-w-md lg:rounded-2xl rounded-t-3xl max-h-[85vh] overflow-hidden">
+            {/* Header */}
+            <div className="p-4 bg-gradient-to-r from-pink-500 to-orange-500 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  <h2 className="text-lg font-semibold">Adicionar Refeicao</h2>
+                </div>
+                <button
+                  onClick={() => setMostrarAddManual(false)}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-4 overflow-y-auto">
+              {/* Tipo de refeicao */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de refeicao
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(Object.keys(REFEICOES_COMPLETAS) as TipoRefeicao[]).map((tipo) => {
+                    const colors = TIPO_COLORS[tipo]
+                    return (
+                      <button
+                        key={tipo}
+                        onClick={() => setTipoManual(tipo)}
+                        className={`p-2 rounded-xl text-center transition-all ${
+                          tipoManual === tipo
+                            ? `${colors.bg} text-white`
+                            : `${colors.light} ${colors.text}`
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          {TIPO_ICONS[tipo]}
+                          <span className="text-xs font-medium">{REFEICOES_COMPLETAS[tipo].titulo}</span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Nome */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nome da refeicao
+                </label>
+                <input
+                  type="text"
+                  value={refeicaoManual.nome}
+                  onChange={(e) => setRefeicaoManual(prev => ({ ...prev, nome: e.target.value }))}
+                  placeholder="Ex: Salada com frango grelhado"
+                  className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400"
+                />
+              </div>
+
+              {/* Macros */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Flame className="w-4 h-4 inline mr-1 text-orange-500" />
+                    Calorias
+                  </label>
+                  <input
+                    type="number"
+                    value={refeicaoManual.calorias || ''}
+                    onChange={(e) => setRefeicaoManual(prev => ({ ...prev, calorias: parseInt(e.target.value) || 0 }))}
+                    placeholder="kcal"
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Beef className="w-4 h-4 inline mr-1 text-red-500" />
+                    Proteinas
+                  </label>
+                  <input
+                    type="number"
+                    value={refeicaoManual.proteinas || ''}
+                    onChange={(e) => setRefeicaoManual(prev => ({ ...prev, proteinas: parseInt(e.target.value) || 0 }))}
+                    placeholder="g"
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Wheat className="w-4 h-4 inline mr-1 text-amber-500" />
+                    Carboidratos
+                  </label>
+                  <input
+                    type="number"
+                    value={refeicaoManual.carboidratos || ''}
+                    onChange={(e) => setRefeicaoManual(prev => ({ ...prev, carboidratos: parseInt(e.target.value) || 0 }))}
+                    placeholder="g"
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Droplet className="w-4 h-4 inline mr-1 text-yellow-500" />
+                    Gorduras
+                  </label>
+                  <input
+                    type="number"
+                    value={refeicaoManual.gorduras || ''}
+                    onChange={(e) => setRefeicaoManual(prev => ({ ...prev, gorduras: parseInt(e.target.value) || 0 }))}
+                    placeholder="g"
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  />
+                </div>
+              </div>
+
+              {/* Preview */}
+              {refeicaoManual.nome && (
+                <div className="p-3 bg-gray-50 rounded-xl">
+                  <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
+                  <p className="text-gray-800 font-semibold">{refeicaoManual.nome}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {refeicaoManual.calorias} kcal • P: {refeicaoManual.proteinas}g • C: {refeicaoManual.carboidratos}g • G: {refeicaoManual.gorduras}g
+                  </p>
+                </div>
+              )}
+
+              {/* Botao salvar */}
+              <button
+                onClick={adicionarRefeicaoManual}
+                disabled={!refeicaoManual.nome.trim()}
+                className="w-full py-4 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl font-semibold disabled:opacity-50 transition-all"
+              >
+                Adicionar Refeicao
+              </button>
             </div>
           </div>
         </div>

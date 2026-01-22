@@ -23,7 +23,14 @@ import {
   Loader2,
   Heart,
   Zap,
-  Moon
+  Moon,
+  Calendar,
+  MessageSquare,
+  RefreshCw,
+  Info,
+  ChevronDown,
+  ChevronUp,
+  X
 } from 'lucide-react'
 
 type FaseTreino = 'fase1' | 'fase2' | 'fase3'
@@ -97,6 +104,96 @@ const TREINOS_YOGA = {
       { nome: 'Ponte', series: 2, reps: '5', tempo: '2 min', dica: 'Eleve o quadril' },
       { nome: 'Meditacao', series: 1, reps: '-', tempo: '5 min', dica: 'Atencao na respiracao' },
     ]
+  },
+  flexibilidade: {
+    nome: 'Yoga Flexibilidade',
+    duracao: '20 min',
+    foco: 'Alongar e soltar',
+    exercicios: [
+      { nome: 'Respiracao diafragmatica', series: 1, reps: '-', tempo: '2 min', dica: 'Inspire pelo nariz, expire pela boca' },
+      { nome: 'Alongamento de pescoco', series: 1, reps: '-', tempo: '2 min', dica: 'Movimentos suaves' },
+      { nome: 'Abertura de quadril borboleta', series: 1, reps: '-', tempo: '2 min', dica: 'Pressione os joelhos para baixo' },
+      { nome: 'Pomba', series: 2, reps: '-', tempo: '3 min', dica: '1.5 min cada lado' },
+      { nome: 'Cachorro de 3 patas', series: 2, reps: '-', tempo: '2 min', dica: 'Mantenha os quadris nivelados' },
+      { nome: 'Alongamento de isquiotibiais', series: 2, reps: '-', tempo: '2 min', dica: 'Perna esticada, pe flexionado' },
+      { nome: 'Relaxamento final', series: 1, reps: '-', tempo: '5 min', dica: 'Solte toda a tensao' },
+    ]
+  }
+}
+
+// Treinos de forca e cardio extras
+const TREINOS_FORCA = {
+  glúteos: {
+    nome: 'Gluteos em Fogo',
+    duracao: '20 min',
+    foco: 'Gluteos e pernas',
+    exercicios: [
+      { nome: 'Aquecimento de quadril', series: 1, reps: '-', tempo: '2 min', dica: 'Circulos de quadril' },
+      { nome: 'Agachamento sumô', series: 3, reps: '15', tempo: '3 min', dica: 'Pes bem abertos, pontas para fora' },
+      { nome: 'Elevacao de quadril', series: 3, reps: '20', tempo: '3 min', dica: 'Aperte os gluteos no topo' },
+      { nome: 'Afundo reverso', series: 3, reps: '12 cada', tempo: '4 min', dica: 'Joelho quase no chao' },
+      { nome: 'Fire hydrant', series: 3, reps: '15 cada', tempo: '3 min', dica: 'Mantenha o core ativado' },
+      { nome: 'Donkey kicks', series: 3, reps: '15 cada', tempo: '3 min', dica: 'Calcanhar empurra o teto' },
+      { nome: 'Alongamento de gluteos', series: 1, reps: '-', tempo: '2 min', dica: 'Cruzar perna sobre o joelho' },
+    ]
+  },
+  core: {
+    nome: 'Core Power',
+    duracao: '15 min',
+    foco: 'Abdomen e costas',
+    exercicios: [
+      { nome: 'Prancha frontal', series: 3, reps: '30 seg', tempo: '2 min', dica: 'Corpo reto como uma tabua' },
+      { nome: 'Prancha lateral', series: 2, reps: '20 seg cada', tempo: '2 min', dica: 'Quadril elevado' },
+      { nome: 'Abdominal bicicleta', series: 3, reps: '20', tempo: '2 min', dica: 'Cotovelo encontra joelho oposto' },
+      { nome: 'Dead bug', series: 3, reps: '10 cada', tempo: '3 min', dica: 'Lombar grudada no chao' },
+      { nome: 'Bird dog', series: 3, reps: '10 cada', tempo: '2 min', dica: 'Estenda devagar' },
+      { nome: 'Crunch reverso', series: 3, reps: '15', tempo: '2 min', dica: 'Eleve os quadris do chao' },
+      { nome: 'Respiracao abdominal', series: 1, reps: '-', tempo: '2 min', dica: 'Ative o transverso' },
+    ]
+  },
+  braços: {
+    nome: 'Bracos Definidos',
+    duracao: '15 min',
+    foco: 'Bracos e ombros',
+    exercicios: [
+      { nome: 'Aquecimento de ombros', series: 1, reps: '-', tempo: '2 min', dica: 'Circulos pequenos e grandes' },
+      { nome: 'Flexao no joelho', series: 3, reps: '12', tempo: '3 min', dica: 'Cotovelos a 45 graus' },
+      { nome: 'Flexao diamante', series: 3, reps: '8', tempo: '2 min', dica: 'Maos formam um diamante' },
+      { nome: 'Triceps no banco', series: 3, reps: '12', tempo: '2 min', dica: 'Cotovelos para tras' },
+      { nome: 'Superman', series: 3, reps: '15', tempo: '2 min', dica: 'Eleve bracos e pernas' },
+      { nome: 'Prancha com toque no ombro', series: 3, reps: '10 cada', tempo: '2 min', dica: 'Evite balançar o quadril' },
+      { nome: 'Alongamento de bracos', series: 1, reps: '-', tempo: '2 min', dica: 'Alongue triceps e biceps' },
+    ]
+  }
+}
+
+const TREINOS_CARDIO = {
+  dança: {
+    nome: 'Dança Cardio',
+    duracao: '20 min',
+    foco: 'Queima com diversao',
+    exercicios: [
+      { nome: 'Aquecimento dançando', series: 1, reps: '-', tempo: '2 min', dica: 'Movimente-se no ritmo' },
+      { nome: 'Step touch', series: 1, reps: '40', tempo: '2 min', dica: 'Adicione movimentos de bracos' },
+      { nome: 'Grapevine', series: 1, reps: '20', tempo: '2 min', dica: 'Deslize para os lados' },
+      { nome: 'Mambo', series: 1, reps: '30', tempo: '2 min', dica: 'Frente e tras com gingado' },
+      { nome: 'Chassé', series: 1, reps: '20', tempo: '2 min', dica: 'Deslize rapido lateral' },
+      { nome: 'Coreografia livre', series: 1, reps: '-', tempo: '6 min', dica: 'Dance como quiser!' },
+      { nome: 'Desaquecimento', series: 1, reps: '-', tempo: '2 min', dica: 'Movimentos lentos' },
+    ]
+  },
+  escada: {
+    nome: 'Simulador de Escada',
+    duracao: '15 min',
+    foco: 'Resistencia cardiovascular',
+    exercicios: [
+      { nome: 'Marcha no lugar', series: 1, reps: '-', tempo: '2 min', dica: 'Eleve bem os joelhos' },
+      { nome: 'Subida de step imaginario', series: 3, reps: '30', tempo: '3 min', dica: 'Alterne as pernas' },
+      { nome: 'Skipping alto', series: 3, reps: '20', tempo: '3 min', dica: 'Joelhos na altura do quadril' },
+      { nome: 'Agachamento com salto', series: 3, reps: '10', tempo: '3 min', dica: 'Exploda no salto' },
+      { nome: 'Corrida estacionaria', series: 1, reps: '-', tempo: '2 min', dica: 'Acelere gradualmente' },
+      { nome: 'Desaquecimento', series: 1, reps: '-', tempo: '2 min', dica: 'Caminhada lenta' },
+    ]
   }
 }
 
@@ -104,6 +201,8 @@ const CATEGORIAS_TREINO = [
   { id: 'fases', nome: 'Por Fase', icon: Target, cor: 'from-purple-500 to-pink-500', desc: 'Progressao gradual' },
   { id: 'rapido', nome: 'Rapidos', icon: Zap, cor: 'from-orange-500 to-red-500', desc: '5-15 minutos' },
   { id: 'yoga', nome: 'Yoga', icon: Moon, cor: 'from-blue-500 to-indigo-500', desc: 'Flexibilidade e calma' },
+  { id: 'forca', nome: 'Forca', icon: Dumbbell, cor: 'from-green-500 to-emerald-500', desc: 'Tonificacao muscular' },
+  { id: 'cardio', nome: 'Cardio', icon: Heart, cor: 'from-pink-500 to-rose-500', desc: 'Queima de gordura' },
 ]
 
 export default function TreinosPage() {
@@ -125,6 +224,17 @@ export default function TreinosPage() {
   // IA Dica
   const [dicaIA, setDicaIA] = useState<string | null>(null)
   const [buscandoDica, setBuscandoDica] = useState(false)
+  const [dicaDetalhada, setDicaDetalhada] = useState(false)
+
+  // Observacoes do usuario
+  const [mostrarObservacoes, setMostrarObservacoes] = useState(false)
+  const [observacoes, setObservacoes] = useState('')
+  const [diasTreino, setDiasTreino] = useState<string[]>(['seg', 'qua', 'sex'])
+  const [horarioPreferido, setHorarioPreferido] = useState('manha')
+
+  // Dica geral da IA para o treino
+  const [dicaGeralIA, setDicaGeralIA] = useState<string | null>(null)
+  const [buscandoDicaGeral, setBuscandoDicaGeral] = useState(false)
 
   const hoje = new Date().toISOString().split('T')[0]
   const faseData = TREINOS_COMPLETOS[faseAtual]
@@ -214,17 +324,29 @@ export default function TreinosPage() {
   }
 
   // Buscar dica da IA para o exercicio
-  const buscarDicaIA = async (exercicio: Exercicio | (typeof TREINOS_RAPIDOS)['5min']['exercicios'][0]) => {
+  const buscarDicaIA = useCallback(async (exercicio: Exercicio | (typeof TREINOS_RAPIDOS)['5min']['exercicios'][0], detalhada: boolean = false) => {
     setBuscandoDica(true)
     setDicaIA(null)
+    setDicaDetalhada(detalhada)
+
+    const tipoMensagem = detalhada
+      ? `Explique detalhadamente como executar o exercicio "${exercicio.nome}" para uma mulher, incluindo:
+         1. Posicao inicial correta
+         2. Movimento passo a passo
+         3. Erros comuns a evitar
+         4. Respiracao adequada
+         5. Variacoes (mais facil/mais dificil)
+         Seja clara e pratica.`
+      : `Me de uma dica rapida e pratica (max 2 frases) sobre como executar corretamente o exercicio "${exercicio.nome}" para uma mulher. Foque na tecnica e seguranca.`
 
     try {
       const response = await fetch('/api/nutrivida/ia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mensagem: `Me de uma dica rapida e pratica (max 2 frases) sobre como executar corretamente o exercicio "${exercicio.nome}" para uma mulher. Foque na tecnica e seguranca.`,
-          modo: 'treino'
+          mensagem: tipoMensagem,
+          modo: 'treino',
+          timestamp: Date.now() // Garante variacao nas respostas
         })
       })
 
@@ -237,7 +359,45 @@ export default function TreinosPage() {
     } finally {
       setBuscandoDica(false)
     }
-  }
+  }, [])
+
+  // Buscar dica geral motivacional para o treino
+  const buscarDicaGeralIA = useCallback(async () => {
+    setBuscandoDicaGeral(true)
+    setDicaGeralIA(null)
+
+    const contextoDias = diasTreino.length > 0 ? `Ela treina ${diasTreino.join(', ')}` : ''
+    const contextoHorario = horarioPreferido ? `no horario da ${horarioPreferido}` : ''
+    const contextoObs = observacoes ? `Observacoes pessoais: ${observacoes}` : ''
+
+    try {
+      const response = await fetch('/api/nutrivida/ia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mensagem: `Gere uma dica motivacional e pratica para uma mulher que vai comecar seu treino agora. ${contextoDias} ${contextoHorario}. ${contextoObs}
+
+          Inclua:
+          - Uma frase motivacional unica e personalizada
+          - Uma dica pratica baseada no horario/momento do dia
+          - Um lembrete de seguranca ou hidratacao
+
+          Seja amigavel e variada nas respostas (nao repita frases genericas).`,
+          modo: 'treino',
+          timestamp: Date.now()
+        })
+      })
+
+      const data = await response.json()
+      if (data.resposta) {
+        setDicaGeralIA(data.resposta)
+      }
+    } catch (err) {
+      console.error('Erro ao buscar dica geral:', err)
+    } finally {
+      setBuscandoDicaGeral(false)
+    }
+  }, [diasTreino, horarioPreferido, observacoes])
 
   const iniciarTreino = (nome: string, treino: Treino | typeof TREINOS_RAPIDOS['5min']) => {
     setTreinoAtivo({ nome, treino })
@@ -368,20 +528,32 @@ export default function TreinosPage() {
 
         {/* Dica da IA */}
         {(dicaIA || buscandoDica) && (
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-purple-200 rounded-2xl p-4">
+          <div className={`bg-gradient-to-r from-blue-50 to-purple-50 border border-purple-200 rounded-2xl p-4 ${dicaDetalhada ? 'max-h-[40vh] overflow-y-auto' : ''}`}>
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Bot className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1">
-                <p className="text-xs text-purple-600 font-medium mb-1">Dica da Nutri IA</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-purple-600 font-medium">
+                    {dicaDetalhada ? 'Tutorial Detalhado' : 'Dica da Nutri IA'}
+                  </p>
+                  {dicaIA && (
+                    <button
+                      onClick={() => setDicaIA(null)}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
                 {buscandoDica ? (
                   <div className="flex items-center gap-2 text-gray-500">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Gerando dica...</span>
+                    <span className="text-sm">{dicaDetalhada ? 'Gerando tutorial detalhado...' : 'Gerando dica...'}</span>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-700">{dicaIA}</p>
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{dicaIA}</div>
                 )}
               </div>
             </div>
@@ -429,7 +601,7 @@ export default function TreinosPage() {
 
                     {/* Botoes de acao */}
                     {!concluido && (
-                      <div className="flex items-center gap-2 mt-3">
+                      <div className="flex flex-wrap items-center gap-2 mt-3">
                         <button
                           onClick={() => iniciarTimer(tempoSegundos, index)}
                           className="px-3 py-1.5 bg-orange-100 text-orange-600 rounded-lg text-xs font-medium hover:bg-orange-200 flex items-center gap-1"
@@ -438,12 +610,20 @@ export default function TreinosPage() {
                           Iniciar Timer
                         </button>
                         <button
-                          onClick={() => buscarDicaIA(exercicio)}
+                          onClick={() => buscarDicaIA(exercicio, false)}
                           disabled={buscandoDica}
                           className="px-3 py-1.5 bg-purple-100 text-purple-600 rounded-lg text-xs font-medium hover:bg-purple-200 flex items-center gap-1 disabled:opacity-50"
                         >
                           <Sparkles className="w-3 h-3" />
-                          Dica IA
+                          Dica Rapida
+                        </button>
+                        <button
+                          onClick={() => buscarDicaIA(exercicio, true)}
+                          disabled={buscandoDica}
+                          className="px-3 py-1.5 bg-blue-100 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-200 flex items-center gap-1 disabled:opacity-50"
+                        >
+                          <Info className="w-3 h-3" />
+                          Tutorial
                         </button>
                       </div>
                     )}
@@ -472,13 +652,136 @@ export default function TreinosPage() {
   return (
     <div className="space-y-6 pb-20 lg:pb-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Treinos</h1>
-        <p className="text-gray-500">Exercicios para seu bem-estar</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Treinos</h1>
+          <p className="text-gray-500">Exercicios para seu bem-estar</p>
+        </div>
+        <button
+          onClick={() => setMostrarObservacoes(!mostrarObservacoes)}
+          className={`p-3 rounded-xl transition-all ${
+            mostrarObservacoes
+              ? 'bg-purple-500 text-white'
+              : 'bg-purple-50 text-purple-500 hover:bg-purple-100'
+          }`}
+        >
+          <Calendar className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Painel de Observacoes */}
+      {mostrarObservacoes && (
+        <div className="bg-white rounded-2xl border border-purple-200 p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-purple-500" />
+              Minha Agenda de Treinos
+            </h3>
+            <button
+              onClick={() => setMostrarObservacoes(false)}
+              className="p-1 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Dias da semana */}
+          <div>
+            <p className="text-sm text-gray-600 mb-2">Dias que treino:</p>
+            <div className="flex flex-wrap gap-2">
+              {['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'].map((dia) => (
+                <button
+                  key={dia}
+                  onClick={() => {
+                    setDiasTreino(prev =>
+                      prev.includes(dia) ? prev.filter(d => d !== dia) : [...prev, dia]
+                    )
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    diasTreino.includes(dia)
+                      ? 'bg-purple-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {dia.charAt(0).toUpperCase() + dia.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Horario preferido */}
+          <div>
+            <p className="text-sm text-gray-600 mb-2">Horario preferido:</p>
+            <div className="flex gap-2">
+              {[
+                { id: 'manha', label: '🌅 Manha' },
+                { id: 'tarde', label: '☀️ Tarde' },
+                { id: 'noite', label: '🌙 Noite' }
+              ].map((h) => (
+                <button
+                  key={h.id}
+                  onClick={() => setHorarioPreferido(h.id)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    horarioPreferido === h.id
+                      ? 'bg-purple-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {h.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Observacoes pessoais */}
+          <div>
+            <p className="text-sm text-gray-600 mb-2">Observacoes (lesoes, limitacoes, metas):</p>
+            <textarea
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              placeholder="Ex: Tenho problema no joelho, quero focar em gluteos..."
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"
+              rows={2}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Dica Motivacional da IA */}
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-4 border border-purple-100">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-purple-700">Dica da Nutri IA</p>
+              <button
+                onClick={buscarDicaGeralIA}
+                disabled={buscandoDicaGeral}
+                className="p-1.5 text-purple-500 hover:bg-purple-100 rounded-lg transition-colors"
+              >
+                <RefreshCw className={`w-4 h-4 ${buscandoDicaGeral ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+            {buscandoDicaGeral ? (
+              <div className="flex items-center gap-2 text-gray-500 mt-1">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Gerando dica motivacional...</span>
+              </div>
+            ) : dicaGeralIA ? (
+              <p className="text-sm text-gray-700 mt-1 leading-relaxed">{dicaGeralIA}</p>
+            ) : (
+              <p className="text-sm text-gray-600 mt-1">
+                Clique em 🔄 para receber uma dica personalizada antes de comecar!
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Categorias */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 lg:grid-cols-5 gap-2">
         {CATEGORIAS_TREINO.map((cat) => {
           const isActive = categoria === cat.id
           return (
@@ -659,6 +962,78 @@ export default function TreinosPage() {
                 </div>
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                   <Play className="w-5 h-5 text-blue-500" />
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {categoria === 'forca' && (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-500">Tonifique e fortaleça seus musculos</p>
+          {Object.entries(TREINOS_FORCA).map(([key, treino]) => (
+            <button
+              key={key}
+              onClick={() => iniciarTreino(key, treino)}
+              className="w-full bg-white rounded-2xl p-5 border-2 border-gray-100 hover:border-green-200 text-left transition-all"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                  <Dumbbell className="w-7 h-7 text-green-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-800">{treino.nome}</h3>
+                  <p className="text-sm text-gray-500">{treino.foco}</p>
+                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {treino.duracao}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Flame className="w-3 h-3" />
+                      {treino.exercicios.length} exercicios
+                    </span>
+                  </div>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                  <Play className="w-5 h-5 text-green-500" />
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {categoria === 'cardio' && (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-500">Queime calorias e melhore o condicionamento</p>
+          {Object.entries(TREINOS_CARDIO).map(([key, treino]) => (
+            <button
+              key={key}
+              onClick={() => iniciarTreino(key, treino)}
+              className="w-full bg-white rounded-2xl p-5 border-2 border-gray-100 hover:border-pink-200 text-left transition-all"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center">
+                  <Heart className="w-7 h-7 text-pink-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-800">{treino.nome}</h3>
+                  <p className="text-sm text-gray-500">{treino.foco}</p>
+                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {treino.duracao}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Flame className="w-3 h-3" />
+                      {treino.exercicios.length} exercicios
+                    </span>
+                  </div>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center">
+                  <Play className="w-5 h-5 text-pink-500" />
                 </div>
               </div>
             </button>

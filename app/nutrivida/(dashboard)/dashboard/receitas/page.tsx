@@ -74,7 +74,7 @@ export default function ReceitasPage() {
     carregarFavoritas()
   }, [carregarFavoritas])
 
-  const gerarReceita = async (tipo: string) => {
+  const gerarReceita = async (tipo: string, forcarNova: boolean = false) => {
     setTipoSelecionado(tipo)
     setLoading(true)
     setReceita(null)
@@ -88,6 +88,7 @@ export default function ReceitasPage() {
           tipo,
           userId: profile?.id,
           observacao: observacao || undefined,
+          novaReceita: forcarNova, // Forca nova receita quando clica em refresh
           perfil: profile ? {
             plano: profile.plano,
             amamentando: profile.amamentando,
@@ -170,7 +171,7 @@ export default function ReceitasPage() {
   // Formatar receita com estilo bonito - suporta multiplos formatos de IA
   const formatarReceita = (texto: string) => {
     // Pre-processar o texto para normalizar formato
-    let textoNormalizado = texto
+    const textoNormalizado = texto
       // Normalizar asteriscos de markdown para quebras de secao
       .replace(/\*\*([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s]+?):\*\*/gi, '\n$1:')
       // Remover asteriscos soltos
@@ -559,9 +560,9 @@ export default function ReceitasPage() {
                     )}
                   </button>
                   <button
-                    onClick={() => tipoSelecionado && gerarReceita(tipoSelecionado)}
+                    onClick={() => tipoSelecionado && gerarReceita(tipoSelecionado, true)}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 hover:text-gray-700"
-                    title="Gerar outra receita"
+                    title="Gerar outra receita (variação)"
                   >
                     <RefreshCw className="w-5 h-5" />
                   </button>
