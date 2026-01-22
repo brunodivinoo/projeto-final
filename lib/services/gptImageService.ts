@@ -1673,9 +1673,20 @@ export interface MedicalImagePromptParams {
  * Gera um prompt COMPACTO para imagens médicas
  * Limite do DALL-E 3: 4000 caracteres
  * Mantemos prompts com ~1500-2000 chars para deixar margem
+ * 
+ * MELHORIA v2: Usa detecção automática de vista para garantir
+ * que estruturas internas sejam mostradas com CORTE quando necessário
+ * Ex: "coração com 4 câmaras" → força corte frontal mostrando interior
  */
 export function buildMedicalImagePrompt(params: MedicalImagePromptParams): string {
   const { structure, type, view, additionalDetails } = params
+
+  // NOVO: Detectar automaticamente a vista apropriada
+  // Se o usuário pedir "coração com 4 câmaras", forçamos corte interno automaticamente
+  const vistaDetectada = detectarVistaApropriada(structure, additionalDetails, view)
+  console.log(`[buildMedicalImagePrompt] Estrutura: "${structure}"`)
+  console.log(`[buildMedicalImagePrompt] Vista fornecida: "${view || 'nenhuma'}"`)
+  console.log(`[buildMedicalImagePrompt] Vista detectada: "${vistaDetectada.substring(0, 80)}..."`)
 
   // Buscar apenas estruturas-chave e erros a evitar (versão compacta)
   const knowledge = getAnatomicalKnowledge(structure)
