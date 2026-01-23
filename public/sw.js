@@ -10,7 +10,7 @@
 // CONFIGURACAO DE VERSAO
 // ======================
 // Incremente esta versao ao fazer deploy para forcar atualizacao do cache
-const CACHE_VERSION = 'v3.0.0';
+const CACHE_VERSION = 'v3.1.0';
 
 // Nomes dos caches separados por tipo de conteudo
 // Isso permite gerenciar diferentes estrategias e tempos de expiracao
@@ -104,6 +104,11 @@ const NEVER_CACHE_URLS = [
   '/api/nutrivida/ia',    // Chat IA NutriVida
   '/_next/webpack-hmr',   // Hot Module Replacement (dev)
   '/supabase/',           // Supabase realtime
+  '/auth/callback',       // Callback de autenticacao
+  '/login',               // Paginas de login
+  '/cadastro',            // Paginas de cadastro
+  '/esqueci-senha',       // Paginas de recuperacao
+  '/redefinir-senha',     // Paginas de redefinicao
 ];
 
 // ============================================================
@@ -313,23 +318,38 @@ async function networkFirst(request, cacheName, timeout = 3000) {
   try {
     const response = await fetch(request, {
       signal: controller.signal,
-      credentials: 'same-origin'
+      credentials: 'same-origin',
+      redirect: 'follow'
     });
     clearTimeout(timeoutId);
 
-    if (response.ok) {
-      // Cacheia resposta bem-sucedida
+    // NAO cachear redirecionamentos (podem ser temporarios de auth)
+    if (response.redirected || response.type === 'opaqueredirect') {
+      console.log('[SW] Resposta redirecionada, nao cacheando:', request.url);
+      return response;
+    }
+
+    if (response.ok && response.status === 200) {
+      // Cacheia apenas respostas 200 OK (nao redirecionadas)
       const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
       return response;
     }
 
-    throw new Error(`HTTP ${response.status}`);
+    // Para outros status (3xx, 4xx), retorna sem cachear
+    return response;
 
   } catch (error) {
     clearTimeout(timeoutId);
 
-    // Fallback para cache
+    // Fallback para cache apenas se nao for pagina de auth
+    const url = new URL(request.url);
+    if (url.pathname.includes('/login') ||
+        url.pathname.includes('/cadastro') ||
+        url.pathname.includes('/auth')) {
+      throw error; // Nao usar cache para paginas de auth
+    }
+
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
       console.log('[SW] Network falhou, usando cache:', request.url);
@@ -369,10 +389,19 @@ async function staleWhileRevalidate(request, cacheName) {
  */
 async function fetchAndCache(request, cacheName) {
   try {
-    const response = await fetch(request, { credentials: 'same-origin' });
+    const response = await fetch(request, {
+      credentials: 'same-origin',
+      redirect: 'follow'
+    });
 
-    // So cacheia respostas bem-sucedidas e completas
-    if (response.ok && response.status !== 206) {
+    // NAO cacheia redirecionamentos
+    if (response.redirected || response.type === 'opaqueredirect') {
+      console.log('[SW] Resposta redirecionada, nao cacheando:', request.url);
+      return response;
+    }
+
+    // So cacheia respostas bem-sucedidas e completas (200 OK)
+    if (response.ok && response.status === 200) {
       const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
     }
