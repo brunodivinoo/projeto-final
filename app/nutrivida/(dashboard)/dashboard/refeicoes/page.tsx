@@ -32,7 +32,11 @@ import {
   PieChart,
   Copy,
   Star,
-  Heart
+  Heart,
+  Wand2,
+  ChefHat,
+  ShoppingCart,
+  AlertCircle
 } from 'lucide-react'
 
 type TipoRefeicao = 'cafe' | 'lanche_manha' | 'almoco' | 'lanche_tarde' | 'jantar' | 'ceia'
@@ -72,6 +76,37 @@ interface HistoricoItem {
   totalCarboidratos: number
   totalGorduras: number
   refeicoesCount: number
+}
+
+// Interface para plano alimentar
+interface PlanoAlimentar {
+  periodo: 'dia' | 'semana' | 'mes'
+  dias: Array<{
+    data: string
+    dia_semana: string
+    refeicoes: Array<{
+      tipo: string
+      nome: string
+      descricao: string
+      calorias: number
+      proteinas: number
+      carboidratos: number
+      gorduras: number
+      ingredientes: Array<{ nome: string; quantidade: string; unidade: string }>
+      modo_preparo: string[]
+      tempo_preparo: number
+    }>
+    total_calorias: number
+    dica_dia: string
+  }>
+  lista_compras: Array<{
+    item: string
+    quantidade: number
+    unidade: string
+    categoria: string
+  }>
+  meta_calorias_diaria: number
+  dicas_gerais: string[]
 }
 
 export default function RefeicoesPage() {
@@ -118,6 +153,16 @@ export default function RefeicoesPage() {
   const [mostrarRepetir, setMostrarRepetir] = useState(false)
   const [refeicoesFavoritas, setRefeicoesFavoritas] = useState<OpcaoRefeicao[]>([])
   const [mostrarFavoritas, setMostrarFavoritas] = useState(false)
+
+  // Estados do Plano Alimentar IA
+  const [mostrarPlanoIA, setMostrarPlanoIA] = useState(false)
+  const [periodoPlano, setPeriodoPlano] = useState<'dia' | 'semana' | 'mes'>('semana')
+  const [preferenciasPlano, setPreferenciasPlano] = useState('')
+  const [gerandoPlano, setGerandoPlano] = useState(false)
+  const [planoGerado, setPlanoGerado] = useState<PlanoAlimentar | null>(null)
+  const [mostrarCalendario, setMostrarCalendario] = useState(false)
+  const [diaExpandido, setDiaExpandido] = useState<string | null>(null)
+  const [erroPlano, setErroPlano] = useState('')
 
   const hoje = dataAtual.toISOString().split('T')[0]
   const isHoje = hoje === new Date().toISOString().split('T')[0]
@@ -512,6 +557,104 @@ export default function RefeicoesPage() {
     }
   }
 
+  // Gerar plano alimentar com IA
+  const gerarPlanoAlimentar = async () => {
+    if (!profile?.id) return
+
+    setGerandoPlano(true)
+    setErroPlano('')
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        setErroPlano('Sessao expirada. Faca login novamente.')
+        return
+      }
+
+      const response = await fetch('/api/nutrivida/plano-alimentar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          periodo: periodoPlano,
+          preferencias: preferenciasPlano || undefined
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setErroPlano(data.error || 'Erro ao gerar plano')
+        return
+      }
+
+      setPlanoGerado(data.plano)
+      setMostrarPlanoIA(false)
+      setMostrarCalendario(true)
+
+      // Recarregar refeicoes do dia atual
+      fetchRefeicoes(false)
+    } catch (err) {
+      console.error('Erro ao gerar plano:', err)
+      setErroPlano('Erro ao conectar com o servidor')
+    } finally {
+      setGerandoPlano(false)
+    }
+  }
+
+  // Aplicar refeicao do plano ao dia atual
+  const aplicarRefeicaoPlano = async (refeicao: PlanoAlimentar['dias'][0]['refeicoes'][0]) => {
+    if (!profile?.id) return
+
+    const novaOpcao: OpcaoRefeicao = {
+      id: `plano_${Date.now()}_${refeicao.tipo}`,
+      nome: refeicao.nome,
+      descricao: refeicao.descricao,
+      calorias: refeicao.calorias,
+      proteinas: refeicao.proteinas,
+      carboidratos: refeicao.carboidratos,
+      gorduras: refeicao.gorduras,
+      ingredientes: refeicao.ingredientes.map(i => i.nome),
+      restritivo: profile?.plano === 'restritivo'
+    }
+
+    try {
+      const { error } = await supabase
+        .from('refeicoes_diarias_nutri')
+        .upsert({
+          user_id: profile.id,
+          tipo_refeicao: refeicao.tipo,
+          refeicao_selecionada: {
+            ...novaOpcao,
+            ingredientes_detalhados: refeicao.ingredientes,
+            modo_preparo: refeicao.modo_preparo,
+            tempo_preparo: refeicao.tempo_preparo
+          },
+          data: hoje
+        }, {
+          onConflict: 'user_id,tipo_refeicao,data'
+        })
+
+      if (!error) {
+        setRefeicoesSelecionadas(prev => ({
+          ...prev,
+          [refeicao.tipo]: novaOpcao
+        }))
+      }
+    } catch (err) {
+      console.error('Erro ao aplicar refeicao:', err)
+    }
+  }
+
+  // Aplicar todas as refeicoes de um dia
+  const aplicarDiaCompleto = async (dia: PlanoAlimentar['dias'][0]) => {
+    for (const refeicao of dia.refeicoes) {
+      await aplicarRefeicaoPlano(refeicao)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -549,8 +692,34 @@ export default function RefeicoesPage() {
             >
               <Plus className="w-5 h-5" />
             </button>
+            <button
+              onClick={() => setMostrarPlanoIA(true)}
+              className="p-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl shadow-lg"
+              title="Plano Alimentar IA"
+            >
+              <Wand2 className="w-5 h-5" />
+            </button>
           </div>
         </div>
+
+        {/* Botao Ver Calendario (se tiver plano) */}
+        {planoGerado && (
+          <button
+            onClick={() => setMostrarCalendario(true)}
+            className="w-full p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl flex items-center gap-3 hover:from-purple-100 hover:to-pink-100 transition-colors"
+          >
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-semibold text-gray-800">Ver Plano Alimentar</p>
+              <p className="text-xs text-gray-500">
+                {planoGerado.dias.length} dias • {planoGerado.meta_calorias_diaria} kcal/dia
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
+        )}
 
         {/* Navegacao de dias */}
         <div className={`flex items-center justify-between bg-white rounded-2xl p-3 border border-gray-100 transition-opacity ${loadingDia ? 'opacity-70' : ''}`}>
@@ -1235,6 +1404,277 @@ export default function RefeicoesPage() {
               >
                 Adicionar Refeicao
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Plano Alimentar IA */}
+      {mostrarPlanoIA && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                  <Wand2 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">Plano Alimentar IA</h3>
+                  <p className="text-xs text-gray-500">Monte seu cardapio completo</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMostrarPlanoIA(false)}
+                className="p-2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {erroPlano && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                {erroPlano}
+              </div>
+            )}
+
+            {/* Escolher periodo */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Para quantos dias?
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: 'dia' as const, label: 'Hoje', desc: '1 dia' },
+                  { value: 'semana' as const, label: 'Semana', desc: '7 dias' },
+                  { value: 'mes' as const, label: 'Mes', desc: '30 dias' }
+                ].map(({ value, label, desc }) => (
+                  <button
+                    key={value}
+                    onClick={() => setPeriodoPlano(value)}
+                    className={`p-4 rounded-xl border-2 transition-all text-center ${
+                      periodoPlano === value
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <p className={`font-semibold ${periodoPlano === value ? 'text-purple-600' : 'text-gray-800'}`}>
+                      {label}
+                    </p>
+                    <p className="text-xs text-gray-500">{desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Preferencias */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Preferencias (opcional)
+              </label>
+              <textarea
+                value={preferenciasPlano}
+                onChange={(e) => setPreferenciasPlano(e.target.value)}
+                placeholder="Ex: vegetariano, sem gluten, priorizar proteinas..."
+                rows={3}
+                className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
+              />
+            </div>
+
+            {/* Info */}
+            <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-gray-600">
+                  <p className="font-medium text-gray-800 mb-1">O que sera gerado:</p>
+                  <ul className="space-y-1 text-xs">
+                    <li>• 6 refeicoes por dia com receitas completas</li>
+                    <li>• Ingredientes e modo de preparo</li>
+                    <li>• Lista de compras automatica</li>
+                    <li>• Baseado no seu perfil e plano</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Botao gerar */}
+            <button
+              onClick={gerarPlanoAlimentar}
+              disabled={gerandoPlano}
+              className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
+            >
+              {gerandoPlano ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Gerando plano... (pode demorar)
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-5 h-5" />
+                  Gerar Plano Alimentar
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Calendario do Plano */}
+      {mostrarCalendario && planoGerado && (
+        <div className="fixed inset-0 bg-black/50 flex items-end lg:items-center justify-center z-50">
+          <div className="bg-white w-full lg:max-w-2xl lg:rounded-2xl rounded-t-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <Calendar className="w-5 h-5" />
+                    Plano Alimentar
+                  </h2>
+                  <p className="text-sm text-purple-100">
+                    {planoGerado.dias.length} dias • {planoGerado.meta_calorias_diaria} kcal/dia
+                  </p>
+                </div>
+                <button
+                  onClick={() => setMostrarCalendario(false)}
+                  className="p-2 hover:bg-white/20 rounded-lg"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Dicas gerais */}
+            {planoGerado.dicas_gerais.length > 0 && (
+              <div className="p-4 bg-purple-50 border-b border-purple-100 flex-shrink-0">
+                <p className="text-xs text-purple-600 font-medium mb-1">Dicas do plano:</p>
+                <p className="text-sm text-gray-600">{planoGerado.dicas_gerais[0]}</p>
+              </div>
+            )}
+
+            {/* Lista de Compras */}
+            <div className="p-4 bg-green-50 border-b border-green-100 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5 text-green-600" />
+                  <span className="font-medium text-green-800">Lista de compras gerada</span>
+                </div>
+                <span className="text-sm text-green-600">{planoGerado.lista_compras.length} itens</span>
+              </div>
+              <p className="text-xs text-green-600 mt-1">Acesse a aba Compras para ver a lista completa</p>
+            </div>
+
+            {/* Dias do plano */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {planoGerado.dias.map((dia, index) => {
+                const isExpanded = diaExpandido === dia.data
+                return (
+                  <div key={dia.data} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                    {/* Header do dia */}
+                    <button
+                      onClick={() => setDiaExpandido(isExpanded ? null : dia.data)}
+                      className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl flex items-center justify-center">
+                          <span className="font-bold text-purple-600">{index + 1}</span>
+                        </div>
+                        <div className="text-left">
+                          <p className="font-semibold text-gray-800">{dia.dia_semana}</p>
+                          <p className="text-xs text-gray-500">{dia.data}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <p className="font-semibold text-purple-600">{dia.total_calorias} kcal</p>
+                          <p className="text-xs text-gray-400">{dia.refeicoes.length} refeicoes</p>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                      </div>
+                    </button>
+
+                    {/* Refeicoes expandidas */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-100">
+                        {/* Dica do dia */}
+                        {dia.dica_dia && (
+                          <div className="px-4 py-2 bg-yellow-50 text-xs text-yellow-700 flex items-center gap-2">
+                            <Sparkles className="w-3 h-3" />
+                            {dia.dica_dia}
+                          </div>
+                        )}
+
+                        <div className="divide-y divide-gray-50">
+                          {dia.refeicoes.map((refeicao) => {
+                            const colors = TIPO_COLORS[refeicao.tipo as TipoRefeicao] || { bg: 'bg-gray-500', text: 'text-gray-500', light: 'bg-gray-50' }
+                            return (
+                              <div key={refeicao.tipo} className="p-4">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-8 h-8 ${colors.bg} rounded-lg flex items-center justify-center text-white`}>
+                                      {TIPO_ICONS[refeicao.tipo as TipoRefeicao]}
+                                    </div>
+                                    <div>
+                                      <p className="font-medium text-gray-800">{refeicao.nome}</p>
+                                      <p className="text-xs text-gray-500">{refeicao.descricao}</p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() => aplicarRefeicaoPlano(refeicao)}
+                                    className="text-xs px-2 py-1 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200"
+                                  >
+                                    Usar hoje
+                                  </button>
+                                </div>
+
+                                {/* Macros */}
+                                <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
+                                  <span className="text-orange-600">{refeicao.calorias} kcal</span>
+                                  <span>P: {refeicao.proteinas}g</span>
+                                  <span>C: {refeicao.carboidratos}g</span>
+                                  <span>G: {refeicao.gorduras}g</span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {refeicao.tempo_preparo}min
+                                  </span>
+                                </div>
+
+                                {/* Ingredientes */}
+                                <div className="text-xs text-gray-500 mb-2">
+                                  <span className="font-medium">Ingredientes: </span>
+                                  {refeicao.ingredientes.map(i => `${i.quantidade} ${i.unidade} ${i.nome}`).join(', ')}
+                                </div>
+
+                                {/* Modo de preparo */}
+                                <details className="text-xs">
+                                  <summary className="cursor-pointer text-purple-600 font-medium hover:text-purple-700">
+                                    Ver modo de preparo
+                                  </summary>
+                                  <ol className="mt-2 ml-4 list-decimal text-gray-600 space-y-1">
+                                    {refeicao.modo_preparo.map((passo, i) => (
+                                      <li key={i}>{passo}</li>
+                                    ))}
+                                  </ol>
+                                </details>
+                              </div>
+                            )
+                          })}
+                        </div>
+
+                        {/* Botao aplicar dia inteiro */}
+                        <div className="p-4 bg-gray-50 border-t border-gray-100">
+                          <button
+                            onClick={() => aplicarDiaCompleto(dia)}
+                            className="w-full py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl text-sm font-medium"
+                          >
+                            Aplicar todas as refeicoes de {dia.dia_semana}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>

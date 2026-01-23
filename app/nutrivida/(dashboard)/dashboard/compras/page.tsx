@@ -18,7 +18,9 @@ import {
   Loader2,
   Package,
   Share2,
-  CheckCircle2
+  CheckCircle2,
+  Calendar,
+  Wand2
 } from 'lucide-react'
 
 interface ItemCarrinho {
@@ -75,6 +77,7 @@ export default function ComprasPage() {
   const [modoIA, setModoIA] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
   const [adicionandoItem, setAdicionandoItem] = useState<string | null>(null)
+  const [importandoPlano, setImportandoPlano] = useState(false)
 
   // Funcao para mostrar toast
   const mostrarToast = useCallback((mensagem: string, tipo: Toast['tipo'] = 'sucesso') => {
@@ -331,6 +334,54 @@ export default function ComprasPage() {
     }
   }
 
+  // Importar lista do plano alimentar
+  const importarListaPlano = async () => {
+    if (!profile?.id) return
+
+    setImportandoPlano(true)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        mostrarToast('Sessao expirada', 'erro')
+        return
+      }
+
+      // Buscar plano salvo
+      const response = await fetch('/api/nutrivida/plano-alimentar', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (!data.plano || !data.plano.lista_compras) {
+        mostrarToast('Nenhum plano encontrado. Gere um plano primeiro!', 'info')
+        return
+      }
+
+      // Adicionar itens da lista
+      let adicionados = 0
+      for (const item of data.plano.lista_compras) {
+        const sucesso = await adicionarItem(
+          item.item,
+          item.categoria || 'outros',
+          item.unidade || 'un',
+          `${item.quantidade} ${item.unidade || 'un'}`
+        )
+        if (sucesso) adicionados++
+      }
+
+      mostrarToast(`${adicionados} itens importados do plano!`, 'sucesso')
+    } catch (err) {
+      console.error('Erro ao importar plano:', err)
+      mostrarToast('Erro ao importar lista', 'erro')
+    } finally {
+      setImportandoPlano(false)
+    }
+  }
+
   // Compartilhar lista
   const compartilharLista = () => {
     const listaTexto = itens
@@ -411,20 +462,43 @@ export default function ComprasPage() {
         </div>
       </div>
 
-      {/* Sincronizar */}
-      <button
-        onClick={sincronizarRefeicoes}
-        className="w-full p-4 bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 rounded-2xl flex items-center gap-3 hover:from-pink-100 hover:to-purple-100 transition-colors"
-      >
-        <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-white" />
-        </div>
-        <div className="flex-1 text-left">
-          <p className="font-semibold text-gray-800">Sincronizar refeicoes</p>
-          <p className="text-xs text-gray-500">Adiciona ingredientes das refeicoes de hoje</p>
-        </div>
-        <ChevronRight className="w-5 h-5 text-gray-400" />
-      </button>
+      {/* Acoes rapidas */}
+      <div className="grid grid-cols-1 gap-3">
+        {/* Sincronizar */}
+        <button
+          onClick={sincronizarRefeicoes}
+          className="w-full p-4 bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 rounded-2xl flex items-center gap-3 hover:from-pink-100 hover:to-purple-100 transition-colors"
+        >
+          <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-semibold text-gray-800">Sincronizar refeicoes</p>
+            <p className="text-xs text-gray-500">Adiciona ingredientes das refeicoes de hoje</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-gray-400" />
+        </button>
+
+        {/* Importar do Plano IA */}
+        <button
+          onClick={importarListaPlano}
+          disabled={importandoPlano}
+          className="w-full p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl flex items-center gap-3 hover:from-purple-100 hover:to-pink-100 transition-colors disabled:opacity-50"
+        >
+          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+            {importandoPlano ? (
+              <Loader2 className="w-5 h-5 text-white animate-spin" />
+            ) : (
+              <Wand2 className="w-5 h-5 text-white" />
+            )}
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-semibold text-gray-800">Lista do Plano IA</p>
+            <p className="text-xs text-gray-500">Importa ingredientes do plano alimentar gerado</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-gray-400" />
+        </button>
+      </div>
 
       {/* Lista por Categoria */}
       {totalItens > 0 ? (

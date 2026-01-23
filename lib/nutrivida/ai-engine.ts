@@ -390,6 +390,44 @@ export const CoachResponseSchema = z.object({
   pontuacao_dia: z.number().min(1).max(10)
 })
 
+// Schema para refeicao detalhada com ingredientes e modo de preparo
+export const RefeicaoDetalhadaSchema = z.object({
+  tipo: z.enum(['cafe', 'lanche_manha', 'almoco', 'lanche_tarde', 'jantar', 'ceia']),
+  nome: z.string(),
+  descricao: z.string(),
+  calorias: z.number(),
+  proteinas: z.number(),
+  carboidratos: z.number(),
+  gorduras: z.number(),
+  ingredientes: z.array(z.object({
+    nome: z.string(),
+    quantidade: z.string(),
+    unidade: z.string()
+  })),
+  modo_preparo: z.array(z.string()),
+  tempo_preparo: z.number()
+})
+
+// Schema para plano alimentar completo (dia/semana/mes)
+export const PlanoAlimentarCompletoSchema = z.object({
+  periodo: z.enum(['dia', 'semana', 'mes']),
+  dias: z.array(z.object({
+    data: z.string(),
+    dia_semana: z.string(),
+    refeicoes: z.array(RefeicaoDetalhadaSchema),
+    total_calorias: z.number(),
+    dica_dia: z.string()
+  })),
+  lista_compras: z.array(z.object({
+    item: z.string(),
+    quantidade: z.number(),
+    unidade: z.string(),
+    categoria: z.enum(['frutas', 'vegetais', 'proteinas', 'laticinios', 'carboidratos', 'gorduras', 'temperos', 'outros'])
+  })),
+  meta_calorias_diaria: z.number(),
+  dicas_gerais: z.array(z.string())
+})
+
 // =====================================================
 // TIPOS
 // =====================================================
@@ -853,6 +891,114 @@ Seja motivadora e especifica para essa fase da vida.`
   }
 }
 
+/**
+ * Gerar plano alimentar completo com ingredientes e modo de preparo
+ */
+export async function gerarPlanoAlimentarCompleto(
+  perfil: ProfileContext,
+  periodo: 'dia' | 'semana' | 'mes',
+  preferencias?: string
+): Promise<z.infer<typeof PlanoAlimentarCompletoSchema> | null> {
+  // Calcular calorias base
+  let metaCalorias = perfil.plano === 'restritivo' ? 1300 : 1900
+
+  // Ajustes por situacao
+  if (perfil.amamentando) {
+    metaCalorias += 500
+  } else if (perfil.semana_gestacao) {
+    if (perfil.semana_gestacao <= 12) metaCalorias += 100
+    else if (perfil.semana_gestacao <= 26) metaCalorias += 340
+    else metaCalorias += 450
+  }
+
+  // Determinar numero de dias
+  const numDias = periodo === 'dia' ? 1 : periodo === 'semana' ? 7 : 30
+
+  // Gerar datas a partir de hoje
+  const datas: { data: string; dia_semana: string }[] = []
+  const diasSemana = ['Domingo', 'Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado']
+  const hoje = new Date()
+
+  for (let i = 0; i < numDias; i++) {
+    const data = new Date(hoje)
+    data.setDate(hoje.getDate() + i)
+    datas.push({
+      data: data.toISOString().split('T')[0],
+      dia_semana: diasSemana[data.getDay()]
+    })
+  }
+
+  const situacao = perfil.semana_gestacao
+    ? `Gestante (${perfil.semana_gestacao} semanas)`
+    : perfil.amamentando
+    ? 'Amamentando'
+    : perfil.idade_bebe
+    ? `Pos-parto (bebe ${perfil.idade_bebe} dias)`
+    : 'Mulher buscando saude'
+
+  const tiposRefeicao = ['cafe', 'lanche_manha', 'almoco', 'lanche_tarde', 'jantar', 'ceia']
+
+  const prompt = `Crie um plano alimentar COMPLETO para ${numDias} dia(s).
+
+PERFIL:
+- Situacao: ${situacao}
+- Meta: ${metaCalorias} kcal/dia
+- Plano: ${perfil.plano === 'restritivo' ? 'Low carb/Restritivo' : 'Equilibrado'}
+${perfil.semana_gestacao ? '- IMPORTANTE: Evitar alimentos proibidos na gestacao!' : ''}
+${perfil.amamentando ? '- IMPORTANTE: Priorizar alimentos que auxiliam na lactacao!' : ''}
+${perfil.restricoes?.length ? `- Restricoes: ${perfil.restricoes.join(', ')}` : ''}
+${preferencias ? `- Preferencias: ${preferencias}` : ''}
+
+DATAS DO PLANO:
+${datas.map(d => `- ${d.data} (${d.dia_semana})`).join('\n')}
+
+TIPOS DE REFEICAO OBRIGATORIOS:
+${tiposRefeicao.join(', ')}
+
+REQUISITOS:
+1. Cada dia DEVE ter exatamente 6 refeicoes (cafe, lanche_manha, almoco, lanche_tarde, jantar, ceia)
+2. Cada refeicao DEVE ter:
+   - nome criativo
+   - descricao breve
+   - calorias, proteinas, carboidratos, gorduras
+   - lista de ingredientes com quantidade e unidade
+   - modo de preparo passo a passo
+   - tempo de preparo em minutos
+3. Variar as refeicoes entre os dias
+4. Lista de compras consolidada ao final com quantidades totais
+5. Uma dica pratica por dia
+
+IMPORTANTE: Gere refeicoes PRATICAS e RAPIDAS (max 30 min preparo) com ingredientes acessiveis.`
+
+  const systemPrompt = `Voce e uma nutricionista criando planos alimentares detalhados.
+Cada refeicao deve ter receita completa com ingredientes e modo de preparo.
+A lista de compras deve consolidar todos os ingredientes com quantidades corretas para o periodo.
+Categorize os ingredientes em: frutas, vegetais, proteinas, laticinios, carboidratos, gorduras, temperos, outros.`
+
+  try {
+    const result = await withRetry(async () => {
+      const { object } = await generateObject({
+        model: MODELS.primary,
+        schema: PlanoAlimentarCompletoSchema,
+        system: systemPrompt,
+        prompt,
+        temperature: 0.7,
+      })
+      return object
+    }, {
+      maxRetries: 2,
+      baseDelay: 2000,
+      maxDelay: 10000,
+      backoffMultiplier: 2
+    })
+
+    return result
+  } catch (error) {
+    console.error('Erro ao gerar plano alimentar completo:', error)
+    return null
+  }
+}
+
 // =====================================================
 // EXPORT TIPOS
 // =====================================================
@@ -861,3 +1007,5 @@ export type AnalisePrato = z.infer<typeof AnalisePratoSchema>
 export type PlanoSemanal = z.infer<typeof PlanoSemanalSchema>
 export type CheckInDiario = z.infer<typeof CheckInDiarioSchema>
 export type CoachResponse = z.infer<typeof CoachResponseSchema>
+export type RefeicaoDetalhada = z.infer<typeof RefeicaoDetalhadaSchema>
+export type PlanoAlimentarCompleto = z.infer<typeof PlanoAlimentarCompletoSchema>
