@@ -18,7 +18,10 @@ import {
   Search,
   Utensils,
   Leaf,
-  Dumbbell
+  Dumbbell,
+  ShoppingCart,
+  Check,
+  Plus
 } from 'lucide-react'
 
 interface ReceitaSalva {
@@ -42,6 +45,8 @@ export default function ReceitasPage() {
   const [filtroTipo, setFiltroTipo] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [receitaAtualSalva, setReceitaAtualSalva] = useState(false)
+  const [adicionandoCompras, setAdicionandoCompras] = useState(false)
+  const [ingredientesAdicionados, setIngredientesAdicionados] = useState(false)
 
   // Carregar receitas favoritas
   const carregarFavoritas = useCallback(async () => {
@@ -164,6 +169,82 @@ export default function ReceitasPage() {
     setReceita(rec.conteudo)
     setReceitaAtualSalva(true)
     setShowFavoritas(false)
+    setIngredientesAdicionados(false)
+  }
+
+  // Extrair ingredientes da receita
+  const extrairIngredientes = (texto: string): string[] => {
+    const ingredientes: string[] = []
+    const linhas = texto.split('\n')
+    let dentroIngredientes = false
+
+    for (const linha of linhas) {
+      const linhaLimpa = linha.trim()
+
+      // Detectar inicio da secao de ingredientes
+      if (/INGREDIENTES\s*:/i.test(linhaLimpa)) {
+        dentroIngredientes = true
+        continue
+      }
+
+      // Detectar fim da secao (outra secao comecando)
+      if (dentroIngredientes && /^(MODO|PREPARO|DICA|VARIA|INFO|TEMPO|RENDIMENTO|CALORIAS|PROTE)/i.test(linhaLimpa)) {
+        dentroIngredientes = false
+        continue
+      }
+
+      // Adicionar ingrediente se estiver na secao
+      if (dentroIngredientes && linhaLimpa) {
+        const ingrediente = linhaLimpa
+          .replace(/^[-•*]\s*/, '')
+          .replace(/^\d+[\.\)]\s*/, '')
+          .trim()
+
+        if (ingrediente && ingrediente.length > 2) {
+          ingredientes.push(ingrediente)
+        }
+      }
+    }
+
+    return ingredientes
+  }
+
+  // Enviar ingredientes para lista de compras
+  const adicionarIngredientesCompras = async () => {
+    if (!profile?.id || !receita) return
+
+    setAdicionandoCompras(true)
+    try {
+      const ingredientes = extrairIngredientes(receita)
+
+      if (ingredientes.length === 0) {
+        console.log('Nenhum ingrediente encontrado')
+        return
+      }
+
+      // Inserir cada ingrediente na lista de compras
+      const itensParaInserir = ingredientes.map(ingrediente => ({
+        user_id: profile.id,
+        item_nome: ingrediente,
+        categoria: 'receita',
+        quantidade: 1,
+        unidade: 'un',
+        quantidade_compra: '1 unidade',
+        comprado: false
+      }))
+
+      const { error } = await supabase
+        .from('lista_compras_nutri')
+        .insert(itensParaInserir)
+
+      if (!error) {
+        setIngredientesAdicionados(true)
+      }
+    } catch (err) {
+      console.error('Erro ao adicionar ingredientes:', err)
+    } finally {
+      setAdicionandoCompras(false)
+    }
   }
 
   const favoritasFiltradas = filtroTipo
@@ -545,6 +626,26 @@ export default function ReceitasPage() {
                   Sua Receita
                 </h2>
                 <div className="flex items-center gap-2">
+                  {/* Botao Adicionar a Lista de Compras */}
+                  <button
+                    onClick={adicionarIngredientesCompras}
+                    disabled={adicionandoCompras || ingredientesAdicionados}
+                    className={`p-2 rounded-lg transition-all ${
+                      ingredientesAdicionados
+                        ? 'bg-green-100 text-green-500'
+                        : 'hover:bg-green-50 text-gray-400 hover:text-green-500'
+                    }`}
+                    title={ingredientesAdicionados ? 'Ingredientes adicionados!' : 'Adicionar ingredientes a lista de compras'}
+                  >
+                    {adicionandoCompras ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : ingredientesAdicionados ? (
+                      <Check className="w-5 h-5" />
+                    ) : (
+                      <ShoppingCart className="w-5 h-5" />
+                    )}
+                  </button>
+                  {/* Botao Salvar */}
                   <button
                     onClick={salvarReceita}
                     disabled={salvando || receitaAtualSalva}
@@ -561,6 +662,7 @@ export default function ReceitasPage() {
                       <Heart className="w-5 h-5" fill={receitaAtualSalva ? 'currentColor' : 'none'} />
                     )}
                   </button>
+                  {/* Botao Refresh */}
                   <button
                     onClick={() => tipoSelecionado && gerarReceita(tipoSelecionado, true)}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 hover:text-gray-700"

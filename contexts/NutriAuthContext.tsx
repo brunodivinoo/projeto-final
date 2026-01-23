@@ -28,6 +28,13 @@ export interface MacrosDia {
   gorduras: number
 }
 
+export interface MetasMacros {
+  calorias: number
+  proteinas: { min: number; max: number }
+  carboidratos: { min: number; max: number }
+  gorduras: { min: number; max: number }
+}
+
 type NutriAuthContextType = {
   user: User | null
   profile: ProfileNUTRI | null
@@ -43,6 +50,7 @@ type NutriAuthContextType = {
   progressoPercentual: number
   metaCalorias: number
   metaProteinas: number
+  metasMacros: MetasMacros
 }
 
 const NutriAuthContext = createContext<NutriAuthContextType>({
@@ -58,7 +66,13 @@ const NutriAuthContext = createContext<NutriAuthContextType>({
   pesoRestante: 0,
   progressoPercentual: 0,
   metaCalorias: 1900,
-  metaProteinas: 80
+  metaProteinas: 80,
+  metasMacros: {
+    calorias: 1900,
+    proteinas: { min: 70, max: 100 },
+    carboidratos: { min: 150, max: 250 },
+    gorduras: { min: 50, max: 70 }
+  }
 })
 
 export function NutriAuthProvider({ children }: { children: ReactNode }) {
@@ -89,6 +103,21 @@ export function NutriAuthProvider({ children }: { children: ReactNode }) {
 
   const metaCalorias = profile?.plano === 'restritivo' ? 1300 : 1900
   const metaProteinas = profile?.plano === 'restritivo' ? 90 : 80
+
+  // Metas de macros baseadas no plano
+  const metasMacros: MetasMacros = profile?.plano === 'restritivo'
+    ? {
+        calorias: 1300,
+        proteinas: { min: 80, max: 110 },
+        carboidratos: { min: 50, max: 100 },
+        gorduras: { min: 50, max: 70 }
+      }
+    : {
+        calorias: 1900,
+        proteinas: { min: 70, max: 100 },
+        carboidratos: { min: 180, max: 280 },
+        gorduras: { min: 50, max: 80 }
+      }
 
   const fetchProfile = useCallback(async (userId: string, userEmail?: string, userName?: string, forceRefresh = false) => {
     if (fetchingRef.current) return
@@ -262,7 +291,8 @@ export function NutriAuthProvider({ children }: { children: ReactNode }) {
       pesoRestante,
       progressoPercentual,
       metaCalorias,
-      metaProteinas
+      metaProteinas,
+      metasMacros
     }}>
       {children}
     </NutriAuthContext.Provider>

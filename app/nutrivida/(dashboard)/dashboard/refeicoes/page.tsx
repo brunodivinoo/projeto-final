@@ -29,7 +29,10 @@ import {
   History,
   Target,
   Award,
-  PieChart
+  PieChart,
+  Copy,
+  Star,
+  Heart
 } from 'lucide-react'
 
 type TipoRefeicao = 'cafe' | 'lanche_manha' | 'almoco' | 'lanche_tarde' | 'jantar' | 'ceia'
@@ -103,6 +106,19 @@ export default function RefeicoesPage() {
   })
   const [tipoManual, setTipoManual] = useState<TipoRefeicao>('almoco')
 
+  // Estados para Repetir Refeições e Favoritas
+  const [refeicoesOntem, setRefeicoesOntem] = useState<Record<TipoRefeicao, OpcaoRefeicao | null>>({
+    cafe: null,
+    lanche_manha: null,
+    almoco: null,
+    lanche_tarde: null,
+    jantar: null,
+    ceia: null
+  })
+  const [mostrarRepetir, setMostrarRepetir] = useState(false)
+  const [refeicoesFavoritas, setRefeicoesFavoritas] = useState<OpcaoRefeicao[]>([])
+  const [mostrarFavoritas, setMostrarFavoritas] = useState(false)
+
   const hoje = dataAtual.toISOString().split('T')[0]
   const isHoje = hoje === new Date().toISOString().split('T')[0]
   const planoRestritivo = profile?.plano === 'restritivo'
@@ -150,6 +166,102 @@ export default function RefeicoesPage() {
   const percentualCarbos = metaCalorias > 0 ? Math.round((macrosDia.carboidratos * 4 / metaCalorias) * 100) : 0
   const percentualGorduras = metaCalorias > 0 ? Math.round((macrosDia.gorduras * 9 / metaCalorias) * 100) : 0
   const caloriasRestantes = metaCalorias - macrosDia.calorias
+
+  // Buscar refeicoes do dia anterior para repetir
+  const buscarRefeicoesOntem = useCallback(async () => {
+    if (!profile?.id) return
+
+    const ontem = new Date()
+    ontem.setDate(ontem.getDate() - 1)
+    const dataOntem = ontem.toISOString().split('T')[0]
+
+    try {
+      const { data } = await supabase
+        .from('refeicoes_diarias_nutri')
+        .select('tipo_refeicao, refeicao_selecionada')
+        .eq('user_id', profile.id)
+        .eq('data', dataOntem)
+
+      if (data && data.length > 0) {
+        const refeicoes: Record<TipoRefeicao, OpcaoRefeicao | null> = {
+          cafe: null,
+          lanche_manha: null,
+          almoco: null,
+          lanche_tarde: null,
+          jantar: null,
+          ceia: null
+        }
+        data.forEach((item) => {
+          const tipo = item.tipo_refeicao as TipoRefeicao
+          refeicoes[tipo] = item.refeicao_selecionada as OpcaoRefeicao
+        })
+        setRefeicoesOntem(refeicoes)
+      }
+    } catch (err) {
+      console.error('Erro ao buscar refeicoes de ontem:', err)
+    }
+  }, [profile?.id])
+
+  // Buscar refeicoes mais usadas (favoritas baseadas em frequencia)
+  const buscarRefeicoesFavoritas = useCallback(async () => {
+    if (!profile?.id) return
+
+    try {
+      const { data } = await supabase
+        .from('refeicoes_diarias_nutri')
+        .select('refeicao_selecionada')
+        .eq('user_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(100)
+
+      if (data && data.length > 0) {
+        // Contar frequencia de cada refeicao
+        const contagem: Record<string, { count: number; refeicao: OpcaoRefeicao }> = {}
+        data.forEach((item) => {
+          const refeicao = item.refeicao_selecionada as OpcaoRefeicao
+          if (refeicao && refeicao.id) {
+            if (contagem[refeicao.id]) {
+              contagem[refeicao.id].count++
+            } else {
+              contagem[refeicao.id] = { count: 1, refeicao }
+            }
+          }
+        })
+
+        // Ordenar por frequencia e pegar top 10
+        const favoritas = Object.values(contagem)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10)
+          .map(item => item.refeicao)
+
+        setRefeicoesFavoritas(favoritas)
+      }
+    } catch (err) {
+      console.error('Erro ao buscar favoritas:', err)
+    }
+  }, [profile?.id])
+
+  // Repetir todas as refeicoes de ontem
+  const repetirRefeicoesOntem = async () => {
+    if (!profile?.id) return
+
+    const tiposComRefeicao = Object.entries(refeicoesOntem)
+      .filter(([_, ref]) => ref !== null) as [TipoRefeicao, OpcaoRefeicao][]
+
+    for (const [tipo, refeicao] of tiposComRefeicao) {
+      await selecionarRefeicao(tipo, refeicao)
+    }
+
+    setMostrarRepetir(false)
+  }
+
+  // Buscar refeicoes do ontem e favoritas ao carregar
+  useEffect(() => {
+    if (profile?.id) {
+      buscarRefeicoesOntem()
+      buscarRefeicoesFavoritas()
+    }
+  }, [profile?.id, buscarRefeicoesOntem, buscarRefeicoesFavoritas])
 
   // Buscar historico
   const buscarHistorico = useCallback(async () => {
@@ -475,17 +587,150 @@ export default function RefeicoesPage() {
           </button>
         </div>
 
-        {/* Acoes rapidas */}
-        {refeicoesCompletas > 0 && isHoje && (
-          <button
-            onClick={limparTodas}
-            className="text-sm text-red-500 hover:text-red-600 flex items-center gap-1"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Resetar dia
-          </button>
+        {/* Acoes rapidas - Repetir Ontem e Favoritas */}
+        {isHoje && (
+          <div className="flex flex-wrap gap-2">
+            {/* Botao Repetir Ontem */}
+            {Object.values(refeicoesOntem).some(r => r !== null) && (
+              <button
+                onClick={() => setMostrarRepetir(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl text-blue-600 hover:from-blue-100 hover:to-indigo-100 transition-all"
+              >
+                <Copy className="w-4 h-4" />
+                <span className="text-sm font-medium">Repetir Ontem</span>
+              </button>
+            )}
+
+            {/* Botao Favoritas */}
+            {refeicoesFavoritas.length > 0 && (
+              <button
+                onClick={() => setMostrarFavoritas(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-200 rounded-xl text-pink-600 hover:from-pink-100 hover:to-rose-100 transition-all"
+              >
+                <Heart className="w-4 h-4" />
+                <span className="text-sm font-medium">Favoritas</span>
+              </button>
+            )}
+
+            {/* Botao Resetar */}
+            {refeicoesCompletas > 0 && (
+              <button
+                onClick={limparTodas}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:text-red-600"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Resetar dia
+              </button>
+            )}
+          </div>
         )}
       </div>
+
+      {/* Modal Repetir Ontem */}
+      {mostrarRepetir && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <Copy className="w-5 h-5 text-blue-500" />
+                Repetir Refeicoes de Ontem
+              </h3>
+              <button onClick={() => setMostrarRepetir(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-500 mb-4">
+              Selecione as refeicoes que deseja repetir hoje:
+            </p>
+
+            <div className="space-y-3 mb-6">
+              {(Object.entries(refeicoesOntem) as [TipoRefeicao, OpcaoRefeicao | null][]).map(([tipo, refeicao]) => {
+                if (!refeicao) return null
+                const colors = TIPO_COLORS[tipo]
+                const refeicaoData = REFEICOES_COMPLETAS[tipo]
+                return (
+                  <div key={tipo} className={`p-3 rounded-xl ${colors.light} border border-gray-100`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 ${colors.bg} rounded-lg flex items-center justify-center text-white`}>
+                          {TIPO_ICONS[tipo]}
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">{refeicaoData.titulo}</p>
+                          <p className="font-medium text-gray-800 text-sm">{refeicao.nome}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => selecionarRefeicao(tipo, refeicao)}
+                        className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        Usar
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">{refeicao.calorias} kcal • {refeicao.proteinas}g prot</p>
+                  </div>
+                )
+              })}
+            </div>
+
+            <button
+              onClick={repetirRefeicoesOntem}
+              className="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-indigo-600 transition-all flex items-center justify-center gap-2"
+            >
+              <Copy className="w-5 h-5" />
+              Repetir Todas
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Favoritas */}
+      {mostrarFavoritas && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <Heart className="w-5 h-5 text-pink-500" />
+                Suas Refeicoes Favoritas
+              </h3>
+              <button onClick={() => setMostrarFavoritas(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-500 mb-4">
+              Baseado no seu historico, estas sao as refeicoes que voce mais consome:
+            </p>
+
+            <div className="space-y-2 mb-4">
+              {refeicoesFavoritas.map((refeicao, index) => (
+                <div
+                  key={refeicao.id}
+                  className="p-3 bg-gradient-to-r from-pink-50 to-rose-50 rounded-xl border border-pink-100 hover:from-pink-100 hover:to-rose-100 transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center text-white text-sm font-bold">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-800 text-sm">{refeicao.nome}</p>
+                        <p className="text-xs text-gray-500">{refeicao.calorias} kcal • {refeicao.proteinas}g prot</p>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 line-clamp-1">{refeicao.descricao}</p>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-gray-400 text-center">
+              Clique em uma refeicao no menu principal para adicionala
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Historico */}
       {mostrarHistorico && (
