@@ -8,7 +8,8 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism'
 import { useArtifactsStore, detectArtifactType, Question, type ChatModeType } from '@/stores/artifactsStore'
 import { extractReferences, processCitations, type Reference, CITATION_REGEX } from './CitationTooltip'
-import { X, ZoomIn, ZoomOut, Download, ExternalLink } from 'lucide-react'
+import { ImageModal } from '@/components/ui/ImageModal'
+import { ZoomIn } from 'lucide-react'
 
 // Importar MermaidDiagram dinamicamente para evitar SSR issues
 const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
@@ -102,136 +103,6 @@ const QuestionStreamingSkeleton = dynamic(() => import('./QuestionStreamingSkele
 })
 
 export type PlanoUsuario = 'gratuito' | 'premium' | 'residencia'
-
-// ============================================================
-// COMPONENTE DE MODAL DE IMAGEM FULLSCREEN
-// ============================================================
-interface ImageModalProps {
-  src: string
-  alt: string
-  isOpen: boolean
-  onClose: () => void
-}
-
-function ImageModal({ src, alt, isOpen, onClose }: ImageModalProps) {
-  const [zoom, setZoom] = useState(1)
-  const [isLoading, setIsLoading] = useState(true)
-
-  // Fechar com ESC
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-      if (e.key === '+' || e.key === '=') setZoom(z => Math.min(z + 0.25, 3))
-      if (e.key === '-') setZoom(z => Math.max(z - 0.25, 0.5))
-      if (e.key === '0') setZoom(1)
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    // Prevenir scroll do body quando modal está aberto
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = ''
-    }
-  }, [isOpen, onClose])
-
-  // Reset zoom quando mudar imagem
-  useEffect(() => {
-    setZoom(1)
-    setIsLoading(true)
-  }, [src])
-
-  if (!isOpen) return null
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95"
-      onClick={onClose}
-    >
-      {/* Controles */}
-      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-        {/* Zoom out */}
-        <button
-          onClick={(e) => { e.stopPropagation(); setZoom(z => Math.max(z - 0.25, 0.5)) }}
-          className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-          title="Diminuir zoom (-)"
-        >
-          <ZoomOut className="w-5 h-5 text-white" />
-        </button>
-
-        {/* Indicador de zoom */}
-        <span className="text-white/70 text-sm min-w-[50px] text-center">
-          {Math.round(zoom * 100)}%
-        </span>
-
-        {/* Zoom in */}
-        <button
-          onClick={(e) => { e.stopPropagation(); setZoom(z => Math.min(z + 0.25, 3)) }}
-          className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-          title="Aumentar zoom (+)"
-        >
-          <ZoomIn className="w-5 h-5 text-white" />
-        </button>
-
-        {/* Download */}
-        <a
-          href={src}
-          download
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-          title="Abrir em nova aba"
-        >
-          <ExternalLink className="w-5 h-5 text-white" />
-        </a>
-
-        {/* Fechar */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onClose() }}
-          className="p-2 bg-white/10 hover:bg-red-500/50 rounded-full transition-colors ml-2"
-          title="Fechar (ESC)"
-        >
-          <X className="w-5 h-5 text-white" />
-        </button>
-      </div>
-
-      {/* Instrução */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/40 text-xs">
-        Clique fora ou pressione ESC para fechar • Use +/- para zoom
-      </div>
-
-      {/* Imagem */}
-      <div
-        className="relative max-w-[95vw] max-h-[90vh] overflow-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-800/50">
-            <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" />
-          </div>
-        )}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt={alt}
-          className="max-w-none transition-transform duration-200"
-          style={{
-            transform: `scale(${zoom})`,
-            transformOrigin: 'center center',
-            maxHeight: zoom === 1 ? '85vh' : 'none',
-            maxWidth: zoom === 1 ? '90vw' : 'none'
-          }}
-          onLoad={() => setIsLoading(false)}
-          onError={() => setIsLoading(false)}
-        />
-      </div>
-    </div>
-  )
-}
 
 interface ArtifactRendererProps {
   content: string
@@ -1358,6 +1229,97 @@ function getQuestionHashSyncRenderer(enunciado: string): string {
   return hashCacheRenderer[enunciado] || ''
 }
 
+// ============================================================
+// COMPONENTE DE IMAGEM MEMOIZADO PARA EVITAR FLICKERING
+// ============================================================
+interface MemoizedImageProps {
+  src: string
+  alt: string
+  onClickImage: (src: string, alt: string) => void
+}
+
+// Cache global de imagens já carregadas (persistente entre renders)
+const loadedImagesCache = new Set<string>()
+
+const MemoizedImage = memo(function MemoizedImage({ src, alt, onClickImage }: MemoizedImageProps) {
+  const [isLoaded, setIsLoaded] = useState(() => loadedImagesCache.has(src))
+  const [hasError, setHasError] = useState(false)
+  const imgRef = useRef<HTMLImageElement>(null)
+
+  // Verificar se imagem já está no cache do browser
+  useEffect(() => {
+    if (loadedImagesCache.has(src)) {
+      setIsLoaded(true)
+      return
+    }
+
+    // Verificar se a imagem já está carregada no DOM
+    if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
+      setIsLoaded(true)
+      loadedImagesCache.add(src)
+    }
+  }, [src])
+
+  const handleLoad = useCallback(() => {
+    setIsLoaded(true)
+    loadedImagesCache.add(src)
+  }, [src])
+
+  const handleError = useCallback(() => {
+    setHasError(true)
+  }, [])
+
+  const handleClick = useCallback(() => {
+    onClickImage(src, alt)
+  }, [src, alt, onClickImage])
+
+  if (hasError) {
+    return null // Não renderizar se houver erro
+  }
+
+  return (
+    <div
+      className="my-2 max-w-md group"
+      style={{ contain: 'layout', minHeight: isLoaded ? 'auto' : '200px', marginLeft: 0, marginRight: 'auto' }}
+    >
+      <button
+        onClick={handleClick}
+        className="relative w-full bg-slate-800/50 rounded-lg overflow-hidden border border-white/10 hover:border-blue-500/50 transition-colors cursor-zoom-in"
+        title="Clique para ampliar"
+      >
+        {/* Placeholder skeleton - só aparece se não carregou ainda */}
+        {!isLoaded && (
+          <div
+            className="absolute inset-0 bg-gradient-to-r from-slate-800/50 via-slate-700/50 to-slate-800/50 animate-pulse"
+            style={{ zIndex: 1, minHeight: '200px' }}
+          />
+        )}
+        {/* Ícone de zoom no hover */}
+        <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="bg-black/60 p-1.5 rounded-full">
+            <ZoomIn className="w-4 h-4 text-white" />
+          </div>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          ref={imgRef}
+          src={src}
+          alt={alt || 'Imagem médica'}
+          loading="eager"
+          decoding="sync"
+          className={`relative z-10 w-full h-auto max-h-[280px] object-contain rounded-lg transition-opacity duration-200 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          style={{ minHeight: isLoaded ? 'auto' : '150px' }}
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+      </button>
+    </div>
+  )
+}, (prevProps, nextProps) => {
+  // Só re-renderiza se src ou alt mudar
+  return prevProps.src === nextProps.src && prevProps.alt === nextProps.alt
+})
+
 function ArtifactRendererComponent({
   content,
   userId,
@@ -1708,63 +1670,16 @@ function ArtifactRendererComponent({
                   <hr className="my-4 border-white/10" />
                 ),
 
-                // Images - alinhadas à ESQUERDA com altura fixa para evitar flickering
+                // Images - usando componente memoizado para evitar flickering
                 // Clicáveis para abrir modal fullscreen
                 img: ({ src, alt }) => {
-                  // Container com altura FIXA durante loading para evitar layout shift
-                  // IMPORTANTE: Sem mx-auto para garantir alinhamento à esquerda
+                  if (typeof src !== 'string' || !src) return null
                   return (
-                    <div
-                      className="my-2 max-w-md group"
-                      style={{ contain: 'layout', minHeight: '200px', marginLeft: 0, marginRight: 'auto' }}
-                    >
-                      <button
-                        onClick={() => {
-                          if (typeof src === 'string' && src) {
-                            openImageModal(src, typeof alt === 'string' ? alt : 'Imagem médica')
-                          }
-                        }}
-                        className="relative w-full bg-slate-800/50 rounded-lg overflow-hidden border border-white/10 hover:border-blue-500/50 transition-colors cursor-zoom-in"
-                        title="Clique para ampliar"
-                      >
-                        {/* Placeholder skeleton com altura fixa */}
-                        <div
-                          className="absolute inset-0 bg-gradient-to-r from-slate-800/50 via-slate-700/50 to-slate-800/50 animate-pulse"
-                          style={{ zIndex: 1, minHeight: '200px' }}
-                          id={`skeleton-${src?.slice(-20)}`}
-                        />
-                        {/* Ícone de zoom no hover */}
-                        <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="bg-black/60 p-1.5 rounded-full">
-                            <ZoomIn className="w-4 h-4 text-white" />
-                          </div>
-                        </div>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={src}
-                          alt={alt || 'Imagem médica'}
-                          loading="lazy"
-                          decoding="async"
-                          className="relative z-10 w-full h-auto max-h-[280px] object-contain rounded-lg"
-                          style={{ minHeight: '150px' }}
-                          onLoad={(e) => {
-                            // Esconder skeleton quando imagem carrega
-                            const target = e.target as HTMLImageElement
-                            const skeleton = target.parentElement?.querySelector('[id^="skeleton-"]')
-                            if (skeleton) {
-                              (skeleton as HTMLElement).style.display = 'none'
-                            }
-                          }}
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement
-                            // Esconder container inteiro se imagem falhar
-                            if (target.parentElement?.parentElement) {
-                              target.parentElement.parentElement.style.display = 'none'
-                            }
-                          }}
-                        />
-                      </button>
-                    </div>
+                    <MemoizedImage
+                      src={src}
+                      alt={typeof alt === 'string' ? alt : 'Imagem médica'}
+                      onClickImage={openImageModal}
+                    />
                   )
                 }
               }}

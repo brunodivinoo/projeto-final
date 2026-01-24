@@ -24,8 +24,12 @@ import {
   Stethoscope,
   Crown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Sparkles,
-  Gift
+  Gift,
+  PanelLeftClose,
+  PanelLeft
 } from 'lucide-react'
 
 // Menu simplificado - Funcionalidades migradas para o Chat central
@@ -50,6 +54,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const { user, profile, plano, loading, signOut, trialStatus } = useMedAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false) // Sidebar recolhida no desktop
 
   // Hook para modais de upgrade
   const {
@@ -116,20 +121,23 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 left-0 z-50 h-full w-64 bg-slate-900 border-r border-white/10
-        transform transition-transform duration-300 ease-in-out
+        fixed top-0 left-0 z-50 h-full bg-slate-900 border-r border-white/10
+        transform transition-all duration-300 ease-in-out
         lg:translate-x-0
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${sidebarCollapsed ? 'lg:w-20' : 'w-64'}
       `}>
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center justify-between">
               <Link href="/medicina/dashboard" className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
                   <Stethoscope className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-white text-lg font-bold">PREPARAMED</span>
+                {!sidebarCollapsed && (
+                  <span className="text-white text-lg font-bold">PREPARAMED</span>
+                )}
               </Link>
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -150,8 +158,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                     <Link
                       href={item.href}
                       onClick={() => setSidebarOpen(false)}
+                      title={sidebarCollapsed ? item.label : undefined}
                       className={`
                         flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+                        ${sidebarCollapsed ? 'justify-center' : ''}
                         ${isActive
                           ? 'bg-emerald-500/20 text-emerald-400'
                           : (item as { highlight?: boolean }).highlight
@@ -162,12 +172,16 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                         }
                       `}
                     >
-                      <item.icon className={`w-5 h-5 ${(item as { highlight?: boolean }).highlight && !isActive ? 'text-amber-400' : ''}`} />
-                      <span className="font-medium">{item.label}</span>
-                      {(item as { highlight?: boolean }).highlight && !isActive && (
-                        <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded font-bold">
-                          PRO
-                        </span>
+                      <item.icon className={`w-5 h-5 flex-shrink-0 ${(item as { highlight?: boolean }).highlight && !isActive ? 'text-amber-400' : ''}`} />
+                      {!sidebarCollapsed && (
+                        <>
+                          <span className="font-medium">{item.label}</span>
+                          {(item as { highlight?: boolean }).highlight && !isActive && (
+                            <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded font-bold">
+                              PRO
+                            </span>
+                          )}
+                        </>
                       )}
                     </Link>
                   </li>
@@ -176,8 +190,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             </ul>
           </nav>
 
-          {/* Upgrade Banner (for free users) */}
-          {plano === 'gratuito' && (
+          {/* Upgrade Banner (for free users) - esconde quando recolhido */}
+          {plano === 'gratuito' && !sidebarCollapsed && (
             <div className="mx-3 mb-4 p-4 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl border border-emerald-500/30">
               <div className="flex items-center gap-2 mb-2">
                 <Crown className="w-5 h-5 text-amber-400" />
@@ -195,56 +209,109 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Badges Mini Widget */}
-          <div className="mx-3 mb-3 p-3 bg-white/5 rounded-lg border border-white/10">
-            <BadgeMiniWidget />
-          </div>
+          {/* Upgrade icon quando recolhido */}
+          {plano === 'gratuito' && sidebarCollapsed && (
+            <div className="mx-3 mb-3 flex justify-center">
+              <Link
+                href="/medicina/dashboard/assinatura"
+                title="Ver planos"
+                className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 flex items-center justify-center hover:from-emerald-500/30 hover:to-teal-500/30 transition-colors"
+              >
+                <Crown className="w-5 h-5 text-amber-400" />
+              </Link>
+            </div>
+          )}
+
+          {/* Badges Mini Widget - esconde quando recolhido */}
+          {!sidebarCollapsed && (
+            <div className="mx-3 mb-3 p-3 bg-white/5 rounded-lg border border-white/10">
+              <BadgeMiniWidget />
+            </div>
+          )}
 
           {/* User Profile */}
           <div className="border-t border-white/10 p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                <span className="text-white font-bold">
-                  {profile?.nome?.[0]?.toUpperCase() || 'U'}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-medium truncate text-sm">
-                  {profile?.nome || 'Estudante'}
-                </p>
-                <div className="flex items-center gap-1">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    plano === 'residencia' ? 'bg-amber-500/20 text-amber-400' :
-                    plano === 'premium' ? 'bg-emerald-500/20 text-emerald-400' :
-                    'bg-white/10 text-white/60'
-                  }`}>
-                    {plano === 'residencia' ? 'Residência' :
-                     plano === 'premium' ? 'Premium' : 'Gratuito'}
+            {sidebarCollapsed ? (
+              // Versão recolhida - apenas avatar e logout
+              <div className="flex flex-col items-center gap-3">
+                <Link
+                  href="/medicina/dashboard/perfil"
+                  title={profile?.nome || 'Perfil'}
+                  className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center hover:ring-2 hover:ring-emerald-500/50 transition-all"
+                >
+                  <span className="text-white font-bold">
+                    {profile?.nome?.[0]?.toUpperCase() || 'U'}
                   </span>
-                </div>
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  title="Sair"
+                  className="w-10 h-10 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center justify-center"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <Link
-                href="/medicina/dashboard/perfil"
-                className="flex-1 py-2 text-center text-white/60 hover:text-white text-sm rounded-lg hover:bg-white/5 transition-colors"
-              >
-                Perfil
-              </Link>
-              <button
-                onClick={handleSignOut}
-                className="flex-1 py-2 text-center text-red-400 hover:text-red-300 text-sm rounded-lg hover:bg-red-500/10 transition-colors flex items-center justify-center gap-1"
-              >
-                <LogOut className="w-4 h-4" />
-                Sair
-              </button>
-            </div>
+            ) : (
+              // Versão expandida - completa
+              <>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold">
+                      {profile?.nome?.[0]?.toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-medium truncate text-sm">
+                      {profile?.nome || 'Estudante'}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        plano === 'residencia' ? 'bg-amber-500/20 text-amber-400' :
+                        plano === 'premium' ? 'bg-emerald-500/20 text-emerald-400' :
+                        'bg-white/10 text-white/60'
+                      }`}>
+                        {plano === 'residencia' ? 'Residência' :
+                         plano === 'premium' ? 'Premium' : 'Gratuito'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Link
+                    href="/medicina/dashboard/perfil"
+                    className="flex-1 py-2 text-center text-white/60 hover:text-white text-sm rounded-lg hover:bg-white/5 transition-colors"
+                  >
+                    Perfil
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex-1 py-2 text-center text-red-400 hover:text-red-300 text-sm rounded-lg hover:bg-red-500/10 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sair
+                  </button>
+                </div>
+              </>
+            )}
           </div>
+
+          {/* Toggle para recolher/expandir sidebar (apenas desktop) */}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-slate-800 border border-white/10 rounded-full items-center justify-center text-white/60 hover:text-white hover:bg-slate-700 transition-colors shadow-lg"
+            title={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <ChevronLeft className="w-4 h-4" />
+            )}
+          </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="lg:pl-64 pt-16 lg:pt-0 min-h-screen">
+      <main className={`pt-16 lg:pt-0 min-h-screen transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <div className="p-4 md:p-6 lg:p-8">
           {children}
         </div>

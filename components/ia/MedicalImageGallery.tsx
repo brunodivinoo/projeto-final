@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react'
-import { X, ExternalLink, ZoomIn, Loader2, ImageOff, Info, AlertCircle, Search, RefreshCw, Languages } from 'lucide-react'
+import { ZoomIn, Loader2, ImageOff, Info, AlertCircle, Search, RefreshCw, Languages } from 'lucide-react'
 import type { MedicalImage } from '@/lib/medical-images/service'
 import { getCachedImage, cacheImage, cleanOldCache } from '@/lib/hooks/useImageCache'
+import { ImageModal } from '@/components/ui/ImageModal'
 
 // Dicionário de tradução EN → PT para termos médicos comuns
 const TRANSLATION_EN_PT: Record<string, string> = {
@@ -595,84 +596,16 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
         </p>
       </div>
 
-      {/* Modal de visualização ampliada */}
+      {/* Modal de visualização ampliada - usando portal para fullscreen */}
       {selectedImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div
-            className="relative max-w-4xl w-full bg-slate-900 rounded-xl overflow-hidden border border-white/10"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close button */}
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 z-10 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
-
-            {/* Image */}
-            <div className="relative bg-black min-h-[300px] max-h-[60vh] flex items-center justify-center overflow-hidden">
-              <ImageWithFallback
-                src={selectedImage.url}
-                fallbackSrc={selectedImage.thumbUrl}
-                alt={selectedImage.title}
-                className="w-auto h-auto max-w-full max-h-[60vh] object-contain"
-              />
-            </div>
-
-            {/* Info */}
-            <div className="p-4 space-y-3">
-              <div className="flex items-start justify-between gap-4">
-                <h3 className="text-white font-semibold">
-                  {showTranslation ? translateMedicalText(selectedImage.title) : selectedImage.title}
-                </h3>
-                {/* Toggle de tradução */}
-                <button
-                  onClick={() => setShowTranslation(!showTranslation)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    showTranslation
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10'
-                  }`}
-                  title={showTranslation ? 'Ver texto original (EN)' : 'Traduzir para português'}
-                >
-                  <Languages className="w-3.5 h-3.5" />
-                  {showTranslation ? 'PT' : 'EN'}
-                </button>
-              </div>
-
-              {selectedImage.caption && (
-                <p
-                  className="text-white/70 text-sm"
-                  dangerouslySetInnerHTML={{
-                    __html: sanitizeHtml(
-                      showTranslation
-                        ? translateMedicalText(selectedImage.caption)
-                        : selectedImage.caption
-                    )
-                  }}
-                />
-              )}
-
-              {/* Modality badge */}
-              {selectedImage.modality && (
-                <span className="inline-block text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">
-                  {showTranslation ? translateMedicalText(selectedImage.modality) : selectedImage.modality}
-                </span>
-              )}
-
-              {/* Footer - apenas licença */}
-              <div className="pt-3 border-t border-white/10">
-                <span className="text-white/40 text-xs">
-                  {selectedImage.license}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ImageModal
+          src={getProxiedImageUrl(selectedImage.url)}
+          alt={showTranslation ? translateMedicalText(selectedImage.title) : selectedImage.title}
+          isOpen={true}
+          onClose={() => setSelectedImage(null)}
+          caption={selectedImage.caption ? (showTranslation ? translateMedicalText(selectedImage.caption) : selectedImage.caption) : undefined}
+          source={selectedImage.sourceName || selectedImage.source}
+        />
       )}
     </>
   )
