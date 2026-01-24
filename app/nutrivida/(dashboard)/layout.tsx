@@ -20,7 +20,8 @@ import {
   Menu,
   X,
   Heart,
-  ChevronUp
+  ChevronUp,
+  HeartPulse
 } from 'lucide-react'
 
 const menuItems = [
@@ -31,6 +32,7 @@ const menuItems = [
   { href: '/nutrivida/dashboard/suplementos', label: 'Vitaminas', icon: Pill },
   { href: '/nutrivida/dashboard/compras', label: 'Compras', icon: ShoppingCart },
   { href: '/nutrivida/dashboard/progresso', label: 'Progresso', icon: TrendingUp },
+  { href: '/nutrivida/dashboard/gestacao', label: 'Gestacao', icon: HeartPulse },
   { href: '/nutrivida/dashboard/ia', label: 'Nutri IA', icon: Bot },
   { href: '/nutrivida/dashboard/receitas', label: 'Receitas', icon: ChefHat },
 ]

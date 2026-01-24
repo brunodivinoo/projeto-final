@@ -13,12 +13,72 @@ export interface ProfileNUTRI {
   peso_atual: number | null
   peso_meta: number | null
   altura: number | null
-  idade_bebe: number | null
+  // Campos de maternidade - agora com datas para calculo automatico
+  idade_bebe: number | null // Mantido para compatibilidade (calculado automaticamente)
+  data_nascimento_bebe: string | null // Nova! Data de nascimento do bebe (YYYY-MM-DD)
   amamentando: boolean
+  // Campos de gestacao
+  semana_gestacao: number | null // Mantido para compatibilidade (calculado automaticamente)
+  data_ultima_menstruacao: string | null // Nova! DUM para calcular semana de gestacao
+  data_prevista_parto: string | null // Nova! DPP calculada (DUM + 280 dias)
+  gestante: boolean // Nova! Flag explicita se esta gravida
+  // Restricoes e preferencias
+  restricoes: string[] | null
+  preferencias: string[] | null
   plano: 'normal' | 'restritivo'
   avatar_url: string | null
   created_at: string
   updated_at: string
+}
+
+// Funcoes auxiliares para calculos de datas
+export function calcularIdadeBebe(dataNascimento: string | null): number | null {
+  if (!dataNascimento) return null
+  const nascimento = new Date(dataNascimento)
+  const hoje = new Date()
+  const diffTime = hoje.getTime() - nascimento.getTime()
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays >= 0 ? diffDays : null
+}
+
+export function calcularSemanaGestacao(dum: string | null): number | null {
+  if (!dum) return null
+  const dataUltimaMenstruacao = new Date(dum)
+  const hoje = new Date()
+  const diffTime = hoje.getTime() - dataUltimaMenstruacao.getTime()
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  const semanas = Math.floor(diffDays / 7)
+  // Gestacao valida: entre 1 e 42 semanas
+  return semanas >= 1 && semanas <= 42 ? semanas : null
+}
+
+export function calcularDPP(dum: string | null): string | null {
+  if (!dum) return null
+  const dataUltimaMenstruacao = new Date(dum)
+  // DPP = DUM + 280 dias (40 semanas)
+  const dpp = new Date(dataUltimaMenstruacao)
+  dpp.setDate(dpp.getDate() + 280)
+  return dpp.toISOString().split('T')[0]
+}
+
+export function calcularTrimestreGestacao(semana: number | null): 1 | 2 | 3 | null {
+  if (!semana) return null
+  if (semana <= 12) return 1
+  if (semana <= 26) return 2
+  return 3
+}
+
+export function formatarIdadeBebe(dias: number | null): string {
+  if (!dias || dias < 0) return ''
+  if (dias < 30) return `${dias} dias`
+  if (dias < 365) {
+    const meses = Math.floor(dias / 30)
+    const diasRestantes = dias % 30
+    return diasRestantes > 0 ? `${meses} mes(es) e ${diasRestantes} dias` : `${meses} mes(es)`
+  }
+  const anos = Math.floor(dias / 365)
+  const mesesRestantes = Math.floor((dias % 365) / 30)
+  return mesesRestantes > 0 ? `${anos} ano(s) e ${mesesRestantes} mes(es)` : `${anos} ano(s)`
 }
 
 export interface MacrosDia {
@@ -51,6 +111,12 @@ type NutriAuthContextType = {
   metaCalorias: number
   metaProteinas: number
   metasMacros: MetasMacros
+  // Novos calculos automaticos
+  idadeBebeCalculada: number | null
+  semanaGestacaoCalculada: number | null
+  trimestreGestacao: 1 | 2 | 3 | null
+  dppCalculada: string | null
+  situacaoAtual: 'gestante' | 'amamentando' | 'pos_parto' | 'normal'
 }
 
 const NutriAuthContext = createContext<NutriAuthContextType>({
@@ -72,7 +138,12 @@ const NutriAuthContext = createContext<NutriAuthContextType>({
     proteinas: { min: 70, max: 100 },
     carboidratos: { min: 150, max: 250 },
     gorduras: { min: 50, max: 70 }
-  }
+  },
+  idadeBebeCalculada: null,
+  semanaGestacaoCalculada: null,
+  trimestreGestacao: null,
+  dppCalculada: null,
+  situacaoAtual: 'normal'
 })
 
 export function NutriAuthProvider({ children }: { children: ReactNode }) {
@@ -118,6 +189,25 @@ export function NutriAuthProvider({ children }: { children: ReactNode }) {
         carboidratos: { min: 180, max: 280 },
         gorduras: { min: 50, max: 80 }
       }
+
+  // Calculos automaticos de gestacao e maternidade
+  const idadeBebeCalculada = calcularIdadeBebe(profile?.data_nascimento_bebe || null)
+    || profile?.idade_bebe || null
+
+  const semanaGestacaoCalculada = calcularSemanaGestacao(profile?.data_ultima_menstruacao || null)
+    || profile?.semana_gestacao || null
+
+  const trimestreGestacao = calcularTrimestreGestacao(semanaGestacaoCalculada)
+
+  const dppCalculada = calcularDPP(profile?.data_ultima_menstruacao || null)
+    || profile?.data_prevista_parto || null
+
+  // Determinar situacao atual da usuaria
+  const situacaoAtual: 'gestante' | 'amamentando' | 'pos_parto' | 'normal' =
+    (profile?.gestante || semanaGestacaoCalculada) ? 'gestante' :
+    profile?.amamentando ? 'amamentando' :
+    idadeBebeCalculada && idadeBebeCalculada <= 365 ? 'pos_parto' :
+    'normal'
 
   const fetchProfile = useCallback(async (userId: string, userEmail?: string, userName?: string, forceRefresh = false) => {
     if (fetchingRef.current) return
@@ -292,7 +382,12 @@ export function NutriAuthProvider({ children }: { children: ReactNode }) {
       progressoPercentual,
       metaCalorias,
       metaProteinas,
-      metasMacros
+      metasMacros,
+      idadeBebeCalculada,
+      semanaGestacaoCalculada,
+      trimestreGestacao,
+      dppCalculada,
+      situacaoAtual
     }}>
       {children}
     </NutriAuthContext.Provider>
