@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react'
 import { X, ExternalLink, ZoomIn, Loader2, ImageOff, Info, AlertCircle, Search, RefreshCw, Languages } from 'lucide-react'
 import type { MedicalImage } from '@/lib/medical-images/service'
 import { getCachedImage, cacheImage, cleanOldCache } from '@/lib/hooks/useImageCache'
@@ -321,7 +321,8 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
   )
 }
 
-export default function MedicalImageGallery({ searchTerms, userId }: MedicalImageGalleryProps) {
+// Componente interno
+function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalleryProps) {
   const [images, setImages] = useState<MedicalImage[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -676,3 +677,15 @@ export default function MedicalImageGallery({ searchTerms, userId }: MedicalImag
     </>
   )
 }
+
+// Memoizar o componente para evitar re-renders durante streaming
+// Só re-renderiza se searchTerms ou userId realmente mudarem
+const MedicalImageGallery = memo(MedicalImageGalleryComponent, (prevProps, nextProps) => {
+  // Comparar arrays de searchTerms por valor (não por referência)
+  const sameTerms = prevProps.searchTerms.length === nextProps.searchTerms.length &&
+    prevProps.searchTerms.every((term, i) => term === nextProps.searchTerms[i])
+
+  return sameTerms && prevProps.userId === nextProps.userId
+})
+
+export default MedicalImageGallery

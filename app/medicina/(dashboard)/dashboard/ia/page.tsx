@@ -643,27 +643,40 @@ export default function IAPage() {
       let buffer = '' // Buffer para chunks incompletos
 
       // Batching para reduzir re-renders durante streaming
-      // Aumentado para 150ms para evitar flickering
+      // Intervalo maior para chunks com imagens
       let lastUpdateTime = 0
-      const UPDATE_INTERVAL = 150 // ms - atualiza UI no máximo a cada 150ms
+      const UPDATE_INTERVAL_NORMAL = 100 // ms para texto normal
+      const UPDATE_INTERVAL_IMAGES = 300 // ms para chunks com imagens (evita flickering)
       let pendingUpdate = false
+      let pendingAnimationFrame: number | null = null
 
-      const updateUI = (force = false) => {
+      const updateUI = (force = false, hasImages = false) => {
         const now = Date.now()
-        if (force || now - lastUpdateTime >= UPDATE_INTERVAL) {
+        const interval = hasImages ? UPDATE_INTERVAL_IMAGES : UPDATE_INTERVAL_NORMAL
+
+        if (force || now - lastUpdateTime >= interval) {
           lastUpdateTime = now
           pendingUpdate = false
-          // Usar startTransition para updates não-urgentes
-          startTransition(() => {
-            setMensagens(prev => prev.map(m =>
-              m.id === respostaId
-                ? { ...m, conteudo: fullResponse }
-                : m
-            ))
+
+          // Cancelar animation frame pendente
+          if (pendingAnimationFrame) {
+            cancelAnimationFrame(pendingAnimationFrame)
+            pendingAnimationFrame = null
+          }
+
+          // Usar requestAnimationFrame + startTransition para updates mais suaves
+          pendingAnimationFrame = requestAnimationFrame(() => {
+            startTransition(() => {
+              setMensagens(prev => prev.map(m =>
+                m.id === respostaId
+                  ? { ...m, conteudo: fullResponse }
+                  : m
+              ))
+            })
           })
         } else if (!pendingUpdate) {
           pendingUpdate = true
-          setTimeout(() => updateUI(true), UPDATE_INTERVAL - (now - lastUpdateTime))
+          setTimeout(() => updateUI(true, hasImages), interval - (now - lastUpdateTime))
         }
       }
 
@@ -690,7 +703,12 @@ export default function IAPage() {
 
               if (data.type === 'text') {
                 fullResponse += data.content
-                updateUI() // Usa batching ao invés de atualização direta
+                // Detectar se o chunk contém imagens para usar intervalo maior
+                const hasImages = data.content.includes('![') ||
+                                  data.content.includes('📷') ||
+                                  data.content.includes('[IMAGE_SEARCH:') ||
+                                  data.content.includes('imagens médicas')
+                updateUI(false, hasImages) // Usa batching com intervalo maior para imagens
               } else if (data.type === 'tool_result') {
                 // Tool foi executada
                 console.log('[IA Page] Tool result recebido:', data.tool_name)
@@ -1221,10 +1239,11 @@ export default function IAPage() {
           </div>
         )}
 
-        {/* Chat Area - Responsivo e Compacto */}
+        {/* Chat Area - Responsivo e Compacto com CSS contain para anti-flickering */}
         <div
           ref={chatRef}
           className="flex-1 min-h-0 overflow-y-auto p-2 md:p-3 space-y-2 md:space-y-3"
+          style={{ contain: 'layout style', willChange: streaming ? 'scroll-position' : 'auto' }}
         >
           {mensagens.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4 max-w-4xl mx-auto w-full">

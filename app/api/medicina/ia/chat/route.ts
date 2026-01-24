@@ -24,6 +24,29 @@ import { analisarPergunta, gerarInstrucoesAdicionais } from '@/lib/ai/taskManage
 import { validarResposta, gerarResumoValidacao } from '@/lib/ai/responseValidator'
 import { classificarIntencao, gerarInstrucoesDeIntencao, getConfiguracoesAPI } from '@/lib/ai/intentClassifier'
 import { verificarQualidade, gerarRelatorioQualidade, precisaContinuar } from '@/lib/ai/qualityChecker'
+// Novos módulos Meta AI avançados
+import {
+  criarPerfilPadrao,
+  detectarNivelConhecimento,
+  analisarPerfilParaContexto,
+  gerarInstrucoesPersonalizadas,
+  type PerfilUsuario
+} from '@/lib/ai/userProfileManager'
+import {
+  detectarUrgencia,
+  gerarInstrucoesUrgencia
+} from '@/lib/ai/urgencyDetector'
+import {
+  gerarConfiguracaoQuestao,
+  deveIncluirImagem,
+  sugerirTipoQuestao,
+  type EstiloProva
+} from '@/lib/ai/questionGenerator'
+import {
+  selecionarTipoExplicacao,
+  gerarInstrucoesEstrutura,
+  type ConfiguracaoExplicacao
+} from '@/lib/ai/explanationStructure'
 
 // Formatar resposta de tool para exibição
 function formatToolResponse(toolName: string, data: unknown): string {
@@ -91,6 +114,8 @@ function formatToolResponse(toolName: string, data: unknown): string {
         return '\n\n📷 Não encontrei imagens para esse termo. Tente outro termo de busca.\n'
       }
 
+      // Texto simplificado - imagens serão renderizadas pelo frontend
+      // Cada imagem em seu próprio parágrafo para facilitar carregamento progressivo
       let texto = '\n\n📷 **Imagens de Referência:**\n\n'
 
       imagens.forEach((img, i) => {
@@ -99,7 +124,7 @@ function formatToolResponse(toolName: string, data: unknown): string {
         texto += `📌 Fonte: [${img.fonte}](${img.linkOriginal})\n\n`
       })
 
-      texto += '\n---\n📚 **Referências (ABNT):**\n'
+      texto += '---\n📚 **Referências (ABNT):**\n'
       imagens.forEach((img, i) => {
         texto += `${i + 1}. ${img.referencia}\n`
       })
@@ -404,11 +429,74 @@ async function streamClaude(params: StreamClaudeParams) {
   const instrucoesIntencao = gerarInstrucoesDeIntencao(classificacao)
   const configAPI = getConfiguracoesAPI(classificacao)
 
+  // PASSO 3.1: Análise de perfil do usuário (UserProfileManager)
+  // Criar perfil básico para esta sessão (pode ser persistido no futuro)
+  const perfilUsuario: PerfilUsuario = criarPerfilPadrao(user_id)
+  const nivelDetectado = detectarNivelConhecimento(mensagem)
+  perfilUsuario.nivelConhecimento = nivelDetectado
+  const analisePerfil = analisarPerfilParaContexto(perfilUsuario, mensagem)
+  const instrucoesPerfil = gerarInstrucoesPersonalizadas(analisePerfil)
+
+  // PASSO 3.2: Detecção de urgência (UrgencyDetector)
+  const analiseUrgencia = detectarUrgencia(mensagem)
+  const instrucoesUrgencia = gerarInstrucoesUrgencia(analiseUrgencia)
+
+  // PASSO 3.3: Estrutura de explicação (ExplanationStructure)
+  const configExplicacao: Partial<ConfiguracaoExplicacao> = {
+    nivel: nivelDetectado,
+    preferencia: analisePerfil.formatoRecomendado,
+    urgencia: analiseUrgencia.nivel,
+    incluirImagens: analisePerfil.incluirImagens || analise.quantidadeImagens > 0,
+    incluirExemplos: analisePerfil.incluirExemplos,
+    incluirQuestoes: analisePerfil.incluirQuestoes,
+    incluirResumo: analiseUrgencia.recomendacoes.incluirResumo,
+    incluirReferencias: true
+  }
+  const tipoExplicacao = selecionarTipoExplicacao(mensagem, configExplicacao)
+  const instrucoesEstrutura = gerarInstrucoesEstrutura(tipoExplicacao, configExplicacao)
+
+  // PASSO 3.4: Configuração de questões (QuestionGenerator) - se aplicável
+  let instrucoesQuestoes = ''
+  if (analise.quantidadeQuestoes > 0) {
+    // Detectar estilo de prova se mencionado
+    let estiloDetectado: EstiloProva | undefined
+    const msgLower = mensagem.toLowerCase()
+    if (msgLower.includes('enade')) estiloDetectado = 'enade'
+    else if (msgLower.includes('residência') || msgLower.includes('residencia')) estiloDetectado = 'residencia'
+    else if (msgLower.includes('revalida')) estiloDetectado = 'revalida'
+    else if (msgLower.includes('concurso')) estiloDetectado = 'concurso'
+
+    const tipoQuestao = sugerirTipoQuestao(mensagem, estiloDetectado)
+    const incluirImagemQuestao = deveIncluirImagem(mensagem)
+
+    const configQuestao = gerarConfiguracaoQuestao(
+      mensagem.substring(0, 100), // Tema resumido
+      analise.quantidadeQuestoes,
+      {
+        tipo: tipoQuestao,
+        nivel: nivelDetectado === 'iniciante' ? 'facil' : nivelDetectado === 'avancado' ? 'dificil' : 'medio',
+        estilo: estiloDetectado,
+        incluirImagem: incluirImagemQuestao,
+        incluirExplicacao: true
+      }
+    )
+    instrucoesQuestoes = configQuestao.prompt
+  }
+
   console.log(`[Pipeline] Passo 2-3: Intenção=${classificacao.intencao} (${(classificacao.confianca * 100).toFixed(0)}%) | Tools=${classificacao.toolsNecessarias.join(',')} | Formato=${classificacao.formatoIdeal} | Temp=${configAPI.temperature}`)
   console.log(`[Pipeline] TaskManager: ${analise.tarefas.join(' → ')} | Questões: ${analise.quantidadeQuestoes} | Imagens: ${analise.quantidadeImagens}`)
+  console.log(`[Pipeline] Profile: Nível=${nivelDetectado} | Preferência=${analisePerfil.formatoRecomendado} | Urgência=${analiseUrgencia.nivel} (${analiseUrgencia.tipo})`)
+  console.log(`[Pipeline] Explicação: Tipo=${tipoExplicacao} | Incluir: imagens=${analisePerfil.incluirImagens}, exemplos=${analisePerfil.incluirExemplos}`)
 
-  // Combinar instruções do TaskManager e IntentClassifier
-  const todasInstrucoes = [instrucoesIntencao, instrucoesAdicionais].filter(Boolean).join('\n\n')
+  // Combinar TODAS as instruções dos módulos Meta AI
+  const todasInstrucoes = [
+    instrucoesIntencao,
+    instrucoesAdicionais,
+    instrucoesPerfil,
+    instrucoesUrgencia,
+    instrucoesEstrutura,
+    instrucoesQuestoes
+  ].filter(Boolean).join('\n\n---\n\n')
 
   // Construir mensagem enriquecida com instruções
   const mensagemEnriquecida = todasInstrucoes
@@ -870,13 +958,14 @@ async function streamClaude(params: StreamClaudeParams) {
         // Validação do QualityChecker (coerência, relevância, completude)
         const metricasQualidade = verificarQualidade(mensagem, fullResponse, {
           questoesEsperadas: analise.quantidadeQuestoes,
-          imagensEsperadas: analise.quantidadeImagens > 0 || classificacao.toolsNecessarias.includes('buscar_imagens_medicas'),
+          imagensEsperadas: analisePerfil.incluirImagens || analise.quantidadeImagens > 0 || classificacao.toolsNecessarias.includes('buscar_imagens_medicas'),
           referenciasEsperadas: true,
           nivelDetalhe: classificacao.nivelDetalhe,
           formatoEsperado: classificacao.formatoIdeal
         })
         console.log('[Chat API] Validação QualityChecker:')
         console.log(gerarRelatorioQualidade(metricasQualidade))
+        console.log(`[Chat API] Perfil aplicado: Nível=${nivelDetectado} | Urgência=${analiseUrgencia.nivel} | Tipo Explicação=${tipoExplicacao}`)
 
         // PASSO 7: Se precisa continuar mas atingimos o limite, logar aviso
         if (precisaContinuar(metricasQualidade) && iterationCount >= MAX_ITERATIONS) {
