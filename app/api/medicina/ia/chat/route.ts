@@ -74,6 +74,35 @@ function formatToolResponse(toolName: string, data: unknown): string {
       return `\n\n🖼️ **Imagem Gerada: ${resultado.estrutura || 'Ilustração Médica'}**\n\n*Imagem gerada com DALL-E 3 para fins educacionais.*\n`
     }
 
+    case 'buscar_imagens_medicas': {
+      const imagens = resultado.imagens as Array<{
+        url: string
+        titulo: string
+        fonte: string
+        linkOriginal: string
+        referencia: string
+      }>
+
+      if (!imagens || imagens.length === 0) {
+        return '\n\n📷 Não encontrei imagens para esse termo. Tente outro termo de busca.\n'
+      }
+
+      let texto = '\n\n📷 **Imagens de Referência:**\n\n'
+
+      imagens.forEach((img, i) => {
+        texto += `**${i + 1}. ${img.titulo}**\n`
+        texto += `![${img.titulo}](${img.url})\n`
+        texto += `📌 Fonte: [${img.fonte}](${img.linkOriginal})\n\n`
+      })
+
+      texto += '\n---\n📚 **Referências (ABNT):**\n'
+      imagens.forEach((img, i) => {
+        texto += `${i + 1}. ${img.referencia}\n`
+      })
+
+      return texto
+    }
+
     default:
       return `\n\n✅ Ferramenta ${toolName} executada com sucesso.\n`
   }
@@ -592,25 +621,45 @@ async function streamClaude(params: StreamClaudeParams) {
             console.log(`[Chat API] Continuando automaticamente de onde parou...`)
 
             // MELHORIA: Detectar o que foi cortado para pedir continuação específica
-            const faltaFontes = !fullResponse.includes('📚 **Fontes:**') &&
-                               !fullResponse.includes('Referências') &&
-                               !fullResponse.includes('**Fontes:**') &&
-                               !fullResponse.includes('[1]') // Se não tem nem a primeira citação inline
-            const faltaQuestoes = fullResponse.includes('questões') &&
-              (fullResponse.match(/\*\*\d+\./g) || []).length < 5 // Se prometeu questões mas tem menos de 5
+            const conteudoSolicitado = mensagem.toLowerCase()
+            const respostaAtual = fullResponse.toLowerCase()
+
+            // Verificar questões pedidas vs entregues
+            let questoesPedidas = 0
+            const matchQuestoes = conteudoSolicitado.match(/(\d+)\s*quest[õo]es?/i)
+            if (matchQuestoes) {
+              questoesPedidas = parseInt(matchQuestoes[1])
+            }
+            const questoesEntregues = (fullResponse.match(/\*\*\d+[\.\)]/g) || []).length
+
+            // Verificar se falta conteúdo
+            const faltaQuestoes = questoesPedidas > 0 && questoesEntregues < questoesPedidas
+            const faltaReferencias = !respostaAtual.includes('referência') &&
+                                    !respostaAtual.includes('📚') &&
+                                    !respostaAtual.includes('fontes:') &&
+                                    !respostaAtual.includes('[1]')
+            const faltaImagens = conteudoSolicitado.includes('imagem') && !respostaAtual.includes('📷')
             const terminouAbruptamente = fullResponse.endsWith('...') ||
               fullResponse.endsWith('-') ||
               /[a-z,]$/.test(fullResponse.trim()) // Termina com letra minúscula ou vírgula
 
-            let promptContinuacao = 'Continue EXATAMENTE de onde parou, sem repetir o que já foi dito. Mantenha a formatação e complete TODO o conteúdo prometido.'
+            // Construir prompt de continuação específico
+            let promptContinuacao = 'Continue EXATAMENTE de onde parou. '
 
             if (faltaQuestoes) {
-              promptContinuacao = 'Continue de onde parou. COMPLETE TODAS as questões prometidas (até chegar no número total pedido) e depois adicione a seção de fontes no formato: 📚 **Fontes:** [1] Autor...'
-            } else if (faltaFontes && !terminouAbruptamente) {
-              promptContinuacao = 'Continue de onde parou. ADICIONE OBRIGATORIAMENTE a seção de fontes no final no formato: 📚 **Fontes:** seguido de [1], [2], [3]... com as referências bibliográficas.'
-            } else if (terminouAbruptamente) {
-              promptContinuacao = 'Continue EXATAMENTE de onde parou (a resposta foi cortada no meio). Complete o conteúdo e NÃO ESQUEÇA de incluir a seção 📚 **Fontes:** ao final.'
+              promptContinuacao += `Faltam ${questoesPedidas - questoesEntregues} questões para completar. `
             }
+            if (faltaImagens) {
+              promptContinuacao += 'Inclua as imagens solicitadas usando a tool buscar_imagens_medicas. '
+            }
+            if (faltaReferencias) {
+              promptContinuacao += 'Finalize com as referências bibliográficas em formato ABNT. '
+            }
+            if (terminouAbruptamente) {
+              promptContinuacao += 'A resposta foi cortada no meio - continue do ponto exato onde parou. '
+            }
+
+            promptContinuacao += 'NÃO repita o que já foi dito. Complete o restante.'
 
             console.log(`[Chat API] Prompt de continuação: ${promptContinuacao.substring(0, 80)}...`)
 

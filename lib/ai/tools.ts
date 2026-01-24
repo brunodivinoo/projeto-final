@@ -234,17 +234,47 @@ A imagem gerada será inserida na resposta automaticamente.`,
   }
 }
 
+export const TOOL_BUSCAR_IMAGENS_MEDICAS: Anthropic.Tool = {
+  name: 'buscar_imagens_medicas',
+  description: `Busca imagens médicas educacionais REAIS de fontes brasileiras confiáveis.
+Use esta ferramenta quando o usuário pedir:
+- Imagens de anatomia, órgãos, sistemas
+- Ilustrações médicas para estudo
+- Referências visuais de estruturas anatômicas
+- Exemplos visuais para entender conceitos
+- Imagens de radiologia, histologia, dermatologia
+
+As imagens vêm de fontes confiáveis como Brasil Escola, InfoEscola, universidades brasileiras, e incluem referências ABNT.
+PREFIRA esta ferramenta ao invés de gerar imagens com IA quando o usuário quiser ver imagens REAIS.`,
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      termo: {
+        type: 'string',
+        description: 'O termo de busca (ex: sistema cardiovascular, coração anatomia, fígado histologia, neurônio)'
+      },
+      quantidade: {
+        type: 'number',
+        description: 'Quantidade de imagens (padrão: 3, máximo: 5)'
+      }
+    },
+    required: ['termo']
+  }
+}
+
 // ==========================================
 // LISTA DE TODAS AS TOOLS
 // ==========================================
 
-// NOTA: TOOL_GERAR_IMAGEM_MEDICA foi removida - agora usamos busca de imagens reais
-// via marcador [IMAGE_SEARCH: termo] que busca em OpenI (NIH) e Wikimedia
+// Tools disponíveis para o PREPARAMED IA
+// Inclui busca de imagens reais via Serper.dev e geração via DALL-E
 export const PREPARAMED_TOOLS: Anthropic.Tool[] = [
   TOOL_BUSCAR_QUESTOES,
   TOOL_CRIAR_PLANO_ESTUDOS,
   TOOL_EXPLICAR_QUESTAO,
-  TOOL_CALCULAR_IMC
+  TOOL_CALCULAR_IMC,
+  TOOL_GERAR_IMAGEM_MEDICA,
+  TOOL_BUSCAR_IMAGENS_MEDICAS  // Nova! Busca imagens reais via Serper.dev
 ]
 
 export const STRUCTURED_OUTPUT_TOOLS: Anthropic.Tool[] = [
@@ -284,6 +314,9 @@ export async function executarTool(
 
       case 'gerar_imagem_medica':
         return await handleGerarImagemMedica(input, userId)
+
+      case 'buscar_imagens_medicas':
+        return await handleBuscarImagensMedicas(input)
 
       default:
         return { success: false, error: `Tool "${toolName}" não implementada` }
@@ -567,6 +600,56 @@ async function handleGerarImagemMedica(
     return {
       success: false,
       error: `Erro na geração de imagem: ${errorMessage}`
+    }
+  }
+}
+
+// ==========================================
+// HANDLER PARA BUSCA DE IMAGENS MÉDICAS REAIS
+// ==========================================
+
+async function handleBuscarImagensMedicas(input: Record<string, unknown>): Promise<LocalToolResult> {
+  const { termo, quantidade = 3 } = input
+
+  console.log('[Tool buscar_imagens_medicas] =====================================')
+  console.log('[Tool buscar_imagens_medicas] Termo:', termo)
+  console.log('[Tool buscar_imagens_medicas] Quantidade:', quantidade)
+  console.log('[Tool buscar_imagens_medicas] =====================================')
+
+  if (!termo) {
+    return { success: false, error: 'Termo de busca é obrigatório' }
+  }
+
+  try {
+    // Importar dinamicamente o serviço Serper
+    const { buscarImagensMedicas } = await import('@/lib/services/serperImageService')
+
+    const resultado = await buscarImagensMedicas(
+      termo as string,
+      Math.min(quantidade as number, 5)
+    )
+
+    if (!resultado.success) {
+      console.error('[Tool buscar_imagens_medicas] Erro:', resultado.error)
+      return { success: false, error: resultado.error }
+    }
+
+    console.log(`[Tool buscar_imagens_medicas] ✅ Encontradas ${resultado.imagens.length} imagens`)
+
+    return {
+      success: true,
+      data: {
+        termo: resultado.query,
+        quantidade: resultado.imagens.length,
+        imagens: resultado.imagens
+      }
+    }
+  } catch (error) {
+    console.error('[Tool buscar_imagens_medicas] ❌ Erro:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+    return {
+      success: false,
+      error: `Erro na busca de imagens: ${errorMessage}`
     }
   }
 }
