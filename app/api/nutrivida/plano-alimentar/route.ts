@@ -149,9 +149,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Salvar no historico de planos
+    const { data: historicoSalvo } = await supabase
+      .from('historico_planos_nutri')
+      .insert({
+        user_id: user.id,
+        plano: plano,
+        periodo: periodo,
+        preferencias: preferencias || null,
+        meta_calorias: plano.meta_calorias_diaria
+      })
+      .select('id')
+      .single()
+
     return NextResponse.json({
       success: true,
       plano,
+      plano_id: historicoSalvo?.id,
       message: `Plano de ${periodo} gerado com sucesso!`
     })
 
@@ -163,7 +177,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET para buscar plano salvo
+// GET para buscar plano salvo ou historico
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -178,7 +192,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalido' }, { status: 401 })
     }
 
-    // Buscar plano salvo
+    // Verificar se quer historico
+    const url = new URL(request.url)
+    const historico = url.searchParams.get('historico')
+
+    if (historico === 'true') {
+      // Buscar historico de planos
+      const { data: planos, error } = await supabase
+        .from('historico_planos_nutri')
+        .select('id, plano, periodo, preferencias, meta_calorias, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (error) {
+        console.error('Erro ao buscar historico:', error)
+        return NextResponse.json({ historico: [] })
+      }
+
+      return NextResponse.json({
+        historico: planos || []
+      })
+    }
+
+    // Buscar plano atual salvo
     const { data: metas, error } = await supabase
       .from('metas_nutri')
       .select('plano_alimentar, meta_calorias, updated_at')
@@ -200,6 +237,51 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Erro ao buscar plano:', error)
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+  }
+}
+
+// DELETE para apagar plano do historico
+export async function DELETE(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Token invalido' }, { status: 401 })
+    }
+
+    const url = new URL(request.url)
+    const planoId = url.searchParams.get('id')
+
+    if (!planoId) {
+      return NextResponse.json({ error: 'ID do plano nao informado' }, { status: 400 })
+    }
+
+    // Deletar plano do historico
+    const { error } = await supabase
+      .from('historico_planos_nutri')
+      .delete()
+      .eq('id', planoId)
+      .eq('user_id', user.id)
+
+    if (error) {
+      console.error('Erro ao deletar plano:', error)
+      return NextResponse.json({ error: 'Erro ao deletar plano' }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Plano removido do historico'
+    })
+
+  } catch (error) {
+    console.error('Erro ao deletar plano:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

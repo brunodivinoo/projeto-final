@@ -36,7 +36,8 @@ import {
   Wand2,
   ChefHat,
   ShoppingCart,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react'
 
 type TipoRefeicao = 'cafe' | 'lanche_manha' | 'almoco' | 'lanche_tarde' | 'jantar' | 'ceia'
@@ -109,6 +110,16 @@ interface PlanoAlimentar {
   dicas_gerais: string[]
 }
 
+// Interface para historico de planos
+interface PlanoHistorico {
+  id: string
+  plano: PlanoAlimentar
+  periodo: string
+  preferencias: string | null
+  meta_calorias: number
+  created_at: string
+}
+
 export default function RefeicoesPage() {
   const { profile, metaCalorias } = useNutriAuth()
   const [refeicoesSelecionadas, setRefeicoesSelecionadas] = useState<Record<TipoRefeicao, OpcaoRefeicao | null>>({
@@ -163,6 +174,12 @@ export default function RefeicoesPage() {
   const [mostrarCalendario, setMostrarCalendario] = useState(false)
   const [diaExpandido, setDiaExpandido] = useState<string | null>(null)
   const [erroPlano, setErroPlano] = useState('')
+
+  // Estados do Historico de Planos
+  const [mostrarHistoricoPlanos, setMostrarHistoricoPlanos] = useState(false)
+  const [historicoPlanos, setHistoricoPlanos] = useState<PlanoHistorico[]>([])
+  const [loadingHistoricoPlanos, setLoadingHistoricoPlanos] = useState(false)
+  const [deletandoPlano, setDeletandoPlano] = useState<string | null>(null)
 
   const hoje = dataAtual.toISOString().split('T')[0]
   const isHoje = hoje === new Date().toISOString().split('T')[0]
@@ -653,6 +670,65 @@ export default function RefeicoesPage() {
     for (const refeicao of dia.refeicoes) {
       await aplicarRefeicaoPlano(refeicao)
     }
+  }
+
+  // Buscar historico de planos
+  const buscarHistoricoPlanos = async () => {
+    if (!profile?.id) return
+
+    setLoadingHistoricoPlanos(true)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
+      const response = await fetch('/api/nutrivida/plano-alimentar?historico=true', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+
+      const data = await response.json()
+      setHistoricoPlanos(data.historico || [])
+    } catch (err) {
+      console.error('Erro ao buscar historico:', err)
+    } finally {
+      setLoadingHistoricoPlanos(false)
+    }
+  }
+
+  // Deletar plano do historico
+  const deletarPlano = async (planoId: string) => {
+    if (!profile?.id) return
+
+    setDeletandoPlano(planoId)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
+      const response = await fetch(`/api/nutrivida/plano-alimentar?id=${planoId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+
+      if (response.ok) {
+        setHistoricoPlanos(prev => prev.filter(p => p.id !== planoId))
+      }
+    } catch (err) {
+      console.error('Erro ao deletar plano:', err)
+    } finally {
+      setDeletandoPlano(null)
+    }
+  }
+
+  // Carregar plano do historico
+  const carregarPlanoHistorico = (plano: PlanoHistorico) => {
+    setPlanoGerado(plano.plano)
+    setMostrarHistoricoPlanos(false)
+    setMostrarCalendario(true)
   }
 
   if (loading) {
@@ -1470,16 +1546,32 @@ export default function RefeicoesPage() {
             {/* Preferencias */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Preferencias (opcional)
+                Conte tudo para a IA (opcional)
               </label>
               <textarea
                 value={preferenciasPlano}
                 onChange={(e) => setPreferenciasPlano(e.target.value)}
-                placeholder="Ex: vegetariano, sem gluten, priorizar proteinas..."
-                rows={3}
-                className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
+                placeholder="Escreva o que quiser: horarios disponiveis, alimentos preferidos, restricoes, dias mais corridos, metas especificas... a IA vai entender e personalizar seu plano!"
+                rows={4}
+                className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none text-sm"
               />
+              <p className="text-xs text-gray-400 mt-1">
+                Ex: &quot;trabalho de manha, treino as 18h, gosto de ovos, nao como peixe, preciso de energia para o trabalho&quot;
+              </p>
             </div>
+
+            {/* Botao ver historico */}
+            <button
+              onClick={() => {
+                buscarHistoricoPlanos()
+                setMostrarPlanoIA(false)
+                setMostrarHistoricoPlanos(true)
+              }}
+              className="w-full mb-4 p-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm text-gray-600 flex items-center justify-center gap-2 transition-colors"
+            >
+              <History className="w-4 h-4" />
+              Ver planos anteriores
+            </button>
 
             {/* Info */}
             <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
@@ -1675,6 +1767,127 @@ export default function RefeicoesPage() {
                   </div>
                 )
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Historico de Planos */}
+      {mostrarHistoricoPlanos && (
+        <div className="fixed inset-0 bg-black/50 flex items-end lg:items-center justify-center z-50">
+          <div className="bg-white w-full lg:max-w-lg lg:rounded-2xl rounded-t-3xl max-h-[85vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <History className="w-6 h-6" />
+                  <div>
+                    <h2 className="text-lg font-semibold">Planos Anteriores</h2>
+                    <p className="text-sm text-purple-100">{historicoPlanos.length} planos salvos</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMostrarHistoricoPlanos(false)}
+                  className="p-2 hover:bg-white/20 rounded-lg"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Lista de planos */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {loadingHistoricoPlanos ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+                </div>
+              ) : historicoPlanos.length === 0 ? (
+                <div className="text-center py-12">
+                  <Calendar className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500">Nenhum plano salvo ainda</p>
+                  <p className="text-sm text-gray-400">Gere seu primeiro plano alimentar!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {historicoPlanos.map((plano) => (
+                    <div
+                      key={plano.id}
+                      className="bg-white border border-gray-200 rounded-2xl p-4 hover:border-purple-300 transition-colors"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium capitalize">
+                              {plano.periodo === 'dia' ? '1 dia' : plano.periodo === 'semana' ? '7 dias' : '30 dias'}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {new Date(plano.created_at).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-sm font-medium text-gray-800">
+                            {plano.meta_calorias} kcal/dia • {plano.plano.dias.length} dias
+                          </p>
+                          {plano.preferencias && (
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                              {plano.preferencias}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => deletarPlano(plano.id)}
+                          disabled={deletandoPlano === plano.id}
+                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          {deletandoPlano === plano.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Preview das refeicoes do primeiro dia */}
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {plano.plano.dias[0]?.refeicoes.slice(0, 3).map((ref) => (
+                          <span key={ref.tipo} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-lg">
+                            {ref.nome.substring(0, 20)}...
+                          </span>
+                        ))}
+                        {plano.plano.dias[0]?.refeicoes.length > 3 && (
+                          <span className="text-xs text-gray-400">+{plano.plano.dias[0].refeicoes.length - 3}</span>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => carregarPlanoHistorico(plano)}
+                        className="w-full py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl text-sm font-medium"
+                      >
+                        Ver este plano
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Botao novo plano */}
+            <div className="p-4 border-t border-gray-100 flex-shrink-0">
+              <button
+                onClick={() => {
+                  setMostrarHistoricoPlanos(false)
+                  setMostrarPlanoIA(true)
+                }}
+                className="w-full py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-700 font-medium flex items-center justify-center gap-2 transition-colors"
+              >
+                <Wand2 className="w-5 h-5" />
+                Gerar novo plano
+              </button>
             </div>
           </div>
         </div>
