@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useTransition, memo, useMemo } from 'react'
 import { useMedAuth } from '@/contexts/MedAuthContext'
 import {
   Brain,
@@ -98,6 +98,160 @@ interface UsoIA {
   }
 }
 
+// Componente memoizado para mensagens individuais
+// Evita re-render de mensagens antigas durante streaming
+interface MemoizedMessageProps {
+  msg: Mensagem
+  streaming: boolean
+  copiado: string | null
+  copiarResposta: (id: string, conteudo: string) => void
+  user: { id: string } | null | undefined
+  conversaAtual: string | null
+  chatMode: string
+  plano: string
+  trialAtivo: boolean
+}
+
+const MemoizedMessage = memo(function MemoizedMessage({
+  msg,
+  streaming,
+  copiado,
+  copiarResposta,
+  user,
+  conversaAtual,
+  chatMode,
+  plano,
+  trialAtivo
+}: MemoizedMessageProps) {
+  return (
+    <div
+      className={`flex ${msg.tipo === 'usuario' ? 'justify-end' : 'gap-2 md:gap-3 justify-start'}`}
+    >
+      {/* Avatar - menor no mobile */}
+      {msg.tipo === 'ia' && (
+        <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0 mt-1">
+          <Bot className="w-3 h-3 md:w-5 md:h-5 text-white" />
+        </div>
+      )}
+
+      {/* Mensagem com largura diferenciada - usuário compacta, IA expande total */}
+      <div className={`${
+        msg.tipo === 'usuario'
+          ? 'max-w-[80%] md:max-w-[55%] lg:max-w-[45%]'
+          : 'max-w-full'
+      } ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
+        {msg.thinking && (
+          <div className="mb-1.5 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <p className="text-amber-200 text-[10px] font-medium mb-0.5 flex items-center gap-1">
+              <Lightbulb className="w-3 h-3" /> Raciocínio
+            </p>
+            <p className="text-amber-100/60 text-[10px] line-clamp-3">{msg.thinking}</p>
+          </div>
+        )}
+
+        <div className={`rounded-lg md:rounded-xl p-2.5 md:p-3 ${
+          msg.tipo === 'usuario'
+            ? 'bg-emerald-500/20 text-white'
+            : 'bg-white/5 text-white/90 border border-white/5'
+        }`}>
+          {(msg.hasImage || msg.hasPdf) && msg.tipo === 'usuario' && (
+            <div className="flex items-center gap-1.5 mb-1.5 pb-1.5 border-b border-white/10">
+              {msg.hasImage && (
+                <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded flex items-center gap-1">
+                  <ImageIcon className="w-3 h-3" /> Imagem
+                </span>
+              )}
+              {msg.hasPdf && (
+                <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded flex items-center gap-1">
+                  <FileUp className="w-3 h-3" /> PDF
+                </span>
+              )}
+            </div>
+          )}
+
+          {msg.tipo === 'ia' ? (
+            <div className="prose prose-invert prose-sm max-w-none text-xs md:text-sm">
+              {/* Renderizar imagem gerada se existir */}
+              {msg.imagemGerada && (
+                <div className="my-4 rounded-xl overflow-hidden border border-white/10 bg-white/5">
+                  <div className="p-2 border-b border-white/10 bg-white/5">
+                    <p className="text-xs text-purple-400 font-medium flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4" />
+                      {msg.imagemGerada.estrutura}
+                    </p>
+                  </div>
+                  <img
+                    src={msg.imagemGerada.storageUrl || msg.imagemGerada.url}
+                    alt={msg.imagemGerada.descricao || msg.imagemGerada.estrutura}
+                    className="w-full max-w-lg mx-auto"
+                    style={{ display: 'block' }}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      if (msg.imagemGerada?.storageUrl && target.src === msg.imagemGerada.storageUrl) {
+                        target.src = msg.imagemGerada.url
+                      } else {
+                        target.style.display = 'none'
+                      }
+                    }}
+                  />
+                  {msg.imagemGerada.descricao && (
+                    <p className="p-2 text-xs text-white/60 text-center border-t border-white/10">
+                      {msg.imagemGerada.descricao}
+                    </p>
+                  )}
+                </div>
+              )}
+              <ArtifactRenderer
+                content={(msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')).replace(/\[GENERATED_IMAGE:[^\]]+\]/g, '')}
+                userId={user?.id}
+                messageId={msg.id}
+                conversaId={conversaAtual || undefined}
+                chatMode={chatMode}
+                planoUsuario={plano}
+                trialAtivo={trialAtivo}
+                onUpgradeClick={() => {
+                  window.location.href = '/medicina/planos'
+                }}
+              />
+            </div>
+          ) : (
+            <p className="whitespace-pre-wrap text-xs md:text-sm">{msg.conteudo}</p>
+          )}
+        </div>
+
+        {msg.tipo === 'ia' && msg.conteudo && (
+          <div className="flex items-center gap-2 mt-0.5 ml-1">
+            <button
+              onClick={() => copiarResposta(msg.id, msg.conteudo)}
+              className="text-white/40 hover:text-white text-[10px] flex items-center gap-1"
+            >
+              {copiado === msg.id ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              {copiado === msg.id ? 'Copiado!' : 'Copiar'}
+            </button>
+            {msg.tokens && (
+              <span className="text-white/30 text-[10px]">
+                {msg.tokens.toLocaleString()} tokens
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}, (prevProps, nextProps) => {
+  // Custom comparison: só re-renderiza se a mensagem mudou
+  // Mensagens do usuário nunca mudam depois de enviadas
+  if (prevProps.msg.tipo === 'usuario') {
+    return prevProps.msg.id === nextProps.msg.id &&
+           prevProps.copiado === nextProps.copiado
+  }
+  // Mensagens da IA: comparar conteúdo também
+  return prevProps.msg.id === nextProps.msg.id &&
+         prevProps.msg.conteudo === nextProps.msg.conteudo &&
+         prevProps.copiado === nextProps.copiado &&
+         prevProps.streaming === nextProps.streaming
+})
+
 export default function IAPage() {
   const { user, plano, trialStatus } = useMedAuth()
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
@@ -118,6 +272,9 @@ export default function IAPage() {
   const [imagemTipo, setImagemTipo] = useState<string | null>(null)
   const [pdfBase64, setPdfBase64] = useState<string | null>(null)
   const [showExamAnalyzer, setShowExamAnalyzer] = useState(false)
+
+  // useTransition para updates não-urgentes (evita flickering)
+  const [isPending, startTransition] = useTransition()
 
   // Gerenciar artefatos por conversa e modo de chat
   const { clearArtifacts, setCurrentConversa, setCurrentChatMode, setChatModeFilter } = useArtifactsStore()
@@ -486,20 +643,25 @@ export default function IAPage() {
       let buffer = '' // Buffer para chunks incompletos
 
       // Batching para reduzir re-renders durante streaming
+      // Aumentado para 150ms para evitar flickering
       let lastUpdateTime = 0
-      const UPDATE_INTERVAL = 50 // ms - atualiza UI no máximo a cada 50ms
+      const UPDATE_INTERVAL = 150 // ms - atualiza UI no máximo a cada 150ms
       let pendingUpdate = false
+      let accumulatedContent = '' // Acumula conteúdo entre updates
 
       const updateUI = (force = false) => {
         const now = Date.now()
         if (force || now - lastUpdateTime >= UPDATE_INTERVAL) {
           lastUpdateTime = now
           pendingUpdate = false
-          setMensagens(prev => prev.map(m =>
-            m.id === respostaId
-              ? { ...m, conteudo: fullResponse }
-              : m
-          ))
+          // Usar startTransition para updates não-urgentes
+          startTransition(() => {
+            setMensagens(prev => prev.map(m =>
+              m.id === respostaId
+                ? { ...m, conteudo: fullResponse }
+                : m
+            ))
+          })
         } else if (!pendingUpdate) {
           pendingUpdate = true
           setTimeout(() => updateUI(true), UPDATE_INTERVAL - (now - lastUpdateTime))
@@ -1109,129 +1271,18 @@ export default function IAPage() {
             </div>
           ) : (
             mensagens.map((msg) => (
-              <div
+              <MemoizedMessage
                 key={msg.id}
-                className={`flex ${msg.tipo === 'usuario' ? 'justify-end' : 'gap-2 md:gap-3 justify-start'}`}
-              >
-                {/* Avatar - menor no mobile */}
-                {msg.tipo === 'ia' && (
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0 mt-1">
-                    <Bot className="w-3 h-3 md:w-5 md:h-5 text-white" />
-                  </div>
-                )}
-
-                {/* Mensagem com largura diferenciada - usuário compacta, IA expande total */}
-                <div className={`${
-                  msg.tipo === 'usuario'
-                    ? 'max-w-[80%] md:max-w-[55%] lg:max-w-[45%]'
-                    : 'max-w-full'
-                } ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
-                  {msg.thinking && (
-                    <div className="mb-1.5 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                      <p className="text-amber-200 text-[10px] font-medium mb-0.5 flex items-center gap-1">
-                        <Lightbulb className="w-3 h-3" /> Raciocínio
-                      </p>
-                      <p className="text-amber-100/60 text-[10px] line-clamp-3">{msg.thinking}</p>
-                    </div>
-                  )}
-
-                  <div className={`rounded-lg md:rounded-xl p-2.5 md:p-3 ${
-                    msg.tipo === 'usuario'
-                      ? 'bg-emerald-500/20 text-white'
-                      : 'bg-white/5 text-white/90 border border-white/5'
-                  }`}>
-                    {(msg.hasImage || msg.hasPdf) && msg.tipo === 'usuario' && (
-                      <div className="flex items-center gap-1.5 mb-1.5 pb-1.5 border-b border-white/10">
-                        {msg.hasImage && (
-                          <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded flex items-center gap-1">
-                            <ImageIcon className="w-3 h-3" /> Imagem
-                          </span>
-                        )}
-                        {msg.hasPdf && (
-                          <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded flex items-center gap-1">
-                            <FileUp className="w-3 h-3" /> PDF
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {msg.tipo === 'ia' ? (
-                      <div className="prose prose-invert prose-sm max-w-none text-xs md:text-sm">
-                        {/* Renderizar imagem gerada se existir */}
-                        {msg.imagemGerada && (
-                          <div className="my-4 rounded-xl overflow-hidden border border-white/10 bg-white/5">
-                            <div className="p-2 border-b border-white/10 bg-white/5">
-                              <p className="text-xs text-purple-400 font-medium flex items-center gap-2">
-                                <ImageIcon className="w-4 h-4" />
-                                {msg.imagemGerada.estrutura}
-                              </p>
-                            </div>
-                            <img
-                              src={msg.imagemGerada.storageUrl || msg.imagemGerada.url}
-                              alt={msg.imagemGerada.descricao || msg.imagemGerada.estrutura}
-                              className="w-full max-w-lg mx-auto"
-                              style={{ display: 'block' }}
-                              onError={(e) => {
-                                console.error('[IA Page] Erro ao carregar imagem')
-                                const target = e.target as HTMLImageElement
-                                // Se falhar com storage URL, tentar URL original
-                                if (msg.imagemGerada?.storageUrl && target.src === msg.imagemGerada.storageUrl) {
-                                  console.log('[IA Page] Tentando fallback para URL original')
-                                  target.src = msg.imagemGerada.url
-                                } else {
-                                  target.style.display = 'none'
-                                }
-                              }}
-                              onLoad={() => {
-                                console.log('[IA Page] Imagem carregada com sucesso!')
-                              }}
-                            />
-                            {msg.imagemGerada.descricao && (
-                              <p className="p-2 text-xs text-white/60 text-center border-t border-white/10">
-                                {msg.imagemGerada.descricao}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        <ArtifactRenderer
-                          content={(msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')).replace(/\[GENERATED_IMAGE:[^\]]+\]/g, '')}
-                          userId={user?.id}
-                          messageId={msg.id}
-                          conversaId={conversaAtual || undefined}
-                          chatMode={chatMode}
-                          planoUsuario={plano}
-                          trialAtivo={trialStatus.ativo}
-                          onUpgradeClick={() => {
-                            // Redirecionar para página de planos
-                            window.location.href = '/medicina/planos'
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <p className="whitespace-pre-wrap text-xs md:text-sm">{msg.conteudo}</p>
-                    )}
-                  </div>
-
-                  {msg.tipo === 'ia' && msg.conteudo && (
-                    <div className="flex items-center gap-2 mt-0.5 ml-1">
-                      <button
-                        onClick={() => copiarResposta(msg.id, msg.conteudo)}
-                        className="text-white/40 hover:text-white text-[10px] flex items-center gap-1"
-                      >
-                        {copiado === msg.id ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        {copiado === msg.id ? 'Copiado!' : 'Copiar'}
-                      </button>
-                      {msg.tokens && (
-                        <span className="text-white/30 text-[10px]">
-                          {msg.tokens.toLocaleString()} tokens
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Avatar do usuário removido - mensagem fica mais limpa */}
-              </div>
+                msg={msg}
+                streaming={streaming}
+                copiado={copiado}
+                copiarResposta={copiarResposta}
+                user={user}
+                conversaAtual={conversaAtual}
+                chatMode={chatMode}
+                plano={plano}
+                trialAtivo={trialStatus.ativo}
+              />
             ))
           )}
 

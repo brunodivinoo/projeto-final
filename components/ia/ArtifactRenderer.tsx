@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useEffect, useRef, useState, useCallback } from 'react'
+import { useMemo, useEffect, useRef, useState, useCallback, memo } from 'react'
 import dynamic from 'next/dynamic'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -1227,7 +1227,7 @@ function getQuestionHashSyncRenderer(enunciado: string): string {
   return hashCacheRenderer[enunciado] || ''
 }
 
-export default function ArtifactRenderer({
+function ArtifactRendererComponent({
   content,
   userId,
   messageId,
@@ -1806,3 +1806,18 @@ export default function ArtifactRenderer({
     </div>
   )
 }
+
+// Memoizar o componente para evitar re-renders desnecessários durante streaming
+// Só re-renderiza quando content ou outras props significativas mudam
+const ArtifactRenderer = memo(ArtifactRendererComponent, (prevProps, nextProps) => {
+  // Comparação personalizada - só re-renderiza se o conteúdo realmente mudou
+  return prevProps.content === nextProps.content &&
+         prevProps.userId === nextProps.userId &&
+         prevProps.messageId === nextProps.messageId &&
+         prevProps.conversaId === nextProps.conversaId &&
+         prevProps.chatMode === nextProps.chatMode &&
+         prevProps.planoUsuario === nextProps.planoUsuario &&
+         prevProps.trialAtivo === nextProps.trialAtivo
+})
+
+export default ArtifactRenderer
