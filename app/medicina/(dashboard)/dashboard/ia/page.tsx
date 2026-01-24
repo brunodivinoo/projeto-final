@@ -31,7 +31,7 @@ import {
 import ArtifactRenderer from '@/components/ia/ArtifactRenderer'
 import ArtifactsSidebar from '@/components/ia/ArtifactsSidebar'
 import { useSmartScroll } from '@/hooks/useSmartScroll'
-import { useArtifactsStore } from '@/stores/artifactsStore'
+import { useArtifactsStore, type ChatModeType } from '@/stores/artifactsStore'
 import { VoiceButton } from '@/components/medicina/VoiceButton'
 import { ExamAnalyzerModal } from '@/components/medicina/ExamAnalyzer'
 import { ChatModeSelector, ChatModeIntro, useChatMode, type ChatMode } from '@/components/medicina/ChatModes'
@@ -107,7 +107,7 @@ interface MemoizedMessageProps {
   copiarResposta: (id: string, conteudo: string) => void
   user: { id: string } | null | undefined
   conversaAtual: string | null
-  chatMode: string
+  chatMode: ChatModeType
   plano: string
   trialAtivo: boolean
 }
@@ -1278,7 +1278,7 @@ export default function IAPage() {
                 copiarResposta={copiarResposta}
                 user={user}
                 conversaAtual={conversaAtual}
-                chatMode={chatMode}
+                chatMode={chatMode as ChatModeType}
                 plano={plano}
                 trialAtivo={trialStatus.ativo}
               />
