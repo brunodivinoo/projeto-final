@@ -28,7 +28,7 @@ import {
   Square,
   Stethoscope,
 } from 'lucide-react'
-import ArtifactRenderer from '@/components/ia/ArtifactRenderer'
+import ArtifactRenderer, { type PlanoUsuario } from '@/components/ia/ArtifactRenderer'
 import ArtifactsSidebar from '@/components/ia/ArtifactsSidebar'
 import { useSmartScroll } from '@/hooks/useSmartScroll'
 import { useArtifactsStore, type ChatModeType } from '@/stores/artifactsStore'
@@ -108,7 +108,7 @@ interface MemoizedMessageProps {
   user: { id: string } | null | undefined
   conversaAtual: string | null
   chatMode: ChatModeType
-  plano: string
+  plano: PlanoUsuario
   trialAtivo: boolean
 }
 
@@ -1279,7 +1279,7 @@ export default function IAPage() {
                 user={user}
                 conversaAtual={conversaAtual}
                 chatMode={chatMode as ChatModeType}
-                plano={plano}
+                plano={(plano || 'gratuito') as PlanoUsuario}
                 trialAtivo={trialStatus.ativo}
               />
             ))
