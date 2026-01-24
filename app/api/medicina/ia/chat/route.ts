@@ -241,7 +241,8 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: true })
 
     // Salvar mensagem do usuário
-    await supabase
+    console.log('[Chat API] Salvando mensagem do usuário, conversa_id:', conversaAtual)
+    const { error: userMsgError } = await supabase
       .from('mensagens_ia_med')
       .insert({
         conversa_id: conversaAtual,
@@ -250,6 +251,10 @@ export async function POST(request: NextRequest) {
         has_image: !!imagem_base64,
         has_pdf: !!pdf_base64
       })
+
+    if (userMsgError) {
+      console.error('[Chat API] ERRO ao salvar mensagem do usuário:', userMsgError)
+    }
 
     // Preparar histórico
     const historico = mensagensAnteriores?.map(m => ({
@@ -472,10 +477,58 @@ async function streamClaude(params: StreamClaudeParams) {
       const MAX_ITERATIONS = 10 // Limite de iterações (tools + continuações)
       const MAX_CONTINUATIONS = 5 // Limite de continuações automáticas por max_tokens (aumentado para garantir respostas completas)
 
-      // Heartbeat para manter conexão viva (a cada 25s)
-      const heartbeatInterval = setInterval(() => {
+      // Criar registro de resposta ANTES de iniciar streaming (para garantir salvamento)
+      const { data: assistantMsg, error: createMsgError } = await supabase
+        .from('mensagens_ia_med')
+        .insert({
+          conversa_id,
+          role: 'assistant',
+          content: '[Gerando resposta...]', // Placeholder inicial
+          tokens: 0
+        })
+        .select('id')
+        .single()
+
+      if (createMsgError) {
+        console.error('[Chat API] Erro ao criar mensagem assistant:', createMsgError)
+      }
+
+      const assistantMsgId = assistantMsg?.id
+      console.log('[Chat API] Mensagem assistant criada com ID:', assistantMsgId)
+
+      // Variável para controlar última atualização
+      let lastUpdateTime = Date.now()
+      const UPDATE_INTERVAL = 10000 // Atualizar a cada 10 segundos
+
+      // Função para atualizar resposta no banco
+      const updateResponse = async (final = false) => {
+        const now = Date.now()
+        // Só atualiza se passou o intervalo ou é final
+        if (!final && now - lastUpdateTime < UPDATE_INTERVAL) return
+        if (!assistantMsgId) return
+
+        lastUpdateTime = now
+        const { error } = await supabase
+          .from('mensagens_ia_med')
+          .update({
+            content: fullResponse || '[Resposta vazia]',
+            tokens: tokensInput + tokensOutput
+          })
+          .eq('id', assistantMsgId)
+
+        if (error) {
+          console.error('[Chat API] Erro ao atualizar resposta:', error)
+        } else if (final) {
+          console.log('[Chat API] Resposta final salva, tamanho:', fullResponse.length)
+        }
+      }
+
+      // Heartbeat para manter conexão viva (a cada 25s) E atualizar resposta
+      const heartbeatInterval = setInterval(async () => {
         try {
           controller.enqueue(encoder.encode(`: heartbeat\n\n`))
+          // Atualizar resposta durante o heartbeat
+          await updateResponse()
         } catch {
           // Controller já fechado, ignorar
         }
@@ -800,24 +853,22 @@ async function streamClaude(params: StreamClaudeParams) {
         console.log('[Chat API] Validação final da resposta:')
         console.log(gerarResumoValidacao(validacaoFinal))
 
-        // Salvar resposta no banco
-        await supabase
-          .from('mensagens_ia_med')
-          .insert({
-            conversa_id,
-            role: 'assistant',
-            content: fullResponse,
-            tokens: tokensInput + tokensOutput
-          })
+        // Atualizar resposta final no banco (já foi criada no início)
+        console.log('[Chat API] Atualizando resposta final no banco, conversa_id:', conversa_id, 'tamanho:', fullResponse.length)
+        await updateResponse(true)
 
         // Atualizar tokens da conversa
-        await supabase
+        const { error: updateError } = await supabase
           .from('conversas_ia_med')
           .update({
             tokens_usados: tokensInput + tokensOutput,
             updated_at: new Date().toISOString()
           })
           .eq('id', conversa_id)
+
+        if (updateError) {
+          console.error('[Chat API] ERRO ao atualizar conversa:', updateError)
+        }
 
         // Incrementar uso
         const custo = calcularCusto(modeloSelecionado, tokensInput, tokensOutput)
@@ -864,14 +915,8 @@ async function streamClaude(params: StreamClaudeParams) {
           fullResponse += fallbackMessage
           console.log('[Chat API] Salvando resposta parcial após erro, tamanho:', fullResponse.length)
           try {
-            await supabase
-              .from('mensagens_ia_med')
-              .insert({
-                conversa_id,
-                role: 'assistant',
-                content: fullResponse,
-                tokens: tokensInput + tokensOutput
-              })
+            // Atualizar resposta existente (já foi criada no início do streaming)
+            await updateResponse(true)
 
             // Enviar o conteúdo parcial que já foi gerado
             controller.enqueue(
@@ -892,16 +937,11 @@ async function streamClaude(params: StreamClaudeParams) {
             )
           }
         } else {
-          // Sem resposta parcial, salvar mensagem de fallback
+          // Sem resposta parcial, usar fallback como resposta
+          fullResponse = fallbackMessage
           try {
-            await supabase
-              .from('mensagens_ia_med')
-              .insert({
-                conversa_id,
-                role: 'assistant',
-                content: fallbackMessage,
-                tokens: 0
-              })
+            // Atualizar mensagem existente com fallback
+            await updateResponse(true)
 
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ type: 'text', content: fallbackMessage })}\n\n`)
@@ -992,6 +1032,25 @@ async function streamGemini(params: StreamGeminiParams) {
     async start(controller) {
       let fullResponse = ''
 
+      // Criar registro de resposta ANTES de iniciar streaming
+      const { data: assistantMsg, error: createMsgError } = await supabase
+        .from('mensagens_ia_med')
+        .insert({
+          conversa_id,
+          role: 'assistant',
+          content: '[Gerando resposta...]',
+          tokens: 0
+        })
+        .select('id')
+        .single()
+
+      if (createMsgError) {
+        console.error('[Gemini] Erro ao criar mensagem assistant:', createMsgError)
+      }
+
+      const assistantMsgId = assistantMsg?.id
+      console.log('[Gemini] Mensagem assistant criada com ID:', assistantMsgId)
+
       try {
         for await (const chunk of result.stream) {
           const text = chunk.text()
@@ -1007,24 +1066,36 @@ async function streamGemini(params: StreamGeminiParams) {
         const tokensInput = Math.ceil(mensagem.length / 4) + historico.reduce((acc, m) => acc + Math.ceil(m.content.length / 4), 0)
         const tokensOutput = Math.ceil(fullResponse.length / 4)
 
-        // Salvar resposta
-        await supabase
-          .from('mensagens_ia_med')
-          .insert({
-            conversa_id,
-            role: 'assistant',
-            content: fullResponse,
-            tokens: tokensInput + tokensOutput
-          })
+        // Atualizar resposta final
+        if (assistantMsgId) {
+          console.log('[Gemini] Atualizando resposta final, tamanho:', fullResponse.length)
+          const { error: updateMsgError } = await supabase
+            .from('mensagens_ia_med')
+            .update({
+              content: fullResponse || '[Resposta vazia]',
+              tokens: tokensInput + tokensOutput
+            })
+            .eq('id', assistantMsgId)
+
+          if (updateMsgError) {
+            console.error('[Gemini] ERRO ao atualizar resposta:', updateMsgError)
+          } else {
+            console.log('[Gemini] Resposta salva com sucesso!')
+          }
+        }
 
         // Atualizar conversa
-        await supabase
+        const { error: updateError } = await supabase
           .from('conversas_ia_med')
           .update({
             tokens_usados: tokensInput + tokensOutput,
             updated_at: new Date().toISOString()
           })
           .eq('id', conversa_id)
+
+        if (updateError) {
+          console.error('[Gemini] ERRO ao atualizar conversa:', updateError)
+        }
 
         // Incrementar uso
         const custo = calcularCusto('gemini-flash', tokensInput, tokensOutput)
