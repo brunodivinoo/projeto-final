@@ -20,6 +20,8 @@ import { SYSTEM_PROMPT_PREMIUM, SYSTEM_PROMPT_RESIDENCIA } from '@/lib/ai/prompt
 import { MODELOS, DOMINIOS_MEDICOS } from '@/lib/ai/config'
 import { PREPARAMED_TOOLS, executarTool } from '@/lib/ai/tools'
 import { uploadImageToStorage, isBase64Image } from '@/lib/storage'
+import { analisarPergunta, gerarInstrucoesAdicionais } from '@/lib/ai/taskManager'
+import { validarResposta, gerarResumoValidacao } from '@/lib/ai/responseValidator'
 
 // Formatar resposta de tool para exibição
 function formatToolResponse(toolName: string, data: unknown): string {
@@ -383,10 +385,22 @@ async function streamClaude(params: StreamClaudeParams) {
     } as Anthropic.DocumentBlockParam)
   }
 
+  // ========== ANÁLISE META AI ==========
+  // Analisar pergunta para entender necessidades e gerar instruções
+  const analise = analisarPergunta(mensagem)
+  const instrucoesAdicionais = gerarInstrucoesAdicionais(analise)
+
+  console.log(`[Chat API] Análise Meta AI: ${analise.tarefas.join(' → ')} | Questões: ${analise.quantidadeQuestoes} | Imagens: ${analise.quantidadeImagens}`)
+
+  // Construir mensagem enriquecida com instruções
+  const mensagemEnriquecida = instrucoesAdicionais
+    ? mensagem + instrucoesAdicionais
+    : mensagem
+
   // Adicionar texto
   userContent.push({
     type: 'text',
-    text: mensagem
+    text: mensagemEnriquecida
   })
 
   messages.push({
@@ -620,46 +634,61 @@ async function streamClaude(params: StreamClaudeParams) {
 
             console.log(`[Chat API] Continuando automaticamente de onde parou...`)
 
-            // MELHORIA: Detectar o que foi cortado para pedir continuação específica
-            const conteudoSolicitado = mensagem.toLowerCase()
-            const respostaAtual = fullResponse.toLowerCase()
+            // ========== VALIDAÇÃO META AI ==========
+            // Usar o validador para detectar o que falta de forma mais inteligente
+            const validacao = validarResposta(fullResponse, mensagem)
+            console.log(gerarResumoValidacao(validacao))
 
-            // Verificar questões pedidas vs entregues
-            let questoesPedidas = 0
-            const matchQuestoes = conteudoSolicitado.match(/(\d+)\s*quest[õo]es?/i)
-            if (matchQuestoes) {
-              questoesPedidas = parseInt(matchQuestoes[1])
-            }
-            const questoesEntregues = (fullResponse.match(/\*\*\d+[\.\)]/g) || []).length
-
-            // Verificar se falta conteúdo
-            const faltaQuestoes = questoesPedidas > 0 && questoesEntregues < questoesPedidas
-            const faltaReferencias = !respostaAtual.includes('referência') &&
-                                    !respostaAtual.includes('📚') &&
-                                    !respostaAtual.includes('fontes:') &&
-                                    !respostaAtual.includes('[1]')
-            const faltaImagens = conteudoSolicitado.includes('imagem') && !respostaAtual.includes('📷')
-            const terminouAbruptamente = fullResponse.endsWith('...') ||
-              fullResponse.endsWith('-') ||
-              /[a-z,]$/.test(fullResponse.trim()) // Termina com letra minúscula ou vírgula
-
-            // Construir prompt de continuação específico
-            let promptContinuacao = 'Continue EXATAMENTE de onde parou. '
-
-            if (faltaQuestoes) {
-              promptContinuacao += `Faltam ${questoesPedidas - questoesEntregues} questões para completar. `
-            }
-            if (faltaImagens) {
-              promptContinuacao += 'Inclua as imagens solicitadas usando a tool buscar_imagens_medicas. '
-            }
-            if (faltaReferencias) {
-              promptContinuacao += 'Finalize com as referências bibliográficas em formato ABNT. '
-            }
-            if (terminouAbruptamente) {
-              promptContinuacao += 'A resposta foi cortada no meio - continue do ponto exato onde parou. '
+            // Se a validação indica que está completa, podemos parar
+            if (validacao.completa && validacao.confianca > 80) {
+              console.log('[Chat API] Validação indica resposta completa, finalizando')
+              break
             }
 
-            promptContinuacao += 'NÃO repita o que já foi dito. Complete o restante.'
+            // Usar o prompt de continuação gerado pelo validador se houver
+            let promptContinuacao = validacao.promptContinuacao
+
+            // Se não gerou prompt específico, usar fallback manual
+            if (!promptContinuacao) {
+              const conteudoSolicitado = mensagem.toLowerCase()
+              const respostaAtual = fullResponse.toLowerCase()
+
+              // Verificar questões pedidas vs entregues
+              let questoesPedidas = 0
+              const matchQuestoes = conteudoSolicitado.match(/(\d+)\s*quest[õo]es?/i)
+              if (matchQuestoes) {
+                questoesPedidas = parseInt(matchQuestoes[1])
+              }
+              const questoesEntregues = (fullResponse.match(/\*\*\d+[\.\)]/g) || []).length
+
+              // Verificar se falta conteúdo
+              const faltaQuestoes = questoesPedidas > 0 && questoesEntregues < questoesPedidas
+              const faltaReferencias = !respostaAtual.includes('referência') &&
+                                      !respostaAtual.includes('📚') &&
+                                      !respostaAtual.includes('fontes:') &&
+                                      !respostaAtual.includes('[1]')
+              const faltaImagens = conteudoSolicitado.includes('imagem') && !respostaAtual.includes('📷')
+              const terminouAbruptamente = fullResponse.endsWith('...') ||
+                fullResponse.endsWith('-') ||
+                /[a-z,]$/.test(fullResponse.trim())
+
+              promptContinuacao = 'Continue EXATAMENTE de onde parou. '
+
+              if (faltaQuestoes) {
+                promptContinuacao += `Faltam ${questoesPedidas - questoesEntregues} questões para completar. `
+              }
+              if (faltaImagens) {
+                promptContinuacao += 'Inclua as imagens solicitadas usando a tool buscar_imagens_medicas. '
+              }
+              if (faltaReferencias) {
+                promptContinuacao += 'Finalize com as referências bibliográficas em formato ABNT. '
+              }
+              if (terminouAbruptamente) {
+                promptContinuacao += 'A resposta foi cortada no meio - continue do ponto exato onde parou. '
+              }
+
+              promptContinuacao += 'NÃO repita o que já foi dito. Complete o restante.'
+            }
 
             console.log(`[Chat API] Prompt de continuação: ${promptContinuacao.substring(0, 80)}...`)
 
@@ -765,6 +794,11 @@ async function streamClaude(params: StreamClaudeParams) {
         }
 
         console.log('[Chat API] Agentic loop finalizado após', iterationCount, 'iterações')
+
+        // ========== VALIDAÇÃO FINAL META AI ==========
+        const validacaoFinal = validarResposta(fullResponse, mensagem)
+        console.log('[Chat API] Validação final da resposta:')
+        console.log(gerarResumoValidacao(validacaoFinal))
 
         // Salvar resposta no banco
         await supabase

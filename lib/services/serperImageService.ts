@@ -60,6 +60,61 @@ const DOMINIOS_BLOQUEADOS = [
   'freepik.com'
 ]
 
+/**
+ * Verifica se uma URL de imagem é válida (existe e responde)
+ * Meta AI faz isso para não mostrar imagens quebradas
+ */
+async function verificarUrlImagem(url: string): Promise<boolean> {
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 3000) // 3s timeout
+
+    const response = await fetch(url, {
+      method: 'HEAD',
+      signal: controller.signal
+    })
+
+    clearTimeout(timeout)
+
+    // Verificar se é uma imagem válida
+    const contentType = response.headers.get('content-type') || ''
+    const isImage = contentType.startsWith('image/') ||
+                    url.match(/\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i) !== null
+
+    return response.ok && isImage
+  } catch {
+    // Se falhar, assumir que a imagem pode funcionar (fallback)
+    return true
+  }
+}
+
+/**
+ * Verifica múltiplas URLs em paralelo
+ */
+async function verificarUrlsEmParalelo(
+  imagens: ImagemMedica[],
+  limite: number = 10
+): Promise<ImagemMedica[]> {
+  // Verificar apenas as primeiras 'limite' imagens para não demorar
+  const imagensParaVerificar = imagens.slice(0, limite)
+
+  const verificacoes = await Promise.all(
+    imagensParaVerificar.map(async (img) => ({
+      imagem: img,
+      valida: await verificarUrlImagem(img.url)
+    }))
+  )
+
+  // Filtrar apenas imagens válidas
+  const imagensValidas = verificacoes
+    .filter(v => v.valida)
+    .map(v => v.imagem)
+
+  console.log(`[Serper] Verificação de URLs: ${imagensValidas.length}/${imagensParaVerificar.length} válidas`)
+
+  return imagensValidas
+}
+
 export async function buscarImagensMedicas(
   termo: string,
   quantidade: number = 5
@@ -116,7 +171,7 @@ export async function buscarImagensMedicas(
       confiavel: boolean
     }
 
-    const imagensFiltradas: ImagemMedica[] = data.images
+    const imagensProcessadas: ImagemComConfiavel[] = data.images
       .filter((img: SerperImage) => {
         // Verificar se tem URL válida
         if (!img.imageUrl) return false
@@ -153,11 +208,16 @@ export async function buscarImagensMedicas(
       })
       // Priorizar fontes confiáveis
       .sort((a: ImagemComConfiavel, b: ImagemComConfiavel) => (b.confiavel ? 1 : 0) - (a.confiavel ? 1 : 0))
-      .slice(0, quantidade)
-      // Remover campo auxiliar confiavel do resultado final
-      .map(({ confiavel, ...rest }: ImagemComConfiavel) => rest)
 
-    console.log(`[Serper] Retornando ${imagensFiltradas.length} imagens filtradas`)
+    // Verificar URLs em paralelo (Meta AI faz isso para não mostrar imagens quebradas)
+    const imagensVerificadas = await verificarUrlsEmParalelo(imagensProcessadas, quantidade * 2)
+
+    // Remover campo auxiliar confiavel e limitar quantidade
+    const imagensFiltradas: ImagemMedica[] = imagensVerificadas
+      .slice(0, quantidade)
+      .map(({ confiavel, ...rest }) => rest)
+
+    console.log(`[Serper] Retornando ${imagensFiltradas.length} imagens filtradas e verificadas`)
 
     return {
       success: true,
