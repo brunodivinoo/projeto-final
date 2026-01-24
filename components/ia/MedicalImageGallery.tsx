@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react'
-import { ZoomIn, Loader2, ImageOff, Info, AlertCircle, Search, RefreshCw, Languages } from 'lucide-react'
+import { ZoomIn, Loader2, ImageOff, Info, AlertCircle, Search, RefreshCw, Languages, ExternalLink } from 'lucide-react'
 import type { MedicalImage } from '@/lib/medical-images/service'
 import { getCachedImage, cacheImage, cleanOldCache } from '@/lib/hooks/useImageCache'
 import { ImageModal } from '@/components/ui/ImageModal'
