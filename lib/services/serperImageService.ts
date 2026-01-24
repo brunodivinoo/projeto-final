@@ -88,13 +88,18 @@ async function verificarUrlImagem(url: string): Promise<boolean> {
   }
 }
 
+// Interface interna com campo confiavel
+interface ImagemComConfiavel extends ImagemMedica {
+  confiavel: boolean
+}
+
 /**
  * Verifica múltiplas URLs em paralelo
  */
 async function verificarUrlsEmParalelo(
-  imagens: ImagemMedica[],
+  imagens: ImagemComConfiavel[],
   limite: number = 10
-): Promise<ImagemMedica[]> {
+): Promise<ImagemComConfiavel[]> {
   // Verificar apenas as primeiras 'limite' imagens para não demorar
   const imagensParaVerificar = imagens.slice(0, limite)
 
@@ -165,10 +170,6 @@ export async function buscarImagensMedicas(
       source?: string
       domain?: string
       link?: string
-    }
-
-    interface ImagemComConfiavel extends ImagemMedica {
-      confiavel: boolean
     }
 
     const imagensProcessadas: ImagemComConfiavel[] = data.images
