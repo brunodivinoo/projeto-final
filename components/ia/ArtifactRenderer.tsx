@@ -1564,13 +1564,21 @@ export default function ArtifactRenderer({
                   <hr className="my-4 border-white/10" />
                 ),
 
-                // Images - responsivas
+                // Images - responsivas com loading otimizado
                 img: ({ src, alt }) => (
-                  <img
-                    src={src}
-                    alt={alt}
-                    className="max-w-full h-auto rounded-lg my-3 max-h-[300px] md:max-h-[400px] object-contain"
-                  />
+                  <div className="my-3 min-h-[100px] flex items-center justify-center">
+                    <img
+                      src={src}
+                      alt={alt || 'Imagem médica'}
+                      loading="lazy"
+                      decoding="async"
+                      className="max-w-full h-auto rounded-lg max-h-[300px] md:max-h-[400px] object-contain"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.style.display = 'none'
+                      }}
+                    />
+                  </div>
                 )
               }}
             >

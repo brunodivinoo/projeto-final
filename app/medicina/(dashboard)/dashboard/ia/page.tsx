@@ -485,6 +485,27 @@ export default function IAPage() {
       let receivedDone = false
       let buffer = '' // Buffer para chunks incompletos
 
+      // Batching para reduzir re-renders durante streaming
+      let lastUpdateTime = 0
+      const UPDATE_INTERVAL = 50 // ms - atualiza UI no máximo a cada 50ms
+      let pendingUpdate = false
+
+      const updateUI = (force = false) => {
+        const now = Date.now()
+        if (force || now - lastUpdateTime >= UPDATE_INTERVAL) {
+          lastUpdateTime = now
+          pendingUpdate = false
+          setMensagens(prev => prev.map(m =>
+            m.id === respostaId
+              ? { ...m, conteudo: fullResponse }
+              : m
+          ))
+        } else if (!pendingUpdate) {
+          pendingUpdate = true
+          setTimeout(() => updateUI(true), UPDATE_INTERVAL - (now - lastUpdateTime))
+        }
+      }
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
@@ -508,11 +529,7 @@ export default function IAPage() {
 
               if (data.type === 'text') {
                 fullResponse += data.content
-                setMensagens(prev => prev.map(m =>
-                  m.id === respostaId
-                    ? { ...m, conteudo: fullResponse }
-                    : m
-                ))
+                updateUI() // Usa batching ao invés de atualização direta
               } else if (data.type === 'tool_result') {
                 // Tool foi executada
                 console.log('[IA Page] Tool result recebido:', data.tool_name)
