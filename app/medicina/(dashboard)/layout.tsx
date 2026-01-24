@@ -77,6 +77,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [menuAberto, setMenuAberto] = useState<string | null>(null) // Menu de 3 pontos
   const [editandoConversa, setEditandoConversa] = useState<string | null>(null) // Edição de título
   const [novoTitulo, setNovoTitulo] = useState('')
+  const [conversaSelecionada, setConversaSelecionada] = useState<string | null>(null) // Para seleção visual imediata
+  const [excluindoTodas, setExcluindoTodas] = useState(false)
   const menuRef = useRef<HTMLLIElement>(null)
 
   // Hook para modais de upgrade
@@ -151,6 +153,28 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       setMenuAberto(null)
     } catch (error) {
       console.error('Erro ao deletar conversa:', error)
+    }
+  }
+
+  // Excluir todas as conversas
+  const excluirTodasConversas = async () => {
+    if (!user || conversas.length === 0) return
+    if (!confirm('Tem certeza que deseja excluir TODAS as conversas? Esta ação não pode ser desfeita.')) return
+
+    setExcluindoTodas(true)
+    try {
+      // Deletar todas em paralelo
+      await Promise.all(
+        conversas.map(c =>
+          fetch(`/api/medicina/ia/chat?conversa_id=${c.id}&user_id=${user.id}`, { method: 'DELETE' })
+        )
+      )
+      setConversas([])
+      setConversaSelecionada(null)
+    } catch (error) {
+      console.error('Erro ao excluir conversas:', error)
+    } finally {
+      setExcluindoTodas(false)
     }
   }
 
@@ -310,15 +334,39 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             {/* Separador e Histórico de Conversas - estilo Meta AI */}
             {!sidebarCollapsed && (
               <div className="mt-6 pt-4 border-t border-white/10">
-                {/* Botão Nova Conversa em destaque */}
-                <Link
-                  href="/medicina/dashboard"
-                  onClick={() => setSidebarOpen(false)}
-                  className="flex items-center justify-center gap-2 mx-3 mb-4 py-2.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/30 rounded-lg text-emerald-400 hover:text-emerald-300 transition-all text-sm font-medium"
-                >
-                  <Plus className="w-4 h-4" />
-                  Nova Conversa
-                </Link>
+                {/* Botões de ação */}
+                <div className="mx-3 mb-3 space-y-2">
+                  {/* Botão Nova Conversa em destaque */}
+                  <Link
+                    href="/medicina/dashboard"
+                    onClick={() => { setSidebarOpen(false); setConversaSelecionada(null) }}
+                    className="flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/30 rounded-lg text-emerald-400 hover:text-emerald-300 transition-all text-sm font-medium"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Nova Conversa
+                  </Link>
+
+                  {/* Botão Excluir Todas */}
+                  {conversas.length > 0 && (
+                    <button
+                      onClick={excluirTodasConversas}
+                      disabled={excluindoTodas}
+                      className="w-full flex items-center justify-center gap-2 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs font-medium disabled:opacity-50"
+                    >
+                      {excluindoTodas ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                          Excluindo...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="w-3 h-3" />
+                          Excluir Todas ({conversas.length})
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
 
                 {/* Header do Histórico */}
                 {conversas.length > 0 && (
@@ -330,11 +378,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                       </span>
                     </div>
 
-                    {/* Lista de Conversas */}
-                    <ul className="space-y-0.5 max-h-[300px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                    {/* Lista de Conversas - scroll customizado */}
+                    <ul className="space-y-0.5 max-h-[250px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20">
                       {(showAllConversas ? conversas : conversas.slice(0, 10)).map((conversa) => {
-                        const isActive = pathname === `/medicina/dashboard/ia` &&
-                          (typeof window !== 'undefined' && window.location.search.includes(`c=${conversa.id}`))
+                        // Seleção visual imediata usando estado local
+                        const isActive = conversaSelecionada === conversa.id ||
+                          (pathname === `/medicina/dashboard/ia` &&
+                          typeof window !== 'undefined' && window.location.search.includes(`c=${conversa.id}`))
 
                         return (
                           <li key={conversa.id} className="relative group" ref={menuAberto === conversa.id ? menuRef : undefined}>
@@ -370,11 +420,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                               <div className="flex items-center">
                                 <Link
                                   href={`/medicina/dashboard/ia?c=${conversa.id}`}
-                                  onClick={() => setSidebarOpen(false)}
+                                  onClick={() => { setSidebarOpen(false); setConversaSelecionada(conversa.id) }}
                                   className={`
                                     flex-1 flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm
                                     ${isActive
-                                      ? 'bg-white/10 text-white'
+                                      ? 'bg-emerald-500/20 text-emerald-400'
                                       : 'text-white/60 hover:bg-white/5 hover:text-white/80'
                                     }
                                   `}
