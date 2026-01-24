@@ -891,8 +891,26 @@ Seja motivadora e especifica para essa fase da vida.`
   }
 }
 
+// Schema para lote parcial (sem lista de compras - sera consolidada no final)
+const PlanoLoteSchema = z.object({
+  dias: z.array(z.object({
+    data: z.string(),
+    dia_semana: z.string(),
+    refeicoes: z.array(RefeicaoDetalhadaSchema),
+    total_calorias: z.number(),
+    dica_dia: z.string()
+  })),
+  ingredientes_usados: z.array(z.object({
+    nome: z.string(),
+    quantidade: z.number(),
+    unidade: z.string(),
+    categoria: z.enum(['frutas', 'vegetais', 'proteinas', 'laticinios', 'carboidratos', 'gorduras', 'temperos', 'outros'])
+  }))
+})
+
 /**
  * Gerar plano alimentar completo com ingredientes e modo de preparo
+ * Para planos mensais, usa geracao em lotes de 5 dias para evitar truncamento
  */
 export async function gerarPlanoAlimentarCompleto(
   perfil: ProfileContext,
@@ -911,18 +929,18 @@ export async function gerarPlanoAlimentarCompleto(
     else metaCalorias += 450
   }
 
-  // Determinar numero de dias (mes limitado a 14 dias para evitar resposta muito grande)
-  const numDias = periodo === 'dia' ? 1 : periodo === 'semana' ? 7 : 14
+  // Determinar numero de dias
+  const numDias = periodo === 'dia' ? 1 : periodo === 'semana' ? 7 : 30
 
-  // Gerar datas a partir de hoje
-  const datas: { data: string; dia_semana: string }[] = []
+  // Gerar todas as datas
+  const todasDatas: { data: string; dia_semana: string }[] = []
   const diasSemana = ['Domingo', 'Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado']
   const hoje = new Date()
 
   for (let i = 0; i < numDias; i++) {
     const data = new Date(hoje)
     data.setDate(hoje.getDate() + i)
-    datas.push({
+    todasDatas.push({
       data: data.toISOString().split('T')[0],
       dia_semana: diasSemana[data.getDay()]
     })
@@ -938,7 +956,165 @@ export async function gerarPlanoAlimentarCompleto(
 
   const tiposRefeicao = ['cafe', 'lanche_manha', 'almoco', 'lanche_tarde', 'jantar', 'ceia']
 
-  const prompt = `Crie um plano alimentar COMPLETO para ${numDias} dia(s).
+  const systemPrompt = `Voce e uma nutricionista criando planos alimentares detalhados.
+Cada refeicao deve ter receita completa com ingredientes e modo de preparo.
+Gere refeicoes PRATICAS e RAPIDAS (max 30 min preparo) com ingredientes acessiveis.
+Categorize os ingredientes em: frutas, vegetais, proteinas, laticinios, carboidratos, gorduras, temperos, outros.`
+
+  // Para planos curtos (dia/semana), gera tudo de uma vez
+  if (periodo !== 'mes') {
+    const prompt = criarPromptPlanoCompleto(todasDatas, situacao, metaCalorias, perfil, preferencias, tiposRefeicao)
+
+    try {
+      const result = await withRetry(async () => {
+        const { object } = await generateObject({
+          model: MODELS.primary,
+          schema: PlanoAlimentarCompletoSchema,
+          system: systemPrompt,
+          prompt,
+          temperature: 0.7,
+        })
+        return object
+      }, {
+        maxRetries: 2,
+        baseDelay: 2000,
+        maxDelay: 10000,
+        backoffMultiplier: 2
+      })
+
+      return result
+    } catch (error) {
+      console.error('Erro ao gerar plano alimentar completo:', error)
+      return null
+    }
+  }
+
+  // Para plano mensal: gerar em lotes de 5 dias
+  const TAMANHO_LOTE = 5
+  const todosOsDias: z.infer<typeof PlanoAlimentarCompletoSchema>['dias'] = []
+  const todosIngredientes: Map<string, { quantidade: number; unidade: string; categoria: 'frutas' | 'vegetais' | 'proteinas' | 'laticinios' | 'carboidratos' | 'gorduras' | 'temperos' | 'outros' }> = new Map()
+  const dicasGerais: string[] = []
+
+  // Resumo das refeicoes ja geradas para manter variedade
+  let resumoRefeicoes: string[] = []
+
+  console.log(`Gerando plano mensal em lotes de ${TAMANHO_LOTE} dias...`)
+
+  for (let i = 0; i < numDias; i += TAMANHO_LOTE) {
+    const datasLote = todasDatas.slice(i, i + TAMANHO_LOTE)
+    const numeroLote = Math.floor(i / TAMANHO_LOTE) + 1
+    const totalLotes = Math.ceil(numDias / TAMANHO_LOTE)
+
+    console.log(`Gerando lote ${numeroLote}/${totalLotes} (dias ${i + 1} a ${Math.min(i + TAMANHO_LOTE, numDias)})...`)
+
+    const promptLote = criarPromptLote(
+      datasLote,
+      situacao,
+      metaCalorias,
+      perfil,
+      preferencias,
+      tiposRefeicao,
+      resumoRefeicoes,
+      numeroLote,
+      totalLotes
+    )
+
+    try {
+      const resultado = await withRetry(async () => {
+        const { object } = await generateObject({
+          model: MODELS.primary,
+          schema: PlanoLoteSchema,
+          system: systemPrompt,
+          prompt: promptLote,
+          temperature: 0.7,
+        })
+        return object
+      }, {
+        maxRetries: 3,
+        baseDelay: 2000,
+        maxDelay: 15000,
+        backoffMultiplier: 2
+      })
+
+      // Adicionar dias ao resultado final
+      todosOsDias.push(...resultado.dias)
+
+      // Consolidar ingredientes
+      for (const ing of resultado.ingredientes_usados) {
+        const chave = `${ing.nome.toLowerCase()}_${ing.unidade}`
+        const existente = todosIngredientes.get(chave)
+        if (existente) {
+          existente.quantidade += ing.quantidade
+        } else {
+          todosIngredientes.set(chave, {
+            quantidade: ing.quantidade,
+            unidade: ing.unidade,
+            categoria: ing.categoria
+          })
+        }
+      }
+
+      // Atualizar resumo para proximo lote (manter variedade)
+      resumoRefeicoes = resultado.dias.flatMap(d =>
+        d.refeicoes.map(r => `${r.tipo}: ${r.nome}`)
+      ).slice(-18) // Ultimas 18 refeicoes (3 dias)
+
+      // Coletar dicas
+      resultado.dias.forEach(d => {
+        if (d.dica_dia && !dicasGerais.includes(d.dica_dia)) {
+          dicasGerais.push(d.dica_dia)
+        }
+      })
+
+    } catch (error) {
+      console.error(`Erro no lote ${numeroLote}:`, error)
+      // Continuar com os proximos lotes mesmo se um falhar
+      continue
+    }
+  }
+
+  // Se nao conseguiu gerar nenhum dia, retorna null
+  if (todosOsDias.length === 0) {
+    console.error('Nenhum dia foi gerado com sucesso')
+    return null
+  }
+
+  // Montar lista de compras consolidada
+  const listaCompras: z.infer<typeof PlanoAlimentarCompletoSchema>['lista_compras'] = []
+  for (const [chave, valor] of todosIngredientes) {
+    const nome = chave.split('_')[0]
+    listaCompras.push({
+      item: nome.charAt(0).toUpperCase() + nome.slice(1),
+      quantidade: Math.ceil(valor.quantidade), // Arredondar para cima
+      unidade: valor.unidade,
+      categoria: valor.categoria
+    })
+  }
+
+  // Ordenar lista por categoria
+  listaCompras.sort((a, b) => a.categoria.localeCompare(b.categoria))
+
+  console.log(`Plano mensal concluido: ${todosOsDias.length} dias gerados`)
+
+  return {
+    periodo: 'mes',
+    dias: todosOsDias,
+    lista_compras: listaCompras,
+    meta_calorias_diaria: metaCalorias,
+    dicas_gerais: dicasGerais.slice(0, 10) // Limitar a 10 dicas
+  }
+}
+
+// Funcao auxiliar para criar prompt de plano completo (dia/semana)
+function criarPromptPlanoCompleto(
+  datas: { data: string; dia_semana: string }[],
+  situacao: string,
+  metaCalorias: number,
+  perfil: ProfileContext,
+  preferencias: string | undefined,
+  tiposRefeicao: string[]
+): string {
+  return `Crie um plano alimentar COMPLETO para ${datas.length} dia(s).
 
 PERFIL:
 - Situacao: ${situacao}
@@ -969,34 +1145,51 @@ REQUISITOS:
 5. Uma dica pratica por dia
 
 IMPORTANTE: Gere refeicoes PRATICAS e RAPIDAS (max 30 min preparo) com ingredientes acessiveis.`
+}
 
-  const systemPrompt = `Voce e uma nutricionista criando planos alimentares detalhados.
-Cada refeicao deve ter receita completa com ingredientes e modo de preparo.
-A lista de compras deve consolidar todos os ingredientes com quantidades corretas para o periodo.
-Categorize os ingredientes em: frutas, vegetais, proteinas, laticinios, carboidratos, gorduras, temperos, outros.`
+// Funcao auxiliar para criar prompt de lote (para plano mensal)
+function criarPromptLote(
+  datas: { data: string; dia_semana: string }[],
+  situacao: string,
+  metaCalorias: number,
+  perfil: ProfileContext,
+  preferencias: string | undefined,
+  tiposRefeicao: string[],
+  refeicoeAnteriores: string[],
+  numeroLote: number,
+  totalLotes: number
+): string {
+  const contextoVariedade = refeicoeAnteriores.length > 0
+    ? `\n\nREFEICOES JA GERADAS (evite repetir):
+${refeicoeAnteriores.join('\n')}`
+    : ''
 
-  try {
-    const result = await withRetry(async () => {
-      const { object } = await generateObject({
-        model: MODELS.primary,
-        schema: PlanoAlimentarCompletoSchema,
-        system: systemPrompt,
-        prompt,
-        temperature: 0.7,
-      })
-      return object
-    }, {
-      maxRetries: 2,
-      baseDelay: 2000,
-      maxDelay: 10000,
-      backoffMultiplier: 2
-    })
+  return `LOTE ${numeroLote} de ${totalLotes} - Gere refeicoes para ${datas.length} dias.
 
-    return result
-  } catch (error) {
-    console.error('Erro ao gerar plano alimentar completo:', error)
-    return null
-  }
+PERFIL:
+- Situacao: ${situacao}
+- Meta: ${metaCalorias} kcal/dia
+- Plano: ${perfil.plano === 'restritivo' ? 'Low carb/Restritivo' : 'Equilibrado'}
+${perfil.semana_gestacao ? '- IMPORTANTE: Evitar alimentos proibidos na gestacao!' : ''}
+${perfil.amamentando ? '- IMPORTANTE: Priorizar alimentos que auxiliam na lactacao!' : ''}
+${perfil.restricoes?.length ? `- Restricoes: ${perfil.restricoes.join(', ')}` : ''}
+${preferencias ? `- Preferencias: ${preferencias}` : ''}
+
+DATAS DESTE LOTE:
+${datas.map(d => `- ${d.data} (${d.dia_semana})`).join('\n')}
+
+TIPOS DE REFEICAO:
+${tiposRefeicao.join(', ')}
+${contextoVariedade}
+
+REQUISITOS:
+1. Cada dia DEVE ter exatamente 6 refeicoes
+2. Cada refeicao DEVE ter: nome, descricao, macros, ingredientes com quantidades, modo de preparo, tempo
+3. VARIE as refeicoes - nao repita pratos dos dias anteriores
+4. Liste TODOS os ingredientes usados neste lote com quantidades totais
+5. Uma dica pratica por dia
+
+IMPORTANTE: Gere refeicoes PRATICAS e RAPIDAS (max 30 min preparo).`
 }
 
 // =====================================================
