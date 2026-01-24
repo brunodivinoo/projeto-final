@@ -255,3 +255,159 @@ export function formatarImagensParaChat(imagens: ImagemMedica[]): string {
 
   return texto
 }
+
+// =========================================
+// SISTEMA DE FALLBACK E RANKING (Meta AI)
+// =========================================
+
+// Interface estendida para resultado com fallback
+interface ResultadoBuscaImagensComFallback extends ResultadoBuscaImagens {
+  fallbackDescricao?: string
+  usouFallback?: boolean
+}
+
+// Domínios top para ranking (maior prioridade)
+const DOMINIOS_TOP = [
+  'brasilescola', 'infoescola', 'usp', 'unicamp', 'ufrj',
+  'ufmg', 'fiocruz', 'scielo', 'kenhub', 'msdmanuals'
+]
+
+/**
+ * Sistema de Fallback para imagens (como Meta AI)
+ * Ordem: Serper.dev → Descrição textual
+ */
+export async function buscarImagensComFallback(
+  termo: string,
+  quantidade: number = 3
+): Promise<ResultadoBuscaImagensComFallback> {
+  // 1. Tentar API primária (Serper.dev)
+  console.log('[Fallback] Tentando Serper.dev...')
+  const resultado = await buscarImagensMedicas(termo, quantidade)
+
+  if (resultado.success && resultado.imagens.length > 0) {
+    console.log(`[Fallback] Serper.dev retornou ${resultado.imagens.length} imagens`)
+
+    // Aplicar ranking antes de retornar
+    const imagensRankeadas = rankearImagens(resultado.imagens, termo)
+
+    return {
+      ...resultado,
+      imagens: imagensRankeadas,
+      usouFallback: false
+    }
+  }
+
+  // 2. Se falhou, retornar com descrição textual como fallback
+  console.log('[Fallback] Serper.dev falhou, gerando descrição textual...')
+
+  return {
+    success: true,
+    imagens: [],
+    query: termo,
+    fallbackDescricao: gerarDescricaoTextualFallback(termo),
+    usouFallback: true
+  }
+}
+
+/**
+ * Gera descrição textual quando não encontra imagens (como Meta AI faz)
+ */
+function gerarDescricaoTextualFallback(termo: string): string {
+  return `
+📝 **Descrição Visual: ${termo}**
+
+Não foi possível carregar imagens neste momento, mas aqui está uma orientação visual:
+
+Para visualizar "${termo}", imagine as principais estruturas anatômicas envolvidas, suas relações espaciais e características morfológicas típicas encontradas em atlas de anatomia como Netter ou Sobotta.
+
+💡 **Sugestões para consulta:**
+- Pesquise no Google Imagens: "${termo} anatomia atlas"
+- Consulte o Atlas de Anatomia Humana (Netter)
+- Acesse recursos da USP, Unicamp ou Fiocruz
+
+📚 *Observação: Para fins de estudo, recomenda-se sempre consultar fontes acadêmicas confiáveis.*
+`.trim()
+}
+
+/**
+ * Sistema de Ranking de Resultados (como Meta AI)
+ * Critérios: Relevância + Qualidade da fonte + Título
+ */
+function rankearImagens(imagens: ImagemMedica[], termo: string): ImagemMedica[] {
+  const termoLower = termo.toLowerCase()
+  const termosPesquisa = termoLower.split(/\s+/).filter(t => t.length > 3)
+
+  interface ImagemComScore extends ImagemMedica {
+    _score: number
+  }
+
+  const imagensComScore: ImagemComScore[] = imagens.map(img => {
+    let score = 0
+    const tituloLower = img.titulo.toLowerCase()
+
+    // 1. Relevância: título contém termos da pesquisa (até 40 pontos)
+    const termosNoTitulo = termosPesquisa.filter(t => tituloLower.includes(t))
+    score += Math.min(termosNoTitulo.length * 15, 40)
+
+    // 2. Match exato do termo (20 pontos)
+    if (tituloLower.includes(termoLower)) {
+      score += 20
+    }
+
+    // 3. Qualidade da fonte - domínios TOP (40 pontos)
+    const dominioLower = img.dominio.toLowerCase()
+    if (DOMINIOS_TOP.some(d => dominioLower.includes(d))) {
+      score += 40
+    } else if (DOMINIOS_CONFIAVEIS.some(d => dominioLower.includes(d))) {
+      score += 20
+    }
+
+    // 4. Penalizar títulos genéricos (-10 pontos)
+    const titulosGenericos = ['imagem', 'image', 'foto', 'picture', 'sem título', 'untitled']
+    if (titulosGenericos.some(t => tituloLower === t)) {
+      score -= 10
+    }
+
+    // 5. Bonus para termos médicos específicos no título (10 pontos)
+    const termosMedicos = ['anatomia', 'sistema', 'órgão', 'estrutura', 'atlas', 'diagrama']
+    if (termosMedicos.some(t => tituloLower.includes(t))) {
+      score += 10
+    }
+
+    return { ...img, _score: score }
+  })
+
+  // Ordenar por score (maior primeiro)
+  imagensComScore.sort((a, b) => b._score - a._score)
+
+  // Remover campo _score e retornar
+  return imagensComScore.map(({ _score, ...img }) => img)
+}
+
+/**
+ * Verifica se a busca de imagens é recomendada para o tema
+ */
+export function deveRecomendarImagens(mensagem: string): boolean {
+  const msgLower = mensagem.toLowerCase()
+
+  // Temas que se beneficiam de imagens
+  const temasVisuais = [
+    'anatom', 'órgão', 'orgao', 'sistema', 'estrutura',
+    'músculo', 'musculo', 'osso', 'célula', 'celula',
+    'tecido', 'histolog', 'microscop', 'corte', 'lâmina',
+    'radiolog', 'tomograf', 'ressonância', 'raio-x',
+    'ultrassom', 'eletrocardiograma', 'ecg', 'eeg',
+    'coração', 'coracao', 'pulmão', 'pulmao',
+    'cérebro', 'cerebro', 'fígado', 'figado', 'rim',
+    'veia', 'artéria', 'arteria', 'nervo', 'medula',
+    'coluna', 'crânio', 'cranio', 'esqueleto',
+  ]
+
+  // Verificar se menciona termos visuais
+  const mencionaTemaVisual = temasVisuais.some(t => msgLower.includes(t))
+
+  // Verificar se pediu explicitamente imagens
+  const pediuImagens = /imagem|figura|ilustr|mostre|visualiz|foto|diagram/i.test(msgLower)
+
+  return mencionaTemaVisual || pediuImagens
+}

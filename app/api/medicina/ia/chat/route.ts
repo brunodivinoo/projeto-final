@@ -22,6 +22,8 @@ import { PREPARAMED_TOOLS, executarTool } from '@/lib/ai/tools'
 import { uploadImageToStorage, isBase64Image } from '@/lib/storage'
 import { analisarPergunta, gerarInstrucoesAdicionais } from '@/lib/ai/taskManager'
 import { validarResposta, gerarResumoValidacao } from '@/lib/ai/responseValidator'
+import { classificarIntencao, gerarInstrucoesDeIntencao, getConfiguracoesAPI } from '@/lib/ai/intentClassifier'
+import { verificarQualidade, gerarRelatorioQualidade, precisaContinuar } from '@/lib/ai/qualityChecker'
 
 // Formatar resposta de tool para exibição
 function formatToolResponse(toolName: string, data: unknown): string {
@@ -390,16 +392,27 @@ async function streamClaude(params: StreamClaudeParams) {
     } as Anthropic.DocumentBlockParam)
   }
 
-  // ========== ANÁLISE META AI ==========
-  // Analisar pergunta para entender necessidades e gerar instruções
+  // ========== PIPELINE META AI COMPLETO ==========
+  // PASSO 1: Recebe pergunta (já recebida em 'mensagem')
+
+  // PASSO 2: Análise de estrutura (TaskManager)
   const analise = analisarPergunta(mensagem)
   const instrucoesAdicionais = gerarInstrucoesAdicionais(analise)
 
-  console.log(`[Chat API] Análise Meta AI: ${analise.tarefas.join(' → ')} | Questões: ${analise.quantidadeQuestoes} | Imagens: ${analise.quantidadeImagens}`)
+  // PASSO 3: Classificação de intenção (IntentClassifier)
+  const classificacao = classificarIntencao(mensagem)
+  const instrucoesIntencao = gerarInstrucoesDeIntencao(classificacao)
+  const configAPI = getConfiguracoesAPI(classificacao)
+
+  console.log(`[Pipeline] Passo 2-3: Intenção=${classificacao.intencao} (${(classificacao.confianca * 100).toFixed(0)}%) | Tools=${classificacao.toolsNecessarias.join(',')} | Formato=${classificacao.formatoIdeal} | Temp=${configAPI.temperature}`)
+  console.log(`[Pipeline] TaskManager: ${analise.tarefas.join(' → ')} | Questões: ${analise.quantidadeQuestoes} | Imagens: ${analise.quantidadeImagens}`)
+
+  // Combinar instruções do TaskManager e IntentClassifier
+  const todasInstrucoes = [instrucoesIntencao, instrucoesAdicionais].filter(Boolean).join('\n\n')
 
   // Construir mensagem enriquecida com instruções
-  const mensagemEnriquecida = instrucoesAdicionais
-    ? mensagem + instrucoesAdicionais
+  const mensagemEnriquecida = todasInstrucoes
+    ? mensagem + '\n\n' + todasInstrucoes
     : mensagem
 
   // Adicionar texto
@@ -848,10 +861,27 @@ async function streamClaude(params: StreamClaudeParams) {
 
         console.log('[Chat API] Agentic loop finalizado após', iterationCount, 'iterações')
 
-        // ========== VALIDAÇÃO FINAL META AI ==========
+        // ========== PASSO 6: VALIDAÇÃO FINAL META AI ==========
+        // Validação do ResponseValidator (contagem de questões, referências)
         const validacaoFinal = validarResposta(fullResponse, mensagem)
-        console.log('[Chat API] Validação final da resposta:')
+        console.log('[Chat API] Validação ResponseValidator:')
         console.log(gerarResumoValidacao(validacaoFinal))
+
+        // Validação do QualityChecker (coerência, relevância, completude)
+        const metricasQualidade = verificarQualidade(mensagem, fullResponse, {
+          questoesEsperadas: analise.quantidadeQuestoes,
+          imagensEsperadas: analise.quantidadeImagens > 0 || classificacao.toolsNecessarias.includes('buscar_imagens_medicas'),
+          referenciasEsperadas: true,
+          nivelDetalhe: classificacao.nivelDetalhe,
+          formatoEsperado: classificacao.formatoIdeal
+        })
+        console.log('[Chat API] Validação QualityChecker:')
+        console.log(gerarRelatorioQualidade(metricasQualidade))
+
+        // PASSO 7: Se precisa continuar mas atingimos o limite, logar aviso
+        if (precisaContinuar(metricasQualidade) && iterationCount >= MAX_ITERATIONS) {
+          console.log('[Chat API] AVISO: Resposta pode estar incompleta, mas atingimos o limite de iterações')
+        }
 
         // Atualizar resposta final no banco (já foi criada no início)
         console.log('[Chat API] Atualizando resposta final no banco, conversa_id:', conversa_id, 'tamanho:', fullResponse.length)
