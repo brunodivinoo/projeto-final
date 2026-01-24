@@ -50,6 +50,104 @@ export interface AnalisePerfilContexto {
   recomendacoes: string[]
 }
 
+// =============================================================================
+// TEMAS MÉDICOS QUE SEMPRE SE BENEFICIAM DE IMAGENS (BUSCAR AUTOMATICAMENTE)
+// =============================================================================
+// Estes temas devem SEMPRE ter imagens buscadas, mesmo que o usuário não peça
+const TEMAS_VISUAIS_OBRIGATORIOS = [
+  // Anatomia e estruturas
+  'anatomia', 'anatômico', 'anatomico', 'corpo humano', 'órgão', 'orgao',
+  'estrutura', 'estruturas', 'músculos', 'musculos', 'ossos', 'osso',
+  'articulação', 'articulacao', 'articulações', 'vértebra', 'vertebra',
+  'cranio', 'crânio', 'coração', 'coracao', 'pulmão', 'pulmao', 'pulmões',
+  'fígado', 'figado', 'rim', 'rins', 'estômago', 'estomago', 'intestino',
+  'cérebro', 'cerebro', 'medula', 'nervos', 'nervo', 'artéria', 'arteria',
+  'veia', 'veias', 'artérias', 'vasos', 'vascular',
+
+  // Histologia e microscopia
+  'histologia', 'histológico', 'histologico', 'microscópio', 'microscopio',
+  'lâmina', 'lamina', 'tecido', 'tecidos', 'célula', 'celula', 'células',
+  'celulas', 'corte histológico', 'corte histologico', 'coloração',
+  'hematoxilina', 'eosina', 'he', 'giemsa', 'gram',
+
+  // Radiologia e exames de imagem
+  'radiologia', 'radiológico', 'radiologico', 'raio-x', 'raio x', 'rx',
+  'tomografia', 'tc', 'ct', 'ressonância', 'ressonancia', 'rm', 'mri',
+  'ultrassom', 'ecografia', 'eco', 'pet', 'cintilografia', 'mamografia',
+  'angiografia', 'densitometria', 'exame de imagem',
+
+  // Patologia e lesões
+  'patologia', 'patológico', 'patologico', 'lesão', 'lesao', 'lesões',
+  'tumor', 'tumores', 'neoplasia', 'câncer', 'cancer', 'carcinoma',
+  'adenoma', 'sarcoma', 'linfoma', 'metástase', 'metastase',
+  'necrose', 'inflamação', 'inflamacao', 'inflamatório', 'abscesso',
+  'úlcera', 'ulcera', 'ferida', 'fratura', 'fraturas',
+
+  // Dermatologia
+  'dermatologia', 'dermatológico', 'pele', 'cutâneo', 'cutaneo',
+  'erupção', 'erupcao', 'rash', 'mancha', 'manchas', 'eritema',
+  'pápula', 'papula', 'vesícula', 'vesicula', 'bolha', 'nódulo', 'nodulo',
+  'placa', 'placas', 'descamação', 'prurido', 'coceira',
+  'melanoma', 'nevo', 'nevos', 'queratose', 'acne', 'psoríase', 'psoriase',
+
+  // Oftalmologia
+  'oftalmologia', 'olho', 'olhos', 'retina', 'córnea', 'cornea',
+  'cristalino', 'íris', 'iris', 'pupila', 'nervo óptico', 'nervo optico',
+  'fundo de olho', 'fundoscopia', 'catarata', 'glaucoma',
+
+  // Cardiologia (ECG, ecocardiograma)
+  'ecg', 'eletrocardiograma', 'ecocardiograma', 'eco cardio',
+  'arritmia', 'infarto', 'iam', 'isquemia', 'fibrilação', 'fibrilacao',
+
+  // Embriologia e desenvolvimento
+  'embriologia', 'embrião', 'embriao', 'feto', 'desenvolvimento fetal',
+  'gestação', 'gestacao', 'trimestre', 'ultrassom obstétrico',
+
+  // Microbiologia
+  'microbiologia', 'bactéria', 'bacteria', 'bactérias', 'vírus', 'virus',
+  'fungo', 'fungos', 'parasita', 'parasitas', 'protozoário', 'helminto',
+  'cultura', 'colônia', 'gram positivo', 'gram negativo',
+
+  // Procedimentos e técnicas
+  'procedimento', 'técnica', 'tecnica', 'incisão', 'incisao', 'sutura',
+  'punção', 'puncao', 'biópsia', 'biopsia', 'cirurgia', 'cirúrgico',
+  'endoscopia', 'colonoscopia', 'broncoscopia', 'laparoscopia',
+
+  // Sinais e exame físico
+  'sinal de', 'sinais de', 'exame físico', 'exame fisico', 'inspeção',
+  'palpação', 'palpacao', 'percussão', 'percussao', 'ausculta',
+  'manobra de', 'teste de', 'reflexo', 'reflexos'
+]
+
+/**
+ * Verifica se o tema/mensagem se beneficia de imagens SEMPRE
+ * Retorna true se o tema é intrinsecamente visual
+ */
+export function temaRequerImagemAutomatica(mensagem: string): boolean {
+  const msgLower = mensagem.toLowerCase()
+
+  // Verificar se contém algum termo visual obrigatório
+  for (const termo of TEMAS_VISUAIS_OBRIGATORIOS) {
+    if (msgLower.includes(termo)) {
+      return true
+    }
+  }
+
+  // Também verificar áreas médicas visuais
+  const areasVisuais = [
+    'anatomia', 'histologia', 'patologia', 'radiologia',
+    'dermatologia', 'oftalmologia', 'cardiologia'
+  ]
+
+  for (const area of areasVisuais) {
+    if (msgLower.includes(area)) {
+      return true
+    }
+  }
+
+  return false
+}
+
 // Palavras que indicam nível de conhecimento
 const INDICADORES_NIVEL = {
   iniciante: [
@@ -376,10 +474,12 @@ export function analisarPerfilParaContexto(
   const preferenciaFinal = preferenciaMensagem !== 'misto' ? preferenciaMensagem : perfil.preferenciaEstudo
 
   // Determinar se deve incluir elementos
+  // IMPORTANTE: Imagens são incluídas AUTOMATICAMENTE para temas visuais
+  // mesmo que o usuário não peça explicitamente
   const incluirImagens = perfil.prefereImagens ||
     preferenciaMensagem === 'visual' ||
     mensagemAtual.toLowerCase().includes('imagem') ||
-    mensagemAtual.toLowerCase().includes('anatomia')
+    temaRequerImagemAutomatica(mensagemAtual) // NOVO: Verificação automática para temas visuais
 
   const incluirExemplos = perfil.prefereExemplos ||
     preferenciaMensagem === 'pratico' ||
@@ -558,6 +658,16 @@ export function gerarInstrucoesPersonalizadas(analise: AnalisePerfilContexto): s
   if (elementos.length > 0) {
     instrucoes.push('')
     instrucoes.push(`✅ INCLUIR: ${elementos.join(', ')}`)
+  }
+
+  // INSTRUÇÃO ESPECIAL: Se tema é visual, OBRIGATÓRIO buscar imagens
+  if (analise.incluirImagens) {
+    instrucoes.push('')
+    instrucoes.push('🖼️ **IMAGENS OBRIGATÓRIAS**:')
+    instrucoes.push('- Este tema se BENEFICIA MUITO de visualização')
+    instrucoes.push('- USE a ferramenta buscar_imagens_medicas para buscar imagens REAIS')
+    instrucoes.push('- SEMPRE inclua pelo menos 1-2 imagens relevantes do tema')
+    instrucoes.push('- As imagens ajudam MUITO no aprendizado deste conteúdo')
   }
 
   return instrucoes.join('\n')
