@@ -260,7 +260,7 @@ export default function IAPage() {
   const [streaming, setStreaming] = useState(false)
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [conversaAtual, setConversaAtual] = useState<string | null>(null)
-  const [showConversas, setShowConversas] = useState(false)
+  const [showConversas, setShowConversas] = useState(false) // Agora usado apenas no mobile
   const [showOpcoes, setShowOpcoes] = useState(false)
   const [copiado, setCopiado] = useState<string | null>(null)
   const [uso, setUso] = useState<UsoIA | null>(null)
@@ -1006,91 +1006,22 @@ export default function IAPage() {
             </div>
           </div>
         </>
-      ) : (
-        /* DESKTOP: Sidebar fixa */
-        <div className={`${showConversas ? 'w-72' : 'w-0'} transition-all duration-300 overflow-hidden border-r border-white/10`}>
-          <div className="w-72 h-full bg-white/5 p-4 flex flex-col">
-            <button
-              onClick={novaConversa}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-colors mb-4"
-            >
-              <Plus className="w-5 h-5" />
-              Nova Conversa
-            </button>
-
-            <div className="flex-1 overflow-y-auto space-y-2">
-              {conversas.map((conv) => (
-                <div
-                  key={conv.id}
-                  className={`group p-3 rounded-lg cursor-pointer transition-colors ${
-                    conversaAtual === conv.id ? 'bg-purple-500/20' : 'hover:bg-white/5'
-                  }`}
-                  onClick={() => carregarConversa(conv.id)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white/80 text-sm truncate">{conv.titulo}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded ${
-                          conv.modelo === 'claude' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
-                        }`}>
-                          {conv.modelo === 'claude' ? 'Claude' : 'Gemini'}
-                        </span>
-                        <span className="text-white/40 text-xs">
-                          {new Date(conv.created_at).toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        deletarConversa(conv.id)
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded transition-all"
-                    >
-                      <Trash2 className="w-4 h-4 text-white/40" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Estatísticas de Uso */}
-            {uso && (
-              <div className="mt-4 p-3 bg-white/5 rounded-lg border border-white/10">
-                <h4 className="text-white/60 text-xs font-medium mb-2">Uso este mês</h4>
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between text-white/80">
-                    <span>Chats</span>
-                    <span>{uso.uso_mes.chats}{uso.limites.chats !== -1 && `/${uso.limites.chats}`}</span>
-                  </div>
-                  <div className="flex justify-between text-white/80">
-                    <span>Tokens</span>
-                    <span>{((uso.uso_mes.tokens_input + uso.uso_mes.tokens_output) / 1000).toFixed(1)}k</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      ) : null /* DESKTOP: Histórico agora está na sidebar principal do layout */}
 
       {/* Chat Principal */}
       <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
         {/* Header - Compacto */}
         <div className="flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-white/10">
           <div className="flex items-center gap-2 md:gap-3">
-            {/* Botão menu/conversas */}
-            <button
-              onClick={() => setShowConversas(!showConversas)}
-              className="p-1.5 hover:bg-white/5 rounded-lg transition-colors"
-            >
-              {isMobile ? (
+            {/* Botão menu/conversas - apenas mobile (desktop usa sidebar do layout) */}
+            {isMobile && (
+              <button
+                onClick={() => setShowConversas(!showConversas)}
+                className="p-1.5 hover:bg-white/5 rounded-lg transition-colors"
+              >
                 <Menu className="w-4 h-4 text-white/60" />
-              ) : (
-                <MessageSquare className="w-4 h-4 text-white/60" />
-              )}
-            </button>
+              </button>
+            )}
 
             {/* Logo e info - Compacto */}
             <div className="flex items-center gap-2">

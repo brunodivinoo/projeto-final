@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { MedAuthProvider, useMedAuth } from '@/contexts/MedAuthContext'
@@ -8,6 +8,7 @@ import { TrialBanner } from '@/components/medicina/TrialBanner'
 import { UpgradeModal } from '@/components/medicina/UpgradeModal'
 import { useUpgradePrompt } from '@/hooks/useUpgradePrompt'
 import { BadgeMiniWidget } from '@/components/medicina/BadgeDisplay'
+import { supabase } from '@/lib/supabase'
 import {
   LayoutDashboard,
   FileText,
@@ -29,8 +30,19 @@ import {
   Sparkles,
   Gift,
   PanelLeftClose,
-  PanelLeft
+  PanelLeft,
+  Plus,
+  Clock,
+  History,
+  Trash2
 } from 'lucide-react'
+
+// Interface para conversas do histórico
+interface Conversa {
+  id: string
+  titulo: string
+  updated_at: string
+}
 
 // Menu simplificado - Funcionalidades migradas para o Chat central
 const menuItems = [
@@ -55,6 +67,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, profile, plano, loading, signOut, trialStatus } = useMedAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false) // Sidebar recolhida no desktop
+  const [conversas, setConversas] = useState<Conversa[]>([])
+  const [loadingConversas, setLoadingConversas] = useState(false)
 
   // Hook para modais de upgrade
   const {
@@ -65,11 +79,57 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     fecharModal
   } = useUpgradePrompt()
 
+  // Buscar conversas recentes
+  const fetchConversas = useCallback(async () => {
+    if (!user) return
+
+    try {
+      setLoadingConversas(true)
+      const { data } = await supabase
+        .from('conversas_ia_med')
+        .select('id, titulo, updated_at')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(10)
+
+      if (data) {
+        setConversas(data)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar conversas:', error)
+    } finally {
+      setLoadingConversas(false)
+    }
+  }, [user])
+
   useEffect(() => {
     if (!loading && !user) {
       router.push('/medicina/login')
     }
   }, [user, loading, router])
+
+  // Carregar conversas quando usuário estiver disponível
+  useEffect(() => {
+    if (user && !loading) {
+      fetchConversas()
+    }
+  }, [user, loading, fetchConversas])
+
+  // Função auxiliar para formatar tempo relativo
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return 'Agora'
+    if (diffMins < 60) return `${diffMins}min`
+    if (diffHours < 24) return `${diffHours}h`
+    if (diffDays < 7) return `${diffDays}d`
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  }
 
   if (loading) {
     return (
@@ -148,8 +208,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          {/* Navigation */}
+          {/* Navigation + Histórico */}
           <nav className="flex-1 overflow-y-auto py-4 px-3">
+            {/* Menu Principal */}
             <ul className="space-y-1">
               {menuItems.map((item) => {
                 const isActive = pathname === item.href
@@ -188,6 +249,81 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 )
               })}
             </ul>
+
+            {/* Separador e Histórico de Conversas - estilo Meta AI */}
+            {!sidebarCollapsed && conversas.length > 0 && (
+              <div className="mt-6 pt-4 border-t border-white/10">
+                {/* Header do Histórico */}
+                <div className="flex items-center justify-between px-3 mb-2">
+                  <span className="text-white/40 text-xs font-medium uppercase tracking-wider flex items-center gap-1.5">
+                    <History className="w-3 h-3" />
+                    Histórico
+                  </span>
+                  <Link
+                    href="/medicina/dashboard"
+                    className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                    title="Nova conversa"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Link>
+                </div>
+
+                {/* Lista de Conversas */}
+                <ul className="space-y-0.5">
+                  {conversas.map((conversa) => {
+                    const isActive = pathname === `/medicina/dashboard/ia` &&
+                      (typeof window !== 'undefined' && window.location.search.includes(`c=${conversa.id}`))
+
+                    return (
+                      <li key={conversa.id}>
+                        <Link
+                          href={`/medicina/dashboard/ia?c=${conversa.id}`}
+                          onClick={() => setSidebarOpen(false)}
+                          className={`
+                            group flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm
+                            ${isActive
+                              ? 'bg-white/10 text-white'
+                              : 'text-white/60 hover:bg-white/5 hover:text-white/80'
+                            }
+                          `}
+                        >
+                          <MessageSquare className="w-4 h-4 flex-shrink-0 opacity-50" />
+                          <span className="flex-1 truncate">
+                            {conversa.titulo || 'Conversa sem título'}
+                          </span>
+                          <span className="text-[10px] text-white/30 group-hover:text-white/50 flex-shrink-0">
+                            {formatRelativeTime(conversa.updated_at)}
+                          </span>
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+
+                {/* Ver mais */}
+                {conversas.length >= 10 && (
+                  <Link
+                    href="/medicina/dashboard/biblioteca"
+                    className="flex items-center justify-center gap-1 mt-2 px-3 py-2 text-xs text-white/40 hover:text-white/60 transition-colors"
+                  >
+                    Ver todas as conversas
+                  </Link>
+                )}
+              </div>
+            )}
+
+            {/* Ícone de histórico quando sidebar recolhida */}
+            {sidebarCollapsed && conversas.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-white/10 flex justify-center">
+                <Link
+                  href="/medicina/dashboard/ia"
+                  title="Histórico de conversas"
+                  className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+                >
+                  <History className="w-5 h-5" />
+                </Link>
+              </div>
+            )}
           </nav>
 
           {/* Upgrade Banner (for free users) - esconde quando recolhido */}
