@@ -911,8 +911,8 @@ export async function gerarPlanoAlimentarCompleto(
     else metaCalorias += 450
   }
 
-  // Determinar numero de dias
-  const numDias = periodo === 'dia' ? 1 : periodo === 'semana' ? 7 : 30
+  // Determinar numero de dias (mes limitado a 14 dias para evitar resposta muito grande)
+  const numDias = periodo === 'dia' ? 1 : periodo === 'semana' ? 7 : 14
 
   // Gerar datas a partir de hoje
   const datas: { data: string; dia_semana: string }[] = []
