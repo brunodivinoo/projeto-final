@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNutriAuth } from '@/contexts/NutriAuthContext'
+import { useNutriAuth, formatarIdadeBebe } from '@/contexts/NutriAuthContext'
 import { supabase } from '@/lib/supabase'
 import { TREINOS_COMPLETOS, Treino, Exercicio } from '@/lib/nutrivida/data'
 import {
@@ -30,11 +30,15 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  X
+  X,
+  AlertTriangle,
+  Baby,
+  HeartPulse,
+  ShieldAlert
 } from 'lucide-react'
 
 type FaseTreino = 'fase1' | 'fase2' | 'fase3'
-type TipoTreino = 'fases' | 'rapido' | 'yoga' | 'cardio' | 'forca'
+type TipoTreino = 'fases' | 'rapido' | 'yoga' | 'cardio' | 'forca' | 'gestante' | 'pos_parto'
 
 // Treinos rapidos sem fases
 const TREINOS_RAPIDOS = {
@@ -197,6 +201,37 @@ const TREINOS_CARDIO = {
   }
 }
 
+// Categorias dinamicas baseadas na situacao
+const getCategoriasTreino = (situacao: string, trimestre: number | null) => {
+  const categorias = []
+
+  // Para gestantes: mostrar treinos especificos primeiro
+  if (situacao === 'gestante') {
+    categorias.push({ id: 'gestante', nome: 'Gestante', icon: Baby, cor: 'from-pink-500 to-rose-500', desc: `${trimestre}º trimestre` })
+  }
+
+  // Para pos-parto: mostrar treinos de recuperacao primeiro
+  if (situacao === 'pos_parto' || situacao === 'amamentando') {
+    categorias.push({ id: 'pos_parto', nome: 'Pos-Parto', icon: HeartPulse, cor: 'from-pink-500 to-purple-500', desc: 'Recuperacao' })
+  }
+
+  // Categorias comuns (algumas bloqueadas para gestantes)
+  if (situacao !== 'gestante') {
+    categorias.push({ id: 'fases', nome: 'Por Fase', icon: Target, cor: 'from-purple-500 to-pink-500', desc: 'Progressao gradual' })
+  }
+
+  categorias.push({ id: 'rapido', nome: 'Rapidos', icon: Zap, cor: 'from-orange-500 to-red-500', desc: '5-15 minutos' })
+  categorias.push({ id: 'yoga', nome: 'Yoga', icon: Moon, cor: 'from-blue-500 to-indigo-500', desc: 'Flexibilidade e calma' })
+
+  // Forca e Cardio nao recomendados para gestantes
+  if (situacao !== 'gestante') {
+    categorias.push({ id: 'forca', nome: 'Forca', icon: Dumbbell, cor: 'from-green-500 to-emerald-500', desc: 'Tonificacao muscular' })
+    categorias.push({ id: 'cardio', nome: 'Cardio', icon: Heart, cor: 'from-pink-500 to-rose-500', desc: 'Queima de gordura' })
+  }
+
+  return categorias
+}
+
 const CATEGORIAS_TREINO = [
   { id: 'fases', nome: 'Por Fase', icon: Target, cor: 'from-purple-500 to-pink-500', desc: 'Progressao gradual' },
   { id: 'rapido', nome: 'Rapidos', icon: Zap, cor: 'from-orange-500 to-red-500', desc: '5-15 minutos' },
@@ -205,9 +240,96 @@ const CATEGORIAS_TREINO = [
   { id: 'cardio', nome: 'Cardio', icon: Heart, cor: 'from-pink-500 to-rose-500', desc: 'Queima de gordura' },
 ]
 
+// Treinos especiais para gestantes
+const TREINOS_GESTANTE = {
+  primeiro_trimestre: {
+    nome: 'Gestante - 1º Trimestre',
+    duracao: '15 min',
+    foco: 'Alongamento e respiracao',
+    alerta: 'Evite exercicios de impacto. Consulte seu medico antes de iniciar.',
+    exercicios: [
+      { nome: 'Respiracao diafragmatica', series: 1, reps: '-', tempo: '3 min', dica: 'Inspire pelo nariz, expire pela boca lentamente' },
+      { nome: 'Alongamento de pescoco', series: 1, reps: '-', tempo: '2 min', dica: 'Movimentos suaves em todas as direcoes' },
+      { nome: 'Rotacao de ombros', series: 1, reps: '10 cada lado', tempo: '2 min', dica: 'Circulos amplos e lentos' },
+      { nome: 'Gato-vaca', series: 1, reps: '8', tempo: '2 min', dica: 'Sincronize com a respiracao' },
+      { nome: 'Alongamento de quadril borboleta', series: 1, reps: '-', tempo: '2 min', dica: 'Nao force, va ate onde for confortavel' },
+      { nome: 'Caminhada leve no lugar', series: 1, reps: '-', tempo: '4 min', dica: 'Mantenha ritmo tranquilo' },
+    ]
+  },
+  segundo_trimestre: {
+    nome: 'Gestante - 2º Trimestre',
+    duracao: '20 min',
+    foco: 'Fortalecimento suave',
+    alerta: 'Evite deitar de barriga para cima por muito tempo. Beba bastante agua.',
+    exercicios: [
+      { nome: 'Aquecimento articular', series: 1, reps: '-', tempo: '2 min', dica: 'Movimente todas as articulacoes' },
+      { nome: 'Agachamento com apoio', series: 2, reps: '10', tempo: '3 min', dica: 'Segure em uma cadeira para apoio' },
+      { nome: 'Elevacao lateral de perna (de lado)', series: 2, reps: '12 cada', tempo: '4 min', dica: 'Deite de lado, eleve a perna de cima' },
+      { nome: 'Exercicio de Kegel', series: 3, reps: '10', tempo: '3 min', dica: 'Contraia os musculos do assoalho pelvico' },
+      { nome: 'Alongamento de panturrilha', series: 1, reps: '-', tempo: '2 min', dica: 'Previne caimbras' },
+      { nome: 'Bird dog modificado', series: 2, reps: '8 cada', tempo: '3 min', dica: 'Estenda um braco e a perna oposta' },
+      { nome: 'Relaxamento', series: 1, reps: '-', tempo: '3 min', dica: 'Deite de lado esquerdo, respire' },
+    ]
+  },
+  terceiro_trimestre: {
+    nome: 'Gestante - 3º Trimestre',
+    duracao: '15 min',
+    foco: 'Preparo para o parto',
+    alerta: 'Pare imediatamente se sentir dor, tontura ou falta de ar.',
+    exercicios: [
+      { nome: 'Respiracao para o parto', series: 1, reps: '-', tempo: '3 min', dica: 'Pratique respiracao lenta e profunda' },
+      { nome: 'Agachamento profundo com apoio', series: 2, reps: '5', tempo: '2 min', dica: 'Segure 10 segundos cada - prepara para o parto' },
+      { nome: 'Exercicio de Kegel avancado', series: 3, reps: '15', tempo: '3 min', dica: 'Contraia, segure 5s, solte' },
+      { nome: 'Mobilidade de quadril', series: 1, reps: '-', tempo: '2 min', dica: 'Circulos com o quadril em pe' },
+      { nome: 'Alongamento de quadril lateral', series: 1, reps: '-', tempo: '2 min', dica: '1 min cada lado' },
+      { nome: 'Postura da crianca modificada', series: 1, reps: '-', tempo: '3 min', dica: 'Joelhos afastados para acomodar a barriga' },
+    ]
+  }
+}
+
+// Treinos para pos-parto
+const TREINOS_POS_PARTO = {
+  recuperacao_inicial: {
+    nome: 'Pos-Parto - Recuperacao Inicial',
+    duracao: '10 min',
+    foco: 'Primeiras 6 semanas',
+    alerta: 'Aguarde liberacao medica. Comece muito devagar.',
+    exercicios: [
+      { nome: 'Respiracao abdominal', series: 1, reps: '-', tempo: '3 min', dica: 'Reconecte com seu abdomen' },
+      { nome: 'Exercicio de Kegel', series: 3, reps: '10', tempo: '2 min', dica: 'Comece a fortalecer o assoalho pelvico' },
+      { nome: 'Ponte suave', series: 2, reps: '8', tempo: '2 min', dica: 'Eleve minimamente o quadril' },
+      { nome: 'Alongamento de peito', series: 1, reps: '-', tempo: '2 min', dica: 'Alivia tensao da amamentacao' },
+      { nome: 'Rotacao de tornozelos', series: 1, reps: '10 cada', tempo: '1 min', dica: 'Melhora circulacao' },
+    ]
+  },
+  fortalecimento_suave: {
+    nome: 'Pos-Parto - Fortalecimento',
+    duracao: '15 min',
+    foco: 'Apos 6-8 semanas',
+    alerta: 'Se teve cesarea, aguarde 8-10 semanas e liberacao medica.',
+    exercicios: [
+      { nome: 'Aquecimento leve', series: 1, reps: '-', tempo: '2 min', dica: 'Marcha no lugar' },
+      { nome: 'Ativacao de core (vaccum)', series: 3, reps: '10', tempo: '2 min', dica: 'Puxe o umbigo para dentro e segure' },
+      { nome: 'Agachamento parcial', series: 2, reps: '10', tempo: '2 min', dica: 'Nao desça muito, foque na tecnica' },
+      { nome: 'Ponte com pegada', series: 2, reps: '12', tempo: '2 min', dica: 'Aperte uma almofada entre os joelhos' },
+      { nome: 'Bird dog', series: 2, reps: '8 cada', tempo: '2 min', dica: 'Fortalece core e costas' },
+      { nome: 'Alongamento de quadril', series: 1, reps: '-', tempo: '2 min', dica: 'Alivia tensao do colo' },
+      { nome: 'Alongamento de peito e ombros', series: 1, reps: '-', tempo: '3 min', dica: 'Essencial para quem amamenta' },
+    ]
+  }
+}
+
 export default function TreinosPage() {
-  const { profile } = useNutriAuth()
-  const [categoria, setCategoria] = useState<TipoTreino>('fases')
+  const { profile, situacaoAtual, semanaGestacaoCalculada, trimestreGestacao, idadeBebeCalculada } = useNutriAuth()
+
+  // Categorias dinamicas baseadas na situacao da usuaria
+  const categoriasDisponiveis = getCategoriasTreino(situacaoAtual, trimestreGestacao)
+
+  // Definir categoria inicial com base na situacao
+  const categoriaInicial = situacaoAtual === 'gestante' ? 'gestante' :
+    (situacaoAtual === 'pos_parto' || situacaoAtual === 'amamentando') ? 'pos_parto' : 'fases'
+
+  const [categoria, setCategoria] = useState<TipoTreino>(categoriaInicial)
   const [faseAtual, setFaseAtual] = useState<FaseTreino>('fase1')
   const [treinoAtivo, setTreinoAtivo] = useState<{ nome: string; treino: Treino | typeof TREINOS_RAPIDOS['5min'] } | null>(null)
   const [exerciciosConcluidos, setExerciciosConcluidos] = useState<number[]>([])
@@ -706,7 +828,12 @@ Seja CONCISA. Frases curtas. Facil de ler rapidamente.`
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Treinos</h1>
-          <p className="text-gray-500">Exercicios para seu bem-estar</p>
+          <p className="text-gray-500">
+            {situacaoAtual === 'gestante' ? `Exercicios seguros para gestantes - ${semanaGestacaoCalculada}ª semana` :
+             situacaoAtual === 'pos_parto' ? `Recuperacao pos-parto - Bebe com ${idadeBebeCalculada} dias` :
+             situacaoAtual === 'amamentando' ? 'Exercicios adaptados para mamaes' :
+             'Exercicios para seu bem-estar'}
+          </p>
         </div>
         <button
           onClick={() => setMostrarObservacoes(!mostrarObservacoes)}
@@ -798,6 +925,58 @@ Seja CONCISA. Frases curtas. Facil de ler rapidamente.`
         </div>
       )}
 
+      {/* Alerta para Gestantes */}
+      {situacaoAtual === 'gestante' && (
+        <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-200 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Baby className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-pink-800">Gestante - {trimestreGestacao}º Trimestre</h3>
+              <p className="text-sm text-pink-700 mt-1">
+                {trimestreGestacao === 1 && 'Foque em exercicios leves e alongamentos. Evite impacto e sobrecarga.'}
+                {trimestreGestacao === 2 && 'Fase mais segura para exercicios moderados. Mantenha-se hidratada!'}
+                {trimestreGestacao === 3 && 'Prepare-se para o parto com exercicios de respiracao e alongamento.'}
+              </p>
+              <div className="mt-2 flex items-center gap-2 text-xs text-pink-600">
+                <ShieldAlert className="w-3 h-3" />
+                <span>Sempre consulte seu obstetra antes de iniciar qualquer atividade fisica</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Alerta para Pos-Parto */}
+      {(situacaoAtual === 'pos_parto' || situacaoAtual === 'amamentando') && idadeBebeCalculada !== null && (
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+              <HeartPulse className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-purple-800">
+                {idadeBebeCalculada < 42 ? 'Recuperacao Pos-Parto Inicial' : 'Retorno Gradual aos Exercicios'}
+              </h3>
+              <p className="text-sm text-purple-700 mt-1">
+                {idadeBebeCalculada < 42
+                  ? 'Nas primeiras 6 semanas, foque apenas em respiracao e exercicios de Kegel. Aguarde liberacao medica.'
+                  : idadeBebeCalculada < 84
+                  ? 'Entre 6-12 semanas, comece com exercicios muito leves. Se teve cesarea, aguarde mais.'
+                  : 'Seu corpo esta se recuperando bem! Avance gradualmente nos exercicios.'}
+              </p>
+              {situacaoAtual === 'amamentando' && (
+                <div className="mt-2 flex items-center gap-2 text-xs text-purple-600">
+                  <Heart className="w-3 h-3" />
+                  <span>Amamentando: mantenha boa hidratacao e evite exercicios muito intensos</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Dica Motivacional da IA */}
       <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-4 border border-purple-100">
         <div className="flex items-start gap-3">
@@ -833,7 +1012,7 @@ Seja CONCISA. Frases curtas. Facil de ler rapidamente.`
 
       {/* Categorias */}
       <div className="grid grid-cols-3 lg:grid-cols-5 gap-2">
-        {CATEGORIAS_TREINO.map((cat) => {
+        {categoriasDisponiveis.map((cat) => {
           const isActive = categoria === cat.id
           return (
             <button
@@ -1088,6 +1267,178 @@ Seja CONCISA. Frases curtas. Facil de ler rapidamente.`
                 </div>
               </div>
             </button>
+          ))}
+        </div>
+      )}
+
+      {/* Categoria Gestante */}
+      {categoria === 'gestante' && (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">Exercicios seguros para sua fase da gestacao</p>
+
+          {/* Treino recomendado para o trimestre */}
+          {trimestreGestacao && (
+            <div className="bg-white rounded-2xl p-5 border-2 border-pink-200 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Baby className="w-5 h-5 text-pink-500" />
+                <h3 className="font-bold text-gray-800">Recomendado para Voce</h3>
+                <span className="ml-auto text-xs bg-pink-100 text-pink-600 px-2 py-1 rounded-full">
+                  {trimestreGestacao}º Trimestre
+                </span>
+              </div>
+
+              {trimestreGestacao === 1 && (
+                <TreinoGestanteCard treino={TREINOS_GESTANTE.primeiro_trimestre} corGradient="from-pink-500 to-rose-500" />
+              )}
+              {trimestreGestacao === 2 && (
+                <TreinoGestanteCard treino={TREINOS_GESTANTE.segundo_trimestre} corGradient="from-purple-500 to-pink-500" />
+              )}
+              {trimestreGestacao === 3 && (
+                <TreinoGestanteCard treino={TREINOS_GESTANTE.terceiro_trimestre} corGradient="from-rose-500 to-pink-500" />
+              )}
+            </div>
+          )}
+
+          {/* Outros treinos de gestante */}
+          <h4 className="text-sm font-medium text-gray-600 mt-4">Outros treinos para gestantes:</h4>
+          {Object.entries(TREINOS_GESTANTE).map(([key, treino]) => {
+            const trimestre = key === 'primeiro_trimestre' ? 1 : key === 'segundo_trimestre' ? 2 : 3
+            if (trimestre === trimestreGestacao) return null // Ja mostrado acima
+            return (
+              <div key={key} className="bg-white rounded-2xl p-4 border border-gray-100 hover:border-pink-200 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-pink-50 flex items-center justify-center">
+                    <Baby className="w-6 h-6 text-pink-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-800">{treino.nome}</h4>
+                    <p className="text-xs text-gray-500">{treino.foco} • {treino.duracao}</p>
+                  </div>
+                  <span className="text-xs text-gray-400">{trimestre}º tri</span>
+                </div>
+              </div>
+            )
+          })}
+
+          {/* Alerta importante */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-amber-800">Sinais de Alerta</p>
+              <p className="text-xs text-amber-700 mt-1">
+                Pare imediatamente e procure atendimento se sentir: sangramento, dor abdominal forte,
+                contrações antes das 37 semanas, vazamento de liquido, tontura intensa ou falta de ar.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Categoria Pos-Parto */}
+      {categoria === 'pos_parto' && (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">Recuperacao gradual e segura apos o parto</p>
+
+          {/* Treino recomendado baseado na idade do bebe */}
+          {idadeBebeCalculada !== null && (
+            <div className="bg-white rounded-2xl p-5 border-2 border-purple-200 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <HeartPulse className="w-5 h-5 text-purple-500" />
+                <h3 className="font-bold text-gray-800">Recomendado para Voce</h3>
+                <span className="ml-auto text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
+                  Bebe: {formatarIdadeBebe(idadeBebeCalculada)}
+                </span>
+              </div>
+
+              {idadeBebeCalculada < 42 ? (
+                <TreinoGestanteCard treino={TREINOS_POS_PARTO.recuperacao_inicial} corGradient="from-purple-500 to-pink-500" />
+              ) : (
+                <TreinoGestanteCard treino={TREINOS_POS_PARTO.fortalecimento_suave} corGradient="from-pink-500 to-purple-500" />
+              )}
+            </div>
+          )}
+
+          {/* Todos os treinos pos-parto */}
+          <h4 className="text-sm font-medium text-gray-600 mt-4">Treinos de recuperacao:</h4>
+          {Object.entries(TREINOS_POS_PARTO).map(([key, treino]) => (
+            <div key={key} className="bg-white rounded-2xl p-4 border border-gray-100 hover:border-purple-200 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center">
+                  <HeartPulse className="w-6 h-6 text-purple-400" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-800">{treino.nome}</h4>
+                  <p className="text-xs text-gray-500">{treino.foco} • {treino.duracao}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Dicas pos-parto */}
+          <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
+            <h4 className="text-sm font-medium text-purple-800 mb-2">Dicas para Recuperacao</h4>
+            <ul className="text-xs text-purple-700 space-y-1">
+              <li>• Aguarde liberacao medica antes de iniciar (geralmente 6-8 semanas)</li>
+              <li>• Se teve cesarea, aguarde pelo menos 8-10 semanas</li>
+              <li>• Comece sempre pelo fortalecimento do assoalho pelvico</li>
+              <li>• Evite abdominais tradicionais nos primeiros meses</li>
+              <li>• Hidrate-se bem, especialmente se estiver amamentando</li>
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Componente auxiliar para card de treino gestante/pos-parto
+function TreinoGestanteCard({ treino, corGradient }: { treino: typeof TREINOS_GESTANTE.primeiro_trimestre, corGradient: string }) {
+  const [expandido, setExpandido] = useState(false)
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h4 className="font-semibold text-gray-800">{treino.nome}</h4>
+          <p className="text-sm text-gray-500">{treino.foco}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400 flex items-center gap-1">
+            <Clock className="w-3 h-3" /> {treino.duracao}
+          </span>
+        </div>
+      </div>
+
+      {treino.alerta && (
+        <div className="bg-amber-50 rounded-lg p-2 mb-3 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-700">{treino.alerta}</p>
+        </div>
+      )}
+
+      <button
+        onClick={() => setExpandido(!expandido)}
+        className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-600 hover:text-gray-800"
+      >
+        {expandido ? 'Ocultar exercicios' : 'Ver exercicios'}
+        {expandido ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </button>
+
+      {expandido && (
+        <div className="mt-3 space-y-2">
+          {treino.exercicios.map((ex, i) => (
+            <div key={i} className="bg-gray-50 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-gray-800 text-sm">{ex.nome}</p>
+                <span className="text-xs text-gray-500">{ex.tempo}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                {ex.series > 0 && <span>{ex.series}x{ex.reps}</span>}
+              </div>
+              {ex.dica && (
+                <p className="text-xs text-purple-600 mt-1 italic">{ex.dica}</p>
+              )}
+            </div>
           ))}
         </div>
       )}

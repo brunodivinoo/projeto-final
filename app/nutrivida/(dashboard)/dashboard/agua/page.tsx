@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useNutriAuth } from '@/contexts/NutriAuthContext'
+import { useState, useEffect, useMemo } from 'react'
+import { useNutriAuth, formatarIdadeBebe } from '@/contexts/NutriAuthContext'
 import { supabase } from '@/lib/supabase'
-import { Droplets, Plus, RotateCcw, TrendingUp, Lightbulb, Check } from 'lucide-react'
+import { Droplets, Plus, RotateCcw, TrendingUp, Lightbulb, Check, Baby, HeartPulse, AlertTriangle, Info } from 'lucide-react'
 
 const QUICK_AMOUNTS = [
   { ml: 150, label: '150ml' },
@@ -16,27 +16,92 @@ const QUICK_AMOUNTS = [
   { ml: 1000, label: '1L' }
 ]
 
-const DICAS_AGUA = [
-  'Beba um copo de agua ao acordar',
-  'Leve uma garrafa sempre com voce',
-  'Coloque lembretes no celular',
-  'Beba um copo antes de cada refeicao',
-  'Associe a hidratacao a uma atividade',
-  'Use um app para lembrar'
-]
+// Dicas dinamicas por situacao
+const getDicasAgua = (situacao: string) => {
+  const dicasBase = [
+    'Beba um copo de agua ao acordar',
+    'Leve uma garrafa sempre com voce',
+    'Coloque lembretes no celular',
+    'Beba um copo antes de cada refeicao',
+  ]
+
+  if (situacao === 'gestante') {
+    return [
+      ...dicasBase,
+      'A hidratacao previne infeccoes urinarias comuns na gestacao',
+      'Agua ajuda a prevenir constipacao e inchaco',
+      'Beba pequenos goles ao longo do dia para evitar nauseas',
+      'Agua com limao pode ajudar com enjoos matinais'
+    ]
+  }
+
+  if (situacao === 'amamentando') {
+    return [
+      ...dicasBase,
+      'Beba um copo de agua TODA vez que for amamentar',
+      'A producao de leite requer muita agua extra',
+      'Mantenha uma garrafa ao lado do local de amamentacao',
+      'Sucos naturais e chas sem cafeina tambem contam'
+    ]
+  }
+
+  if (situacao === 'pos_parto') {
+    return [
+      ...dicasBase,
+      'A hidratacao ajuda na recuperacao do corpo',
+      'Agua auxilia na cicatrizacao de tecidos',
+      'Beba um copo a cada vez que trocar o bebe'
+    ]
+  }
+
+  return [
+    ...dicasBase,
+    'Associe a hidratacao a uma atividade',
+    'Use um app para lembrar'
+  ]
+}
+
+// Meta de agua por situacao (em ml)
+const getMetaAgua = (situacao: string): { meta: number; explicacao: string } => {
+  switch (situacao) {
+    case 'gestante':
+      return { meta: 2500, explicacao: '2.5L recomendados durante a gestacao' }
+    case 'amamentando':
+      return { meta: 3500, explicacao: '3.5L recomendados durante amamentacao' }
+    case 'pos_parto':
+      return { meta: 3000, explicacao: '3L para ajudar na recuperacao' }
+    default:
+      return { meta: 2500, explicacao: '2.5L recomendados para mulheres' }
+  }
+}
 
 export default function AguaPage() {
-  const { profile } = useNutriAuth()
+  const { profile, situacaoAtual, semanaGestacaoCalculada, trimestreGestacao, idadeBebeCalculada } = useNutriAuth()
   const [quantidade, setQuantidade] = useState(0)
-  const [meta] = useState(3000) // 3 litros
   const [loading, setLoading] = useState(true)
   const [historico, setHistorico] = useState<Array<{ data: string; quantidade: number }>>([])
   const [showSuccess, setShowSuccess] = useState(false)
+
+  // Meta dinamica baseada na situacao
+  const { meta, explicacao } = useMemo(() => getMetaAgua(situacaoAtual), [situacaoAtual])
+  const dicasAgua = useMemo(() => getDicasAgua(situacaoAtual), [situacaoAtual])
 
   const hoje = new Date().toISOString().split('T')[0]
   const progresso = Math.min(100, (quantidade / meta) * 100)
   const litros = (quantidade / 1000).toFixed(1)
   const metaLitros = (meta / 1000).toFixed(1)
+
+  // Subtitulo dinamico
+  const getSubtitulo = () => {
+    if (situacaoAtual === 'gestante') {
+      return `Gestante - ${semanaGestacaoCalculada}ª semana`
+    } else if (situacaoAtual === 'amamentando') {
+      return `Amamentando - Bebe com ${formatarIdadeBebe(idadeBebeCalculada)}`
+    } else if (situacaoAtual === 'pos_parto') {
+      return `Pos-parto - Bebe com ${formatarIdadeBebe(idadeBebeCalculada)}`
+    }
+    return explicacao
+  }
 
   useEffect(() => {
     const fetchAgua = async () => {
@@ -140,6 +205,14 @@ export default function AguaPage() {
     return data.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })
   }
 
+  // Cor do gradiente baseada na situacao
+  const getGradientColors = () => {
+    if (situacaoAtual === 'gestante') return 'from-pink-500 to-rose-500'
+    if (situacaoAtual === 'amamentando') return 'from-purple-500 to-pink-500'
+    if (situacaoAtual === 'pos_parto') return 'from-purple-500 to-indigo-500'
+    return 'from-blue-500 to-cyan-500'
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -154,7 +227,7 @@ export default function AguaPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Hidratacao</h1>
-          <p className="text-gray-500">Meta diaria: {metaLitros} litros</p>
+          <p className="text-gray-500">{getSubtitulo()}</p>
         </div>
         <button
           onClick={resetar}
@@ -165,8 +238,45 @@ export default function AguaPage() {
         </button>
       </div>
 
+      {/* Alerta especial para gestantes */}
+      {situacaoAtual === 'gestante' && (
+        <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-200 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Baby className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-pink-800">Hidratacao na Gestacao</h3>
+              <p className="text-sm text-pink-700 mt-1">
+                {trimestreGestacao === 1 && 'A hidratacao ajuda a reduzir nauseas e previne infeccoes urinarias.'}
+                {trimestreGestacao === 2 && 'Beber agua suficiente ajuda na formacao do liquido amniotico.'}
+                {trimestreGestacao === 3 && 'Mantenha-se hidratada para evitar contrações de Braxton Hicks.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Alerta especial para amamentacao */}
+      {situacaoAtual === 'amamentando' && (
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+              <HeartPulse className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-purple-800">Hidratacao na Amamentacao</h3>
+              <p className="text-sm text-purple-700 mt-1">
+                Voce precisa de mais agua para produzir leite! Beba um copo de agua TODA vez que for amamentar.
+                A meta aumentada de {metaLitros}L ajuda a manter a producao de leite.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Circulo de Progresso */}
-      <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl p-8 text-white text-center relative overflow-hidden">
+      <div className={`bg-gradient-to-br ${getGradientColors()} rounded-3xl p-8 text-white text-center relative overflow-hidden`}>
         {/* Success animation */}
         {showSuccess && (
           <div className="absolute inset-0 flex items-center justify-center bg-green-500/90 z-10 animate-pulse">
@@ -202,16 +312,24 @@ export default function AguaPage() {
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <Droplets className="w-8 h-8 mb-1 opacity-80" />
             <p className="text-4xl font-bold">{litros}L</p>
-            <p className="text-blue-100">de {metaLitros}L</p>
+            <p className="text-white/70">de {metaLitros}L</p>
           </div>
         </div>
 
         <div className="mt-4">
           <p className="text-5xl font-bold">{Math.round(progresso)}%</p>
-          <p className="text-blue-100 mt-1">
+          <p className="text-white/70 mt-1">
             {quantidade >= meta ? 'Meta atingida! Parabens!' : `Faltam ${((meta - quantidade) / 1000).toFixed(1)}L`}
           </p>
         </div>
+
+        {/* Indicador de meta especial */}
+        {(situacaoAtual === 'gestante' || situacaoAtual === 'amamentando') && (
+          <div className="mt-4 bg-white/20 rounded-xl px-3 py-2 inline-flex items-center gap-2">
+            <Info className="w-4 h-4" />
+            <span className="text-sm">{explicacao}</span>
+          </div>
+        )}
       </div>
 
       {/* Quick Add Buttons */}
@@ -225,7 +343,13 @@ export default function AguaPage() {
             <button
               key={amount.ml}
               onClick={() => adicionarAgua(amount.ml)}
-              className="py-3 bg-blue-50 hover:bg-blue-100 text-blue-600 font-semibold rounded-xl transition-colors active:scale-95"
+              className={`py-3 font-semibold rounded-xl transition-colors active:scale-95 ${
+                situacaoAtual === 'gestante'
+                  ? 'bg-pink-50 hover:bg-pink-100 text-pink-600'
+                  : situacaoAtual === 'amamentando'
+                  ? 'bg-purple-50 hover:bg-purple-100 text-purple-600'
+                  : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
+              }`}
             >
               {amount.label}
             </button>
@@ -246,7 +370,15 @@ export default function AguaPage() {
                 <div className="w-20 text-sm text-gray-500">{formatarData(item.data)}</div>
                 <div className="flex-1 h-3 bg-blue-100 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${item.quantidade >= meta ? 'bg-green-500' : 'bg-blue-500'}`}
+                    className={`h-full rounded-full transition-all ${
+                      item.quantidade >= meta
+                        ? 'bg-green-500'
+                        : situacaoAtual === 'gestante'
+                        ? 'bg-pink-500'
+                        : situacaoAtual === 'amamentando'
+                        ? 'bg-purple-500'
+                        : 'bg-blue-500'
+                    }`}
                     style={{ width: `${Math.min(100, (item.quantidade / meta) * 100)}%` }}
                   />
                 </div>
@@ -260,20 +392,49 @@ export default function AguaPage() {
       )}
 
       {/* Dicas */}
-      <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl p-5 border border-blue-100">
+      <div className={`rounded-2xl p-5 border ${
+        situacaoAtual === 'gestante'
+          ? 'bg-gradient-to-br from-pink-50 to-rose-50 border-pink-100'
+          : situacaoAtual === 'amamentando'
+          ? 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-100'
+          : 'bg-gradient-to-br from-cyan-50 to-blue-50 border-blue-100'
+      }`}>
         <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
           <Lightbulb className="w-5 h-5 text-yellow-500" />
-          Dicas para se hidratar mais
+          {situacaoAtual === 'gestante'
+            ? 'Dicas de hidratacao para gestantes'
+            : situacaoAtual === 'amamentando'
+            ? 'Dicas de hidratacao para mamaes'
+            : 'Dicas para se hidratar mais'}
         </h2>
         <div className="space-y-2">
-          {DICAS_AGUA.map((dica, i) => (
+          {dicasAgua.map((dica, i) => (
             <div key={i} className="flex items-start gap-2">
-              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+              <div className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${
+                situacaoAtual === 'gestante'
+                  ? 'bg-pink-500'
+                  : situacaoAtual === 'amamentando'
+                  ? 'bg-purple-500'
+                  : 'bg-blue-500'
+              }`} />
               <p className="text-gray-600 text-sm">{dica}</p>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Aviso importante para gestantes */}
+      {situacaoAtual === 'gestante' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">Atencao</p>
+            <p className="text-xs text-amber-700 mt-1">
+              Se estiver com inchaco excessivo ou pressao alta, consulte seu medico sobre a quantidade ideal de agua.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

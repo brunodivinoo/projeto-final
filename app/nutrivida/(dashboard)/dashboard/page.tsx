@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { useNutriAuth } from '@/contexts/NutriAuthContext'
+import { useNutriAuth, formatarIdadeBebe } from '@/contexts/NutriAuthContext'
 import { supabase } from '@/lib/supabase'
 import { MENSAGENS_MOTIVACIONAIS, DICAS_DIARIAS, OpcaoRefeicao } from '@/lib/nutrivida/data'
 import {
@@ -28,7 +28,10 @@ import {
   Droplet,
   TrendingDown,
   BarChart3,
-  RefreshCw
+  RefreshCw,
+  HeartPulse,
+  Heart,
+  CalendarDays
 } from 'lucide-react'
 
 interface ResumoSemanal {
@@ -45,7 +48,7 @@ interface TreinoHoje {
 }
 
 export default function NutriDashboardPage() {
-  const { profile, imc, pesoAPerdido, pesoRestante, progressoPercentual, metaCalorias, metasMacros, updateProfile } = useNutriAuth()
+  const { profile, imc, pesoAPerdido, pesoRestante, progressoPercentual, metaCalorias, metasMacros, updateProfile, situacaoAtual, semanaGestacaoCalculada, trimestreGestacao, idadeBebeCalculada, dppCalculada } = useNutriAuth()
   const [aguaHoje, setAguaHoje] = useState(0)
   const [refeicoesHoje, setRefeicoesHoje] = useState(0)
   const [suplementosHoje, setSuplementosHoje] = useState(0)
@@ -422,8 +425,14 @@ export default function NutriDashboardPage() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-bold">Ola, {profile?.nome || 'Usuaria'}!</h1>
-            {profile?.idade_bebe && profile.idade_bebe > 0 && (
-              <p className="text-pink-100 text-sm mt-1">Bebe com {profile.idade_bebe} dias {profile.amamentando && '• Amamentando'}</p>
+            {situacaoAtual === 'gestante' && semanaGestacaoCalculada && (
+              <p className="text-pink-100 text-sm mt-1">{semanaGestacaoCalculada}ª semana de gestacao • {trimestreGestacao}º trimestre</p>
+            )}
+            {situacaoAtual === 'amamentando' && idadeBebeCalculada && (
+              <p className="text-pink-100 text-sm mt-1">Amamentando • Bebe com {formatarIdadeBebe(idadeBebeCalculada)}</p>
+            )}
+            {situacaoAtual === 'pos_parto' && idadeBebeCalculada && (
+              <p className="text-pink-100 text-sm mt-1">Bebe com {formatarIdadeBebe(idadeBebeCalculada)}</p>
             )}
           </div>
           <div className="text-right">
@@ -435,6 +444,73 @@ export default function NutriDashboardPage() {
           <p className="text-sm italic">&quot;{mensagemDia}&quot;</p>
         </div>
       </div>
+
+      {/* Banner Gestacao */}
+      {situacaoAtual === 'gestante' && semanaGestacaoCalculada && (
+        <Link href="/nutrivida/dashboard/gestacao" className="block">
+          <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-200 rounded-2xl p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-pink-500 to-rose-500 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <Baby className="w-7 h-7 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-pink-800">Acompanhamento da Gestacao</h3>
+                  <span className="text-xs bg-pink-500 text-white px-2 py-0.5 rounded-full">{trimestreGestacao}º tri</span>
+                </div>
+                <p className="text-sm text-pink-700 mt-0.5">
+                  Semana {semanaGestacaoCalculada} • {dppCalculada ? `Previsao: ${new Date(dppCalculada + 'T00:00:00').toLocaleDateString('pt-BR')}` : 'Calcule sua DPP'}
+                </p>
+                <div className="flex items-center gap-4 mt-2">
+                  <div className="flex items-center gap-1 text-xs text-pink-600">
+                    <CalendarDays className="w-3 h-3" />
+                    <span>{40 - semanaGestacaoCalculada} semanas restantes</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-pink-600">
+                    <HeartPulse className="w-3 h-3" />
+                    <span>Ver desenvolvimento</span>
+                  </div>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-pink-400" />
+            </div>
+          </div>
+        </Link>
+      )}
+
+      {/* Banner Pos-Parto/Amamentacao */}
+      {(situacaoAtual === 'amamentando' || situacaoAtual === 'pos_parto') && idadeBebeCalculada !== null && (
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center flex-shrink-0">
+              <Heart className="w-7 h-7 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-purple-800">
+                {situacaoAtual === 'amamentando' ? 'Mamae Amamentando' : 'Recuperacao Pos-Parto'}
+              </h3>
+              <p className="text-sm text-purple-700 mt-0.5">
+                Bebe com {formatarIdadeBebe(idadeBebeCalculada)}
+                {situacaoAtual === 'amamentando' && ' • Lembre de beber bastante agua!'}
+              </p>
+              <div className="flex items-center gap-3 mt-2">
+                <Link href="/nutrivida/dashboard/suplementos" className="text-xs text-purple-600 hover:text-purple-800 flex items-center gap-1">
+                  <Pill className="w-3 h-3" />
+                  <span>Vitaminas</span>
+                </Link>
+                <Link href="/nutrivida/dashboard/treinos" className="text-xs text-purple-600 hover:text-purple-800 flex items-center gap-1">
+                  <Dumbbell className="w-3 h-3" />
+                  <span>Treinos Seguros</span>
+                </Link>
+                <Link href="/nutrivida/dashboard/agua" className="text-xs text-purple-600 hover:text-purple-800 flex items-center gap-1">
+                  <Droplets className="w-3 h-3" />
+                  <span>Hidratacao</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CARD RESUMO INTEGRADO DO DIA */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-pink-100">
