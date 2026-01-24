@@ -647,7 +647,6 @@ export default function IAPage() {
       let lastUpdateTime = 0
       const UPDATE_INTERVAL = 150 // ms - atualiza UI no máximo a cada 150ms
       let pendingUpdate = false
-      let accumulatedContent = '' // Acumula conteúdo entre updates
 
       const updateUI = (force = false) => {
         const now = Date.now()
