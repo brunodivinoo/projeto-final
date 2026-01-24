@@ -77,7 +77,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [menuAberto, setMenuAberto] = useState<string | null>(null) // Menu de 3 pontos
   const [editandoConversa, setEditandoConversa] = useState<string | null>(null) // Edição de título
   const [novoTitulo, setNovoTitulo] = useState('')
-  const menuRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLLIElement>(null)
 
   // Hook para modais de upgrade
   const {
