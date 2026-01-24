@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useTransition, memo, useMemo } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { useMedAuth } from '@/contexts/MedAuthContext'
 import {
   Brain,
@@ -254,8 +255,11 @@ const MemoizedMessage = memo(function MemoizedMessage({
 
 export default function IAPage() {
   const { user, plano, trialStatus } = useMedAuth()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
   const [input, setInput] = useState('')
+  const [mensagemInicialProcessada, setMensagemInicialProcessada] = useState(false)
   const [loading, setLoading] = useState(false)
   const [streaming, setStreaming] = useState(false)
   const [conversas, setConversas] = useState<Conversa[]>([])
@@ -348,6 +352,9 @@ export default function IAPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
+
+  // Ref para controlar requisições em andamento
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Verificar limites (gratuito agora tem 10 chats grátis)
   const podeUsarIA = true // todos os planos podem usar IA agora
@@ -503,6 +510,188 @@ export default function IAPage() {
     setChatModeFilter(chatMode as StoreChatMode)
   }, [chatMode, setCurrentChatMode, setChatModeFilter])
 
+  // Ref para controlar se a mensagem inicial foi enviada
+  const mensagemInicialEnviadaRef = useRef(false)
+  // Ref para armazenar mensagem pendente que será enviada assim que possível
+  const mensagemPendenteRef = useRef<string | null>(null)
+
+  // Processar parâmetros da URL (m = mensagem inicial, c = conversa)
+  useEffect(() => {
+    if (!user) return
+
+    const mensagemInicial = searchParams.get('m')
+    const conversaId = searchParams.get('c')
+
+    // Se tem conversa ID, carregar conversa
+    if (conversaId && !mensagemInicial) {
+      carregarConversa(conversaId)
+      return
+    }
+
+    // Se tem mensagem inicial e ainda não processamos
+    if (mensagemInicial && !mensagemInicialEnviadaRef.current) {
+      const decodedMessage = decodeURIComponent(mensagemInicial)
+
+      // Marcar como processada ANTES de enviar para evitar duplicação
+      mensagemInicialEnviadaRef.current = true
+
+      // Limpar URL sem recarregar a página
+      router.replace('/medicina/dashboard/ia', { scroll: false })
+
+      // Armazenar mensagem pendente para enviar
+      mensagemPendenteRef.current = decodedMessage
+      setInput(decodedMessage)
+    }
+  }, [user, searchParams, router, carregarConversa])
+
+  // Efeito separado para enviar mensagem pendente quando input estiver preenchido
+  useEffect(() => {
+    if (mensagemPendenteRef.current && input === mensagemPendenteRef.current && !loading && user) {
+      const mensagemParaEnviar = mensagemPendenteRef.current
+      mensagemPendenteRef.current = null // Limpar para não enviar novamente
+
+      // Pequeno delay para garantir render
+      setTimeout(() => {
+        // Enviar diretamente usando a lógica de enviarMensagem inline
+        enviarMensagemDireta(mensagemParaEnviar)
+      }, 50)
+    }
+  }, [input, loading, user])
+
+  // Função para enviar mensagem diretamente (usado para mensagem inicial)
+  const enviarMensagemDireta = useCallback(async (mensagemTexto: string) => {
+    if (!mensagemTexto.trim() || !user || loading || !podeUsarIA) return
+
+    // Cancelar requisição anterior se existir
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
+
+    const mensagemUsuario = mensagemTexto.trim()
+    const novoId = Date.now().toString()
+
+    setInput('')
+    setMensagens(prev => [...prev, {
+      id: novoId,
+      tipo: 'usuario',
+      conteudo: mensagemUsuario,
+      timestamp: new Date(),
+      hasImage: !!imagemBase64,
+      hasPdf: !!pdfBase64
+    }])
+    setLoading(true)
+    setStreaming(true)
+
+    // Criar mensagem de resposta vazia
+    const respostaId = (Date.now() + 1).toString()
+    setMensagens(prev => [...prev, {
+      id: respostaId,
+      tipo: 'ia',
+      conteudo: '',
+      timestamp: new Date()
+    }])
+
+    // Timeout de segurança
+    const timeoutId = setTimeout(() => {
+      setLoading(false)
+      setStreaming(false)
+      setMensagens(prev => prev.map(m =>
+        m.id === respostaId && !m.conteudo
+          ? { ...m, conteudo: 'A resposta demorou muito. Tente novamente.' }
+          : m
+      ))
+    }, 5 * 60 * 1000)
+
+    try {
+      const response = await fetch('/api/medicina/ia/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          mensagem: mensagemUsuario,
+          conversa_id: conversaAtual,
+          modo: chatMode,
+          imagem_base64: imagemBase64,
+          imagem_tipo: imagemTipo,
+          pdf_base64: pdfBase64,
+          use_web_search: useWebSearch,
+          use_extended_thinking: useExtendedThinking,
+          thinking_budget: 8000,
+          chat_mode: chatMode,
+          system_prompt_extra: getSystemPrompt()
+        }),
+        signal: abortControllerRef.current.signal
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Erro ao processar mensagem')
+      }
+
+      // Processar stream (mesma lógica de enviarMensagem)
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) throw new Error('Stream não disponível')
+
+      let fullResponse = ''
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        buffer += chunk
+
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          const trimmedLine = line.trim()
+          if (trimmedLine.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(trimmedLine.slice(6))
+              if (data.type === 'text') {
+                fullResponse += data.content
+                setMensagens(prev => prev.map(m =>
+                  m.id === respostaId ? { ...m, conteudo: fullResponse } : m
+                ))
+              } else if (data.type === 'done') {
+                setConversaAtual(data.conversa_id)
+                setMensagens(prev => prev.map(m =>
+                  m.id === respostaId
+                    ? { ...m, tokens: data.tokens?.input + data.tokens?.output, thinking: data.thinking || '' }
+                    : m
+                ))
+                fetchUso()
+                fetchConversas()
+              }
+            } catch {
+              // Ignorar erros de parsing
+            }
+          }
+        }
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return
+      setMensagens(prev => prev.map(m =>
+        m.id === respostaId
+          ? { ...m, conteudo: `Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}` }
+          : m
+      ))
+    } finally {
+      clearTimeout(timeoutId)
+      setLoading(false)
+      setStreaming(false)
+      setImagemBase64(null)
+      setImagemTipo(null)
+      setPdfBase64(null)
+      abortControllerRef.current = null
+    }
+  }, [user, loading, podeUsarIA, conversaAtual, chatMode, imagemBase64, imagemTipo, pdfBase64, useWebSearch, useExtendedThinking, getSystemPrompt, fetchUso, fetchConversas])
+
   // O scroll automático agora é gerenciado pelo hook useSmartScroll
   // Permite scroll manual durante streaming sem travar
 
@@ -532,9 +721,6 @@ export default function IAPage() {
     }
     reader.readAsDataURL(file)
   }
-
-  // Ref para controlar requisições em andamento
-  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Função para cancelar geração (Problema 5)
   const cancelarGeracao = useCallback(() => {
@@ -1426,6 +1612,7 @@ export default function IAPage() {
 
                 {/* Botão enviar/cancelar à direita */}
                 <button
+                  data-enviar-btn
                   onClick={loading ? cancelarGeracao : enviarMensagem}
                   disabled={!loading && !input.trim()}
                   className={`p-2 md:p-2.5 rounded-lg md:rounded-xl transition-all ${

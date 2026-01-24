@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { MedAuthProvider, useMedAuth } from '@/contexts/MedAuthContext'
@@ -34,7 +34,11 @@ import {
   Plus,
   Clock,
   History,
-  Trash2
+  Trash2,
+  MoreVertical,
+  Pencil,
+  Check,
+  ChevronDown
 } from 'lucide-react'
 
 // Interface para conversas do histórico
@@ -69,6 +73,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false) // Sidebar recolhida no desktop
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [loadingConversas, setLoadingConversas] = useState(false)
+  const [showAllConversas, setShowAllConversas] = useState(false) // Expandir histórico
+  const [menuAberto, setMenuAberto] = useState<string | null>(null) // Menu de 3 pontos
+  const [editandoConversa, setEditandoConversa] = useState<string | null>(null) // Edição de título
+  const [novoTitulo, setNovoTitulo] = useState('')
+  const menuRef = useRef<HTMLDivElement>(null)
 
   // Hook para modais de upgrade
   const {
@@ -90,7 +99,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         .select('id, titulo, updated_at')
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
-        .limit(10)
+        .limit(50) // Buscar mais para permitir expandir
 
       if (data) {
         setConversas(data)
@@ -130,6 +139,54 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     if (diffDays < 7) return `${diffDays}d`
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
   }
+
+  // Deletar conversa
+  const deletarConversa = async (conversaId: string) => {
+    if (!user) return
+    try {
+      await fetch(`/api/medicina/ia/chat?conversa_id=${conversaId}&user_id=${user.id}`, {
+        method: 'DELETE'
+      })
+      setConversas(prev => prev.filter(c => c.id !== conversaId))
+      setMenuAberto(null)
+    } catch (error) {
+      console.error('Erro ao deletar conversa:', error)
+    }
+  }
+
+  // Salvar título editado
+  const salvarTitulo = async (conversaId: string) => {
+    if (!user || !novoTitulo.trim()) {
+      setEditandoConversa(null)
+      return
+    }
+    try {
+      await supabase
+        .from('conversas_ia_med')
+        .update({ titulo: novoTitulo.trim() })
+        .eq('id', conversaId)
+        .eq('user_id', user.id)
+
+      setConversas(prev => prev.map(c =>
+        c.id === conversaId ? { ...c, titulo: novoTitulo.trim() } : c
+      ))
+      setEditandoConversa(null)
+      setNovoTitulo('')
+    } catch (error) {
+      console.error('Erro ao salvar título:', error)
+    }
+  }
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuAberto(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   if (loading) {
     return (
@@ -251,63 +308,156 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             </ul>
 
             {/* Separador e Histórico de Conversas - estilo Meta AI */}
-            {!sidebarCollapsed && conversas.length > 0 && (
+            {!sidebarCollapsed && (
               <div className="mt-6 pt-4 border-t border-white/10">
+                {/* Botão Nova Conversa em destaque */}
+                <Link
+                  href="/medicina/dashboard"
+                  onClick={() => setSidebarOpen(false)}
+                  className="flex items-center justify-center gap-2 mx-3 mb-4 py-2.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/30 rounded-lg text-emerald-400 hover:text-emerald-300 transition-all text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nova Conversa
+                </Link>
+
                 {/* Header do Histórico */}
-                <div className="flex items-center justify-between px-3 mb-2">
-                  <span className="text-white/40 text-xs font-medium uppercase tracking-wider flex items-center gap-1.5">
-                    <History className="w-3 h-3" />
-                    Histórico
-                  </span>
-                  <Link
-                    href="/medicina/dashboard"
-                    className="text-emerald-400 hover:text-emerald-300 transition-colors"
-                    title="Nova conversa"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Link>
-                </div>
+                {conversas.length > 0 && (
+                  <>
+                    <div className="flex items-center justify-between px-3 mb-2">
+                      <span className="text-white/40 text-xs font-medium uppercase tracking-wider flex items-center gap-1.5">
+                        <History className="w-3 h-3" />
+                        Histórico
+                      </span>
+                    </div>
 
-                {/* Lista de Conversas */}
-                <ul className="space-y-0.5">
-                  {conversas.map((conversa) => {
-                    const isActive = pathname === `/medicina/dashboard/ia` &&
-                      (typeof window !== 'undefined' && window.location.search.includes(`c=${conversa.id}`))
+                    {/* Lista de Conversas */}
+                    <ul className="space-y-0.5 max-h-[300px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                      {(showAllConversas ? conversas : conversas.slice(0, 10)).map((conversa) => {
+                        const isActive = pathname === `/medicina/dashboard/ia` &&
+                          (typeof window !== 'undefined' && window.location.search.includes(`c=${conversa.id}`))
 
-                    return (
-                      <li key={conversa.id}>
-                        <Link
-                          href={`/medicina/dashboard/ia?c=${conversa.id}`}
-                          onClick={() => setSidebarOpen(false)}
-                          className={`
-                            group flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm
-                            ${isActive
-                              ? 'bg-white/10 text-white'
-                              : 'text-white/60 hover:bg-white/5 hover:text-white/80'
-                            }
-                          `}
-                        >
-                          <MessageSquare className="w-4 h-4 flex-shrink-0 opacity-50" />
-                          <span className="flex-1 truncate">
-                            {conversa.titulo || 'Conversa sem título'}
-                          </span>
-                          <span className="text-[10px] text-white/30 group-hover:text-white/50 flex-shrink-0">
-                            {formatRelativeTime(conversa.updated_at)}
-                          </span>
-                        </Link>
-                      </li>
-                    )
-                  })}
-                </ul>
+                        return (
+                          <li key={conversa.id} className="relative group" ref={menuAberto === conversa.id ? menuRef : undefined}>
+                            {editandoConversa === conversa.id ? (
+                              // Modo edição
+                              <div className="flex items-center gap-1 px-3 py-2">
+                                <input
+                                  type="text"
+                                  value={novoTitulo}
+                                  onChange={(e) => setNovoTitulo(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') salvarTitulo(conversa.id)
+                                    if (e.key === 'Escape') setEditandoConversa(null)
+                                  }}
+                                  className="flex-1 bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-emerald-500"
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => salvarTitulo(conversa.id)}
+                                  className="p-1 hover:bg-emerald-500/20 rounded text-emerald-400"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => setEditandoConversa(null)}
+                                  className="p-1 hover:bg-white/10 rounded text-white/40"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              // Modo normal
+                              <div className="flex items-center">
+                                <Link
+                                  href={`/medicina/dashboard/ia?c=${conversa.id}`}
+                                  onClick={() => setSidebarOpen(false)}
+                                  className={`
+                                    flex-1 flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm
+                                    ${isActive
+                                      ? 'bg-white/10 text-white'
+                                      : 'text-white/60 hover:bg-white/5 hover:text-white/80'
+                                    }
+                                  `}
+                                >
+                                  <MessageSquare className="w-4 h-4 flex-shrink-0 opacity-50" />
+                                  <span className="flex-1 truncate">
+                                    {conversa.titulo || 'Conversa sem título'}
+                                  </span>
+                                  <span className="text-[10px] text-white/30 flex-shrink-0">
+                                    {formatRelativeTime(conversa.updated_at)}
+                                  </span>
+                                </Link>
 
-                {/* Ver mais */}
-                {conversas.length >= 10 && (
-                  <Link
-                    href="/medicina/dashboard/biblioteca"
-                    className="flex items-center justify-center gap-1 mt-2 px-3 py-2 text-xs text-white/40 hover:text-white/60 transition-colors"
-                  >
-                    Ver todas as conversas
-                  </Link>
+                                {/* Botão 3 pontos */}
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    setMenuAberto(menuAberto === conversa.id ? null : conversa.id)
+                                  }}
+                                  className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded transition-all mr-1"
+                                >
+                                  <MoreVertical className="w-4 h-4 text-white/40" />
+                                </button>
+
+                                {/* Menu dropdown */}
+                                {menuAberto === conversa.id && (
+                                  <div className="absolute right-2 top-full mt-1 bg-slate-800 border border-white/10 rounded-lg shadow-xl z-50 py-1 min-w-[140px]">
+                                    <Link
+                                      href={`/medicina/dashboard/ia?c=${conversa.id}`}
+                                      onClick={() => { setSidebarOpen(false); setMenuAberto(null) }}
+                                      className="flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                                    >
+                                      <MessageSquare className="w-4 h-4" />
+                                      Abrir
+                                    </Link>
+                                    <button
+                                      onClick={() => {
+                                        setNovoTitulo(conversa.titulo || '')
+                                        setEditandoConversa(conversa.id)
+                                        setMenuAberto(null)
+                                      }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                      Renomear
+                                    </button>
+                                    <button
+                                      onClick={() => deletarConversa(conversa.id)}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                      Excluir
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+
+                    {/* Ver mais / Ver menos */}
+                    {conversas.length > 10 && (
+                      <button
+                        onClick={() => setShowAllConversas(!showAllConversas)}
+                        className="w-full flex items-center justify-center gap-1 mt-2 px-3 py-2 text-xs text-white/40 hover:text-white/60 transition-colors"
+                      >
+                        {showAllConversas ? (
+                          <>
+                            <ChevronUp className="w-3 h-3" />
+                            Ver menos
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-3 h-3" />
+                            Ver todas ({conversas.length})
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}
