@@ -1539,6 +1539,111 @@ export const PROMPT_PLANO_ESTUDOS = `Crie um plano de estudos COMPLETO e PERSONA
 - Quando mudar a estratégia`
 
 // ==========================================
+// INSTRUÇÕES PARA GERAÇÃO DE ARTEFATOS INTERATIVOS
+// ==========================================
+
+export const INSTRUCOES_ARTEFATOS = `
+## GERAÇÃO DE ARTEFATOS INTERATIVOS
+
+Quando o usuário pedir conteúdos específicos, formate-os de forma que possam ser convertidos em artefatos interativos:
+
+### QUESTÕES (formato para card interativo)
+Formate cada questão assim para que vire um card clicável:
+
+**Questão 1** | Nível: MÉDIO | Tema: [Subtema]
+
+[Enunciado completo da questão]
+
+a) [Alternativa A]
+b) [Alternativa B]
+c) [Alternativa C]
+d) [Alternativa D]
+e) [Alternativa E]
+
+<details>
+<summary>Gabarito</summary>
+
+**Resposta:** [LETRA]
+
+**Explicação:** [Explicação detalhada de por que essa alternativa está correta e análise das demais]
+</details>
+
+---
+
+### FLASHCARDS (formato para cards viráveis)
+Formate cada flashcard assim para interatividade:
+
+**Frente:** [Pergunta ou termo para memorizar]
+**Verso:** [Resposta ou definição completa]
+
+---
+
+**Frente:** [Próxima pergunta]
+**Verso:** [Próxima resposta]
+
+---
+
+### PLANO DE ESTUDOS (formato com checkboxes)
+Formate assim para acompanhamento:
+
+## Plano de Estudos: [Título]
+
+### Semana 1: [Tema da Semana]
+- [ ] Dia 1: [Conteúdo específico]
+- [ ] Dia 2: [Conteúdo específico]
+- [ ] Dia 3: [Conteúdo específico]
+- [ ] Dia 4: [Conteúdo específico]
+- [ ] Dia 5: [Conteúdo específico]
+
+**Meta da semana:** [Objetivo mensurável]
+
+### Semana 2: [Tema da Semana]
+...
+
+### TABELAS COMPARATIVAS
+Use formato markdown padrão para tabelas:
+
+| Característica | Conceito A | Conceito B | Conceito C |
+|----------------|------------|------------|------------|
+| [Aspecto 1]    | [Valor]    | [Valor]    | [Valor]    |
+| [Aspecto 2]    | [Valor]    | [Valor]    | [Valor]    |
+| [Aspecto 3]    | [Valor]    | [Valor]    | [Valor]    |
+
+### RESUMOS ESTRUTURADOS
+Use esta estrutura para resumos:
+
+## [Título do Resumo]
+
+### 1. Definição
+[Texto]
+
+### 2. Classificação
+[Texto com listas]
+
+### 3. Quadro Clínico
+[Texto]
+
+### 4. Diagnóstico
+[Texto]
+
+### 5. Tratamento
+[Texto]
+
+### Pontos-Chave
+- [Ponto 1]
+- [Ponto 2]
+- [Ponto 3]
+
+### QUANDO GERAR ARTEFATOS AUTOMATICAMENTE:
+- Usuário pede "questões" ou "questão" → Gerar artefato de questões
+- Usuário pede "flashcards" ou "flash cards" → Gerar artefato de flashcards
+- Usuário pede "simulado" ou "prova" → Gerar artefato de simulado (5+ questões)
+- Usuário pede "plano de estudos" ou "cronograma" → Gerar artefato de plano
+- Usuário pede "compare" ou "diferença entre" → Gerar tabela comparativa
+- Usuário pede "resumo" → Gerar resumo estruturado
+`
+
+// ==========================================
 // PROMPT PARA GERAÇÃO DE IMAGENS
 // ==========================================
 

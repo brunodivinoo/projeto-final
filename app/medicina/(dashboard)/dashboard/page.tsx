@@ -1,45 +1,37 @@
 'use client'
 
+/**
+ * Nova Página Inicial - Chat Centralizado
+ * Inspirado na interface da Meta AI
+ *
+ * Esta página agora é o ponto central do PREPARAMED, onde o estudante
+ * interage via chat para gerar questões, flashcards, resumos, etc.
+ */
+
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useMedAuth, LIMITES_PLANO } from '@/contexts/MedAuthContext'
 import { useTrialTimer } from '@/hooks/useTrialTimer'
 import { supabase } from '@/lib/supabase'
+import { QuickActions, generatePersonalizedActions, type QuickAction } from '@/components/chat/QuickActions'
+import { ChatHistory, type Conversation, categorizeConversation } from '@/components/chat/ChatHistory'
+import { UsageLimits } from '@/components/chat/UsageLimits'
+import { ChatInput } from '@/components/chat/ChatInput'
 import {
-  FileText,
-  BookOpen,
-  Brain,
-  ClipboardList,
-  TrendingUp,
-  Target,
-  Clock,
-  Award,
-  ChevronRight,
   Sparkles,
-  Flame,
-  CheckCircle2,
-  Gift,
   Zap,
   Crown,
-  AlertTriangle
+  Clock,
+  AlertTriangle,
+  Gift,
+  MessageSquare,
+  BookOpen,
+  Stethoscope
 } from 'lucide-react'
 
-interface EstatisticasHoje {
-  questoes_feitas: number
-  questoes_corretas: number
-  teorias_lidas: number
-  simulados_feitos: number
-  tempo_total_segundos: number
-}
-
-interface RevisaoPendente {
-  id: string
-  titulo: string
-  disciplina: { nome: string } | null
-  proxima_revisao: string
-}
-
 export default function MedicinaDashboardPage() {
+  const router = useRouter()
   const { user, profile, plano, limitesPlano, limites, loading: authLoading } = useMedAuth()
   const {
     isTrialActive,
@@ -51,101 +43,107 @@ export default function MedicinaDashboardPage() {
     mostrarUrgencia,
     iniciarTrial
   } = useTrialTimer()
-  const [estatisticas, setEstatisticas] = useState<EstatisticasHoje | null>(null)
-  const [sequenciaDias, setSequenciaDias] = useState(0)
+
+  const [recentConversations, setRecentConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
   const [iniciandoTrial, setIniciandoTrial] = useState(false)
 
-  const fetchDados = useCallback(async () => {
+  // Buscar conversas recentes
+  const fetchConversations = useCallback(async () => {
     if (authLoading || !user) return
 
     try {
       setLoading(true)
-      const hoje = new Date().toISOString().split('T')[0]
 
-      // Buscar estatísticas de hoje
-      const { data: estudoHoje } = await supabase
-        .from('estudo_diario_med')
-        .select('*')
+      const { data: conversas } = await supabase
+        .from('conversas_ia_med')
+        .select('id, titulo, ultima_mensagem, updated_at')
         .eq('user_id', user.id)
-        .eq('data', hoje)
-        .single()
+        .order('updated_at', { ascending: false })
+        .limit(5)
 
-      if (estudoHoje) {
-        setEstatisticas(estudoHoje as EstatisticasHoje)
-      } else {
-        setEstatisticas({
-          questoes_feitas: 0,
-          questoes_corretas: 0,
-          teorias_lidas: 0,
-          simulados_feitos: 0,
-          tempo_total_segundos: 0
-        })
-      }
-
-      // Calcular sequência de dias
-      const { data: estudoRecente } = await supabase
-        .from('estudo_diario_med')
-        .select('data, questoes_feitas')
-        .eq('user_id', user.id)
-        .order('data', { ascending: false })
-        .limit(30)
-
-      if (estudoRecente && estudoRecente.length > 0) {
-        let sequencia = 0
-        const dataAtual = new Date()
-
-        for (let i = 0; i < estudoRecente.length; i++) {
-          const dataEstudo = new Date(estudoRecente[i].data + 'T00:00:00')
-          const diffDias = Math.floor((dataAtual.getTime() - dataEstudo.getTime()) / (1000 * 60 * 60 * 24))
-
-          if (diffDias === i && estudoRecente[i].questoes_feitas > 0) {
-            sequencia++
-          } else if (diffDias === i + 1 && i === 0) {
-            // Permite que o dia atual ainda não tenha sido estudado
-            continue
-          } else {
-            break
-          }
-        }
-        setSequenciaDias(sequencia)
+      if (conversas) {
+        const formatted: Conversation[] = conversas.map(c => ({
+          id: c.id,
+          title: c.titulo || 'Conversa sem título',
+          lastMessage: c.ultima_mensagem || '',
+          updatedAt: new Date(c.updated_at),
+          artifactCount: 0, // TODO: Contar artefatos
+          category: categorizeConversation(c.titulo || '', c.ultima_mensagem || '')
+        }))
+        setRecentConversations(formatted)
       }
     } catch (error) {
-      console.error('Erro ao buscar dados:', error)
+      console.error('Erro ao buscar conversas:', error)
     } finally {
       setLoading(false)
     }
   }, [user, authLoading])
 
   useEffect(() => {
-    fetchDados()
-  }, [fetchDados])
+    fetchConversations()
+  }, [fetchConversations])
 
-  const taxaAcerto = estatisticas?.questoes_feitas
-    ? Math.round((estatisticas.questoes_corretas / estatisticas.questoes_feitas) * 100)
-    : 0
+  // Saudação personalizada baseada no horário
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Bom dia'
+    if (hour < 18) return 'Boa tarde'
+    return 'Boa noite'
+  }
 
-  const tempoEstudo = estatisticas?.tempo_total_segundos
-    ? `${Math.floor(estatisticas.tempo_total_segundos / 3600)}h ${Math.floor((estatisticas.tempo_total_segundos % 3600) / 60)}min`
-    : '0h 0min'
+  // Ações rápidas personalizadas
+  // TODO: Quando implementar tracking de assuntos, buscar do banco
+  const quickActions = generatePersonalizedActions(null)
 
-  // Calcular limites usados
-  const questoesUsadas = limites?.questoes_dia || 0
-  const questoesLimite = limitesPlano.questoes_dia
-  const questoesRestantes = questoesLimite === -1 ? '∞' : Math.max(0, questoesLimite - questoesUsadas)
+  // Handlers
+  const handleNewMessage = useCallback(async (message: string) => {
+    // Navegar para a página de chat com a mensagem inicial
+    const encodedMessage = encodeURIComponent(message)
+    router.push(`/medicina/dashboard/ia?m=${encodedMessage}`)
+  }, [router])
 
-  const simuladosUsados = limites?.simulados_mes || 0
-  const simuladosLimite = limitesPlano.simulados_mes
-  const simuladosRestantes = simuladosLimite === -1 ? '∞' : Math.max(0, simuladosLimite - simuladosUsados)
+  const handleQuickAction = useCallback((action: QuickAction) => {
+    // Se a ação tem um prompt incompleto (termina com espaço), focar no input
+    // Caso contrário, enviar diretamente
+    if (action.prompt.endsWith(' ')) {
+      // Focar no input com o prompt parcial - navegamos com o prompt
+      router.push(`/medicina/dashboard/ia?m=${encodeURIComponent(action.prompt)}`)
+    } else {
+      handleNewMessage(action.prompt)
+    }
+  }, [handleNewMessage, router])
 
-  const iaUsadas = limites?.perguntas_ia_mes || 0
-  const iaLimite = limitesPlano.perguntas_ia_mes
-  const iaRestantes = iaLimite === -1 ? '∞' : Math.max(0, iaLimite - iaUsadas)
+  const handleSelectConversation = useCallback((id: string) => {
+    router.push(`/medicina/dashboard/ia?c=${id}`)
+  }, [router])
 
   const handleIniciarTrial = async () => {
     setIniciandoTrial(true)
     await iniciarTrial()
     setIniciandoTrial(false)
+  }
+
+  // Calcular limites de uso
+  const questoesUsadas = limites?.questoes_dia || 0
+  const questoesLimite = limitesPlano.questoes_dia
+  const iaUsadas = limites?.perguntas_ia_mes || 0
+  const iaLimite = limitesPlano.perguntas_ia_mes
+  const simuladosUsados = limites?.simulados_mes || 0
+  const simuladosLimite = limitesPlano.simulados_mes
+
+  const usageData = {
+    mensagens: iaUsadas,
+    questoes: questoesUsadas,
+    simulados: simuladosUsados,
+    flashcards: 0 // TODO: Implementar tracking de flashcards
+  }
+
+  const limitsData = {
+    mensagens: iaLimite === -1 ? 9999 : iaLimite,
+    questoes: questoesLimite === -1 ? 9999 : questoesLimite,
+    simulados: simuladosLimite === -1 ? 9999 : simuladosLimite,
+    flashcards: plano === 'gratuito' ? 50 : 9999
   }
 
   if (loading || authLoading) {
@@ -157,14 +155,14 @@ export default function MedicinaDashboardPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto">
       {/* ============================================ */}
-      {/* BANNER DE TRIAL - Para usuários gratuitos */}
+      {/* BANNERS DE TRIAL */}
       {/* ============================================ */}
 
-      {/* Banner para iniciar trial (usuário nunca usou) */}
+      {/* Banner para iniciar trial */}
       {plano === 'gratuito' && canStartTrial && (
-        <div className="bg-gradient-to-r from-purple-900 via-purple-800 to-pink-900 border border-purple-500/30 rounded-xl p-5 relative overflow-hidden">
+        <div className="mb-6 bg-gradient-to-r from-purple-900 via-purple-800 to-pink-900 border border-purple-500/30 rounded-xl p-5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-pink-500/10 rounded-full blur-3xl" />
 
@@ -179,7 +177,7 @@ export default function MedicinaDashboardPage() {
                   Teste GRÁTIS por 4 horas!
                 </h3>
                 <p className="text-purple-200 text-sm">
-                  Acesso completo a TODAS as funcionalidades: IA ilimitada, questões, flashcards e mais!
+                  Acesso completo: IA ilimitada, questões, flashcards e mais!
                 </p>
               </div>
             </div>
@@ -187,7 +185,7 @@ export default function MedicinaDashboardPage() {
             <button
               onClick={handleIniciarTrial}
               disabled={iniciandoTrial}
-              className="flex-shrink-0 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg hover:shadow-emerald-500/25"
+              className="flex-shrink-0 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg"
             >
               {iniciandoTrial ? (
                 <>
@@ -202,29 +200,15 @@ export default function MedicinaDashboardPage() {
               )}
             </button>
           </div>
-
-          <div className="relative z-10 grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-purple-500/20">
-            {[
-              { icon: '🤖', text: 'IA Tutora' },
-              { icon: '📝', text: 'Questões' },
-              { icon: '🃏', text: 'Flashcards' },
-              { icon: '📚', text: 'Biblioteca' }
-            ].map((item, i) => (
-              <div key={i} className="bg-white/10 rounded-lg px-2 py-2 text-center">
-                <span className="text-lg">{item.icon}</span>
-                <p className="text-white text-xs mt-0.5">{item.text}</p>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
-      {/* Banner de trial ativo (contagem regressiva) */}
+      {/* Banner de trial ativo */}
       {plano === 'gratuito' && isTrialActive && (
-        <div className={`${mostrarUrgencia ? 'bg-gradient-to-r from-red-900 to-orange-900 border-red-500/30' : 'bg-gradient-to-r from-emerald-900 to-teal-900 border-emerald-500/30'} border rounded-xl p-4 relative overflow-hidden`}>
+        <div className={`mb-6 ${mostrarUrgencia ? 'bg-gradient-to-r from-red-900 to-orange-900 border-red-500/30' : 'bg-gradient-to-r from-emerald-900 to-teal-900 border-emerald-500/30'} border rounded-xl p-4`}>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl ${mostrarUrgencia ? 'bg-red-500' : 'bg-emerald-500'} flex items-center justify-center flex-shrink-0 ${mostrarUrgencia ? 'animate-pulse' : ''}`}>
+              <div className={`w-12 h-12 rounded-xl ${mostrarUrgencia ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'} flex items-center justify-center flex-shrink-0`}>
                 {mostrarUrgencia ? (
                   <AlertTriangle className="w-6 h-6 text-white" />
                 ) : (
@@ -239,10 +223,7 @@ export default function MedicinaDashboardPage() {
                   </span>
                 </h3>
                 <p className={`${mostrarUrgencia ? 'text-red-200/70' : 'text-emerald-200/70'} text-sm`}>
-                  {mostrarUrgencia
-                    ? 'Aproveite os últimos minutos do acesso completo!'
-                    : 'Aproveite o acesso completo enquanto dura'
-                  }
+                  {mostrarUrgencia ? 'Aproveite os últimos minutos!' : 'Aproveite o acesso completo'}
                 </p>
               </div>
             </div>
@@ -256,7 +237,6 @@ export default function MedicinaDashboardPage() {
             </Link>
           </div>
 
-          {/* Barra de progresso */}
           <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
             <div
               className={`h-full ${corBarra} transition-all duration-1000`}
@@ -268,16 +248,16 @@ export default function MedicinaDashboardPage() {
 
       {/* Banner de trial expirado */}
       {plano === 'gratuito' && isTrialExpired && (
-        <div className="bg-gradient-to-r from-slate-800 to-slate-700 border border-white/10 rounded-xl p-4">
+        <div className="mb-6 bg-gradient-to-r from-slate-800 to-slate-700 border border-white/10 rounded-xl p-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-slate-600 flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-slate-600 flex items-center justify-center">
                 <Clock className="w-6 h-6 text-slate-400" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Seu trial de 4 horas expirou</h3>
+                <h3 className="text-white font-bold">Seu trial expirou</h3>
                 <p className="text-slate-400 text-sm">
-                  Você experimentou todas as funcionalidades! Continue com acesso completo a partir de R$59,90/mês
+                  Continue com acesso completo a partir de R$59,90/mês
                 </p>
               </div>
             </div>
@@ -293,227 +273,96 @@ export default function MedicinaDashboardPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
-            Olá, {profile?.nome?.split(' ')[0] || 'Estudante'}!
-          </h1>
-          <p className="text-emerald-200/70 mt-1">
-            Continue estudando e conquiste sua vaga na residência
-          </p>
+      {/* ============================================ */}
+      {/* ÁREA PRINCIPAL DO CHAT */}
+      {/* ============================================ */}
+
+      <div className="flex flex-col items-center py-8 md:py-12">
+        {/* Logo e Saudação */}
+        <div className="w-16 h-16 mb-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+          <Stethoscope className="w-9 h-9 text-white" />
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 rounded-lg">
-            <Flame className="w-5 h-5 text-amber-400" />
-            <span className="text-amber-400 font-bold">{sequenciaDias} dias</span>
+
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 text-center">
+          {getGreeting()}, {profile?.nome?.split(' ')[0] || 'Estudante'}!
+        </h1>
+        <p className="text-white/50 mb-8 text-center">
+          Como posso ajudar nos seus estudos hoje?
+        </p>
+
+        {/* Input de Chat Centralizado */}
+        <ChatInput
+          onSubmit={handleNewMessage}
+          placeholder="Pergunte, peça questões, flashcards, resumos..."
+          className="w-full max-w-2xl mb-8"
+        />
+
+        {/* Ações Rápidas */}
+        <QuickActions
+          actions={quickActions}
+          onSelect={handleQuickAction}
+          className="w-full max-w-2xl mb-10"
+        />
+
+        {/* Histórico de Conversas */}
+        {recentConversations.length > 0 && (
+          <ChatHistory
+            conversations={recentConversations}
+            onSelect={handleSelectConversation}
+            className="w-full max-w-2xl"
+          />
+        )}
+
+        {/* Se não tem conversas, mostrar dicas */}
+        {recentConversations.length === 0 && (
+          <div className="w-full max-w-2xl text-center py-8">
+            <MessageSquare className="w-12 h-12 mx-auto mb-4 text-white/20" />
+            <h3 className="text-white/40 font-medium mb-2">Primeira vez aqui?</h3>
+            <p className="text-white/30 text-sm mb-4">
+              Experimente pedir: &quot;Crie 5 questões sobre infarto agudo do miocárdio&quot;
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {['Cardiologia', 'Neurologia', 'Pediatria', 'Cirurgia'].map(tema => (
+                <button
+                  key={tema}
+                  onClick={() => handleNewMessage(`Me explique sobre ${tema}`)}
+                  className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white/70 text-sm transition"
+                >
+                  {tema}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/5 rounded-xl p-5 border border-white/10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-emerald-400" />
-            </div>
-            <span className="text-white/60 text-sm">Questões Hoje</span>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-white">{estatisticas?.questoes_feitas || 0}</span>
-            <span className="text-emerald-400 text-sm">/ {questoesLimite === -1 ? '∞' : questoesLimite}</span>
-          </div>
-        </div>
+      {/* ============================================ */}
+      {/* FOOTER COM LINKS ÚTEIS */}
+      {/* ============================================ */}
 
-        <div className="bg-white/5 rounded-xl p-5 border border-white/10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-teal-500/20 flex items-center justify-center">
-              <Target className="w-5 h-5 text-teal-400" />
-            </div>
-            <span className="text-white/60 text-sm">Taxa de Acerto</span>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-white">{taxaAcerto}%</span>
-            <span className="text-teal-400 text-sm">{estatisticas?.questoes_corretas || 0} corretas</span>
-          </div>
-        </div>
-
-        <div className="bg-white/5 rounded-xl p-5 border border-white/10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-cyan-400" />
-            </div>
-            <span className="text-white/60 text-sm">Tempo Hoje</span>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-white">{tempoEstudo}</span>
-          </div>
-        </div>
-
-        <div className="bg-white/5 rounded-xl p-5 border border-white/10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-              <ClipboardList className="w-5 h-5 text-purple-400" />
-            </div>
-            <span className="text-white/60 text-sm">Simulados Mês</span>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-white">{simuladosUsados}</span>
-            <span className="text-purple-400 text-sm">/ {simuladosLimite === -1 ? '∞' : simuladosLimite}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link
-          href="/medicina/dashboard/questoes"
-          className="group bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl p-6 border border-emerald-500/30 hover:border-emerald-500/50 transition-all"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <FileText className="w-6 h-6 text-emerald-400" />
-            </div>
-            <ChevronRight className="w-5 h-5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
-          </div>
-          <h3 className="text-white font-bold text-lg mb-1">Resolver Questões</h3>
-          <p className="text-emerald-200/60 text-sm">
-            {questoesRestantes} questões restantes hoje
-          </p>
-        </Link>
-
-        <Link
-          href="/medicina/dashboard/simulados"
-          className="group bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-6 border border-purple-500/30 hover:border-purple-500/50 transition-all"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <ClipboardList className="w-6 h-6 text-purple-400" />
-            </div>
-            <ChevronRight className="w-5 h-5 text-purple-400 group-hover:translate-x-1 transition-transform" />
-          </div>
-          <h3 className="text-white font-bold text-lg mb-1">Fazer Simulado</h3>
-          <p className="text-purple-200/60 text-sm">
-            {simuladosRestantes} simulados restantes no mês
-          </p>
-        </Link>
-
-        <Link
-          href="/medicina/dashboard/biblioteca"
-          className="group bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-xl p-6 border border-cyan-500/30 hover:border-cyan-500/50 transition-all"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <BookOpen className="w-6 h-6 text-cyan-400" />
-            </div>
-            <ChevronRight className="w-5 h-5 text-cyan-400 group-hover:translate-x-1 transition-transform" />
-          </div>
-          <h3 className="text-white font-bold text-lg mb-1">Estudar Teoria</h3>
-          <p className="text-cyan-200/60 text-sm">
-            {estatisticas?.teorias_lidas || 0} teorias lidas hoje
-          </p>
-        </Link>
-
-        <Link
-          href="/medicina/dashboard/ia"
-          className="group bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-xl p-6 border border-amber-500/30 hover:border-amber-500/50 transition-all"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Brain className="w-6 h-6 text-amber-400" />
-            </div>
-            <ChevronRight className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform" />
-          </div>
-          <h3 className="text-white font-bold text-lg mb-1">IA Tutora</h3>
-          <p className="text-amber-200/60 text-sm">
-            {iaRestantes} perguntas restantes no mês
-          </p>
-        </Link>
-      </div>
-
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Disciplinas mais estudadas */}
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-white">Disciplinas em Destaque</h2>
-            <Link href="/medicina/dashboard/estatisticas" className="text-emerald-400 text-sm hover:underline">
-              Ver todas
-            </Link>
-          </div>
-          <div className="space-y-4">
-            {[
-              { nome: 'Clínica Médica', progresso: 75, cor: 'emerald' },
-              { nome: 'Cirurgia', progresso: 60, cor: 'teal' },
-              { nome: 'Pediatria', progresso: 45, cor: 'cyan' },
-              { nome: 'Ginecologia', progresso: 30, cor: 'purple' },
-            ].map((disc, i) => (
-              <div key={i}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-white/80 text-sm">{disc.nome}</span>
-                  <span className="text-white/60 text-sm">{disc.progresso}%</span>
-                </div>
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full bg-${disc.cor}-500 rounded-full transition-all`}
-                    style={{ width: `${disc.progresso}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Limites do Plano */}
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-white">Seu Plano: {plano.charAt(0).toUpperCase() + plano.slice(1)}</h2>
-            {plano === 'gratuito' && (
-              <Link href="/medicina/dashboard/assinatura" className="text-amber-400 text-sm hover:underline flex items-center gap-1">
-                <Sparkles className="w-4 h-4" />
-                Upgrade
-              </Link>
-            )}
-          </div>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between py-3 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <FileText className="w-5 h-5 text-emerald-400" />
-                <span className="text-white/80">Questões/dia</span>
-              </div>
-              <span className="text-white font-medium">
-                {questoesUsadas} / {questoesLimite === -1 ? '∞' : questoesLimite}
-              </span>
-            </div>
-            <div className="flex items-center justify-between py-3 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <ClipboardList className="w-5 h-5 text-purple-400" />
-                <span className="text-white/80">Simulados/mês</span>
-              </div>
-              <span className="text-white font-medium">
-                {simuladosUsados} / {simuladosLimite === -1 ? '∞' : simuladosLimite}
-              </span>
-            </div>
-            <div className="flex items-center justify-between py-3 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <Brain className="w-5 h-5 text-amber-400" />
-                <span className="text-white/80">Perguntas IA/mês</span>
-              </div>
-              <span className="text-white font-medium">
-                {iaUsadas} / {iaLimite === -1 ? '∞' : iaLimite}
-              </span>
-            </div>
-            <div className="flex items-center justify-between py-3">
-              <div className="flex items-center gap-3">
-                <BookOpen className="w-5 h-5 text-cyan-400" />
-                <span className="text-white/80">Nível de Teoria</span>
-              </div>
-              <span className="text-white font-medium capitalize">
-                {limitesPlano.teoria_nivel}
-              </span>
-            </div>
-          </div>
+      <div className="border-t border-white/10 pt-6 mt-8">
+        <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+          <Link
+            href="/medicina/dashboard/biblioteca"
+            className="flex items-center gap-2 text-white/40 hover:text-white/70 transition"
+          >
+            <BookOpen className="w-4 h-4" />
+            Biblioteca
+          </Link>
+          <span className="text-white/20">|</span>
+          <Link
+            href="/medicina/dashboard/estatisticas"
+            className="flex items-center gap-2 text-white/40 hover:text-white/70 transition"
+          >
+            <Sparkles className="w-4 h-4" />
+            Estatísticas
+          </Link>
+          <span className="text-white/20">|</span>
+          <UsageLimits
+            usage={usageData}
+            limits={limitsData}
+            plan={plano}
+          />
         </div>
       </div>
     </div>

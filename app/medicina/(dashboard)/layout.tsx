@@ -28,19 +28,22 @@ import {
   Gift
 } from 'lucide-react'
 
+// Menu simplificado - Funcionalidades migradas para o Chat central
 const menuItems = [
-  { href: '/medicina/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/medicina/dashboard/questoes', label: 'Questões', icon: FileText },
+  { href: '/medicina/dashboard', label: 'Chat IA', icon: Brain, primary: true }, // Chat é a página principal
   { href: '/medicina/dashboard/biblioteca', label: 'Biblioteca', icon: BookOpen },
-  { href: '/medicina/dashboard/anotacoes', label: 'Anotações', icon: PenTool },
-  { href: '/medicina/dashboard/simulados', label: 'Simulados', icon: ClipboardList },
-  { href: '/medicina/dashboard/flashcards', label: 'Flashcards', icon: Sparkles },
-  { href: '/medicina/dashboard/ia', label: 'IA Tutora', icon: Brain },
-  { href: '/medicina/dashboard/forum', label: 'Fórum', icon: MessageSquare },
   { href: '/medicina/dashboard/estatisticas', label: 'Estatísticas', icon: BarChart3 },
+  { href: '/medicina/dashboard/forum', label: 'Fórum', icon: MessageSquare },
   { href: '/medicina/dashboard/indicacoes', label: 'Indicações', icon: Gift },
   { href: '/medicina/dashboard/assinatura', label: 'Meu Plano', icon: Crown, highlight: true },
 ]
+
+// REMOVIDOS (migrados para o chat):
+// - Questões → Agora geradas via chat ("crie 5 questões sobre...")
+// - Simulados → Agora gerados via chat ("monte um simulado de...")
+// - Flashcards → Agora gerados via chat ("gere flashcards de...")
+// - Anotações → Agora artefatos salvos na biblioteca
+// - IA Tutora → Dashboard É o chat agora
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -153,6 +156,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                           ? 'bg-emerald-500/20 text-emerald-400'
                           : (item as { highlight?: boolean }).highlight
                           ? 'text-amber-400 hover:bg-amber-500/10 hover:text-amber-300'
+                          : (item as { primary?: boolean }).primary
+                          ? 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 font-semibold'
                           : 'text-white/60 hover:bg-white/5 hover:text-white'
                         }
                       `}
