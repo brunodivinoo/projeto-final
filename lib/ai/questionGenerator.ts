@@ -1,12 +1,11 @@
 /**
- * Question Generator - Inspirado na Meta AI
+ * Sistema de Geração de Questões Profissional
+ * Baseado na arquitetura Meta AI
  *
- * Sistema avançado de geração de questões:
- * - Múltiplos tipos (múltipla escolha, V/F, dissertativa, caso clínico)
- * - Níveis de dificuldade adaptativos
- * - Integração inteligente com imagens
- * - Templates estruturados para diferentes estilos de prova
+ * Pipeline: Tema → Análise → Criação → Validação → Distratores → Gabarito → Revisão → Entrega
  */
+
+// ============== TIPOS ==============
 
 export type TipoQuestao =
   | 'multipla_escolha'
@@ -19,6 +18,7 @@ export type TipoQuestao =
   | 'sequencia_logica'
 
 export type NivelDificuldade = 'facil' | 'medio' | 'dificil' | 'muito_dificil'
+export type NivelCognitivo = 'lembrar' | 'entender' | 'aplicar' | 'analisar' | 'avaliar' | 'criar'
 
 export type EstiloProva =
   | 'enade'
@@ -36,7 +36,33 @@ export interface ConfiguracaoQuestao {
   incluirExplicacao?: boolean
   incluirDicas?: boolean
   areasTematicas?: string[]
-  tempoEstimado?: number // minutos
+  tempoEstimado?: number
+}
+
+export interface ConfiguracaoQuestoes {
+  quantidade: number
+  tema: string
+  dificuldade: NivelDificuldade | 'misto'
+  incluirCasosClinicos: boolean
+  incluirImagens: boolean
+  niveisCognitivos: NivelCognitivo[] | 'misto'
+  formatoGabarito: 'simples' | 'comentado' | 'detalhado'
+  estilo?: EstiloProva
+}
+
+export interface DistribuicaoRespostas {
+  A: number
+  B: number
+  C: number
+  D: number
+  E: number
+}
+
+export interface SubtopicoTema {
+  nome: string
+  usado: boolean
+  dificuldade: NivelDificuldade
+  nivelCognitivo: NivelCognitivo
 }
 
 export interface TemplateQuestao {
@@ -47,12 +73,144 @@ export interface TemplateQuestao {
   formatoResposta: string
 }
 
-// Templates para cada tipo de questão
+// ============== TEMPLATES META AI ==============
+
+/**
+ * Template de Caso Clínico (Meta AI)
+ * Estrutura: Dados demográficos → História → Exame físico → Exames → Pergunta
+ */
+const TEMPLATE_CASO_CLINICO = `
+**Caso Clínico:**
+[DADOS DEMOGRÁFICOS]: Paciente [sexo], [idade] anos, [profissão/contexto relevante].
+[QUEIXA PRINCIPAL]: Procura atendimento com queixa de [sintoma principal] há [tempo].
+[HISTÓRIA]: [Detalhes da história clínica relevantes para o diagnóstico]
+[EXAME FÍSICO]: [Achados relevantes do exame físico]
+[EXAMES COMPLEMENTARES]: [Se necessário: resultados de exames laboratoriais/imagem]
+
+Com base no caso acima, [PERGUNTA]:
+`
+
+/**
+ * Técnicas de criação de distratores (Meta AI)
+ */
+const TECNICAS_DISTRATORES = {
+  trocaNumeros: 'Alterar valores numéricos (doses, percentuais, medidas)',
+  inversaoConceitos: 'Inverter causa/efeito, aumento/diminuição, ativação/inibição',
+  termosParecidos: 'Usar termos que soam similares mas significam diferente',
+  detalhesIrrelevantes: 'Adicionar informações corretas mas que não respondem a pergunta',
+  generalizacao: 'Tornar uma afirmação específica muito genérica',
+  especificacaoExcessiva: 'Tornar uma afirmação geral muito específica',
+  condicaoErrada: 'Usar condição/contexto diferente do perguntado'
+}
+
+/**
+ * Mapeamento de subtópicos por sistema (para evitar repetição)
+ */
+const SUBTOPICOS_POR_TEMA: Record<string, SubtopicoTema[]> = {
+  'sistema cardiovascular': [
+    { nome: 'Anatomia do coração (câmaras, válvulas)', usado: false, dificuldade: 'facil', nivelCognitivo: 'lembrar' },
+    { nome: 'Circulação pulmonar vs sistêmica', usado: false, dificuldade: 'facil', nivelCognitivo: 'entender' },
+    { nome: 'Ciclo cardíaco (sístole/diástole)', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Sistema de condução elétrica', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+    { nome: 'Regulação da pressão arterial', usado: false, dificuldade: 'medio', nivelCognitivo: 'analisar' },
+    { nome: 'Débito cardíaco e seus determinantes', usado: false, dificuldade: 'dificil', nivelCognitivo: 'aplicar' },
+    { nome: 'ECG básico e interpretação', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Fisiopatologia da insuficiência cardíaca', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Doenças valvares', usado: false, dificuldade: 'dificil', nivelCognitivo: 'avaliar' },
+    { nome: 'Farmacologia cardiovascular', usado: false, dificuldade: 'dificil', nivelCognitivo: 'aplicar' },
+  ],
+  'sistema respiratório': [
+    { nome: 'Anatomia das vias aéreas', usado: false, dificuldade: 'facil', nivelCognitivo: 'lembrar' },
+    { nome: 'Anatomia dos pulmões', usado: false, dificuldade: 'facil', nivelCognitivo: 'lembrar' },
+    { nome: 'Mecânica respiratória', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Trocas gasosas', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Transporte de O2 e CO2', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+    { nome: 'Controle da respiração', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Espirometria e volumes pulmonares', usado: false, dificuldade: 'dificil', nivelCognitivo: 'aplicar' },
+    { nome: 'Fisiopatologia da asma', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Fisiopatologia da DPOC', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Insuficiência respiratória', usado: false, dificuldade: 'dificil', nivelCognitivo: 'avaliar' },
+  ],
+  'sistema nervoso': [
+    { nome: 'Neurônio e sinapse', usado: false, dificuldade: 'facil', nivelCognitivo: 'lembrar' },
+    { nome: 'Divisões do sistema nervoso', usado: false, dificuldade: 'facil', nivelCognitivo: 'lembrar' },
+    { nome: 'Anatomia do encéfalo', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Medula espinhal e reflexos', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+    { nome: 'Sistema nervoso autônomo', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Neurotransmissores', usado: false, dificuldade: 'dificil', nivelCognitivo: 'aplicar' },
+    { nome: 'Vias sensitivas e motoras', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Pares cranianos', usado: false, dificuldade: 'dificil', nivelCognitivo: 'lembrar' },
+    { nome: 'Fisiopatologia do AVC', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Doenças neurodegenerativas', usado: false, dificuldade: 'dificil', nivelCognitivo: 'avaliar' },
+  ],
+  'sistema digestório': [
+    { nome: 'Anatomia do trato gastrointestinal', usado: false, dificuldade: 'facil', nivelCognitivo: 'lembrar' },
+    { nome: 'Glândulas anexas (fígado, pâncreas)', usado: false, dificuldade: 'facil', nivelCognitivo: 'lembrar' },
+    { nome: 'Motilidade gastrointestinal', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Secreção gástrica e pancreática', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Digestão e absorção de nutrientes', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+    { nome: 'Fisiopatologia da úlcera péptica', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Hepatites e cirrose', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Pancreatite aguda e crônica', usado: false, dificuldade: 'dificil', nivelCognitivo: 'avaliar' },
+    { nome: 'Doenças inflamatórias intestinais', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Síndrome do intestino irritável', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+  ],
+  'sistema endócrino': [
+    { nome: 'Hipotálamo e hipófise', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Tireoide e paratireoides', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Suprarrenais (cortisol, aldosterona)', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+    { nome: 'Pâncreas endócrino (insulina, glucagon)', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Diabetes mellitus tipo 1 e 2', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Hipo e hipertireoidismo', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Síndrome de Cushing', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Insuficiência adrenal', usado: false, dificuldade: 'dificil', nivelCognitivo: 'avaliar' },
+    { nome: 'Regulação do cálcio e fósforo', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+    { nome: 'Feocromocitoma', usado: false, dificuldade: 'dificil', nivelCognitivo: 'avaliar' },
+  ],
+  'sistema renal': [
+    { nome: 'Anatomia renal e néfron', usado: false, dificuldade: 'facil', nivelCognitivo: 'lembrar' },
+    { nome: 'Filtração glomerular', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Reabsorção e secreção tubular', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Regulação do equilíbrio ácido-base', usado: false, dificuldade: 'dificil', nivelCognitivo: 'aplicar' },
+    { nome: 'Regulação do volume e osmolaridade', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+    { nome: 'Insuficiência renal aguda', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Doença renal crônica', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Distúrbios hidroeletrolíticos', usado: false, dificuldade: 'dificil', nivelCognitivo: 'avaliar' },
+    { nome: 'Glomerulonefrites', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Litíase renal', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+  ],
+  'farmacologia': [
+    { nome: 'Farmacocinética básica', usado: false, dificuldade: 'facil', nivelCognitivo: 'lembrar' },
+    { nome: 'Farmacodinâmica (receptores)', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Antibióticos', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+    { nome: 'Anti-hipertensivos', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+    { nome: 'Anti-inflamatórios (AINEs e corticoides)', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+    { nome: 'Analgésicos e anestésicos', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+    { nome: 'Interações medicamentosas', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Efeitos adversos e toxicidade', usado: false, dificuldade: 'dificil', nivelCognitivo: 'avaliar' },
+    { nome: 'Farmacologia do SNC', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Quimioterapia antineoplásica', usado: false, dificuldade: 'dificil', nivelCognitivo: 'avaliar' },
+  ],
+  'imunologia': [
+    { nome: 'Células do sistema imune', usado: false, dificuldade: 'facil', nivelCognitivo: 'lembrar' },
+    { nome: 'Imunidade inata vs adaptativa', usado: false, dificuldade: 'facil', nivelCognitivo: 'entender' },
+    { nome: 'Anticorpos e suas classes', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+    { nome: 'Resposta imune humoral e celular', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+    { nome: 'Hipersensibilidade tipo I-IV', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Doenças autoimunes', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Imunodeficiências', usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+    { nome: 'Transplantes e rejeição', usado: false, dificuldade: 'dificil', nivelCognitivo: 'avaliar' },
+    { nome: 'Vacinação e imunização', usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+    { nome: 'Sistema complemento', usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+  ],
+}
+
+// Templates para cada tipo de questão (mantidos do arquivo original)
 export const TEMPLATES_QUESTAO: Record<TipoQuestao, TemplateQuestao> = {
   multipla_escolha: {
     tipo: 'multipla_escolha',
     estrutura: `
-**Questão [N]** ([área])
+**Questão [N]** | Nível: [FÁCIL/MÉDIO/DIFÍCIL] | Bloom: [Nível Cognitivo]
 
 [Enunciado contextualizado]
 
@@ -64,7 +222,7 @@ e) [Alternativa E]
 
 ---
 **Gabarito:** [Letra]
-**Justificativa:** [Explicação detalhada de por que a alternativa está correta e as outras incorretas]
+**Justificativa:** [Explicação detalhada]
 `.trim(),
     instrucoes: [
       'Crie um enunciado contextualizado e clínico quando possível',
@@ -86,7 +244,7 @@ e) [Alternativa E]
   verdadeiro_falso: {
     tipo: 'verdadeiro_falso',
     estrutura: `
-**Questão [N]** ([área])
+**Questão [N]** | Nível: [FÁCIL/MÉDIO/DIFÍCIL] | Bloom: [Nível Cognitivo]
 
 Analise as afirmativas abaixo:
 
@@ -104,7 +262,7 @@ e) Todas estão corretas
 
 ---
 **Gabarito:** [Letra]
-**Análise:**
+**Análise detalhada de cada afirmativa:**
 - I. [V/F] - [Justificativa]
 - II. [V/F] - [Justificativa]
 - III. [V/F] - [Justificativa]
@@ -127,7 +285,7 @@ e) Todas estão corretas
   dissertativa: {
     tipo: 'dissertativa',
     estrutura: `
-**Questão [N]** (Dissertativa - [área])
+**Questão [N]** (Dissertativa) | Nível: [FÁCIL/MÉDIO/DIFÍCIL] | Bloom: [Nível Cognitivo]
 
 [Enunciado detalhado com contexto]
 
@@ -160,7 +318,7 @@ e) Todas estão corretas
   caso_clinico: {
     tipo: 'caso_clinico',
     estrutura: `
-**📋 CASO CLÍNICO [N]** ([especialidade])
+**📋 CASO CLÍNICO [N]** | Nível: [FÁCIL/MÉDIO/DIFÍCIL] | Bloom: [Nível Cognitivo]
 
 **Identificação:** [Sexo, idade, profissão]
 
@@ -210,7 +368,7 @@ e) Todas estão corretas
   associacao: {
     tipo: 'associacao',
     estrutura: `
-**Questão [N]** (Associação - [área])
+**Questão [N]** (Associação) | Nível: [FÁCIL/MÉDIO/DIFÍCIL] | Bloom: [Nível Cognitivo]
 
 Associe as colunas:
 
@@ -230,7 +388,7 @@ Associe as colunas:
 
 ---
 **Gabarito:** [Sequência correta]
-**Explicação:** [Justificativa de cada associação]
+**Explicação de cada associação:**
 `.trim(),
     instrucoes: [
       'Crie duas colunas relacionadas',
@@ -249,7 +407,7 @@ Associe as colunas:
   completar_lacunas: {
     tipo: 'completar_lacunas',
     estrutura: `
-**Questão [N]** (Complete as lacunas - [área])
+**Questão [N]** (Complete as lacunas) | Nível: [FÁCIL/MÉDIO/DIFÍCIL] | Bloom: [Nível Cognitivo]
 
 Complete o texto abaixo:
 
@@ -288,7 +446,7 @@ Complete o texto abaixo:
   interpretacao_imagem: {
     tipo: 'interpretacao_imagem',
     estrutura: `
-**Questão [N]** (Interpretação de Imagem - [área])
+**Questão [N]** (Interpretação de Imagem) | Nível: [FÁCIL/MÉDIO/DIFÍCIL] | Bloom: [Nível Cognitivo]
 
 📷 **Observe a imagem abaixo:**
 
@@ -306,8 +464,8 @@ Complete o texto abaixo:
 2. [Resposta]
 3. [Resposta com correlação]
 
-**Explicação da imagem:**
-[Descrição detalhada dos achados e sua relevância]
+**Explicação detalhada da imagem:**
+[Descrição dos achados e sua relevância]
 `.trim(),
     instrucoes: [
       'Descreva claramente a imagem ou solicite busca',
@@ -326,7 +484,7 @@ Complete o texto abaixo:
   sequencia_logica: {
     tipo: 'sequencia_logica',
     estrutura: `
-**Questão [N]** (Sequência Lógica - [área])
+**Questão [N]** (Sequência Lógica) | Nível: [FÁCIL/MÉDIO/DIFÍCIL] | Bloom: [Nível Cognitivo]
 
 Ordene corretamente as etapas do processo de [processo]:
 
@@ -451,30 +609,461 @@ export const INSTRUCOES_NIVEL: Record<NivelDificuldade, string[]> = {
     'Perguntas diretas sobre conceitos básicos',
     'Alternativas claramente distinguíveis',
     'Evitar "pegadinhas"',
-    'Foco em memorização e compreensão básica'
+    'Foco em memorização e compreensão básica',
+    'Vocabulário simples e acessível'
   ],
   medio: [
     'Requer integração de conhecimentos',
     'Alternativas mais próximas entre si',
     'Aplicação de conceitos',
-    'Inclui interpretação de dados simples'
+    'Inclui interpretação de dados simples',
+    'Casos clínicos simples podem ser usados'
   ],
   dificil: [
     'Exige raciocínio clínico elaborado',
     'Casos atípicos ou com múltiplas variáveis',
     'Análise crítica de condutas',
-    'Integração de múltiplas áreas'
+    'Integração de múltiplas áreas',
+    'Distratores muito plausíveis'
   ],
   muito_dificil: [
     'Situações raras ou complexas',
     'Detalhes sutis diferenciais',
     'Exige conhecimento aprofundado',
-    'Múltiplas etapas de raciocínio'
+    'Múltiplas etapas de raciocínio',
+    'Requer domínio completo do tema'
   ]
 }
 
+// ============== FUNÇÕES PRINCIPAIS ==============
+
 /**
- * Gera configuração completa para geração de questões
+ * Gera distribuição de respostas corretas (Meta AI: A-D 20-30%, E 10-20%)
+ */
+function gerarDistribuicaoRespostas(quantidade: number): string[] {
+  const letras = ['A', 'B', 'C', 'D', 'E']
+  const distribuicao: string[] = []
+
+  // Distribuição alvo: A-D ~22% cada, E ~12%
+  const alvos = { A: 0.22, B: 0.22, C: 0.22, D: 0.22, E: 0.12 }
+  const contagem = { A: 0, B: 0, C: 0, D: 0, E: 0 }
+
+  for (let i = 0; i < quantidade; i++) {
+    // Encontrar letra mais "atrasada" em relação ao alvo
+    let melhorLetra = 'A'
+    let maiorDiferenca = -1
+
+    for (const letra of letras) {
+      const atual = contagem[letra as keyof typeof contagem] / (i + 1)
+      const alvo = alvos[letra as keyof typeof alvos]
+      const diferenca = alvo - atual
+
+      if (diferenca > maiorDiferenca) {
+        maiorDiferenca = diferenca
+        melhorLetra = letra
+      }
+    }
+
+    // Adicionar aleatoriedade (30% de chance de escolher aleatório)
+    if (Math.random() < 0.3) {
+      melhorLetra = letras[Math.floor(Math.random() * 5)]
+    }
+
+    distribuicao.push(melhorLetra)
+    contagem[melhorLetra as keyof typeof contagem]++
+  }
+
+  // Embaralhar para não ficar previsível
+  return distribuicao.sort(() => Math.random() - 0.5)
+}
+
+/**
+ * Seleciona subtópicos para evitar repetição (Meta AI)
+ */
+function selecionarSubtopicos(
+  tema: string,
+  quantidade: number,
+  dificuldade: NivelDificuldade | 'misto'
+): SubtopicoTema[] {
+  // Normalizar tema
+  const temaNormalizado = tema.toLowerCase()
+
+  // Buscar subtópicos do tema (procurar correspondência parcial)
+  let subtopicos: SubtopicoTema[] | undefined
+
+  for (const [key, value] of Object.entries(SUBTOPICOS_POR_TEMA)) {
+    if (temaNormalizado.includes(key) || key.includes(temaNormalizado)) {
+      subtopicos = value
+      break
+    }
+  }
+
+  // Se não encontrou, criar subtópicos genéricos
+  if (!subtopicos) {
+    subtopicos = [
+      { nome: `Conceitos básicos de ${tema}`, usado: false, dificuldade: 'facil', nivelCognitivo: 'lembrar' },
+      { nome: `Definições e terminologia de ${tema}`, usado: false, dificuldade: 'facil', nivelCognitivo: 'lembrar' },
+      { nome: `Estrutura e anatomia de ${tema}`, usado: false, dificuldade: 'facil', nivelCognitivo: 'entender' },
+      { nome: `Funcionamento e fisiologia de ${tema}`, usado: false, dificuldade: 'medio', nivelCognitivo: 'entender' },
+      { nome: `Mecanismos de ${tema}`, usado: false, dificuldade: 'medio', nivelCognitivo: 'aplicar' },
+      { nome: `Alterações patológicas de ${tema}`, usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+      { nome: `Diagnóstico diferencial em ${tema}`, usado: false, dificuldade: 'dificil', nivelCognitivo: 'analisar' },
+      { nome: `Tratamento e manejo de ${tema}`, usado: false, dificuldade: 'dificil', nivelCognitivo: 'aplicar' },
+      { nome: `Correlações clínicas de ${tema}`, usado: false, dificuldade: 'dificil', nivelCognitivo: 'avaliar' },
+      { nome: `Casos especiais e complicações de ${tema}`, usado: false, dificuldade: 'dificil', nivelCognitivo: 'avaliar' },
+    ]
+  }
+
+  // Filtrar por dificuldade se não for misto
+  let subtopicosDisponiveis = [...subtopicos]
+  if (dificuldade !== 'misto') {
+    const filtrados = subtopicos.filter(s => s.dificuldade === dificuldade)
+    if (filtrados.length >= Math.min(3, quantidade)) {
+      subtopicosDisponiveis = filtrados
+    }
+  }
+
+  // Selecionar aleatoriamente
+  const selecionados: SubtopicoTema[] = []
+  const disponiveis = [...subtopicosDisponiveis]
+
+  for (let i = 0; i < Math.min(quantidade, disponiveis.length); i++) {
+    const index = Math.floor(Math.random() * disponiveis.length)
+    selecionados.push(disponiveis[index])
+    disponiveis.splice(index, 1)
+  }
+
+  // Se ainda precisa de mais, repetir com variação
+  while (selecionados.length < quantidade) {
+    const index = Math.floor(Math.random() * subtopicosDisponiveis.length)
+    selecionados.push({
+      ...subtopicosDisponiveis[index],
+      nome: subtopicosDisponiveis[index].nome + ' (aprofundamento)'
+    })
+  }
+
+  return selecionados
+}
+
+/**
+ * Gera prompt completo para criar questões profissionais (Pipeline Meta AI)
+ */
+export function gerarPromptQuestoesProfissional(config: ConfiguracaoQuestoes): string {
+  // 1. ANÁLISE DE CONTEÚDO - Selecionar subtópicos
+  const subtopicos = selecionarSubtopicos(config.tema, config.quantidade, config.dificuldade)
+
+  // 2. GERAR DISTRIBUIÇÃO DE RESPOSTAS
+  const distribuicaoRespostas = gerarDistribuicaoRespostas(config.quantidade)
+
+  // 3. DEFINIR DISTRIBUIÇÃO DE DIFICULDADE
+  let distribuicaoDificuldade = ''
+  if (config.dificuldade === 'misto') {
+    const faceis = Math.round(config.quantidade * 0.3)
+    const medias = Math.round(config.quantidade * 0.5)
+    const dificeis = config.quantidade - faceis - medias
+    distribuicaoDificuldade = `
+- ${faceis} questões FÁCEIS (30%)
+- ${medias} questões MÉDIAS (50%)
+- ${dificeis} questões DIFÍCEIS (20%)`
+  } else {
+    distribuicaoDificuldade = `- Todas as questões devem ser de nível ${config.dificuldade.toUpperCase()}`
+  }
+
+  // 4. Obter info do estilo se especificado
+  const estiloInfo = config.estilo ? ESTILOS_PROVA[config.estilo] : null
+
+  // 5. MONTAR PROMPT COMPLETO
+  return `
+## GERAR ${config.quantidade} QUESTÕES PROFISSIONAIS SOBRE: ${config.tema.toUpperCase()}
+
+### PIPELINE DE CRIAÇÃO (siga esta ordem):
+
+---
+
+## PASSO 1: SUBTÓPICOS A COBRIR (não repetir!)
+
+Cada questão deve abordar um subtópico DIFERENTE:
+${subtopicos.map((s, i) => `${i + 1}. **Questão ${i + 1}**: ${s.nome} (${s.dificuldade}, ${s.nivelCognitivo})`).join('\n')}
+
+---
+
+## PASSO 2: DISTRIBUIÇÃO DE RESPOSTAS CORRETAS
+
+Para evitar padrões previsíveis, use esta distribuição:
+${distribuicaoRespostas.map((letra, i) => `- Questão ${i + 1}: Resposta correta = **${letra}**`).join('\n')}
+
+---
+
+## PASSO 3: DISTRIBUIÇÃO DE DIFICULDADE
+${distribuicaoDificuldade}
+
+**O que define cada nível:**
+- **FÁCIL**: Vocabulário simples, conceito direto, memorização
+- **MÉDIA**: Requer compreensão, pode ter caso clínico simples
+- **DIFÍCIL**: Análise/avaliação, caso clínico complexo, integração de conhecimentos
+
+---
+
+## PASSO 4: NÍVEIS COGNITIVOS (Taxonomia de Bloom)
+
+Variar os níveis cognitivos das questões:
+- **Lembrar**: "Qual é...", "Cite...", "Defina..."
+- **Entender**: "Explique...", "Por que...", "Qual a função..."
+- **Aplicar**: Casos clínicos, "O que acontece se..."
+- **Analisar**: "Compare...", "Qual a relação...", "Diferencie..."
+- **Avaliar**: "Qual a melhor conduta...", "Qual o prognóstico..."
+
+---
+
+## PASSO 5: CRIAÇÃO DOS DISTRATORES (Alternativas Erradas)
+
+Use estas técnicas para criar alternativas erradas PLAUSÍVEIS:
+
+1. **Troca de números**: Alterar doses, valores, percentuais
+   - Correto: "frequência de 60-100 bpm" → Errado: "frequência de 40-60 bpm"
+
+2. **Inversão de conceitos**: Inverter causa/efeito
+   - Correto: "vasoconstrição causa hipertensão" → Errado: "vasodilatação causa hipertensão"
+
+3. **Termos parecidos**: Usar termos que soam similar
+   - Correto: "hipertrofia" → Errado: "hiperplasia"
+
+4. **Detalhes irrelevantes**: Informação correta mas que não responde
+   - Pergunta sobre função → Alternativa descreve anatomia (correta, mas não responde)
+
+5. **Generalização/Especificação**: Tornar muito genérico ou muito específico
+
+⚠️ **NUNCA usar**:
+- Alternativas absurdas ou obviamente erradas
+- "Todas as anteriores" ou "Nenhuma das anteriores"
+- Pegadinhas injustas ou enganosas
+
+---
+
+## PASSO 6: FORMATO DE CADA QUESTÃO
+
+${config.incluirCasosClinicos ? `
+### Para questões COM CASO CLÍNICO (inclua em ~50% das questões):
+${TEMPLATE_CASO_CLINICO}
+` : ''}
+
+### Estrutura obrigatória para CADA questão:
+
+\`\`\`questao
+{
+  "numero": [N],
+  "enunciado": "[ENUNCIADO - claro, objetivo, sem ambiguidade]",
+  "nivel": "[facil/medio/dificil]",
+  "bloom": "[lembrar/entender/aplicar/analisar/avaliar]",
+  "alternativas": [
+    {"letra": "a", "texto": "[Alternativa A]"},
+    {"letra": "b", "texto": "[Alternativa B]"},
+    {"letra": "c", "texto": "[Alternativa C]"},
+    {"letra": "d", "texto": "[Alternativa D]"},
+    {"letra": "e", "texto": "[Alternativa E]"}
+  ],
+  "gabarito": "[letra]",
+  "explicacao": {
+    "correta": "[Por que a alternativa correta está certa]",
+    "erradas": {
+      "a": "[Se errada: explicar o erro]",
+      "b": "[Se errada: explicar o erro]",
+      "c": "[Se errada: explicar o erro]",
+      "d": "[Se errada: explicar o erro]",
+      "e": "[Se errada: explicar o erro]"
+    }
+  },
+  "dica_memorizacao": "[Mnemônico ou dica prática]",
+  "referencia": "[SOBRENOME, Nome. Título. Ed. Cidade: Editora, Ano. p. XX]"
+}
+\`\`\`
+
+${config.incluirImagens ? `
+### IMAGENS:
+- Busque imagens médicas relevantes usando a ferramenta buscar_imagens_medicas
+- Imagens no enunciado NÃO devem revelar a resposta
+- Imagens no gabarito PODEM ter texto explicativo
+` : ''}
+
+---
+
+## PASSO 7: REFERÊNCIAS BIBLIOGRÁFICAS
+
+Use estas fontes confiáveis:
+- GUYTON, A.C.; HALL, J.E. Tratado de Fisiologia Médica. 13ª ed. Rio de Janeiro: Elsevier, 2017.
+- TORTORA, G.J.; DERRICKSON, B. Princípios de Anatomia e Fisiologia. 14ª ed. Rio de Janeiro: Guanabara Koogan, 2019.
+- MOORE, K.L.; DALLEY, A.F. Anatomia Orientada para a Clínica. 8ª ed. Rio de Janeiro: Guanabara Koogan, 2019.
+- KUMAR, V.; ABBAS, A.K. Robbins Patologia Básica. 10ª ed. Rio de Janeiro: Elsevier, 2018.
+- RANG, H.P.; DALE, M.M. Farmacologia. 9ª ed. Rio de Janeiro: Elsevier, 2020.
+- PORTO, C.C. Semiologia Médica. 8ª ed. Rio de Janeiro: Guanabara Koogan, 2019.
+
+${estiloInfo ? `
+---
+
+## ESTILO DE PROVA: ${config.estilo?.toUpperCase()}
+
+Características específicas deste estilo:
+${estiloInfo.caracteristicas.map(c => `- ${c}`).join('\n')}
+
+Tipos preferidos: ${estiloInfo.tiposPreferidos.join(', ')}
+` : ''}
+
+---
+
+## PASSO 8: VALIDAÇÃO FINAL (Checklist)
+
+Antes de entregar, VERIFIQUE:
+- [ ] Quantidade correta: ${config.quantidade} questões
+- [ ] Cada questão tem exatamente 5 alternativas (a, b, c, d, e)
+- [ ] Distribuição de respostas segue o padrão definido
+- [ ] Subtópicos são diferentes entre questões (sem repetição)
+- [ ] Cada questão tem gabarito comentado COMPLETO
+- [ ] Cada alternativa errada tem explicação do erro
+- [ ] Cada questão tem referência bibliográfica
+- [ ] Cada questão tem dica de memorização
+- [ ] Nível de dificuldade está indicado
+- [ ] Nível cognitivo (Bloom) está indicado
+${config.incluirImagens ? '- [ ] Imagens relevantes foram buscadas' : ''}
+${config.incluirCasosClinicos ? '- [ ] Casos clínicos são realistas e plausíveis' : ''}
+
+---
+
+## SEQUENCIAMENTO
+
+Organize as questões em ordem:
+1. Primeiro: questões mais FÁCEIS (aquecimento)
+2. Meio: questões MÉDIAS
+3. Final: questões DIFÍCEIS
+4. Agrupar por subtópico quando fizer sentido
+
+---
+
+## AGORA, GERE AS ${config.quantidade} QUESTÕES:
+
+Siga o pipeline completo. Não pule etapas. Garanta qualidade profissional.
+Use o formato JSON dentro de blocos \`\`\`questao para cada questão.
+`
+}
+
+/**
+ * Valida as questões geradas
+ */
+export function validarQuestoesGeradas(
+  resposta: string,
+  config: ConfiguracaoQuestoes
+): {
+  valido: boolean
+  questoesEncontradas: number
+  problemasEncontrados: string[]
+  qualidade: number // 0-100
+} {
+  const problemas: string[] = []
+  let pontos = 100
+
+  // 1. Contar questões
+  const questoesRegex = /```questao|```question|\*\*Questão\s*\d+\*\*/gi
+  const questoes = resposta.match(questoesRegex) || []
+  const questoesEncontradas = questoes.length
+
+  if (questoesEncontradas < config.quantidade) {
+    problemas.push(`Faltam ${config.quantidade - questoesEncontradas} questões`)
+    pontos -= (config.quantidade - questoesEncontradas) * 10
+  }
+
+  // 2. Verificar alternativas (5 por questão)
+  const alternativas = resposta.match(/^[a-e]\)|"letra":\s*"[a-e]"/gm) || []
+  const alternativasEsperadas = config.quantidade * 5
+
+  if (alternativas.length < alternativasEsperadas * 0.9) {
+    problemas.push('Algumas questões podem estar com alternativas faltando')
+    pontos -= 10
+  }
+
+  // 3. Verificar gabaritos
+  const gabaritos = resposta.match(/gabarito|resposta correta/gi) || []
+  if (gabaritos.length < config.quantidade * 0.8) {
+    problemas.push('Algumas questões estão sem gabarito')
+    pontos -= 15
+  }
+
+  // 4. Verificar explicações das erradas
+  const explicacoesErradas = resposta.match(/por que.*(errad|incorret)|"erradas":/gi) || []
+  if (explicacoesErradas.length < config.quantidade * 0.5) {
+    problemas.push('Faltam explicações das alternativas erradas')
+    pontos -= 10
+  }
+
+  // 5. Verificar referências
+  const referencias = resposta.match(/(GUYTON|TORTORA|MOORE|ROBBINS|RANG|PORTO|referencia|referência|📚)/gi) || []
+  if (referencias.length < config.quantidade * 0.8) {
+    problemas.push('Faltam referências bibliográficas')
+    pontos -= 10
+  }
+
+  // 6. Verificar dicas de memorização
+  const dicas = resposta.match(/(dica|💡|mnemônico|memoriz|dica_memorizacao)/gi) || []
+  if (dicas.length < config.quantidade * 0.5) {
+    problemas.push('Faltam dicas de memorização')
+    pontos -= 5
+  }
+
+  // 7. Verificar níveis indicados
+  const niveis = resposta.match(/(fácil|facil|médio|medio|difícil|dificil|nível|nivel|"nivel")/gi) || []
+  if (niveis.length < config.quantidade) {
+    problemas.push('Nem todas questões têm nível de dificuldade indicado')
+    pontos -= 5
+  }
+
+  // 8. Verificar Bloom
+  const bloom = resposta.match(/(lembrar|entender|aplicar|analisar|avaliar|criar|bloom)/gi) || []
+  if (bloom.length < config.quantidade * 0.5) {
+    problemas.push('Faltam indicações de nível cognitivo (Bloom)')
+    pontos -= 5
+  }
+
+  return {
+    valido: problemas.length === 0,
+    questoesEncontradas,
+    problemasEncontrados: problemas,
+    qualidade: Math.max(0, pontos)
+  }
+}
+
+/**
+ * Gera prompt de continuação se questões incompletas
+ */
+export function gerarPromptContinuacaoQuestoes(
+  validacao: ReturnType<typeof validarQuestoesGeradas>,
+  config: ConfiguracaoQuestoes,
+  questoesJaGeradas: number
+): string {
+  return `
+## CONTINUE GERANDO AS QUESTÕES FALTANTES
+
+Você gerou ${questoesJaGeradas} de ${config.quantidade} questões.
+
+**PROBLEMAS DETECTADOS:**
+${validacao.problemasEncontrados.map(p => `- ${p}`).join('\n')}
+
+**AÇÃO NECESSÁRIA:**
+${config.quantidade - questoesJaGeradas > 0
+  ? `- Gerar mais ${config.quantidade - questoesJaGeradas} questões (começar da questão ${questoesJaGeradas + 1})`
+  : '- Completar gabaritos/referências faltantes'}
+
+**REGRAS:**
+- NÃO repita questões já feitas
+- Continue a numeração de onde parou
+- Mantenha o mesmo padrão de qualidade
+- Siga a distribuição de respostas definida anteriormente
+
+CONTINUE AGORA:
+`
+}
+
+// ============== FUNÇÕES AUXILIARES (mantidas do original) ==============
+
+/**
+ * Gera configuração completa para geração de questões (compatibilidade)
  */
 export function gerarConfiguracaoQuestao(
   tema: string,
@@ -492,7 +1081,7 @@ export function gerarConfiguracaoQuestao(
     estilo: config.estilo,
     incluirImagem: config.incluirImagem ?? false,
     incluirExplicacao: config.incluirExplicacao ?? true,
-    incluirDicas: config.incluirDicas ?? false,
+    incluirDicas: config.incluirDicas ?? true,
     areasTematicas: config.areasTematicas || [],
     tempoEstimado: config.tempoEstimado
   }
@@ -500,68 +1089,20 @@ export function gerarConfiguracaoQuestao(
   // Obter template
   const template = TEMPLATES_QUESTAO[configuracao.tipo]
 
-  // Obter instruções do estilo de prova (se especificado)
-  const estiloInfo = configuracao.estilo ? ESTILOS_PROVA[configuracao.estilo] : null
-
-  // Construir prompt
-  let prompt = `
-## 📝 GERAÇÃO DE QUESTÕES
-
-**Tema:** ${tema}
-**Quantidade:** ${quantidade} questões
-**Tipo:** ${configuracao.tipo.replace('_', ' ')}
-**Nível:** ${configuracao.nivel}
-${configuracao.estilo ? `**Estilo:** ${configuracao.estilo}` : ''}
-
-### ESTRUTURA BASE:
-${template.estrutura}
-
-### INSTRUÇÕES:
-${template.instrucoes.map(i => `- ${i}`).join('\n')}
-
-### INSTRUÇÕES DE NÍVEL (${configuracao.nivel}):
-${INSTRUCOES_NIVEL[configuracao.nivel].map(i => `- ${i}`).join('\n')}
-`
-
-  if (estiloInfo) {
-    prompt += `
-### CARACTERÍSTICAS DO ESTILO ${configuracao.estilo?.toUpperCase()}:
-${estiloInfo.caracteristicas.map(c => `- ${c}`).join('\n')}
-`
+  // Criar config de questões para usar o prompt profissional
+  const configQuestoes: ConfiguracaoQuestoes = {
+    quantidade,
+    tema,
+    dificuldade: configuracao.nivel === 'muito_dificil' ? 'dificil' : configuracao.nivel,
+    incluirCasosClinicos: configuracao.tipo === 'caso_clinico' || quantidade >= 5,
+    incluirImagens: configuracao.incluirImagem ?? false,
+    niveisCognitivos: 'misto',
+    formatoGabarito: 'detalhado',
+    estilo: configuracao.estilo
   }
 
-  if (configuracao.incluirImagem) {
-    prompt += `
-### IMAGENS:
-- OBRIGATÓRIO incluir imagem de referência
-- Use a ferramenta buscar_imagens_medicas para obter imagem relevante
-- A imagem deve estar diretamente relacionada à questão
-`
-  }
-
-  if (configuracao.incluirExplicacao) {
-    prompt += `
-### EXPLICAÇÃO:
-- OBRIGATÓRIO incluir gabarito comentado
-- Explique por que cada alternativa está certa ou errada
-- Inclua referências quando possível
-`
-  }
-
-  if (configuracao.incluirDicas) {
-    prompt += `
-### DICAS DE ESTUDO:
-- Após a explicação, inclua 2-3 dicas de estudo relacionadas
-- Sugira tópicos para revisão
-`
-  }
-
-  prompt += `
-### FORMATO DE SAÍDA:
-Gere ${quantidade} questões seguindo EXATAMENTE o template acima.
-Numere as questões de 1 a ${quantidade}.
-Separe cada questão com uma linha horizontal (---).
-`
+  // Gerar prompt profissional
+  const prompt = gerarPromptQuestoesProfissional(configQuestoes)
 
   return {
     prompt: prompt.trim(),
@@ -580,7 +1121,8 @@ export function deveIncluirImagem(tema: string): boolean {
     'anatom', 'histolog', 'imagem', 'radiolog', 'raio-x', 'tomograf',
     'ressonância', 'ultrassom', 'microscop', 'lâmina', 'corte',
     'célula', 'tecido', 'órgão', 'estrutura', 'diagrama',
-    'ecg', 'eletrocardiograma', 'dermatolog', 'lesão', 'lesao'
+    'ecg', 'eletrocardiograma', 'dermatolog', 'lesão', 'lesao',
+    'rx', 'tc', 'rm', 'pet', 'cintilografia', 'endoscop'
   ]
 
   return temasVisuais.some(t => temaLower.includes(t))
@@ -595,7 +1137,6 @@ export function sugerirTipoQuestao(tema: string, estilo?: EstiloProva): TipoQues
   // Se especificou estilo, preferir tipos do estilo
   if (estilo) {
     const tiposEstilo = ESTILOS_PROVA[estilo].tiposPreferidos
-    // Retornar o tipo mais comum do estilo
     return tiposEstilo[0]
   }
 
@@ -606,7 +1147,7 @@ export function sugerirTipoQuestao(tema: string, estilo?: EstiloProva): TipoQues
   }
 
   if (temaLower.includes('imagem') || temaLower.includes('identific') ||
-      temaLower.includes('anatomia')) {
+      temaLower.includes('anatomia') || temaLower.includes('histolog')) {
     return 'interpretacao_imagem'
   }
 
@@ -615,12 +1156,13 @@ export function sugerirTipoQuestao(tema: string, estilo?: EstiloProva): TipoQues
     return 'sequencia_logica'
   }
 
-  if (temaLower.includes('associar') || temaLower.includes('relacionar')) {
+  if (temaLower.includes('associar') || temaLower.includes('relacionar') ||
+      temaLower.includes('correlacionar')) {
     return 'associacao'
   }
 
   if (temaLower.includes('dissertativa') || temaLower.includes('explique') ||
-      temaLower.includes('descreva')) {
+      temaLower.includes('descreva') || temaLower.includes('discorra')) {
     return 'dissertativa'
   }
 
@@ -645,7 +1187,7 @@ export function validarQuestaoGerada(
   // Verificações específicas por tipo
   switch (tipo) {
     case 'multipla_escolha':
-      if (!/[a-e]\)/gi.test(questao)) {
+      if (!/[a-e]\)|"letra":\s*"[a-e]"/gi.test(questao)) {
         problemas.push('Faltam alternativas (a-e)')
       }
       if (!/gabarito/i.test(questao)) {

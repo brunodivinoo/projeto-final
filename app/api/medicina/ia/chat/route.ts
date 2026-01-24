@@ -38,10 +38,20 @@ import {
 } from '@/lib/ai/urgencyDetector'
 import {
   gerarConfiguracaoQuestao,
+  gerarPromptQuestoesProfissional,
+  validarQuestoesGeradas,
   deveIncluirImagem,
   sugerirTipoQuestao,
-  type EstiloProva
+  type EstiloProva,
+  type ConfiguracaoQuestoes,
+  type NivelDificuldade
 } from '@/lib/ai/questionGenerator'
+import {
+  analisarDesempenhoEAdaptar,
+  gerarRelatorioProgresso,
+  criarPerfilDesempenho,
+  type DesempenhoUsuario
+} from '@/lib/ai/adaptiveLearning'
 import {
   selecionarTipoExplicacao,
   gerarInstrucoesEstrutura,
@@ -966,6 +976,24 @@ async function streamClaude(params: StreamClaudeParams) {
         console.log('[Chat API] Validação QualityChecker:')
         console.log(gerarRelatorioQualidade(metricasQualidade))
         console.log(`[Chat API] Perfil aplicado: Nível=${nivelDetectado} | Urgência=${analiseUrgencia.nivel} | Tipo Explicação=${tipoExplicacao}`)
+
+        // PASSO 6.5: Validação de questões geradas (QuestionGenerator profissional)
+        if (analise.quantidadeQuestoes > 0) {
+          const configQuestoesValidacao: ConfiguracaoQuestoes = {
+            quantidade: analise.quantidadeQuestoes,
+            tema: mensagem.substring(0, 100),
+            dificuldade: (nivelDetectado === 'iniciante' ? 'facil' : nivelDetectado === 'avancado' ? 'dificil' : 'medio') as NivelDificuldade,
+            incluirCasosClinicos: analise.quantidadeQuestoes >= 5,
+            incluirImagens: deveIncluirImagem(mensagem),
+            niveisCognitivos: 'misto',
+            formatoGabarito: 'detalhado'
+          }
+          const validacaoQuestoes = validarQuestoesGeradas(fullResponse, configQuestoesValidacao)
+          console.log(`[Chat API] Validação Questões Profissional: ${validacaoQuestoes.questoesEncontradas}/${analise.quantidadeQuestoes} | Qualidade: ${validacaoQuestoes.qualidade}%`)
+          if (validacaoQuestoes.problemasEncontrados.length > 0) {
+            console.log(`[Chat API] Problemas nas questões: ${validacaoQuestoes.problemasEncontrados.join(', ')}`)
+          }
+        }
 
         // PASSO 7: Se precisa continuar mas atingimos o limite, logar aviso
         if (precisaContinuar(metricasQualidade) && iterationCount >= MAX_ITERATIONS) {
