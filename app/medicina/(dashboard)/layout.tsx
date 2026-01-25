@@ -53,7 +53,6 @@ const menuItems = [
   { href: '/medicina/dashboard', label: 'Chat IA', icon: Brain, primary: true }, // Chat é a página principal
   { href: '/medicina/dashboard/biblioteca', label: 'Biblioteca', icon: BookOpen },
   { href: '/medicina/dashboard/estatisticas', label: 'Estatísticas', icon: BarChart3 },
-  { href: '/medicina/dashboard/forum', label: 'Fórum', icon: MessageSquare },
   { href: '/medicina/dashboard/indicacoes', label: 'Indicações', icon: Gift },
   { href: '/medicina/dashboard/assinatura', label: 'Meu Plano', icon: Crown, highlight: true },
 ]
