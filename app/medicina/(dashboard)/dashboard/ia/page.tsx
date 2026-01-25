@@ -497,6 +497,8 @@ export default function IAPage() {
   const mensagemInicialEnviadaRef = useRef(false)
   // Ref para evitar loop infinito ao carregar conversa
   const conversaCarregadaRef = useRef<string | null>(null)
+  // Flag para indicar que está processando mensagem inicial - evita carregamentos paralelos
+  const processandoMensagemInicialRef = useRef<boolean>(false)
   // Ref para a função de enviar mensagem (para evitar problemas de hoisting)
   const enviarMensagemDiretaRef = useRef<((msg: string) => void) | null>(null)
   // Estado para mensagem pendente (usando state para triggerar re-render)
@@ -510,10 +512,19 @@ export default function IAPage() {
     const temMensagemInicial = searchParams.get('m')
     const temConversaParam = searchParams.get('c')
 
-    // Se tem mensagem inicial, é uma nova conversa - NÃO carregar conversa anterior
-    if (temMensagemInicial) {
-      // Limpar ref para permitir carregamento futuro
+    // Se tem mensagem inicial ou está processando mensagem inicial, NÃO carregar conversa anterior
+    if (temMensagemInicial || processandoMensagemInicialRef.current) {
       conversaCarregadaRef.current = null
+      return
+    }
+
+    // Se está em loading (streaming), não interferir
+    if (loading) {
+      return
+    }
+
+    // Se já tem mensagens carregadas, não sobrescrever
+    if (mensagens.length > 0) {
       return
     }
 
@@ -524,7 +535,7 @@ export default function IAPage() {
 
     // Se há uma conversa ativa salva no localStorage e ainda não carregamos mensagens
     // E não tentamos carregar esta conversa ainda (evita loop infinito se der 404)
-    if (conversaAtivaDoModo && mensagens.length === 0 && !loading && conversaCarregadaRef.current !== conversaAtivaDoModo) {
+    if (conversaAtivaDoModo && conversaCarregadaRef.current !== conversaAtivaDoModo) {
       conversaCarregadaRef.current = conversaAtivaDoModo
       carregarConversa(conversaAtivaDoModo)
     }
@@ -555,6 +566,16 @@ export default function IAPage() {
         console.log('[IA Page] Ignorando carregamento - já é a conversa atual')
         return
       }
+      // Não carregar se ainda está processando mensagem inicial
+      if (processandoMensagemInicialRef.current) {
+        console.log('[IA Page] Ignorando carregamento - processando mensagem inicial')
+        return
+      }
+      // Não carregar se já tem mensagens (evita sobrescrever conversa em andamento)
+      if (mensagens.length > 0) {
+        console.log('[IA Page] Ignorando carregamento - já tem mensagens')
+        return
+      }
       carregarConversa(conversaId)
       return
     }
@@ -563,12 +584,14 @@ export default function IAPage() {
     if (mensagemInicial && !mensagemInicialEnviadaRef.current) {
       const decodedMessage = decodeURIComponent(mensagemInicial)
 
-      // Marcar como processada ANTES de enviar para evitar duplicação
+      // Marcar como processada E como processando para bloquear outros useEffects
       mensagemInicialEnviadaRef.current = true
+      processandoMensagemInicialRef.current = true
 
       // IMPORTANTE: Limpar conversa atual para criar uma NOVA conversa
+      // MAS NÃO limpar mensagens aqui - elas serão gerenciadas pela função de envio
       setConversaAtual(null)
-      setMensagens([])
+      // NÃO fazer setMensagens([]) aqui - a função enviarMensagemDireta vai adicionar as mensagens
 
       // Limpar URL sem recarregar a página
       router.replace('/medicina/dashboard/ia', { scroll: false })
@@ -576,7 +599,7 @@ export default function IAPage() {
       // Definir mensagem pendente (isso vai triggerar o próximo useEffect)
       setMensagemPendente(decodedMessage)
     }
-  }, [user, searchParams, router, carregarConversa, loading, conversaAtual])
+  }, [user, searchParams, router, carregarConversa, loading, conversaAtual, mensagens.length])
 
   // Efeito para enviar mensagem pendente quando disponível
   useEffect(() => {
@@ -586,6 +609,10 @@ export default function IAPage() {
       // Pequeno delay para garantir que estado foi atualizado
       setTimeout(() => {
         enviarMensagemDiretaRef.current?.(msg)
+        // Liberar flag após um tempo (depois que o streaming começar)
+        setTimeout(() => {
+          processandoMensagemInicialRef.current = false
+        }, 500)
       }, 50)
     }
   }, [mensagemPendente, loading, user])
