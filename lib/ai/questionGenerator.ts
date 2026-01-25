@@ -849,41 +849,96 @@ ${TEMPLATE_CASO_CLINICO}
 
 ### Estrutura obrigatória para CADA questão:
 
+**IMPORTANTE - VARIAÇÃO:**
+- Enunciados devem VARIAR em tamanho: 30% curtos (2-3 linhas), 40% médios (4-6 linhas), 30% longos (7+ linhas ou com caso clínico)
+- Alternativas devem variar: algumas com 1 linha, outras com 2-3 linhas
+- Dificuldade REAL: questões fáceis devem ser fáceis de verdade, difíceis devem exigir análise aprofundada
+
+**REGRA DE IMAGENS NO ENUNCIADO:**
+- SÓ incluir imagem no enunciado quando for uma imagem PURAMENTE VISUAL (anatomia, histologia, radiografia)
+- NÃO colocar imagens com texto explicativo no enunciado (revelaria a resposta)
+- Exemplo BOM: "Observe a imagem anatômica abaixo e identifique..." + ![anatomia](imagem_sem_labels)
+- Exemplo RUIM: Colocar imagem de "Resumo de anatomia do coração" no enunciado
+
 \`\`\`questao
 {
   "numero": [N],
-  "enunciado": "[ENUNCIADO - claro, objetivo, sem ambiguidade]",
+  "enunciado": "[ENUNCIADO - tamanho variável, contextualizado]",
+  "imagem_enunciado": "[OPCIONAL - SÓ imagem sem texto, puramente visual]",
   "nivel": "[facil/medio/dificil]",
   "bloom": "[lembrar/entender/aplicar/analisar/avaliar]",
   "alternativas": [
-    {"letra": "a", "texto": "[Alternativa A]"},
+    {"letra": "a", "texto": "[Alternativa A - tamanho variável]"},
     {"letra": "b", "texto": "[Alternativa B]"},
     {"letra": "c", "texto": "[Alternativa C]"},
     {"letra": "d", "texto": "[Alternativa D]"},
     {"letra": "e", "texto": "[Alternativa E]"}
   ],
-  "gabarito": "[letra]",
-  "explicacao": {
-    "correta": "[Por que a alternativa correta está certa]",
-    "erradas": {
-      "a": "[Se errada: explicar o erro]",
-      "b": "[Se errada: explicar o erro]",
-      "c": "[Se errada: explicar o erro]",
-      "d": "[Se errada: explicar o erro]",
-      "e": "[Se errada: explicar o erro]"
-    }
-  },
-  "dica_memorizacao": "[Mnemônico ou dica prática]",
-  "referencia": "[SOBRENOME, Nome. Título. Ed. Cidade: Editora, Ano. p. XX]"
+  "gabarito": "[letra]"
 }
 \`\`\`
 
+### ⚠️ GABARITO COMENTADO - OBRIGATÓRIO E DETALHADO:
+
+**APÓS cada questão, SEMPRE inclua um gabarito comentado EXTENSO e DETALHADO:**
+
+---
+**📚 GABARITO COMENTADO - Questão [N]**
+
+**✅ Resposta correta: Alternativa [LETRA]**
+
+**🔬 EXPLICAÇÃO DETALHADA:**
+[Explicação EXTENSA de 3-5 parágrafos sobre por que esta é a resposta correta. Inclua:
+- O conceito fundamental por trás da resposta
+- A fisiopatologia/mecanismo envolvido
+- Como aplicar este conhecimento clinicamente
+- Dados epidemiológicos relevantes (se aplicável)]
+
+**❌ POR QUE AS OUTRAS ESTÃO ERRADAS:**
+- **Alternativa A:** [Explicação detalhada do erro, não apenas "está errada"]
+- **Alternativa B:** [Explicação detalhada do erro]
+- **Alternativa C:** [Explicação detalhada do erro]
+- **Alternativa D:** [Explicação detalhada do erro]
+- **Alternativa E:** [Explicação detalhada do erro]
+
+**🖼️ IMAGENS DE REFERÊNCIA:**
+[OBRIGATÓRIO: Use a ferramenta buscar_imagens_medicas para incluir 1-2 imagens relevantes no gabarito. Imagens no gabarito PODEM ter texto explicativo pois ajudam no aprendizado]
+
+![Descrição](url_da_imagem_relevante)
+📌 Fonte: [fonte da imagem]
+
+**💡 DICA DE MEMORIZAÇÃO:**
+[Mnemônico prático ou dica de estudo]
+
+**📖 REFERÊNCIAS BIBLIOGRÁFICAS (ABNT):**
+1. SOBRENOME, Nome. Título do livro. Xª ed. Cidade: Editora, Ano. p. XX-XX.
+2. [Segunda referência se aplicável]
+
+**🔗 TEMAS RELACIONADOS:**
+- [Tema relacionado 1 para estudo adicional]
+- [Tema relacionado 2]
+
+---
+
 ${config.incluirImagens ? `
-### IMAGENS:
-- Busque imagens médicas relevantes usando a ferramenta buscar_imagens_medicas
-- Imagens no enunciado NÃO devem revelar a resposta
-- Imagens no gabarito PODEM ter texto explicativo
-` : ''}
+### 🖼️ REGRAS DE IMAGENS:
+
+**NO ENUNCIADO:**
+- Use APENAS imagens SEM TEXTO (anatomia pura, radiografia sem laudo, histologia sem labels)
+- A imagem deve fazer parte da questão, não revelar a resposta
+- Busque com: buscar_imagens_medicas("estrutura anatômica X", tipo="anatomia")
+
+**NO GABARITO (OBRIGATÓRIO):**
+- SEMPRE busque 1-2 imagens relevantes para o gabarito comentado
+- Imagens no gabarito PODEM e DEVEM ter texto explicativo (diagramas, infográficos, resumos visuais)
+- Ajudam a fixar o conteúdo e enriquecem a explicação
+- Busque com: buscar_imagens_medicas("resumo de X" ou "diagrama de Y")
+` : `
+### 🖼️ IMAGENS NO GABARITO:
+- SEMPRE busque 1-2 imagens relevantes para o gabarito comentado de cada questão
+- Use a ferramenta buscar_imagens_medicas para encontrar imagens educativas
+- Imagens no gabarito ajudam na fixação do conteúdo
+`}
 
 ---
 
@@ -910,21 +965,25 @@ Tipos preferidos: ${estiloInfo.tiposPreferidos.join(', ')}
 
 ---
 
-## PASSO 8: VALIDAÇÃO FINAL (Checklist)
+## PASSO 8: VALIDAÇÃO FINAL (Checklist OBRIGATÓRIO)
 
 Antes de entregar, VERIFIQUE:
 - [ ] Quantidade correta: ${config.quantidade} questões
 - [ ] Cada questão tem exatamente 5 alternativas (a, b, c, d, e)
 - [ ] Distribuição de respostas segue o padrão definido
 - [ ] Subtópicos são diferentes entre questões (sem repetição)
-- [ ] Cada questão tem gabarito comentado COMPLETO
-- [ ] Cada alternativa errada tem explicação do erro
-- [ ] Cada questão tem referência bibliográfica
-- [ ] Cada questão tem dica de memorização
-- [ ] Nível de dificuldade está indicado
-- [ ] Nível cognitivo (Bloom) está indicado
-${config.incluirImagens ? '- [ ] Imagens relevantes foram buscadas' : ''}
-${config.incluirCasosClinicos ? '- [ ] Casos clínicos são realistas e plausíveis' : ''}
+- [ ] **GABARITO EXTENSO:** Cada questão tem gabarito comentado com 3-5 parágrafos de explicação
+- [ ] **ALTERNATIVAS ERRADAS:** Cada alternativa errada tem explicação DETALHADA do erro (não só "está errada")
+- [ ] **IMAGENS NO GABARITO:** Cada gabarito tem pelo menos 1 imagem relevante buscada
+- [ ] **REFERÊNCIAS:** Cada questão tem referência bibliográfica no formato ABNT
+- [ ] **DICA:** Cada questão tem dica de memorização ou mnemônico
+- [ ] Nível de dificuldade indicado E realista (fácil = memorização, difícil = análise)
+- [ ] Nível cognitivo (Bloom) indicado
+- [ ] **VARIAÇÃO:** Enunciados com tamanhos variados (curtos, médios, longos)
+${config.incluirImagens ? '- [ ] Imagens no enunciado são APENAS visuais (sem texto)' : ''}
+${config.incluirCasosClinicos ? '- [ ] Casos clínicos são realistas, detalhados e plausíveis' : ''}
+
+⚠️ **NÃO PROSSIGA se algum item não estiver marcado!**
 
 ---
 

@@ -64,9 +64,16 @@ export function ImageModal({ src, alt, isOpen, onClose, caption, source }: Image
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm"
       onClick={onClose}
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'hidden' // Previne qualquer scroll
+      }}
     >
       {/* Controles superiores */}
       <div className="fixed top-4 right-4 z-[10000] flex items-center gap-2">
@@ -127,31 +134,40 @@ export function ImageModal({ src, alt, isOpen, onClose, caption, source }: Image
         </button>
       </div>
 
-      {/* Container da imagem - centralizado na tela */}
+      {/* Container da imagem - centralizado e sem scroll */}
       <div
-        className="flex items-center justify-center w-full h-full p-16"
+        className="absolute inset-0 flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
         onWheel={handleWheel}
+        style={{ overflow: 'hidden' }}
       >
-        <div className="relative max-w-[90vw] max-h-[85vh] overflow-auto">
+        <div
+          className="relative flex items-center justify-center"
+          style={{
+            width: '100%',
+            height: '100%',
+            overflow: 'hidden'
+          }}
+        >
           {/* Loading */}
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-800/50 rounded-lg min-w-[200px] min-h-[200px]">
+            <div className="absolute inset-0 flex items-center justify-center">
               <div className="animate-spin w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full" />
             </div>
           )}
 
-          {/* Imagem */}
+          {/* Imagem - zoom fica dentro do container sem criar scroll */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={src}
             alt={alt}
-            className="max-w-none transition-transform duration-200 rounded-lg shadow-2xl"
+            className="transition-transform duration-200 rounded-lg shadow-2xl select-none"
             style={{
               transform: `scale(${zoom})`,
               transformOrigin: 'center center',
-              maxHeight: zoom === 1 ? '80vh' : 'none',
-              maxWidth: zoom === 1 ? '85vw' : 'none'
+              maxHeight: '85vh',
+              maxWidth: '90vw',
+              objectFit: 'contain'
             }}
             onLoad={() => setIsLoading(false)}
             onError={() => setIsLoading(false)}
@@ -162,7 +178,7 @@ export function ImageModal({ src, alt, isOpen, onClose, caption, source }: Image
 
       {/* Informações inferiores (caption e fonte) */}
       {(caption || source) && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 max-w-2xl px-6 py-3 bg-black/80 backdrop-blur-sm rounded-xl text-center">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 max-w-2xl px-6 py-3 bg-black/80 backdrop-blur-sm rounded-xl text-center z-[10000]">
           {caption && (
             <p className="text-white/90 text-sm mb-1">{caption}</p>
           )}
@@ -173,7 +189,7 @@ export function ImageModal({ src, alt, isOpen, onClose, caption, source }: Image
       )}
 
       {/* Instrução de uso */}
-      <div className="fixed bottom-4 right-4 text-white/40 text-xs bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm">
+      <div className="fixed bottom-4 right-4 text-white/40 text-xs bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm z-[10000]">
         ESC para fechar • +/- ou scroll para zoom • 0 para resetar
       </div>
     </div>

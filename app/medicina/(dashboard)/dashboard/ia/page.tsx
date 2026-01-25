@@ -495,14 +495,27 @@ export default function IAPage() {
 
   // Carregar conversa ativa automaticamente quando a página é carregada
   // Isso garante que o histórico seja restaurado quando o usuário volta à página
+  // MAS NÃO se tiver parâmetro 'm' (mensagem inicial) - isso significa nova conversa
   useEffect(() => {
     const conversaAtivaDoModo = activeConversationByMode[chatMode as StoreChatMode]
+    const temMensagemInicial = searchParams.get('m')
+    const temConversaParam = searchParams.get('c')
+
+    // Se tem mensagem inicial, é uma nova conversa - NÃO carregar conversa anterior
+    if (temMensagemInicial) {
+      return
+    }
+
+    // Se tem parâmetro de conversa específico, será tratado pelo outro useEffect
+    if (temConversaParam) {
+      return
+    }
 
     // Se há uma conversa ativa salva no localStorage e ainda não carregamos mensagens
     if (conversaAtivaDoModo && mensagens.length === 0 && !loading) {
       carregarConversa(conversaAtivaDoModo)
     }
-  }, [activeConversationByMode, chatMode, mensagens.length, loading, carregarConversa])
+  }, [activeConversationByMode, chatMode, mensagens.length, loading, carregarConversa, searchParams])
 
   // Sincronizar filtro de artefatos quando o modo de chat muda
   useEffect(() => {
@@ -534,6 +547,10 @@ export default function IAPage() {
 
       // Marcar como processada ANTES de enviar para evitar duplicação
       mensagemInicialEnviadaRef.current = true
+
+      // IMPORTANTE: Limpar conversa atual para criar uma NOVA conversa
+      setConversaAtual(null)
+      setMensagens([])
 
       // Limpar URL sem recarregar a página
       router.replace('/medicina/dashboard/ia', { scroll: false })

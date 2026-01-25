@@ -126,6 +126,20 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, fetchConversas])
 
+  // Sincronizar seleção com a URL atual
+  useEffect(() => {
+    if (pathname === '/medicina/dashboard/ia' && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const conversaId = params.get('c')
+      if (conversaId) {
+        setConversaSelecionada(conversaId)
+      }
+    } else if (pathname === '/medicina/dashboard') {
+      // Na home, limpar seleção
+      setConversaSelecionada(null)
+    }
+  }, [pathname])
+
   // Função auxiliar para formatar tempo relativo
   const formatRelativeTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -378,19 +392,22 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                       </span>
                     </div>
 
-                    {/* Lista de Conversas - scroll customizado */}
-                    <ul className="space-y-0.5 max-h-[250px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20">
+                    {/* Lista de Conversas - sem scroll horizontal */}
+                    <ul className="space-y-0.5 max-h-[250px] overflow-y-auto overflow-x-hidden scrollbar-thin">
                       {(showAllConversas ? conversas : conversas.slice(0, 10)).map((conversa) => {
-                        // Seleção visual imediata usando estado local
-                        const isActive = conversaSelecionada === conversa.id ||
-                          (pathname === `/medicina/dashboard/ia` &&
-                          typeof window !== 'undefined' && window.location.search.includes(`c=${conversa.id}`))
+                        // Seleção visual: apenas UMA pode estar selecionada
+                        const isActive = conversaSelecionada === conversa.id
+
+                        // Abreviar título para não ter scroll horizontal
+                        const tituloAbreviado = (conversa.titulo || 'Conversa sem título').length > 22
+                          ? (conversa.titulo || 'Conversa sem título').substring(0, 22) + '...'
+                          : (conversa.titulo || 'Conversa sem título')
 
                         return (
                           <li key={conversa.id} className="relative group" ref={menuAberto === conversa.id ? menuRef : undefined}>
                             {editandoConversa === conversa.id ? (
                               // Modo edição
-                              <div className="flex items-center gap-1 px-3 py-2">
+                              <div className="flex items-center gap-1 px-2 py-2">
                                 <input
                                   type="text"
                                   value={novoTitulo}
@@ -399,68 +416,72 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                     if (e.key === 'Enter') salvarTitulo(conversa.id)
                                     if (e.key === 'Escape') setEditandoConversa(null)
                                   }}
-                                  className="flex-1 bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-emerald-500"
+                                  className="flex-1 min-w-0 bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-emerald-500"
                                   autoFocus
                                 />
                                 <button
                                   onClick={() => salvarTitulo(conversa.id)}
-                                  className="p-1 hover:bg-emerald-500/20 rounded text-emerald-400"
+                                  className="p-1 hover:bg-emerald-500/20 rounded text-emerald-400 flex-shrink-0"
                                 >
                                   <Check className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => setEditandoConversa(null)}
-                                  className="p-1 hover:bg-white/10 rounded text-white/40"
+                                  className="p-1 hover:bg-white/10 rounded text-white/40 flex-shrink-0"
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
                               </div>
                             ) : (
-                              // Modo normal
-                              <div className="flex items-center">
-                                <Link
-                                  href={`/medicina/dashboard/ia?c=${conversa.id}`}
-                                  onClick={() => { setSidebarOpen(false); setConversaSelecionada(conversa.id) }}
+                              // Modo normal - layout fixo sem scroll
+                              <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg group-hover:bg-white/5">
+                                <button
+                                  onClick={() => {
+                                    setConversaSelecionada(conversa.id)
+                                    setSidebarOpen(false)
+                                    router.push(`/medicina/dashboard/ia?c=${conversa.id}`)
+                                  }}
                                   className={`
-                                    flex-1 flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm
+                                    flex-1 min-w-0 flex items-center gap-2 px-2 py-1 rounded transition-colors text-sm text-left
                                     ${isActive
                                       ? 'bg-emerald-500/20 text-emerald-400'
-                                      : 'text-white/60 hover:bg-white/5 hover:text-white/80'
+                                      : 'text-white/60 hover:text-white/80'
                                     }
                                   `}
                                 >
-                                  <MessageSquare className="w-4 h-4 flex-shrink-0 opacity-50" />
-                                  <span className="flex-1 truncate">
-                                    {conversa.titulo || 'Conversa sem título'}
+                                  <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 opacity-50" />
+                                  <span className="truncate" title={conversa.titulo || 'Conversa sem título'}>
+                                    {tituloAbreviado}
                                   </span>
-                                  <span className="text-[10px] text-white/30 flex-shrink-0">
-                                    {formatRelativeTime(conversa.updated_at)}
-                                  </span>
-                                </Link>
+                                </button>
 
-                                {/* Botão 3 pontos */}
+                                {/* Botão 3 pontos - sempre visível e alinhado */}
                                 <button
                                   onClick={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()
                                     setMenuAberto(menuAberto === conversa.id ? null : conversa.id)
                                   }}
-                                  className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded transition-all mr-1"
+                                  className="p-1 hover:bg-white/10 rounded transition-all flex-shrink-0 opacity-50 group-hover:opacity-100"
                                 >
-                                  <MoreVertical className="w-4 h-4 text-white/40" />
+                                  <MoreVertical className="w-4 h-4 text-white/60" />
                                 </button>
 
                                 {/* Menu dropdown */}
                                 {menuAberto === conversa.id && (
-                                  <div className="absolute right-2 top-full mt-1 bg-slate-800 border border-white/10 rounded-lg shadow-xl z-50 py-1 min-w-[140px]">
-                                    <Link
-                                      href={`/medicina/dashboard/ia?c=${conversa.id}`}
-                                      onClick={() => { setSidebarOpen(false); setMenuAberto(null) }}
-                                      className="flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                                  <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-white/10 rounded-lg shadow-xl z-50 py-1 min-w-[130px]">
+                                    <button
+                                      onClick={() => {
+                                        setConversaSelecionada(conversa.id)
+                                        setSidebarOpen(false)
+                                        setMenuAberto(null)
+                                        router.push(`/medicina/dashboard/ia?c=${conversa.id}`)
+                                      }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
                                     >
                                       <MessageSquare className="w-4 h-4" />
                                       Abrir
-                                    </Link>
+                                    </button>
                                     <button
                                       onClick={() => {
                                         setNovoTitulo(conversa.titulo || '')
