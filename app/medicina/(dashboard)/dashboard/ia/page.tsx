@@ -680,6 +680,28 @@ export default function IAPage() {
                 setMensagens(prev => prev.map(m =>
                   m.id === respostaId ? { ...m, conteudo: fullResponse } : m
                 ))
+              } else if (data.type === 'conversa_created') {
+                // ========== ATUALIZAR URL E HISTÓRICO IMEDIATAMENTE ==========
+                console.log('[IA Page] Conversa criada (direta):', data.conversa_id)
+
+                // Atualizar URL imediatamente (sem recarregar página)
+                router.replace(`/medicina/dashboard/ia?c=${data.conversa_id}`, { scroll: false })
+
+                // Atualizar estado da conversa atual
+                setConversaAtual(data.conversa_id)
+                setActiveConversation(chatMode as StoreChatMode, data.conversa_id)
+                setCurrentConversa(data.conversa_id)
+
+                // Adicionar conversa ao histórico local IMEDIATAMENTE
+                const novaConversa: Conversa = {
+                  id: data.conversa_id,
+                  titulo: data.titulo || 'Nova conversa',
+                  modelo: data.modelo || (plano === 'residencia' ? 'claude' : 'gemini'),
+                  tokens_usados: 0,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                }
+                setConversas(prev => [novaConversa, ...prev.filter(c => c.id !== data.conversa_id)])
               } else if (data.type === 'done') {
                 setConversaAtual(data.conversa_id)
                 setMensagens(prev => prev.map(m =>
@@ -712,7 +734,7 @@ export default function IAPage() {
       setPdfBase64(null)
       abortControllerRef.current = null
     }
-  }, [user, loading, podeUsarIA, conversaAtual, chatMode, imagemBase64, imagemTipo, pdfBase64, useWebSearch, useExtendedThinking, getSystemPrompt, fetchUso, fetchConversas])
+  }, [user, loading, podeUsarIA, conversaAtual, chatMode, imagemBase64, imagemTipo, pdfBase64, useWebSearch, useExtendedThinking, getSystemPrompt, fetchUso, fetchConversas, router, setActiveConversation, setCurrentConversa, plano])
 
   // Atualizar ref quando a função muda
   useEffect(() => {
@@ -993,6 +1015,28 @@ export default function IAPage() {
                     console.error('[IA Page] Erro ao adicionar artefato:', err)
                   }
                 }
+              } else if (data.type === 'conversa_created') {
+                // ========== ATUALIZAR URL E HISTÓRICO IMEDIATAMENTE ==========
+                console.log('[IA Page] Conversa criada:', data.conversa_id)
+
+                // Atualizar URL imediatamente (sem recarregar página)
+                router.replace(`/medicina/dashboard/ia?c=${data.conversa_id}`, { scroll: false })
+
+                // Atualizar estado da conversa atual
+                setConversaAtual(data.conversa_id)
+                setActiveConversation(chatMode as StoreChatMode, data.conversa_id)
+                setCurrentConversa(data.conversa_id)
+
+                // Adicionar conversa ao histórico local IMEDIATAMENTE
+                const novaConversa: Conversa = {
+                  id: data.conversa_id,
+                  titulo: data.titulo || 'Nova conversa',
+                  modelo: data.modelo || (plano === 'residencia' ? 'claude' : 'gemini'),
+                  tokens_usados: 0,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                }
+                setConversas(prev => [novaConversa, ...prev.filter(c => c.id !== data.conversa_id)])
               } else if (data.type === 'done') {
                 receivedDone = true
                 setConversaAtual(data.conversa_id)

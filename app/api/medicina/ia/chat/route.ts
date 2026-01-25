@@ -607,6 +607,18 @@ async function streamClaude(params: StreamClaudeParams) {
       const assistantMsgId = assistantMsg?.id
       console.log('[Chat API] Mensagem assistant criada com ID:', assistantMsgId)
 
+      // ========== ENVIAR CONVERSA_ID IMEDIATAMENTE PARA O FRONTEND ==========
+      // Isso permite que o frontend atualize a URL e o histórico ANTES do streaming começar
+      controller.enqueue(
+        encoder.encode(`data: ${JSON.stringify({
+          type: 'conversa_created',
+          conversa_id: conversa_id,
+          titulo: params.mensagem.substring(0, 50) + (params.mensagem.length > 50 ? '...' : ''),
+          modelo: params.plano === 'residencia' ? 'claude' : 'gemini'
+        })}\n\n`)
+      )
+      console.log('[Chat API] Evento conversa_created enviado:', conversa_id)
+
       // Variável para controlar última atualização
       let lastUpdateTime = Date.now()
       const UPDATE_INTERVAL = 10000 // Atualizar a cada 10 segundos
