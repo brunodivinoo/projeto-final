@@ -106,8 +106,9 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-72 p-4 rounded-xl bg-slate-900 border border-white/10
+            className="absolute right-0 top-full mt-2 w-72 p-4 rounded-xl border border-white/10
                        shadow-xl shadow-black/50 z-50"
+            style={{ backgroundColor: '#0f172a' }}
           >
             <div className="flex items-center gap-2 mb-4">
               {getPlanIcon()}
