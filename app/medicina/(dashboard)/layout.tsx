@@ -76,7 +76,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [novoTitulo, setNovoTitulo] = useState('')
   const [conversaSelecionada, setConversaSelecionada] = useState<string | null>(null) // Para seleção visual imediata
   const [excluindoTodas, setExcluindoTodas] = useState(false)
+  const [perfilMenuAberto, setPerfilMenuAberto] = useState(false) // Menu dropdown do perfil
   const menuRef = useRef<HTMLLIElement>(null)
+  const perfilMenuRef = useRef<HTMLDivElement>(null)
 
   // Hook para modais de upgrade
   const {
@@ -217,6 +219,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuAberto(null)
+      }
+      if (perfilMenuRef.current && !perfilMenuRef.current.contains(e.target as Node)) {
+        setPerfilMenuAberto(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -606,65 +611,76 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
             ) : (
-              // Versão expandida - completa
-              <>
-                <div className="flex items-center gap-3 mb-3">
+              // Versão expandida - com dropdown no perfil
+              <div className="relative" ref={perfilMenuRef}>
+                {/* Área clicável do perfil */}
+                <button
+                  onClick={() => setPerfilMenuAberto(!perfilMenuAberto)}
+                  className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                >
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
                     <span className="text-white font-bold">
                       {profile?.nome?.[0]?.toUpperCase() || 'U'}
                     </span>
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 text-left">
                     <p className="text-white font-medium truncate text-sm">
                       {profile?.nome || 'Estudante'}
                     </p>
-                    <div className="flex items-center gap-1">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        plano === 'residencia' ? 'bg-amber-500/20 text-amber-400' :
-                        plano === 'premium' ? 'bg-emerald-500/20 text-emerald-400' :
-                        'bg-white/10 text-white/60'
-                      }`}>
-                        {plano === 'residencia' ? 'Residência' :
-                         plano === 'premium' ? 'Premium' : 'Gratuito'}
-                      </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full inline-block ${
+                      plano === 'residencia' ? 'bg-amber-500/20 text-amber-400' :
+                      plano === 'premium' ? 'bg-emerald-500/20 text-emerald-400' :
+                      'bg-white/10 text-white/60'
+                    }`}>
+                      {plano === 'residencia' ? 'Residência' :
+                       plano === 'premium' ? 'Premium' : 'Gratuito'}
+                    </span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-white/40 transition-transform ${perfilMenuAberto ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown do perfil */}
+                {perfilMenuAberto && (
+                  <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 border border-white/10 rounded-lg shadow-xl overflow-hidden z-50">
+                    <Link
+                      href="/medicina/dashboard/perfil"
+                      onClick={() => setPerfilMenuAberto(false)}
+                      className="flex items-center gap-2 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                    >
+                      <User className="w-4 h-4" />
+                      Meu Perfil
+                    </Link>
+                    <Link
+                      href="/medicina/dashboard/assinatura"
+                      onClick={() => setPerfilMenuAberto(false)}
+                      className="flex items-center gap-2 px-3 py-2.5 text-sm text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
+                    >
+                      <Crown className="w-4 h-4" />
+                      Meu Plano
+                    </Link>
+                    <Link
+                      href="/medicina/dashboard/indicacoes"
+                      onClick={() => setPerfilMenuAberto(false)}
+                      className="flex items-center gap-2 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                    >
+                      <Gift className="w-4 h-4" />
+                      Indicações
+                    </Link>
+                    <div className="border-t border-white/10">
+                      <button
+                        onClick={() => {
+                          setPerfilMenuAberto(false)
+                          handleSignOut()
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sair da conta
+                      </button>
                     </div>
                   </div>
-                </div>
-
-                {/* Links do perfil */}
-                <div className="space-y-1 mb-3">
-                  <Link
-                    href="/medicina/dashboard/perfil"
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                  >
-                    <User className="w-4 h-4" />
-                    Meu Perfil
-                  </Link>
-                  <Link
-                    href="/medicina/dashboard/assinatura"
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition-colors"
-                  >
-                    <Crown className="w-4 h-4" />
-                    Meu Plano
-                  </Link>
-                  <Link
-                    href="/medicina/dashboard/indicacoes"
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                  >
-                    <Gift className="w-4 h-4" />
-                    Indicações
-                  </Link>
-                </div>
-
-                {/* Botão Sair */}
-                <button
-                  onClick={handleSignOut}
-                  className="w-full py-2 text-center text-red-400 hover:text-red-300 text-sm rounded-lg hover:bg-red-500/10 transition-colors flex items-center justify-center gap-2"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sair da conta
-                </button>
-              </>
+                )}
+              </div>
             )}
           </div>
 
