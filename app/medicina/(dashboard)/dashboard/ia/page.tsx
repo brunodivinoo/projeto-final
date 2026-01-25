@@ -545,6 +545,16 @@ export default function IAPage() {
 
     // Se tem conversa ID, carregar conversa
     if (conversaId && !mensagemInicial) {
+      // Não interromper se estiver em streaming
+      if (loading) {
+        console.log('[IA Page] Ignorando carregamento - streaming em andamento')
+        return
+      }
+      // Não recarregar se já é a conversa atual
+      if (conversaAtual === conversaId) {
+        console.log('[IA Page] Ignorando carregamento - já é a conversa atual')
+        return
+      }
       carregarConversa(conversaId)
       return
     }
@@ -566,7 +576,7 @@ export default function IAPage() {
       // Definir mensagem pendente (isso vai triggerar o próximo useEffect)
       setMensagemPendente(decodedMessage)
     }
-  }, [user, searchParams, router, carregarConversa])
+  }, [user, searchParams, router, carregarConversa, loading, conversaAtual])
 
   // Efeito para enviar mensagem pendente quando disponível
   useEffect(() => {
