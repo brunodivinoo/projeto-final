@@ -53,8 +53,6 @@ const menuItems = [
   { href: '/medicina/dashboard', label: 'Chat IA', icon: Brain, primary: true }, // Chat é a página principal
   { href: '/medicina/dashboard/biblioteca', label: 'Biblioteca', icon: BookOpen },
   { href: '/medicina/dashboard/estatisticas', label: 'Estatísticas', icon: BarChart3 },
-  { href: '/medicina/dashboard/indicacoes', label: 'Indicações', icon: Gift },
-  { href: '/medicina/dashboard/assinatura', label: 'Meu Plano', icon: Crown, highlight: true },
 ]
 
 // REMOVIDOS (migrados para o chat):
@@ -632,21 +630,40 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
+
+                {/* Links do perfil */}
+                <div className="space-y-1 mb-3">
                   <Link
                     href="/medicina/dashboard/perfil"
-                    className="flex-1 py-2 text-center text-white/60 hover:text-white text-sm rounded-lg hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                   >
-                    Perfil
+                    <User className="w-4 h-4" />
+                    Meu Perfil
                   </Link>
-                  <button
-                    onClick={handleSignOut}
-                    className="flex-1 py-2 text-center text-red-400 hover:text-red-300 text-sm rounded-lg hover:bg-red-500/10 transition-colors flex items-center justify-center gap-1"
+                  <Link
+                    href="/medicina/dashboard/assinatura"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition-colors"
                   >
-                    <LogOut className="w-4 h-4" />
-                    Sair
-                  </button>
+                    <Crown className="w-4 h-4" />
+                    Meu Plano
+                  </Link>
+                  <Link
+                    href="/medicina/dashboard/indicacoes"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                  >
+                    <Gift className="w-4 h-4" />
+                    Indicações
+                  </Link>
                 </div>
+
+                {/* Botão Sair */}
+                <button
+                  onClick={handleSignOut}
+                  className="w-full py-2 text-center text-red-400 hover:text-red-300 text-sm rounded-lg hover:bg-red-500/10 transition-colors flex items-center justify-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sair da conta
+                </button>
               </>
             )}
           </div>
