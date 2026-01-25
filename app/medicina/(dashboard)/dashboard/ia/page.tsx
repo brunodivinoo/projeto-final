@@ -493,6 +493,15 @@ export default function IAPage() {
     fetchConversas()
   }, [fetchUso, fetchConversas])
 
+  // Ref para controlar se a mensagem inicial foi enviada
+  const mensagemInicialEnviadaRef = useRef(false)
+  // Ref para evitar loop infinito ao carregar conversa
+  const conversaCarregadaRef = useRef<string | null>(null)
+  // Ref para a função de enviar mensagem (para evitar problemas de hoisting)
+  const enviarMensagemDiretaRef = useRef<((msg: string) => void) | null>(null)
+  // Estado para mensagem pendente (usando state para triggerar re-render)
+  const [mensagemPendente, setMensagemPendente] = useState<string | null>(null)
+
   // Carregar conversa ativa automaticamente quando a página é carregada
   // Isso garante que o histórico seja restaurado quando o usuário volta à página
   // MAS NÃO se tiver parâmetro 'm' (mensagem inicial) - isso significa nova conversa
@@ -503,6 +512,8 @@ export default function IAPage() {
 
     // Se tem mensagem inicial, é uma nova conversa - NÃO carregar conversa anterior
     if (temMensagemInicial) {
+      // Limpar ref para permitir carregamento futuro
+      conversaCarregadaRef.current = null
       return
     }
 
@@ -512,7 +523,9 @@ export default function IAPage() {
     }
 
     // Se há uma conversa ativa salva no localStorage e ainda não carregamos mensagens
-    if (conversaAtivaDoModo && mensagens.length === 0 && !loading) {
+    // E não tentamos carregar esta conversa ainda (evita loop infinito se der 404)
+    if (conversaAtivaDoModo && mensagens.length === 0 && !loading && conversaCarregadaRef.current !== conversaAtivaDoModo) {
+      conversaCarregadaRef.current = conversaAtivaDoModo
       carregarConversa(conversaAtivaDoModo)
     }
   }, [activeConversationByMode, chatMode, mensagens.length, loading, carregarConversa, searchParams])
@@ -522,11 +535,6 @@ export default function IAPage() {
     setCurrentChatMode(chatMode)
     setChatModeFilter(chatMode as StoreChatMode)
   }, [chatMode, setCurrentChatMode, setChatModeFilter])
-
-  // Ref para controlar se a mensagem inicial foi enviada
-  const mensagemInicialEnviadaRef = useRef(false)
-  // Ref para armazenar mensagem pendente que será enviada assim que possível
-  const mensagemPendenteRef = useRef<string | null>(null)
 
   // Processar parâmetros da URL (m = mensagem inicial, c = conversa)
   useEffect(() => {
@@ -555,25 +563,22 @@ export default function IAPage() {
       // Limpar URL sem recarregar a página
       router.replace('/medicina/dashboard/ia', { scroll: false })
 
-      // Armazenar mensagem pendente para enviar
-      mensagemPendenteRef.current = decodedMessage
-      setInput(decodedMessage)
+      // Definir mensagem pendente (isso vai triggerar o próximo useEffect)
+      setMensagemPendente(decodedMessage)
     }
   }, [user, searchParams, router, carregarConversa])
 
-  // Efeito separado para enviar mensagem pendente quando input estiver preenchido
+  // Efeito para enviar mensagem pendente quando disponível
   useEffect(() => {
-    if (mensagemPendenteRef.current && input === mensagemPendenteRef.current && !loading && user) {
-      const mensagemParaEnviar = mensagemPendenteRef.current
-      mensagemPendenteRef.current = null // Limpar para não enviar novamente
-
-      // Pequeno delay para garantir render
+    if (mensagemPendente && enviarMensagemDiretaRef.current && !loading && user) {
+      const msg = mensagemPendente
+      setMensagemPendente(null) // Limpar para não enviar novamente
+      // Pequeno delay para garantir que estado foi atualizado
       setTimeout(() => {
-        // Enviar diretamente usando a lógica de enviarMensagem inline
-        enviarMensagemDireta(mensagemParaEnviar)
+        enviarMensagemDiretaRef.current?.(msg)
       }, 50)
     }
-  }, [input, loading, user])
+  }, [mensagemPendente, loading, user])
 
   // Função para enviar mensagem diretamente (usado para mensagem inicial)
   const enviarMensagemDireta = useCallback(async (mensagemTexto: string) => {
@@ -708,6 +713,11 @@ export default function IAPage() {
       abortControllerRef.current = null
     }
   }, [user, loading, podeUsarIA, conversaAtual, chatMode, imagemBase64, imagemTipo, pdfBase64, useWebSearch, useExtendedThinking, getSystemPrompt, fetchUso, fetchConversas])
+
+  // Atualizar ref quando a função muda
+  useEffect(() => {
+    enviarMensagemDiretaRef.current = enviarMensagemDireta
+  }, [enviarMensagemDireta])
 
   // O scroll automático agora é gerenciado pelo hook useSmartScroll
   // Permite scroll manual durante streaming sem travar
