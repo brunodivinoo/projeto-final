@@ -1,6 +1,40 @@
 'use client'
 
 import { useMemo, useEffect, useRef, useState, useCallback, memo } from 'react'
+
+// Hook de debounce para evitar recálculos excessivos durante streaming
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    // Se o valor mudou significativamente (mais de 100 chars de diferença), atualizar imediatamente
+    const currentStr = typeof value === 'string' ? value : JSON.stringify(value)
+    const debouncedStr = typeof debouncedValue === 'string' ? debouncedValue : JSON.stringify(debouncedValue)
+
+    if (Math.abs(currentStr.length - debouncedStr.length) > 100) {
+      setDebouncedValue(value)
+      return
+    }
+
+    // Caso contrário, usar debounce
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [value, delay, debouncedValue])
+
+  return debouncedValue
+}
 import dynamic from 'next/dynamic'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -1308,7 +1342,7 @@ const MemoizedImage = memo(function MemoizedImage({ src, alt, onClickImage }: Me
           loading="eager"
           decoding="sync"
           className={`relative z-10 w-full h-auto max-h-[280px] object-contain rounded-lg transition-opacity duration-200 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-          style={{ minHeight: isLoaded ? 'auto' : '150px' }}
+          style={{ minHeight: isLoaded ? 'auto' : '150px', backgroundColor: 'white' }}
           onLoad={handleLoad}
           onError={handleError}
         />
@@ -1330,8 +1364,11 @@ function ArtifactRendererComponent({
   trialAtivo = false,
   onUpgradeClick
 }: ArtifactRendererProps) {
+  // Debounce do conteúdo para evitar recálculos excessivos durante streaming (150ms)
+  const debouncedContent = useDebouncedValue(content, 150)
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { parts, artifacts, hasIncompleteQuestion } = useMemo(() => parseArtifacts(content), [content])
+  const { parts, artifacts, hasIncompleteQuestion } = useMemo(() => parseArtifacts(debouncedContent), [debouncedContent])
   const { addArtifact, artifacts: storeArtifacts, updateQuestionAnswer } = useArtifactsStore()
   const addedArtifactsRef = useRef<Set<string>>(new Set())
 

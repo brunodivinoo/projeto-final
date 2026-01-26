@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { MedAuthProvider, useMedAuth } from '@/contexts/MedAuthContext'
@@ -9,6 +10,7 @@ import { UpgradeModal } from '@/components/medicina/UpgradeModal'
 import { useUpgradePrompt } from '@/hooks/useUpgradePrompt'
 import { BadgeMiniWidget } from '@/components/medicina/BadgeDisplay'
 import { supabase } from '@/lib/supabase'
+import { useConversaStore } from '@/lib/stores/conversaStore'
 import {
   LayoutDashboard,
   FileText,
@@ -41,12 +43,8 @@ import {
   ChevronDown
 } from 'lucide-react'
 
-// Interface para conversas do histórico
-interface Conversa {
-  id: string
-  titulo: string
-  updated_at: string
-}
+// Interface para conversas do histórico - usando store
+// import { type Conversa } from '@/lib/stores/conversaStore' - já importado via useConversaStore
 
 // Menu simplificado - Funcionalidades migradas para o Chat central
 const menuItems = [
@@ -68,13 +66,24 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, profile, plano, loading, signOut, trialStatus } = useMedAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false) // Sidebar recolhida no desktop
-  const [conversas, setConversas] = useState<Conversa[]>([])
+
+  // Usar store de conversas para sincronização entre componentes
+  const {
+    conversas,
+    conversaSelecionada,
+    setConversas,
+    setConversaSelecionada,
+    addConversa,
+    removeConversa,
+    updateConversa
+  } = useConversaStore()
+
   const [loadingConversas, setLoadingConversas] = useState(false)
   const [showAllConversas, setShowAllConversas] = useState(false) // Expandir histórico
   const [menuAberto, setMenuAberto] = useState<string | null>(null) // Menu de 3 pontos
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null) // Posição do menu portal
   const [editandoConversa, setEditandoConversa] = useState<string | null>(null) // Edição de título
   const [novoTitulo, setNovoTitulo] = useState('')
-  const [conversaSelecionada, setConversaSelecionada] = useState<string | null>(null) // Para seleção visual imediata
   const [excluindoTodas, setExcluindoTodas] = useState(false)
   const [perfilMenuAberto, setPerfilMenuAberto] = useState(false) // Menu dropdown do perfil
   const menuRef = useRef<HTMLLIElement>(null)
@@ -125,27 +134,22 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, fetchConversas])
 
-  // Escutar evento de nova conversa criada na page.tsx
+  // Fechar menu ao clicar fora (para o Portal)
   useEffect(() => {
-    const handleNovaConversa = (event: CustomEvent<Conversa>) => {
-      const novaConversa = event.detail
-      console.log('[Layout] Recebido evento conversa-criada:', novaConversa)
-      setConversas(prev => {
-        // Evitar duplicatas
-        const semDuplicata = prev.filter(c => c.id !== novaConversa.id)
-        console.log('[Layout] Atualizando conversas, total:', semDuplicata.length + 1)
-        return [novaConversa, ...semDuplicata]
-      })
-      // Selecionar a nova conversa
-      setConversaSelecionada(novaConversa.id)
+    const handleClickOutside = (e: MouseEvent) => {
+      // Não fechar se clicou no próprio menu
+      const target = e.target as HTMLElement
+      if (target.closest('[data-menu-portal]')) return
+
+      if (menuAberto) {
+        setMenuAberto(null)
+        setMenuPosition(null)
+      }
     }
 
-    console.log('[Layout] Registrando listener conversa-criada')
-    window.addEventListener('conversa-criada', handleNovaConversa as EventListener)
-    return () => {
-      window.removeEventListener('conversa-criada', handleNovaConversa as EventListener)
-    }
-  }, [])
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [menuAberto])
 
   // Sincronizar seleção com a URL atual
   useEffect(() => {
@@ -184,8 +188,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       await fetch(`/api/medicina/ia/chat?conversa_id=${conversaId}&user_id=${user.id}`, {
         method: 'DELETE'
       })
-      setConversas(prev => prev.filter(c => c.id !== conversaId))
+      removeConversa(conversaId)
       setMenuAberto(null)
+      setMenuPosition(null)
     } catch (error) {
       console.error('Erro ao deletar conversa:', error)
     }
@@ -204,8 +209,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           fetch(`/api/medicina/ia/chat?conversa_id=${c.id}&user_id=${user.id}`, { method: 'DELETE' })
         )
       )
-      setConversas([])
-      setConversaSelecionada(null)
+      // Usar store para limpar
+      useConversaStore.getState().clearAll()
     } catch (error) {
       console.error('Erro ao excluir conversas:', error)
     } finally {
@@ -226,9 +231,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         .eq('id', conversaId)
         .eq('user_id', user.id)
 
-      setConversas(prev => prev.map(c =>
-        c.id === conversaId ? { ...c, titulo: novoTitulo.trim() } : c
-      ))
+      updateConversa(conversaId, { titulo: novoTitulo.trim() })
       setEditandoConversa(null)
       setNovoTitulo('')
     } catch (error) {
@@ -484,48 +487,24 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                   onClick={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()
-                                    setMenuAberto(menuAberto === conversa.id ? null : conversa.id)
+                                    if (menuAberto === conversa.id) {
+                                      setMenuAberto(null)
+                                      setMenuPosition(null)
+                                    } else {
+                                      const rect = e.currentTarget.getBoundingClientRect()
+                                      setMenuPosition({
+                                        top: rect.top,
+                                        left: rect.left - 140
+                                      })
+                                      setMenuAberto(conversa.id)
+                                    }
                                   }}
                                   className="p-1 hover:bg-white/10 rounded transition-all flex-shrink-0 opacity-50 group-hover:opacity-100"
                                 >
                                   <MoreVertical className="w-4 h-4 text-white/60" />
                                 </button>
 
-                                {/* Menu dropdown - posicionado à esquerda */}
-                                {menuAberto === conversa.id && (
-                                  <div className="absolute right-full top-0 mr-1 bg-slate-800 border border-white/10 rounded-lg shadow-xl z-[100] py-1 min-w-[130px]">
-                                    <button
-                                      onClick={() => {
-                                        setConversaSelecionada(conversa.id)
-                                        setSidebarOpen(false)
-                                        setMenuAberto(null)
-                                        router.push(`/medicina/dashboard/ia?c=${conversa.id}`)
-                                      }}
-                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-                                    >
-                                      <MessageSquare className="w-4 h-4" />
-                                      Abrir
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setNovoTitulo(conversa.titulo || '')
-                                        setEditandoConversa(conversa.id)
-                                        setMenuAberto(null)
-                                      }}
-                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-                                    >
-                                      <Pencil className="w-4 h-4" />
-                                      Renomear
-                                    </button>
-                                    <button
-                                      onClick={() => deletarConversa(conversa.id)}
-                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                      Excluir
-                                    </button>
-                                  </div>
-                                )}
+                                {/* Menu dropdown agora é renderizado via Portal no final do componente */}
                               </div>
                             )}
                           </li>
@@ -749,6 +728,64 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           conquista={conquista || undefined}
           onClose={fecharModal}
         />
+      )}
+
+      {/* Portal do Menu de Conversas - renderizado fora do container para evitar corte */}
+      {menuAberto && menuPosition && typeof document !== 'undefined' && createPortal(
+        <div
+          data-menu-portal
+          className="fixed bg-slate-800 border border-white/10 rounded-lg shadow-2xl py-1 min-w-[130px]"
+          style={{
+            top: menuPosition.top,
+            left: Math.max(10, menuPosition.left),
+            zIndex: 9999
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              const conversa = conversas.find(c => c.id === menuAberto)
+              if (conversa) {
+                setConversaSelecionada(conversa.id)
+                setSidebarOpen(false)
+                setMenuAberto(null)
+                setMenuPosition(null)
+                router.push(`/medicina/dashboard/ia?c=${conversa.id}`)
+              }
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <MessageSquare className="w-4 h-4" />
+            Abrir
+          </button>
+          <button
+            onClick={() => {
+              const conversa = conversas.find(c => c.id === menuAberto)
+              if (conversa) {
+                setNovoTitulo(conversa.titulo || '')
+                setEditandoConversa(conversa.id)
+                setMenuAberto(null)
+                setMenuPosition(null)
+              }
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <Pencil className="w-4 h-4" />
+            Renomear
+          </button>
+          <button
+            onClick={() => {
+              if (menuAberto) {
+                deletarConversa(menuAberto)
+              }
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            Excluir
+          </button>
+        </div>,
+        document.body
       )}
     </div>
   )

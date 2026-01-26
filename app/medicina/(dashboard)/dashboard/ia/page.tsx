@@ -37,6 +37,7 @@ import { VoiceButton } from '@/components/medicina/VoiceButton'
 import { ExamAnalyzerModal } from '@/components/medicina/ExamAnalyzer'
 import { ChatModeSelector, ChatModeIntro, useChatMode, type ChatMode } from '@/components/medicina/ChatModes'
 import { useChatModeStore, ChatMode as StoreChatMode, MODE_CONFIG } from '@/lib/stores/chatModeStore'
+import { useConversaStore } from '@/lib/stores/conversaStore'
 
 // Hook para obter o estado da sidebar de artefatos
 const useArtifactsSidebar = () => {
@@ -740,9 +741,14 @@ export default function IAPage() {
                 }
                 setConversas(prev => [novaConversa, ...prev.filter(c => c.id !== data.conversa_id)])
 
-                // Emitir evento para o layout atualizar o histórico
-                console.log('[IA Page] Emitindo evento conversa-criada:', novaConversa)
-                window.dispatchEvent(new CustomEvent('conversa-criada', { detail: novaConversa }))
+                // Usar store para sincronizar com o layout (sidebar)
+                console.log('[IA Page] Adicionando conversa via store:', novaConversa.id)
+                useConversaStore.getState().addConversa({
+                  id: novaConversa.id,
+                  titulo: novaConversa.titulo,
+                  updated_at: novaConversa.updated_at
+                })
+                useConversaStore.getState().setConversaSelecionada(novaConversa.id)
               } else if (data.type === 'done') {
                 setConversaAtual(data.conversa_id)
                 setMensagens(prev => prev.map(m =>
@@ -1079,9 +1085,14 @@ export default function IAPage() {
                 }
                 setConversas(prev => [novaConversa, ...prev.filter(c => c.id !== data.conversa_id)])
 
-                // Emitir evento para o layout atualizar o histórico
-                console.log('[IA Page] Emitindo evento conversa-criada:', novaConversa)
-                window.dispatchEvent(new CustomEvent('conversa-criada', { detail: novaConversa }))
+                // Atualizar store global para o layout reagir
+                console.log('[IA Page] Atualizando store com conversa:', novaConversa)
+                useConversaStore.getState().addConversa({
+                  id: novaConversa.id,
+                  titulo: novaConversa.titulo,
+                  updated_at: novaConversa.updated_at
+                })
+                useConversaStore.getState().setConversaSelecionada(novaConversa.id)
               } else if (data.type === 'done') {
                 receivedDone = true
                 setConversaAtual(data.conversa_id)
