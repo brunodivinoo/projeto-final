@@ -123,17 +123,19 @@ function getCorDisciplina(nome: string) {
 
 export default function BibliotecaPage() {
   const { user, limitesPlano } = useMedAuth()
-  const [loading, setLoading] = useState(true)
+  // Comecar com loading false para renderizar UI imediatamente
+  const [loading, setLoading] = useState(false)
+  const [initialLoad, setInitialLoad] = useState(true)
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([])
   const [todasTeorias, setTodasTeorias] = useState<Teoria[]>([])
   const [busca, setBusca] = useState('')
+  const [buscaDebounced, setBuscaDebounced] = useState('')
   const [filtroLido, setFiltroLido] = useState<'todos' | 'lidos' | 'nao_lidos'>('todos')
   const [filtroFavoritos, setFiltroFavoritos] = useState(false)
   const [filtroDificuldade, setFiltroDificuldade] = useState<number | null>(null)
   const [filtroTempo, setFiltroTempo] = useState<'todos' | 'rapido' | 'medio' | 'longo'>('todos')
   const [showFiltros, setShowFiltros] = useState(false)
-  const [visualizacao, setVisualizacao] = useState<'hierarquia' | 'lista' | 'cards' | 'referencias' | 'artefatos'>('hierarquia')
-  const [livroExpandido, setLivroExpandido] = useState<string | null>(null)
+  const [visualizacao, setVisualizacao] = useState<'hierarquia' | 'lista' | 'cards' | 'referencias' | 'artefatos'>('referencias')
 
   // Estado para artefatos
   const [artefatos, setArtefatos] = useState<Artefato[]>([])
@@ -141,37 +143,37 @@ export default function BibliotecaPage() {
   const [filtroTipoArtefato, setFiltroTipoArtefato] = useState<string | null>(null)
   const [statsArtefatos, setStatsArtefatos] = useState<{ total: number; porTipo: Record<string, number> }>({ total: 0, porTipo: {} })
 
+  // Debounce da busca para nao fazer request a cada tecla
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBuscaDebounced(busca)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [busca])
+
   const fetchTeorias = useCallback(async () => {
     if (!user) return
 
+    // Nao bloquear a UI - so mostrar loading se demorar
+    const loadingTimeout = setTimeout(() => setLoading(true), 200)
+
     try {
-      setLoading(true)
-
-      // Buscar todas as disciplinas com seus assuntos
-      const { data: discsData } = await supabase
-        .from('disciplinas_med')
-        .select('id, nome')
-        .order('nome')
-
-      // Buscar assuntos
-      const { data: assuntosData } = await supabase
-        .from('assuntos_med')
-        .select('id, nome, disciplina_id')
-        .order('nome')
-
-      // Buscar subassuntos
-      const { data: subassuntosData } = await supabase
-        .from('subassuntos_med')
-        .select('id, nome, assunto_id')
-        .order('nome')
-
-      // Buscar teorias
+      // Fazer TODAS as chamadas em paralelo para ser mais rapido
       const params = new URLSearchParams()
       params.set('userId', user.id)
-      if (busca) params.set('busca', busca)
+      if (buscaDebounced) params.set('busca', buscaDebounced)
 
-      const response = await fetch(`/api/medicina/teorias?${params}`)
-      const data = await response.json()
+      const [discsResult, assuntosResult, subassuntosResult, teoriasResponse] = await Promise.all([
+        supabase.from('disciplinas_med').select('id, nome').order('nome'),
+        supabase.from('assuntos_med').select('id, nome, disciplina_id').order('nome'),
+        supabase.from('subassuntos_med').select('id, nome, assunto_id').order('nome'),
+        fetch(`/api/medicina/teorias?${params}`)
+      ])
+
+      const discsData = discsResult.data
+      const assuntosData = assuntosResult.data
+      const subassuntosData = subassuntosResult.data
+      const data = await teoriasResponse.json()
 
       setTodasTeorias(data.teorias || [])
 
@@ -275,9 +277,11 @@ export default function BibliotecaPage() {
     } catch (error) {
       console.error('Erro ao buscar teorias:', error)
     } finally {
+      clearTimeout(loadingTimeout)
       setLoading(false)
+      setInitialLoad(false)
     }
-  }, [user, busca, filtroLido, filtroFavoritos, filtroDificuldade, filtroTempo])
+  }, [user, buscaDebounced, filtroLido, filtroFavoritos, filtroDificuldade, filtroTempo])
 
   useEffect(() => {
     fetchTeorias()
@@ -296,8 +300,8 @@ export default function BibliotecaPage() {
       if (filtroTipoArtefato) {
         params.set('tipo', filtroTipoArtefato)
       }
-      if (busca) {
-        params.set('busca', busca)
+      if (buscaDebounced) {
+        params.set('busca', buscaDebounced)
       }
 
       const response = await fetch(`/api/medicina/artefatos?${params}`)
@@ -312,7 +316,7 @@ export default function BibliotecaPage() {
     } finally {
       setLoadingArtefatos(false)
     }
-  }, [user, visualizacao, filtroTipoArtefato, busca])
+  }, [user, visualizacao, filtroTipoArtefato, buscaDebounced])
 
   useEffect(() => {
     fetchArtefatos()

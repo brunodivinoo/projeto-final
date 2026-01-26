@@ -1,12 +1,15 @@
 /**
- * Exportacoes do modulo de imagens medicas
+ * Exportações do módulo de imagens médicas BRASILEIRAS
+ * 
+ * Todas as imagens vêm de fontes acadêmicas brasileiras confiáveis
+ * com referências bibliográficas no formato ABNT
  */
 
 export {
   searchMedicalImages,
   getRelevantMedicalImages,
-  translateMedicalTerm,
   formatImagesForChat,
+  getBibliographicReferences,
   clearImageCache,
   type MedicalImage,
   type ImageSearchResult

@@ -28,6 +28,9 @@ import {
   Menu,
   Square,
   Stethoscope,
+  MoreVertical,
+  Pencil,
+  Check,
 } from 'lucide-react'
 import ArtifactRenderer, { type PlanoUsuario } from '@/components/ia/ArtifactRenderer'
 import ArtifactsSidebar from '@/components/ia/ArtifactsSidebar'
@@ -300,6 +303,11 @@ export default function IAPage() {
   const modeDropdownDesktopRef = useRef<HTMLDivElement>(null)
   const modeDropdownMobileRef = useRef<HTMLDivElement>(null)
 
+  // Estado para menu de 3 pontinhos (renomear/excluir conversa)
+  const [menuConversaAberto, setMenuConversaAberto] = useState<string | null>(null)
+  const [conversaRenomeando, setConversaRenomeando] = useState<string | null>(null)
+  const [novoTituloConversa, setNovoTituloConversa] = useState('')
+
   // Fechar dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -310,10 +318,15 @@ export default function IAPage() {
       if (isOutsideDesktop && isOutsideMobile) {
         setShowModeDropdown(false)
       }
+
+      // Fechar menu de conversa se clicar fora
+      if (menuConversaAberto) {
+        setMenuConversaAberto(null)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [menuConversaAberto])
 
   // Wrapper para trocar modo - com opção de manter conversa
   const trocarModo = useCallback(async (novoModo: ChatMode, manterConversa: boolean = false) => {
@@ -1202,6 +1215,34 @@ export default function IAPage() {
     }
   }
 
+  // Renomear conversa
+  const renomearConversa = async (id: string, novoTitulo: string) => {
+    if (!user || !novoTitulo.trim()) return
+    try {
+      const response = await fetch(`/api/medicina/ia/conversa/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo: novoTitulo.trim(), user_id: user.id })
+      })
+      if (response.ok) {
+        setConversas(prev => prev.map(c =>
+          c.id === id ? { ...c, titulo: novoTitulo.trim() } : c
+        ))
+        setConversaRenomeando(null)
+        setNovoTituloConversa('')
+      }
+    } catch (error) {
+      console.error('Erro ao renomear conversa:', error)
+    }
+  }
+
+  // Iniciar renomeação
+  const iniciarRenomeacao = (conv: Conversa) => {
+    setConversaRenomeando(conv.id)
+    setNovoTituloConversa(conv.titulo)
+    setMenuConversaAberto(null)
+  }
+
   // Copiar resposta
   const copiarResposta = (id: string, texto: string) => {
     navigator.clipboard.writeText(texto)
@@ -1267,34 +1308,102 @@ export default function IAPage() {
                 {conversas.map((conv) => (
                   <div
                     key={conv.id}
-                    className={`group p-3 rounded-lg cursor-pointer transition-colors ${
+                    className={`group p-3 rounded-lg cursor-pointer transition-colors relative ${
                       conversaAtual === conv.id ? 'bg-purple-500/20' : 'hover:bg-white/5'
                     }`}
-                    onClick={() => { carregarConversa(conv.id); setShowConversas(false) }}
+                    onClick={() => {
+                      if (conversaRenomeando !== conv.id) {
+                        carregarConversa(conv.id)
+                        setShowConversas(false)
+                      }
+                    }}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className="text-white/80 text-sm truncate">{conv.titulo}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className={`text-xs px-2 py-0.5 rounded ${
-                            conv.modelo === 'claude' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
-                          }`}>
-                            {conv.modelo === 'claude' ? 'Claude' : 'Gemini'}
-                          </span>
-                          <span className="text-white/40 text-xs">
-                            {new Date(conv.created_at).toLocaleDateString('pt-BR')}
-                          </span>
-                        </div>
+                        {/* Modo de renomeação */}
+                        {conversaRenomeando === conv.id ? (
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              value={novoTituloConversa}
+                              onChange={(e) => setNovoTituloConversa(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') renomearConversa(conv.id, novoTituloConversa)
+                                if (e.key === 'Escape') { setConversaRenomeando(null); setNovoTituloConversa('') }
+                              }}
+                              className="flex-1 bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-purple-500"
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => renomearConversa(conv.id, novoTituloConversa)}
+                              className="p-1 hover:bg-emerald-500/20 rounded"
+                            >
+                              <Check className="w-4 h-4 text-emerald-400" />
+                            </button>
+                            <button
+                              onClick={() => { setConversaRenomeando(null); setNovoTituloConversa('') }}
+                              className="p-1 hover:bg-red-500/20 rounded"
+                            >
+                              <X className="w-4 h-4 text-red-400" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-white/80 text-sm truncate">{conv.titulo}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-xs px-2 py-0.5 rounded ${
+                                conv.modelo === 'claude' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+                              }`}>
+                                {conv.modelo === 'claude' ? 'Claude' : 'Gemini'}
+                              </span>
+                              <span className="text-white/40 text-xs">
+                                {new Date(conv.created_at).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                          </>
+                        )}
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          deletarConversa(conv.id)
-                        }}
-                        className="p-1 hover:bg-white/10 rounded transition-all"
-                      >
-                        <Trash2 className="w-4 h-4 text-white/40" />
-                      </button>
+
+                      {/* Menu 3 pontinhos */}
+                      {conversaRenomeando !== conv.id && (
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setMenuConversaAberto(menuConversaAberto === conv.id ? null : conv.id)
+                            }}
+                            className="p-1 hover:bg-white/10 rounded transition-all"
+                          >
+                            <MoreVertical className="w-4 h-4 text-white/40" />
+                          </button>
+
+                          {/* Dropdown do menu */}
+                          {menuConversaAberto === conv.id && (
+                            <div
+                              className="absolute right-0 top-full mt-1 bg-slate-800 border border-white/10 rounded-lg shadow-xl overflow-hidden z-50 min-w-[140px]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={() => iniciarRenomeacao(conv)}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
+                              >
+                                <Pencil className="w-4 h-4" />
+                                Renomear
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setMenuConversaAberto(null)
+                                  deletarConversa(conv.id)
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Excluir
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
