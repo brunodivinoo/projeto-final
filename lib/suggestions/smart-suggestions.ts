@@ -7,7 +7,13 @@
  * - Revisoes de espacamento baseadas em performance
  */
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
+
+// Cliente Supabase para operacoes server-side
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export interface Suggestion {
   type: 'topic' | 'action' | 'review'
@@ -119,8 +125,6 @@ const DISCIPLINAS_MEDICAS = [
  */
 async function getUserLearningData(userId: string): Promise<UserLearningData | null> {
   try {
-    const supabase = await createClient()
-
     const { data, error } = await supabase
       .from('aprendizado_usuario_med')
       .select('topicos_frequentes, termos_recentes, disciplinas_preferidas, performance_por_disciplina')
@@ -272,8 +276,6 @@ export async function updateUserLearning(
   discipline?: string
 ): Promise<void> {
   try {
-    const supabase = await createClient()
-
     // Usar a funcao SQL que criamos
     await supabase.rpc('atualizar_aprendizado_med', {
       p_user_id: userId,
@@ -315,8 +317,6 @@ export async function getSuggestedDisciplines(userId: string): Promise<string[]>
  */
 export async function getTopicsForReview(userId: string): Promise<Suggestion[]> {
   try {
-    const supabase = await createClient()
-
     // Buscar artefatos que precisam de revisao
     const { data: artefatos } = await supabase
       .from('artefatos_med')
