@@ -741,6 +741,7 @@ export default function IAPage() {
                 setConversas(prev => [novaConversa, ...prev.filter(c => c.id !== data.conversa_id)])
 
                 // Emitir evento para o layout atualizar o histórico
+                console.log('[IA Page] Emitindo evento conversa-criada:', novaConversa)
                 window.dispatchEvent(new CustomEvent('conversa-criada', { detail: novaConversa }))
               } else if (data.type === 'done') {
                 setConversaAtual(data.conversa_id)
@@ -1079,6 +1080,7 @@ export default function IAPage() {
                 setConversas(prev => [novaConversa, ...prev.filter(c => c.id !== data.conversa_id)])
 
                 // Emitir evento para o layout atualizar o histórico
+                console.log('[IA Page] Emitindo evento conversa-criada:', novaConversa)
                 window.dispatchEvent(new CustomEvent('conversa-criada', { detail: novaConversa }))
               } else if (data.type === 'done') {
                 receivedDone = true

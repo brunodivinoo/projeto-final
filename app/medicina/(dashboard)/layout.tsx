@@ -129,15 +129,18 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleNovaConversa = (event: CustomEvent<Conversa>) => {
       const novaConversa = event.detail
+      console.log('[Layout] Recebido evento conversa-criada:', novaConversa)
       setConversas(prev => {
         // Evitar duplicatas
         const semDuplicata = prev.filter(c => c.id !== novaConversa.id)
+        console.log('[Layout] Atualizando conversas, total:', semDuplicata.length + 1)
         return [novaConversa, ...semDuplicata]
       })
       // Selecionar a nova conversa
       setConversaSelecionada(novaConversa.id)
     }
 
+    console.log('[Layout] Registrando listener conversa-criada')
     window.addEventListener('conversa-criada', handleNovaConversa as EventListener)
     return () => {
       window.removeEventListener('conversa-criada', handleNovaConversa as EventListener)
