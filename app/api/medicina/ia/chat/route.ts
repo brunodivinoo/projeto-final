@@ -1033,13 +1033,21 @@ async function streamClaude(params: StreamClaudeParams) {
         const custo = calcularCusto(modeloSelecionado, tokensInput, tokensOutput)
         await incrementarUsoIA(user_id, 'chats', 1, tokensInput, tokensOutput, custo)
 
+        // Verificar se resposta parece incompleta
+        const respostaIncompleta = fullResponse.endsWith('(') ||
+          fullResponse.endsWith(',') ||
+          fullResponse.endsWith('...') ||
+          (fullResponse.includes('1.') && !fullResponse.includes('2.') && fullResponse.length > 500) ||
+          fullResponse.trim().endsWith(':')
+
         // Enviar metadados finais
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({
             type: 'done',
             conversa_id,
             tokens: { input: tokensInput, output: tokensOutput },
-            thinking: thinking || undefined
+            thinking: thinking || undefined,
+            incomplete: respostaIncompleta
           })}\n\n`)
         )
 

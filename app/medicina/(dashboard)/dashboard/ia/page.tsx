@@ -739,6 +739,9 @@ export default function IAPage() {
                   updated_at: new Date().toISOString()
                 }
                 setConversas(prev => [novaConversa, ...prev.filter(c => c.id !== data.conversa_id)])
+
+                // Emitir evento para o layout atualizar o histórico
+                window.dispatchEvent(new CustomEvent('conversa-criada', { detail: novaConversa }))
               } else if (data.type === 'done') {
                 setConversaAtual(data.conversa_id)
                 setMensagens(prev => prev.map(m =>
@@ -915,10 +918,10 @@ export default function IAPage() {
       let buffer = '' // Buffer para chunks incompletos
 
       // Batching para reduzir re-renders durante streaming
-      // Intervalo maior para chunks com imagens
+      // Intervalo maior para chunks com imagens (aumentado para suavidade)
       let lastUpdateTime = 0
-      const UPDATE_INTERVAL_NORMAL = 100 // ms para texto normal
-      const UPDATE_INTERVAL_IMAGES = 300 // ms para chunks com imagens (evita flickering)
+      const UPDATE_INTERVAL_NORMAL = 150 // ms para texto normal (aumentado para suavidade)
+      const UPDATE_INTERVAL_IMAGES = 500 // ms para chunks com imagens (aumentado para evitar flickering)
       let pendingUpdate = false
       let pendingAnimationFrame: number | null = null
 
@@ -1074,6 +1077,9 @@ export default function IAPage() {
                   updated_at: new Date().toISOString()
                 }
                 setConversas(prev => [novaConversa, ...prev.filter(c => c.id !== data.conversa_id)])
+
+                // Emitir evento para o layout atualizar o histórico
+                window.dispatchEvent(new CustomEvent('conversa-criada', { detail: novaConversa }))
               } else if (data.type === 'done') {
                 receivedDone = true
                 setConversaAtual(data.conversa_id)

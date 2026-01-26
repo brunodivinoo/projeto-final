@@ -310,6 +310,7 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
           src={displaySrc}
           alt={alt}
           className={`${className?.includes('object-contain') ? 'object-contain' : 'w-full h-full object-cover'} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}
+          style={{ backgroundColor: 'white' }} // Fundo branco para PNGs com transparência
           loading="eager"
           decoding="async"
           onError={handleError}

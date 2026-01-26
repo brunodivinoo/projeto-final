@@ -125,6 +125,25 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, fetchConversas])
 
+  // Escutar evento de nova conversa criada na page.tsx
+  useEffect(() => {
+    const handleNovaConversa = (event: CustomEvent<Conversa>) => {
+      const novaConversa = event.detail
+      setConversas(prev => {
+        // Evitar duplicatas
+        const semDuplicata = prev.filter(c => c.id !== novaConversa.id)
+        return [novaConversa, ...semDuplicata]
+      })
+      // Selecionar a nova conversa
+      setConversaSelecionada(novaConversa.id)
+    }
+
+    window.addEventListener('conversa-criada', handleNovaConversa as EventListener)
+    return () => {
+      window.removeEventListener('conversa-criada', handleNovaConversa as EventListener)
+    }
+  }, [])
+
   // Sincronizar seleção com a URL atual
   useEffect(() => {
     if (pathname === '/medicina/dashboard/ia' && typeof window !== 'undefined') {
@@ -394,8 +413,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                       </span>
                     </div>
 
-                    {/* Lista de Conversas - sem scroll horizontal */}
-                    <ul className="space-y-0.5 max-h-[250px] overflow-y-auto overflow-x-hidden scrollbar-thin">
+                    {/* Lista de Conversas - com overflow visible para dropdown */}
+                    <ul className="space-y-0.5 max-h-[250px] overflow-y-auto scrollbar-thin" style={{ overflowX: 'visible' }}>
                       {(showAllConversas ? conversas : conversas.slice(0, 10)).map((conversa) => {
                         // Seleção visual: apenas UMA pode estar selecionada
                         const isActive = conversaSelecionada === conversa.id
@@ -469,9 +488,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                   <MoreVertical className="w-4 h-4 text-white/60" />
                                 </button>
 
-                                {/* Menu dropdown */}
+                                {/* Menu dropdown - posicionado à esquerda */}
                                 {menuAberto === conversa.id && (
-                                  <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-white/10 rounded-lg shadow-xl z-50 py-1 min-w-[130px]">
+                                  <div className="absolute right-full top-0 mr-1 bg-slate-800 border border-white/10 rounded-lg shadow-xl z-[100] py-1 min-w-[130px]">
                                     <button
                                       onClick={() => {
                                         setConversaSelecionada(conversa.id)
