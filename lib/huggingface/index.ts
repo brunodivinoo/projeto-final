@@ -53,6 +53,24 @@ export {
   suggestNextSteps
 } from './smart-agents'
 
+// Sistema de variabilidade de respostas
+export {
+  VARIATION_CONFIG,
+  generateUniqueSeed,
+  generateDailySeed,
+  selectTeachingApproach,
+  getApproachInstruction,
+  generateVariedPrompt,
+  detectResponseType,
+  extractTopic,
+  checkResponseSimilarity,
+  adjustTemperature,
+  selectResponseStyle,
+  generateStyleInstructions,
+  type VariationConfigType,
+  type TeachingApproach
+} from './response-variation'
+
 // Importar FEATURES localmente para uso na funcao de inicializacao
 import { FEATURES as _FEATURES } from './config'
 

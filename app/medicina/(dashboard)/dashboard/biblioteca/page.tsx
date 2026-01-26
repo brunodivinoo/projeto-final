@@ -23,9 +23,49 @@ import {
   ExternalLink,
   Info,
   Award,
-  BookText
+  BookText,
+  FileQuestion,
+  CreditCard,
+  Brain,
+  FileText,
+  Trash2,
+  MoreVertical,
+  Archive
 } from 'lucide-react'
 import { LIVROS_FONTE, getTodosLivros, LIVROS_POR_DISCIPLINA, type LivroReferencia } from '@/lib/admin/livrosFonte'
+
+// Interface para artefatos
+interface Artefato {
+  id: string
+  tipo: 'questao' | 'flashcard' | 'flashcard_deck' | 'simulado' | 'plano_estudo' | 'resumo' | 'mapa_mental' | 'caso_clinico' | 'imagem_anatomica' | 'anotacao'
+  titulo: string
+  descricao: string | null
+  disciplina: string | null
+  topico: string | null
+  tags: string[]
+  conteudo: Record<string, unknown>
+  status: 'ativo' | 'arquivado' | 'concluido' | 'em_revisao'
+  progresso: number
+  vezes_respondido: number
+  vezes_acertou: number
+  proxima_revisao: string | null
+  created_at: string
+  updated_at: string
+}
+
+// Ícones e cores por tipo de artefato
+const ARTEFATO_CONFIG: Record<string, { icon: React.ComponentType<{ className?: string }>; cor: string; label: string }> = {
+  questao: { icon: FileQuestion, cor: 'bg-blue-500/20 text-blue-400 border-blue-500/30', label: 'Questão' },
+  flashcard: { icon: CreditCard, cor: 'bg-purple-500/20 text-purple-400 border-purple-500/30', label: 'Flashcard' },
+  flashcard_deck: { icon: Layers, cor: 'bg-purple-500/20 text-purple-400 border-purple-500/30', label: 'Deck' },
+  simulado: { icon: FileText, cor: 'bg-amber-500/20 text-amber-400 border-amber-500/30', label: 'Simulado' },
+  plano_estudo: { icon: BookMarked, cor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', label: 'Plano' },
+  resumo: { icon: FileText, cor: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', label: 'Resumo' },
+  mapa_mental: { icon: Brain, cor: 'bg-pink-500/20 text-pink-400 border-pink-500/30', label: 'Mapa Mental' },
+  caso_clinico: { icon: Sparkles, cor: 'bg-rose-500/20 text-rose-400 border-rose-500/30', label: 'Caso Clínico' },
+  imagem_anatomica: { icon: BookOpen, cor: 'bg-teal-500/20 text-teal-400 border-teal-500/30', label: 'Imagem' },
+  anotacao: { icon: FileText, cor: 'bg-slate-500/20 text-slate-400 border-slate-500/30', label: 'Anotação' },
+}
 
 interface Teoria {
   id: string
@@ -92,8 +132,14 @@ export default function BibliotecaPage() {
   const [filtroDificuldade, setFiltroDificuldade] = useState<number | null>(null)
   const [filtroTempo, setFiltroTempo] = useState<'todos' | 'rapido' | 'medio' | 'longo'>('todos')
   const [showFiltros, setShowFiltros] = useState(false)
-  const [visualizacao, setVisualizacao] = useState<'hierarquia' | 'lista' | 'cards' | 'referencias'>('hierarquia')
+  const [visualizacao, setVisualizacao] = useState<'hierarquia' | 'lista' | 'cards' | 'referencias' | 'artefatos'>('hierarquia')
   const [livroExpandido, setLivroExpandido] = useState<string | null>(null)
+
+  // Estado para artefatos
+  const [artefatos, setArtefatos] = useState<Artefato[]>([])
+  const [loadingArtefatos, setLoadingArtefatos] = useState(false)
+  const [filtroTipoArtefato, setFiltroTipoArtefato] = useState<string | null>(null)
+  const [statsArtefatos, setStatsArtefatos] = useState<{ total: number; porTipo: Record<string, number> }>({ total: 0, porTipo: {} })
 
   const fetchTeorias = useCallback(async () => {
     if (!user) return
@@ -236,6 +282,54 @@ export default function BibliotecaPage() {
   useEffect(() => {
     fetchTeorias()
   }, [fetchTeorias])
+
+  // Buscar artefatos quando aba de artefatos estiver ativa
+  const fetchArtefatos = useCallback(async () => {
+    if (!user || visualizacao !== 'artefatos') return
+
+    try {
+      setLoadingArtefatos(true)
+      const params = new URLSearchParams({
+        user_id: user.id,
+        limit: '100'
+      })
+      if (filtroTipoArtefato) {
+        params.set('tipo', filtroTipoArtefato)
+      }
+      if (busca) {
+        params.set('busca', busca)
+      }
+
+      const response = await fetch(`/api/medicina/artefatos?${params}`)
+      const data = await response.json()
+
+      if (data.success) {
+        setArtefatos(data.artefatos || [])
+        setStatsArtefatos(data.estatisticas || { total: 0, porTipo: {} })
+      }
+    } catch (error) {
+      console.error('Erro ao buscar artefatos:', error)
+    } finally {
+      setLoadingArtefatos(false)
+    }
+  }, [user, visualizacao, filtroTipoArtefato, busca])
+
+  useEffect(() => {
+    fetchArtefatos()
+  }, [fetchArtefatos])
+
+  // Arquivar artefato
+  const arquivarArtefato = async (artefatoId: string) => {
+    if (!user) return
+    try {
+      await fetch(`/api/medicina/artefatos?id=${artefatoId}&user_id=${user.id}`, {
+        method: 'DELETE'
+      })
+      setArtefatos(prev => prev.filter(a => a.id !== artefatoId))
+    } catch (error) {
+      console.error('Erro ao arquivar artefato:', error)
+    }
+  }
 
   const toggleDisciplina = (id: string) => {
     setDisciplinas(prev => prev.map(d =>
@@ -424,6 +518,15 @@ export default function BibliotecaPage() {
                 title="Livros de Referência"
               >
                 <Library className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setVisualizacao('artefatos')}
+                className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                  visualizacao === 'artefatos' ? 'bg-emerald-500 text-white' : 'text-white/60 hover:text-white'
+                }`}
+                title="Meus Artefatos"
+              >
+                <Brain className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -666,6 +769,150 @@ export default function BibliotecaPage() {
             .map((teoria) => (
               <TeoriaCard key={teoria.id} teoria={teoria} />
             ))}
+        </div>
+      ) : visualizacao === 'artefatos' ? (
+        /* Visualização de Artefatos Centralizados */
+        <div className="space-y-6">
+          {/* Header de Artefatos */}
+          <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl p-5">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                <Brain className="w-6 h-6 text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-purple-300 font-semibold mb-2">Meus Artefatos de Estudo</h3>
+                <p className="text-white/70 text-sm leading-relaxed">
+                  Todos os seus artefatos gerados pela IA ficam salvos aqui, mesmo se você excluir a conversa original.
+                  Questões, flashcards, simulados, planos de estudo e mais.
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-white">{statsArtefatos.total}</p>
+                <p className="text-white/50 text-sm">artefatos</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Filtros por Tipo */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setFiltroTipoArtefato(null)}
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                !filtroTipoArtefato
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-white/5 text-white/60 hover:bg-white/10'
+              }`}
+            >
+              Todos ({statsArtefatos.total})
+            </button>
+            {Object.entries(statsArtefatos.porTipo).map(([tipo, count]) => {
+              const config = ARTEFATO_CONFIG[tipo]
+              return (
+                <button
+                  key={tipo}
+                  onClick={() => setFiltroTipoArtefato(tipo === filtroTipoArtefato ? null : tipo)}
+                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-1.5 ${
+                    filtroTipoArtefato === tipo
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  }`}
+                >
+                  {config && <config.icon className="w-3.5 h-3.5" />}
+                  {config?.label || tipo} ({count})
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Lista de Artefatos */}
+          {loadingArtefatos ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+            </div>
+          ) : artefatos.length === 0 ? (
+            <div className="bg-white/5 rounded-xl p-12 border border-white/10 text-center">
+              <Brain className="w-16 h-16 text-white/20 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">Nenhum artefato ainda</h3>
+              <p className="text-white/60 mb-4">
+                Use o Chat IA para criar questões, flashcards, simulados e muito mais!
+              </p>
+              <Link
+                href="/medicina/dashboard"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+              >
+                <Brain className="w-4 h-4" />
+                Ir para o Chat IA
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {artefatos.map((artefato) => {
+                const config = ARTEFATO_CONFIG[artefato.tipo] || ARTEFATO_CONFIG.anotacao
+                const taxaAcerto = artefato.vezes_respondido > 0
+                  ? Math.round((artefato.vezes_acertou / artefato.vezes_respondido) * 100)
+                  : null
+
+                return (
+                  <div
+                    key={artefato.id}
+                    className={`bg-white/5 rounded-xl border ${config.cor.split(' ')[2]} p-5 hover:bg-white/10 transition-all group`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`px-2.5 py-1 rounded-lg ${config.cor.split(' ').slice(0, 2).join(' ')} text-xs font-medium flex items-center gap-1.5`}>
+                        <config.icon className="w-3.5 h-3.5" />
+                        {config.label}
+                      </div>
+                      <button
+                        onClick={() => arquivarArtefato(artefato.id)}
+                        className="p-1 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded transition-all"
+                        title="Arquivar"
+                      >
+                        <Archive className="w-4 h-4 text-white/40" />
+                      </button>
+                    </div>
+
+                    <h4 className="text-white font-semibold mb-2 line-clamp-2">{artefato.titulo}</h4>
+
+                    {artefato.descricao && (
+                      <p className="text-white/60 text-sm mb-3 line-clamp-2">{artefato.descricao}</p>
+                    )}
+
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {artefato.disciplina && (
+                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-xs rounded">
+                          {artefato.disciplina}
+                        </span>
+                      )}
+                      {artefato.topico && (
+                        <span className="px-2 py-0.5 bg-white/10 text-white/60 text-xs rounded">
+                          {artefato.topico}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm border-t border-white/10 pt-3 mt-3">
+                      <div className="flex items-center gap-3 text-white/50">
+                        {artefato.vezes_respondido > 0 && (
+                          <span className="flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            {artefato.vezes_respondido}x
+                          </span>
+                        )}
+                        {taxaAcerto !== null && (
+                          <span className={`font-medium ${taxaAcerto >= 70 ? 'text-emerald-400' : taxaAcerto >= 50 ? 'text-amber-400' : 'text-red-400'}`}>
+                            {taxaAcerto}%
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-white/40 text-xs">
+                        {new Date(artefato.created_at).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       ) : (
         /* Visualização de Referências Bibliográficas */

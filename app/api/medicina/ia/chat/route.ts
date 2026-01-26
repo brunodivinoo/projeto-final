@@ -67,6 +67,21 @@ import {
 } from '@/lib/huggingface'
 // ========== FIM INTEGRACAO HUGGING FACE ==========
 
+// ========== SISTEMA DE VARIABILIDADE ==========
+import {
+  VARIATION_CONFIG,
+  generateVariedPrompt,
+  detectResponseType,
+  extractTopic,
+  generateStyleInstructions,
+  type VariationConfigType
+} from '@/lib/huggingface/response-variation'
+// ========== FIM SISTEMA DE VARIABILIDADE ==========
+
+// ========== SUGESTOES INTELIGENTES ==========
+import { updateUserLearning } from '@/lib/suggestions'
+// ========== FIM SUGESTOES INTELIGENTES ==========
+
 // Formatar resposta de tool para exibição
 function formatToolResponse(toolName: string, data: unknown): string {
   const resultado = data as Record<string, unknown>
@@ -549,6 +564,22 @@ async function streamClaude(params: StreamClaudeParams) {
   // Premium = Sonnet (mais barato), Residência = Opus (mais capaz)
   const modeloSelecionado = params.plano === 'residencia' ? MODELOS.claude.opus : MODELOS.claude.sonnet
   let systemPrompt = params.plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
+
+  // ========== SISTEMA DE VARIABILIDADE ==========
+  // Detectar tipo de resposta e aplicar configurações de variação
+  const responseType = detectResponseType(params.mensagem)
+  const variationConfig = VARIATION_CONFIG[responseType]
+  const topic = extractTopic(params.mensagem)
+  const styleInstructions = generateStyleInstructions(user_id)
+
+  // Enriquecer prompt com variação de abordagem
+  const variedPromptInstructions = generateVariedPrompt('', topic, user_id)
+
+  // Adicionar instruções de estilo e variação ao system prompt
+  systemPrompt += `\n\n---\n${styleInstructions}\n${variedPromptInstructions}`
+
+  console.log(`[Variação] Tipo: ${responseType} | Temp: ${variationConfig.temperature} | Tópico: ${topic}`)
+  // ========== FIM SISTEMA DE VARIABILIDADE ==========
 
   // ========== ENRIQUECIMENTO COM HUGGING FACE ==========
   let agentContext: Awaited<ReturnType<typeof prepareAgentContext>> | null = null
@@ -1067,6 +1098,19 @@ async function streamClaude(params: StreamClaudeParams) {
         // Incrementar uso
         const custo = calcularCusto(modeloSelecionado, tokensInput, tokensOutput)
         await incrementarUsoIA(user_id, 'chats', 1, tokensInput, tokensOutput, custo)
+
+        // ========== ATUALIZAR APRENDIZADO DO USUARIO ==========
+        try {
+          // Extrair tópico da mensagem para atualizar aprendizado
+          const topicoEstudado = extractTopic(params.mensagem)
+          if (topicoEstudado && topicoEstudado !== 'medicina') {
+            await updateUserLearning(user_id, topicoEstudado)
+            console.log(`[Aprendizado] Atualizado para usuário ${user_id}: ${topicoEstudado}`)
+          }
+        } catch (learnError) {
+          console.error('[Aprendizado] Erro ao atualizar:', learnError)
+        }
+        // ========== FIM ATUALIZAR APRENDIZADO ==========
 
         // ========== POS-PROCESSAMENTO HUGGING FACE ==========
         try {

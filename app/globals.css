@@ -318,3 +318,135 @@ select:focus option {
 .mermaid-container g.node > circle:not([style*="fill"]) {
   fill: #1e3a5f !important;
 }
+
+/* ================================================
+   CORREÇÕES MOBILE - PREPARA MED
+   ================================================ */
+
+/* Prevenir scroll horizontal em toda a aplicação */
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  position: relative;
+}
+
+/* Container principal não pode criar scroll horizontal */
+.main-container,
+.chat-container,
+.message-container {
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+}
+
+/* Prevenir zoom em inputs no iOS */
+@media screen and (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+
+  /* Desabilitar zoom por pinch */
+  * {
+    touch-action: pan-x pan-y;
+  }
+
+  /* Imagens responsivas */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Código não deve criar scroll */
+  pre, code {
+    max-width: calc(100vw - 32px) !important;
+    overflow-x: auto !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+  }
+
+  /* Esconder botão verde flutuante no mobile */
+  .scroll-to-bottom-btn,
+  .floating-action-btn,
+  .btn-scroll-bottom {
+    display: none !important;
+  }
+
+  /* Sidebar mobile - garantir apenas uma */
+  .mobile-sidebar-toggle + .mobile-sidebar-toggle {
+    display: none !important;
+  }
+
+  /* Cards de artefatos responsivos */
+  .artifact-card {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  /* Tabelas responsivas */
+  table {
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  /* Mensagens do chat não devem criar scroll */
+  .message-content {
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+}
+
+/* Viewport dinâmico para mobile */
+@supports (height: 100dvh) {
+  .full-height {
+    height: 100dvh;
+  }
+}
+
+/* Fix para safe areas em iOS (notch, home indicator) */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Animação suave para sidebar mobile */
+.sidebar-mobile-enter {
+  transform: translateX(-100%);
+}
+
+.sidebar-mobile-enter-active {
+  transform: translateX(0);
+  transition: transform 300ms ease-out;
+}
+
+.sidebar-mobile-exit {
+  transform: translateX(0);
+}
+
+.sidebar-mobile-exit-active {
+  transform: translateX(-100%);
+  transition: transform 300ms ease-in;
+}
+
+/* Backdrop para sidebar mobile */
+.sidebar-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+/* Skeleton loading para transição */
+.skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
