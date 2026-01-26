@@ -58,6 +58,15 @@ import {
   type ConfiguracaoExplicacao
 } from '@/lib/ai/explanationStructure'
 
+// ========== INTEGRACAO HUGGING FACE ==========
+import {
+  prepareAgentContext,
+  formatAgentResponse,
+  validateMedicalResponse,
+  FEATURES
+} from '@/lib/huggingface'
+// ========== FIM INTEGRACAO HUGGING FACE ==========
+
 // Formatar resposta de tool para exibição
 function formatToolResponse(toolName: string, data: unknown): string {
   const resultado = data as Record<string, unknown>
@@ -539,7 +548,33 @@ async function streamClaude(params: StreamClaudeParams) {
   // Selecionar modelo baseado no plano
   // Premium = Sonnet (mais barato), Residência = Opus (mais capaz)
   const modeloSelecionado = params.plano === 'residencia' ? MODELOS.claude.opus : MODELOS.claude.sonnet
-  const systemPrompt = params.plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
+  let systemPrompt = params.plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
+
+  // ========== ENRIQUECIMENTO COM HUGGING FACE ==========
+  let agentContext: Awaited<ReturnType<typeof prepareAgentContext>> | null = null
+
+  try {
+    if (FEATURES.SMART_AGENTS || FEATURES.MEDICAL_RAG) {
+      // Preparar contexto do agente
+      agentContext = await prepareAgentContext(params.mensagem)
+
+      // Adicionar instrucoes especificas do agente
+      if (agentContext.systemPromptAddition) {
+        systemPrompt += '\n\n' + agentContext.systemPromptAddition
+      }
+
+      // Adicionar contexto medico enriquecido
+      if (agentContext.enrichedContext) {
+        systemPrompt += '\n\n' + agentContext.enrichedContext
+      }
+
+      console.log(`[HF] Agente detectado: ${agentContext.agentType}`)
+    }
+  } catch (hfError) {
+    // Se falhar, continua com o prompt original
+    console.error('[HF] Erro ao enriquecer prompt (usando fallback):', hfError)
+  }
+  // ========== FIM ENRIQUECIMENTO ==========
 
   // IMPORTANTE: Extended Thinking NÃO é compatível com tool_use no agentic loop
   // Quando tools são usadas, precisamos desabilitar thinking para evitar o erro:
@@ -1032,6 +1067,27 @@ async function streamClaude(params: StreamClaudeParams) {
         // Incrementar uso
         const custo = calcularCusto(modeloSelecionado, tokensInput, tokensOutput)
         await incrementarUsoIA(user_id, 'chats', 1, tokensInput, tokensOutput, custo)
+
+        // ========== POS-PROCESSAMENTO HUGGING FACE ==========
+        try {
+          if (agentContext && FEATURES.SMART_AGENTS) {
+            // Formatar resposta com sugestoes de topicos relacionados
+            fullResponse = formatAgentResponse(
+              fullResponse,
+              agentContext.agentType,
+              agentContext.relatedTopics
+            )
+
+            // Validar resposta medica
+            const validation = await validateMedicalResponse(fullResponse, params.mensagem)
+            if (validation.warnings.length > 0) {
+              console.log('[HF] Avisos de validacao:', validation.warnings)
+            }
+          }
+        } catch (hfError) {
+          console.error('[HF] Erro no pos-processamento:', hfError)
+        }
+        // ========== FIM POS-PROCESSAMENTO ==========
 
         // Verificar se resposta parece incompleta
         const respostaIncompleta = fullResponse.endsWith('(') ||
