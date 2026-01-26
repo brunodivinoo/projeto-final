@@ -100,11 +100,21 @@ export async function GET(request: NextRequest) {
     const headers = new Headers({
       'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
       'X-RateLimit-Remaining': remaining.toString(),
-      'X-Source': result.source,
+      'X-Source': result.fonte,
       'X-Cached': result.cached.toString()
     })
 
-    return NextResponse.json(result, { headers })
+    // Retornar com formato compatível (images ao invés de imagens)
+    return NextResponse.json({
+      images: result.imagens,
+      total: result.total,
+      cached: result.cached,
+      source: result.fonte,
+      queryUsed: result.consultaUsada,
+      originalQuery: result.consultaOriginal,
+      references: result.referencias,
+      suggestions: result.sugestoes
+    }, { headers })
 
   } catch (error) {
     console.error('Erro na API de imagens médicas:', error)
@@ -172,21 +182,22 @@ export async function POST(request: NextRequest) {
     )
 
     // Combinar e remover duplicatas
-    const allImages = results.flatMap(r => r.images)
+    const allImages = results.flatMap(r => r.imagens)
     const uniqueImages = allImages.filter((img, index, self) =>
       index === self.findIndex(i => i.id === img.id)
     )
 
     // Pegar informações da primeira busca que encontrou algo (ou da última se nenhuma encontrou)
-    const firstSuccessfulResult = results.find(r => r.images.length > 0) || results[results.length - 1]
+    const firstSuccessfulResult = results.find(r => r.imagens.length > 0) || results[results.length - 1]
 
     return NextResponse.json({
       images: uniqueImages,
       total: uniqueImages.length,
       queries: limitedQueries.length,
-      queryUsed: firstSuccessfulResult?.queryUsed,
+      queryUsed: firstSuccessfulResult?.consultaUsada,
       originalQuery: limitedQueries[0],
-      suggestions: uniqueImages.length === 0 ? firstSuccessfulResult?.suggestions : undefined
+      suggestions: uniqueImages.length === 0 ? firstSuccessfulResult?.sugestoes : undefined,
+      references: uniqueImages.map(img => img.referenciaABNT)
     })
 
   } catch (error) {

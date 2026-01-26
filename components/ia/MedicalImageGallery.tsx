@@ -567,7 +567,7 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
               <ImageWithFallback
                 src={img.thumbUrl}
                 fallbackSrc={img.url}
-                alt={img.title}
+                alt={img.title || img.titulo || 'Imagem médica'}
                 className="w-full h-full"
                 onLoadError={() => handleImageLoadError(img.id)}
               />
@@ -601,11 +601,11 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
       {selectedImage && (
         <ImageModal
           src={getProxiedImageUrl(selectedImage.url)}
-          alt={showTranslation ? translateMedicalText(selectedImage.title) : selectedImage.title}
+          alt={showTranslation ? translateMedicalText(selectedImage.title || selectedImage.titulo || 'Imagem médica') : (selectedImage.title || selectedImage.titulo || 'Imagem médica')}
           isOpen={true}
           onClose={() => setSelectedImage(null)}
-          caption={selectedImage.caption ? (showTranslation ? translateMedicalText(selectedImage.caption) : selectedImage.caption) : undefined}
-          source={selectedImage.sourceName || selectedImage.source}
+          caption={(selectedImage.caption || selectedImage.descricao) ? (showTranslation ? translateMedicalText(selectedImage.caption || selectedImage.descricao || '') : (selectedImage.caption || selectedImage.descricao)) : undefined}
+          source={selectedImage.sourceName || selectedImage.fonte || selectedImage.source}
         />
       )}
     </>

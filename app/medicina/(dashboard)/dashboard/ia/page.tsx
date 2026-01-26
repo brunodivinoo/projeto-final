@@ -308,6 +308,20 @@ export default function IAPage() {
   const [conversaRenomeando, setConversaRenomeando] = useState<string | null>(null)
   const [novoTituloConversa, setNovoTituloConversa] = useState('')
 
+  // Estado para sugestões inteligentes
+  interface SugestaoInteligente {
+    type: 'topic' | 'action' | 'review'
+    text: string
+    fullPrompt: string
+    icon: string
+    priority: number
+  }
+  const [sugestoesInteligentes, setSugestoesInteligentes] = useState<{
+    topics: SugestaoInteligente[]
+    actions: SugestaoInteligente[]
+    reviews: SugestaoInteligente[]
+  }>({ topics: [], actions: [], reviews: [] })
+
   // Fechar dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -396,6 +410,20 @@ export default function IAPage() {
       setUso(data)
     } catch (error) {
       console.error('Erro ao buscar uso:', error)
+    }
+  }, [user])
+
+  // Buscar sugestões inteligentes
+  const fetchSugestoes = useCallback(async () => {
+    if (!user) return
+    try {
+      const response = await fetch(`/api/medicina/ia/sugestoes?user_id=${user.id}`)
+      const data = await response.json()
+      if (data.success && data.sugestoes) {
+        setSugestoesInteligentes(data.sugestoes)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar sugestões:', error)
     }
   }, [user])
 
@@ -505,7 +533,8 @@ export default function IAPage() {
   useEffect(() => {
     fetchUso()
     fetchConversas()
-  }, [fetchUso, fetchConversas])
+    fetchSugestoes()
+  }, [fetchUso, fetchConversas, fetchSugestoes])
 
   // Ref para controlar se a mensagem inicial foi enviada
   const mensagemInicialEnviadaRef = useRef(false)
@@ -1625,15 +1654,62 @@ export default function IAPage() {
                       : 'Tire dúvidas sobre medicina, peça explicações de conceitos ou ajuda com questões.'}
                   </p>
 
+                  {/* Sugestões Inteligentes - Tópicos personalizados */}
+                  {sugestoesInteligentes.topics.length > 0 && (
+                    <div className="w-full max-w-xl mb-4">
+                      <p className="text-white/40 text-xs mb-2 flex items-center gap-1">
+                        <Lightbulb className="w-3 h-3" /> Baseado no seu histórico
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {sugestoesInteligentes.topics.slice(0, 4).map((sugestao, i) => (
+                          <button
+                            key={`topic-${i}`}
+                            onClick={() => setInput(sugestao.fullPrompt)}
+                            className="flex items-center gap-2 p-3 bg-purple-500/10 rounded-xl hover:bg-purple-500/20 transition-colors text-left border border-purple-500/20 hover:border-purple-500/30"
+                          >
+                            <span className="text-lg flex-shrink-0">{sugestao.icon}</span>
+                            <span className="text-white/80 text-xs md:text-sm line-clamp-2">{sugestao.text}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sugestões de Revisão */}
+                  {sugestoesInteligentes.reviews.length > 0 && (
+                    <div className="w-full max-w-xl mb-4">
+                      <p className="text-white/40 text-xs mb-2 flex items-center gap-1">
+                        <BookOpen className="w-3 h-3" /> Revisões pendentes
+                      </p>
+                      <div className="grid grid-cols-1 gap-2">
+                        {sugestoesInteligentes.reviews.slice(0, 2).map((sugestao, i) => (
+                          <button
+                            key={`review-${i}`}
+                            onClick={() => setInput(sugestao.fullPrompt)}
+                            className="flex items-center gap-2 p-3 bg-amber-500/10 rounded-xl hover:bg-amber-500/20 transition-colors text-left border border-amber-500/20 hover:border-amber-500/30"
+                          >
+                            <span className="text-lg flex-shrink-0">{sugestao.icon}</span>
+                            <span className="text-white/80 text-xs md:text-sm">{sugestao.text}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sugestões padrão ou ações */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 w-full max-w-xl">
-                    {sugestoes.map((sugestao, i) => (
+                    {(sugestoesInteligentes.actions.length > 0 ? sugestoesInteligentes.actions : sugestoes).map((sugestao, i) => (
                       <button
                         key={i}
-                        onClick={() => setInput(sugestao.texto)}
+                        onClick={() => setInput('fullPrompt' in sugestao ? sugestao.fullPrompt : sugestao.texto)}
                         className="flex items-center gap-2 md:gap-3 p-3 md:p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-left border border-white/5 hover:border-white/10"
                       >
-                        <sugestao.icon className={`w-4 h-4 md:w-5 md:h-5 ${sugestao.cor} flex-shrink-0`} />
-                        <span className="text-white/80 text-xs md:text-sm">{sugestao.texto}</span>
+                        {'icon' in sugestao && typeof sugestao.icon === 'string' ? (
+                          <span className="text-lg flex-shrink-0">{sugestao.icon}</span>
+                        ) : 'icon' in sugestao ? (
+                          <sugestao.icon className={`w-4 h-4 md:w-5 md:h-5 ${'cor' in sugestao ? sugestao.cor : 'text-blue-400'} flex-shrink-0`} />
+                        ) : null}
+                        <span className="text-white/80 text-xs md:text-sm">{'text' in sugestao ? sugestao.text : sugestao.texto}</span>
                       </button>
                     ))}
                   </div>
