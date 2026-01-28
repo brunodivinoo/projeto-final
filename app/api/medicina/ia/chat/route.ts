@@ -952,19 +952,29 @@ async function streamClaude(params: StreamClaudeParams) {
           }
 
           // Verificar se a resposta parece incompleta mesmo com end_turn
+          const textoLimpo = fullResponse.replace(/\s+$/g, '') // Remove whitespace do final
+          const ultimoChar = textoLimpo.slice(-1)
+          const ultimaPalavra = textoLimpo.split(/\s+/).pop() || ''
+          
           const pareceIncompleta = (
             // Termina abruptamente
             fullResponse.endsWith('...') ||
             fullResponse.endsWith('-') ||
             fullResponse.endsWith(',') ||
-            /[a-z]$/i.test(fullResponse.trim()) || // Termina com letra
+            // Termina com letra minúscula (indica corte no meio de frase)
+            /[a-z]$/.test(ultimoChar) ||
+            // Termina com palavra curta comum (indica corte no meio)
+            ['ou', 'e', 'de', 'da', 'do', 'que', 'com', 'por', 'para', 'uma', 'um', 'o', 'a', 'os', 'as'].includes(ultimaPalavra.toLowerCase()) ||
             // Falta seção de fontes quando deveria ter
             (!fullResponse.includes('📚 **Fontes') &&
              !fullResponse.includes('**Fontes:**') &&
              !fullResponse.includes('Referências') &&
+             !fullResponse.includes('📖') &&
              fullResponse.length > 500 && // Resposta substancial
              continuationCount < MAX_CONTINUATIONS)
           )
+          
+          console.log(`[Chat API] Verificação completude: último char="${ultimoChar}" última palavra="${ultimaPalavra}" pareceIncompleta=${pareceIncompleta}`)
 
           // Se não houve tool calls ou o stop_reason é end_turn, verificar se realmente terminou
           if (toolCallsThisIteration.length === 0 || stopReason === 'end_turn') {

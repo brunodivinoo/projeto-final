@@ -1390,7 +1390,8 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   // Se detectou ASCII significativo fora de blocos de código
   if (asciiInTextDetection.isAscii && asciiInTextDetection.confidence >= 0.4) {
     // Encontrar o bloco de ASCII no texto original
-    const asciiBlockPattern = /(?:^|\n)((?:[\s]*[┌┐└┘├┤┬┴┼─│═║╔╗╚╝╠╣╦╩╬|+].*\n?){3,})/gm
+    // IMPORTANTE: Não incluir | simples para não confundir com tabelas markdown
+    const asciiBlockPattern = /(?:^|\n)((?:[\s]*[┌┐└┘├┤┬┴┼─│═║╔╗╚╝╠╣╦╩╬+].*\n?){3,})/gm
     let asciiMatch
     while ((asciiMatch = asciiBlockPattern.exec(processedContent)) !== null) {
       // Verificar se não está dentro de um bloco de código
@@ -1399,6 +1400,14 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
       if (codeBlocksBeforeCount % 2 === 0) {
         // Não está dentro de um bloco de código
         const asciiContent = asciiMatch[1]
+        
+        // Verificar se é uma tabela markdown (tem linha de separação |---|)
+        const isMarkdownTable = /\|[\s-:]+\|/.test(asciiContent) || /^\s*\|[^┌┐└┘├┤┬┴┼─│═║╔╗╚╝╠╣╦╩╬]+\|/m.test(asciiContent)
+        if (isMarkdownTable) {
+          // É uma tabela markdown, ignorar e deixar o ReactMarkdown renderizar
+          continue
+        }
+        
         const detection = detectAsciiArt(asciiContent)
 
         if (detection.isAscii) {
