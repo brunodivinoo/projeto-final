@@ -124,6 +124,39 @@ export interface Artifact {
     image?: ImageMetadata
     // Metadados para PDFs
     pdf?: PDFMetadata
+    // Metadados para simulados
+    simulado?: {
+      titulo: string
+      disciplina: string
+      total_questoes: number
+      tempo_estimado: string
+      dificuldade_media: string
+      questoes: Array<{
+        numero: number
+        tipo: string
+        dificuldade: string
+        tema: string
+        enunciado: string
+        alternativas: Array<{ letra: string; texto: string }>
+        gabarito_comentado: {
+          resposta_correta: string
+          explicacao: string
+          ponto_chave?: string
+        }
+      }>
+    }
+    // Metadados para flashcards
+    flashcards?: {
+      titulo: string
+      cards: Array<{
+        id: string
+        frente: string
+        verso: string
+        referencia?: string
+        tags?: string[]
+        dificuldade?: 'facil' | 'medio' | 'dificil'
+      }>
+    }
   }
 }
 
@@ -518,7 +551,9 @@ export const CATEGORY_ICONS: Record<ArtifactCategory, string> = {
   images_uploaded: '📷',
   pdfs: '📄',
   questions: '❓',
-  diagrams: '📊'
+  diagrams: '📊',
+  simulados: '📋',
+  flashcards_cat: '🃏'
 }
 
 // Cores para dificuldade de questões

@@ -285,7 +285,6 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
           onAnswerSubmit={(qId, answer, correct) => {
             handleAnswer(questaoAtual.numero, answer, correct)
           }}
-          compact
         />
       </div>
 

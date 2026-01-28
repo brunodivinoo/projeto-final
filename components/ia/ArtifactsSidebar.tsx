@@ -692,7 +692,6 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
           <div className={containerClass}>
             <QuestionArtifactCard
               question={questionData}
-              compact={!isFullscreen}
             />
           </div>
         )
@@ -704,7 +703,6 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
           <div className={containerClass}>
             <QuestionArtifactCard
               question={parsedQuestion}
-              compact={!isFullscreen}
             />
           </div>
         )

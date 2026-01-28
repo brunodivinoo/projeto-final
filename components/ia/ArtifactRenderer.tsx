@@ -209,15 +209,26 @@ const FLASHCARD_BLOCK_REGEX = /```flashcards?(?::([^\n]*))?\n([\s\S]*?)```/g
 // Regex para detectar flashcards em formato JSON direto
 const FLASHCARD_JSON_REGEX = /```(?:json)?\s*\n?\s*(\[\s*\{[^`]*"frente"[^`]*"verso"[^`]*\}\s*\])\s*```/g
 
+// Tipo de dificuldade para flashcards
+type FlashcardDificuldade = 'facil' | 'medio' | 'dificil'
+
+// Função auxiliar para validar dificuldade
+function parseDificuldade(value: unknown): FlashcardDificuldade | undefined {
+  if (value === 'facil' || value === 'medio' || value === 'dificil') {
+    return value
+  }
+  return undefined
+}
+
 // Funcao para extrair flashcards do texto formatado - VERSÃO MELHORADA
-function extractFlashcardsFromText(text: string): { titulo: string; cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: string }> } | null {
+function extractFlashcardsFromText(text: string): { titulo: string; cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: FlashcardDificuldade }> } | null {
   // Detectar titulo dos flashcards
   const tituloMatch = text.match(/#+\s*(?:🃏|📝|🧠)?\s*(?:FLASHCARDS?|Flashcards?):?\s*([^\n]+)/i) ||
                       text.match(/\*\*(?:FLASHCARDS?|Flashcards?):?\s*([^*\n]+)\*\*/i) ||
                       text.match(/Flashcards?:?\s+([^\n]+)/i)
   const titulo = tituloMatch ? tituloMatch[1].trim() : 'Flashcards'
 
-  const cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: string }> = []
+  const cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: FlashcardDificuldade }> = []
 
   // PADRÃO 1: Formato JSON array - MAIS COMUM (a IA geralmente gera assim)
   const jsonArrayMatch = text.match(/\[\s*\{[\s\S]*?"frente"[\s\S]*?"verso"[\s\S]*?\}\s*\]/g)
@@ -234,7 +245,7 @@ function extractFlashcardsFromText(text: string): { titulo: string; cards: Array
                 verso: card.verso,
                 referencia: card.referencia,
                 tags: card.tags,
-                dificuldade: card.dificuldade
+                dificuldade: parseDificuldade(card.dificuldade)
               })
             }
           })
@@ -258,7 +269,7 @@ function extractFlashcardsFromText(text: string): { titulo: string; cards: Array
         const parsed = JSON.parse(jsonStr)
         const cardsArray = parsed.cards || parsed.flashcards
         if (Array.isArray(cardsArray)) {
-          cardsArray.forEach((card: { frente?: string; verso?: string; referencia?: string; tags?: string[]; dificuldade?: string }, idx: number) => {
+          cardsArray.forEach((card: { frente?: string; verso?: string; referencia?: string; tags?: string[]; dificuldade?: unknown }, idx: number) => {
             if (card.frente && card.verso) {
               cards.push({
                 id: `flashcard-${idx + 1}-${Date.now()}`,
@@ -266,7 +277,7 @@ function extractFlashcardsFromText(text: string): { titulo: string; cards: Array
                 verso: card.verso,
                 referencia: card.referencia,
                 tags: card.tags,
-                dificuldade: card.dificuldade
+                dificuldade: parseDificuldade(card.dificuldade)
               })
             }
           })
@@ -624,7 +635,7 @@ interface Artifact {
   originalAscii?: string  // Guarda o ASCII original para referência
   conversionType?: 'flowchart' | 'layers' | 'tree' | 'table' | 'generic'
   questionData?: Question  // Dados estruturados da questão
-  flashcardData?: { titulo: string; cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: string }> }
+  flashcardData?: { titulo: string; cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: 'facil' | 'medio' | 'dificil' }> }
   simuladoData?: SimuladoData  // Dados estruturados do simulado
 }
 
@@ -1145,7 +1156,7 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
     convertedContent?: string
     originalAscii?: string
     questionData?: Question
-    flashcardData?: { titulo: string; cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: string }> }
+    flashcardData?: { titulo: string; cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: 'facil' | 'medio' | 'dificil' }> }
     simuladoData?: SimuladoData
   }> = []
 
@@ -1271,13 +1282,13 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
       if (Array.isArray(parsed) && parsed.length >= 2 && parsed[0].frente && parsed[0].verso) {
         const flashcardData = {
           titulo: 'Flashcards',
-          cards: parsed.map((card: { frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: string }, idx: number) => ({
+          cards: parsed.map((card: { frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: unknown }, idx: number) => ({
             id: `flashcard-${idx + 1}-${Date.now()}`,
             frente: card.frente,
             verso: card.verso,
             referencia: card.referencia,
             tags: card.tags,
-            dificuldade: card.dificuldade
+            dificuldade: parseDificuldade(card.dificuldade)
           }))
         }
 
