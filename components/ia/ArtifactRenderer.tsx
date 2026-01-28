@@ -1747,6 +1747,10 @@ function ArtifactRendererComponent({
         storeType = 'flowchart'
       } else if (artifact.type === 'question') {
         storeType = 'question'
+      } else if (artifact.type === 'flashcards') {
+        storeType = 'flashcards'
+      } else if (artifact.type === 'simulado') {
+        storeType = 'simulado'
       } else {
         storeType = detectArtifactType(artifact.content) || 'diagram'
       }
@@ -1760,7 +1764,9 @@ function ArtifactRendererComponent({
         chatMode,
         metadata: {
           subtype: artifact.subtype,
-          question: artifact.questionData
+          question: artifact.questionData,
+          flashcards: artifact.flashcardData,
+          simulado: artifact.simuladoData
         }
       })
 
@@ -1787,7 +1793,12 @@ function ArtifactRendererComponent({
   return (
     <div className="artifact-renderer">
       {parts.map((part, index) => {
+        // Ignorar partes undefined ou vazias
+        if (part === undefined || part === null) return null
+
         if (typeof part === 'string') {
+          // Ignorar strings vazias
+          if (!part.trim()) return null
           // Verificar se é o marcador de skeleton de questão
           if (part.includes('[QUESTION_STREAMING_SKELETON]')) {
             // Dividir o texto e renderizar o skeleton no lugar do marcador
