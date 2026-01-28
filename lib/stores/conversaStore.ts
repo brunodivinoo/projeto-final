@@ -76,7 +76,15 @@ export const useConversaStore = create<ConversaState>()(
           const newUrl = id
             ? `/medicina/dashboard/ia?c=${id}`
             : '/medicina/dashboard/ia'
-          window.history.pushState({}, '', newUrl)
+          window.history.pushState({ conversaId: id }, '', newUrl)
+
+          // Disparar evento customizado para a página reagir
+          window.dispatchEvent(new CustomEvent('conversa-changed', {
+            detail: {
+              conversaId: id,
+              previousId: currentId
+            }
+          }))
         }
 
         // Pequeno delay para permitir que o componente reaja

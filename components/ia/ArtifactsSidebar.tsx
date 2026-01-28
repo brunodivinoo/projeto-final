@@ -42,6 +42,32 @@ const QuestionArtifactCard = dynamic(() => import('./QuestionArtifactCard'), {
   )
 })
 
+// Importar SimuladoCard dinamicamente
+const SimuladoCard = dynamic(() => import('./SimuladoCard'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-white/10 rounded-xl p-6">
+      <div className="flex items-center gap-2 text-white/40">
+        <div className="animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full" />
+        <span>Carregando simulado...</span>
+      </div>
+    </div>
+  )
+})
+
+// Importar FlashcardDeck dinamicamente
+const FlashcardDeck = dynamic(() => import('./FlashcardDeck'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-6">
+      <div className="flex items-center gap-2 text-white/40">
+        <div className="animate-spin w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full" />
+        <span>Carregando flashcards...</span>
+      </div>
+    </div>
+  )
+})
+
 // Funções auxiliares para extrair informações do JSON
 function tryParseJson(content: string): Record<string, unknown> | null {
   try {
@@ -273,6 +299,18 @@ const ARTIFACT_CATEGORIES: Record<string, { label: string; icon: string; types: 
     icon: '❓',
     types: ['question'],
     color: 'from-emerald-500 to-green-500'
+  },
+  simulados: {
+    label: 'Simulados',
+    icon: '📋',
+    types: ['simulado'],
+    color: 'from-purple-500 to-pink-500'
+  },
+  flashcards: {
+    label: 'Flashcards',
+    icon: '🃏',
+    types: ['flashcard', 'flashcards'],
+    color: 'from-amber-500 to-orange-500'
   },
   visual: {
     label: 'Visualizações',
@@ -689,6 +727,75 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
           </div>
         )
       }
+
+    case 'simulado':
+      // Renderizar simulado completo
+      try {
+        const simuladoData = artifact.metadata?.simulado || JSON.parse(artifact.content)
+        if (simuladoData.questoes && Array.isArray(simuladoData.questoes)) {
+          return (
+            <div className={containerClass}>
+              <SimuladoCard
+                simulado={simuladoData}
+              />
+            </div>
+          )
+        }
+      } catch {
+        // Fallback visual
+      }
+      return (
+        <div className={`p-4 ${containerClass}`}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xl">📋</span>
+            <h4 className="text-white font-medium">{artifact.title}</h4>
+          </div>
+          <div className="bg-gradient-to-b from-purple-500/10 to-pink-500/10 rounded-lg p-4 border border-purple-500/20">
+            <p className="text-white/60 text-sm text-center">
+              Simulado disponível
+            </p>
+            <p className="text-white/40 text-xs text-center mt-2">
+              Clique em &quot;Tela cheia&quot; para iniciar
+            </p>
+          </div>
+        </div>
+      )
+
+    case 'flashcard':
+    case 'flashcards':
+      // Renderizar flashcards
+      try {
+        const flashcardData = artifact.metadata?.flashcards || JSON.parse(artifact.content)
+        const cards = flashcardData.cards || flashcardData
+        if (Array.isArray(cards) && cards.length > 0) {
+          return (
+            <div className={containerClass}>
+              <FlashcardDeck
+                titulo={flashcardData.titulo || artifact.title}
+                cards={cards}
+              />
+            </div>
+          )
+        }
+      } catch {
+        // Fallback visual
+      }
+      return (
+        <div className={`p-4 ${containerClass}`}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xl">🃏</span>
+            <h4 className="text-white font-medium">{artifact.title}</h4>
+          </div>
+          <div className="bg-gradient-to-b from-amber-500/10 to-orange-500/10 rounded-lg p-4 border border-amber-500/20">
+            <p className="text-white/60 text-sm text-center">
+              Flashcards disponíveis
+            </p>
+            <p className="text-white/40 text-xs text-center mt-2">
+              Clique em &quot;Tela cheia&quot; para estudar
+            </p>
+          </div>
+        </div>
+      )
 
     default:
       return (

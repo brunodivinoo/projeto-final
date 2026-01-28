@@ -601,6 +601,22 @@ export default function IAPage() {
     }
   }, [storeConversaSelecionada, conversaAtual, isChangingConversa, loading, carregarConversa])
 
+  // Listener para evento customizado de troca de conversa (backup)
+  useEffect(() => {
+    const handleConversaChanged = (event: CustomEvent<{ conversaId: string | null; previousId: string | null }>) => {
+      const { conversaId, previousId } = event.detail
+      console.log('[IA Page] Evento conversa-changed:', previousId, '->', conversaId)
+      if (conversaId && conversaId !== conversaAtual && !loading) {
+        carregarConversa(conversaId)
+      }
+    }
+
+    window.addEventListener('conversa-changed', handleConversaChanged as EventListener)
+    return () => {
+      window.removeEventListener('conversa-changed', handleConversaChanged as EventListener)
+    }
+  }, [conversaAtual, loading, carregarConversa])
+
   // Sincronizar filtro de artefatos quando o modo de chat muda
   useEffect(() => {
     setCurrentChatMode(chatMode)

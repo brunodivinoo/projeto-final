@@ -21,6 +21,7 @@ export type ArtifactType =
   | 'note'
   | 'question' // Questões geradas pela IA
   | 'simulado' // Simulados completos (conjunto de questões)
+  | 'flashcard' // Flashcard singular (alias)
   | 'flashcards' // Flashcards gerados pela IA
   | 'image_generated' // Imagens geradas por IA (DALL-E 3)
   | 'image_uploaded' // Imagens enviadas pelo usuário
@@ -28,7 +29,7 @@ export type ArtifactType =
   | 'document' // Documentos gerais
 
 // Categorias de artefatos para abas
-export type ArtifactCategory = 'all' | 'images_generated' | 'images_uploaded' | 'pdfs' | 'questions' | 'diagrams'
+export type ArtifactCategory = 'all' | 'images_generated' | 'images_uploaded' | 'pdfs' | 'questions' | 'diagrams' | 'simulados' | 'flashcards_cat'
 
 // Interface para alternativa de questão
 export interface QuestionAlternative {
@@ -464,6 +465,7 @@ export const ARTIFACT_ICONS: Record<ArtifactType, string> = {
   note: '📝',
   question: '❓',
   simulado: '📋',
+  flashcard: '🃏',
   flashcards: '🃏',
   image_generated: '🖼️',
   image_uploaded: '📷',
@@ -489,6 +491,7 @@ export const ARTIFACT_LABELS: Record<ArtifactType, string> = {
   note: 'Nota',
   question: 'Questão',
   simulado: 'Simulado',
+  flashcard: 'Flashcard',
   flashcards: 'Flashcards',
   image_generated: 'Imagem Gerada',
   image_uploaded: 'Imagem Enviada',
@@ -503,7 +506,9 @@ export const CATEGORY_LABELS: Record<ArtifactCategory, string> = {
   images_uploaded: 'Imagens Enviadas',
   pdfs: 'PDFs',
   questions: 'Questões',
-  diagrams: 'Diagramas'
+  diagrams: 'Diagramas',
+  simulados: 'Simulados',
+  flashcards_cat: 'Flashcards'
 }
 
 // Ícones para categorias
