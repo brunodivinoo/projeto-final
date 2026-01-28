@@ -292,6 +292,49 @@ export async function POST(request: NextRequest) {
       }
 
       conversaAtual = novaConversa.id
+    } else {
+      // CORREÇÃO RACE CONDITION: Verificar se conversa existe, se não existir, criar
+      const { data: conversaExistente, error: checkError } = await supabase
+        .from('conversas_ia_med')
+        .select('id')
+        .eq('id', conversaAtual)
+        .single()
+
+      if (checkError || !conversaExistente) {
+        console.log('[Chat API] Conversa não encontrada, criando:', conversaAtual)
+        
+        // Criar conversa com o ID fornecido (upsert)
+        const { error: createError } = await supabase
+          .from('conversas_ia_med')
+          .upsert({
+            id: conversaAtual,
+            user_id,
+            titulo: mensagem.substring(0, 50) + (mensagem.length > 50 ? '...' : ''),
+            modelo: plano === 'residencia' ? 'claude' : 'gemini',
+            modo: modo
+          }, { onConflict: 'id' })
+
+        if (createError) {
+          console.error('[Chat API] Erro ao criar conversa com ID fornecido:', createError)
+          // Se falhar o upsert, criar com ID novo
+          const { data: novaConversa, error: newConvError } = await supabase
+            .from('conversas_ia_med')
+            .insert({
+              user_id,
+              titulo: mensagem.substring(0, 50) + (mensagem.length > 50 ? '...' : ''),
+              modelo: plano === 'residencia' ? 'claude' : 'gemini',
+              modo: modo
+            })
+            .select()
+            .single()
+
+          if (newConvError) {
+            console.error('Erro ao criar conversa fallback:', newConvError)
+            return NextResponse.json({ error: 'Erro ao criar conversa' }, { status: 500 })
+          }
+          conversaAtual = novaConversa.id
+        }
+      }
     }
 
     // Buscar mensagens anteriores da conversa

@@ -56,7 +56,11 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
   const [hoveredNode, setHoveredNode] = useState<NodeInfo | null>(null)
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null)
   const [highlightedPaths, setHighlightedPaths] = useState<Set<string>>(new Set())
-  const [interactiveMode, setInteractiveMode] = useState(true)
+  const [interactiveMode, setInteractiveMode] = useState(false) // Desabilitado por padrão para evitar travamento
+  
+  // Ref para throttle do mouse move
+  const mouseMoveThrottleRef = useRef<number | null>(null)
+  const lastPositionRef = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
     const renderDiagram = async () => {
@@ -216,6 +220,9 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
     if (!svgElement) return
 
     const descriptions = extractNodeDescriptions(chart)
+    
+    // Array para armazenar cleanups
+    const cleanupFns: Array<() => void> = []
 
     // Selecionar todos os nós (flowchart nodes)
     const nodes = svgElement.querySelectorAll('.node, .nodeLabel, [id^="flowchart-"]')
@@ -245,26 +252,29 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
       // Adicionar cursor pointer
       nodeElement.style.cursor = 'pointer'
 
-      // Handler de hover
-      const handleMouseEnter = (e: Event) => {
-        const rect = nodeElement.getBoundingClientRect()
-        const containerRect = container.getBoundingClientRect()
+      // Handler de hover com throttle
+      let hoverTimeout: NodeJS.Timeout | null = null
+      const handleMouseEnter = () => {
+        if (hoverTimeout) clearTimeout(hoverTimeout)
+        hoverTimeout = setTimeout(() => {
+          const rect = nodeElement.getBoundingClientRect()
+          const containerRect = container.getBoundingClientRect()
 
-        setHoveredNode({
-          id: cleanId,
-          label: label,
-          description: descriptions[cleanId],
-          x: rect.left - containerRect.left + rect.width / 2,
-          y: rect.top - containerRect.top,
-          width: rect.width,
-          height: rect.height
-        })
-
-        // Destacar o nó
-        nodeElement.classList.add('node-hovered')
+          setHoveredNode({
+            id: cleanId,
+            label: label,
+            description: descriptions[cleanId],
+            x: rect.left - containerRect.left + rect.width / 2,
+            y: rect.top - containerRect.top,
+            width: rect.width,
+            height: rect.height
+          })
+          nodeElement.classList.add('node-hovered')
+        }, 100) // 100ms debounce
       }
 
       const handleMouseLeave = () => {
+        if (hoverTimeout) clearTimeout(hoverTimeout)
         setHoveredNode(null)
         nodeElement.classList.remove('node-hovered')
       }
@@ -300,12 +310,13 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
       nodeElement.addEventListener('mouseleave', handleMouseLeave)
       nodeElement.addEventListener('click', handleClick)
 
-      // Cleanup
-      return () => {
+      // Armazenar cleanup
+      cleanupFns.push(() => {
+        if (hoverTimeout) clearTimeout(hoverTimeout)
         nodeElement.removeEventListener('mouseenter', handleMouseEnter)
         nodeElement.removeEventListener('mouseleave', handleMouseLeave)
         nodeElement.removeEventListener('click', handleClick)
-      }
+      })
     })
 
     // Clique fora para deselecionar
@@ -318,8 +329,10 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
 
     container.addEventListener('click', handleContainerClick)
 
+    // Cleanup correto de todos os event listeners
     return () => {
       container.removeEventListener('click', handleContainerClick)
+      cleanupFns.forEach(fn => fn())
     }
   }, [svg, interactiveMode, chart, extractNodeDescriptions])
 
@@ -453,16 +466,33 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
   }, [position, scale, isFullscreen])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (isDragging) {
-      setPosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
-      })
-    }
+    if (!isDragging) return
+    
+    // Throttle: só atualiza a cada 16ms (~60fps) para evitar travamento
+    if (mouseMoveThrottleRef.current) return
+    
+    mouseMoveThrottleRef.current = window.requestAnimationFrame(() => {
+      const newX = e.clientX - dragStart.x
+      const newY = e.clientY - dragStart.y
+      
+      // Só atualiza se houver mudança significativa (>2px)
+      if (Math.abs(newX - lastPositionRef.current.x) > 2 || 
+          Math.abs(newY - lastPositionRef.current.y) > 2) {
+        lastPositionRef.current = { x: newX, y: newY }
+        setPosition({ x: newX, y: newY })
+      }
+      
+      mouseMoveThrottleRef.current = null
+    })
   }, [isDragging, dragStart])
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
+    // Limpar throttle pendente
+    if (mouseMoveThrottleRef.current) {
+      cancelAnimationFrame(mouseMoveThrottleRef.current)
+      mouseMoveThrottleRef.current = null
+    }
   }, [])
 
   // Keyboard shortcuts
@@ -639,11 +669,12 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
         >
           <div
             ref={svgContainerRef}
-            className="p-6 flex items-center justify-center transition-transform duration-100"
+            className={`p-6 flex items-center justify-center ${isDragging ? '' : 'transition-transform duration-100'}`}
             style={{
               transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
               transformOrigin: 'center center',
-              minHeight: isFullscreen ? 'calc(100vh - 12rem)' : '200px'
+              minHeight: isFullscreen ? 'calc(100vh - 12rem)' : '200px',
+              willChange: isDragging ? 'transform' : 'auto'
             }}
           >
             {svg ? (
