@@ -1305,14 +1305,26 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
     }
   }
 
-  // Buscar flashcards no texto (formato markdown com FRENTE/VERSO)
-  // Só processa se não encontrou questões e não encontrou flashcards JSON
-  if (questionMatchCount === 0 && !allMatches.some(m => m.type === 'flashcards')) {
+  // Buscar flashcards no texto (formato markdown com FRENTE/VERSO ou JSON direto)
+  // IMPORTANTE: Processa mesmo quando há questões na resposta!
+  if (!allMatches.some(m => m.type === 'flashcards')) {
     const flashcardData = extractFlashcardsFromText(processedContent)
     if (flashcardData && flashcardData.cards.length >= 2) {
-      // Criar um match sintético que engloba todo o conteúdo de flashcards
-      const syntheticMatch = ['', flashcardData.titulo] as RegExpMatchArray
-      syntheticMatch.index = 0
+      // Encontrar a posição do JSON array no texto para removê-lo
+      const jsonArrayPattern = /\[\s*\{[\s\S]*?"frente"[\s\S]*?"verso"[\s\S]*?\}\s*\]/
+      const jsonMatch = processedContent.match(jsonArrayPattern)
+      
+      let matchIndex = 0
+      let matchLength = 0
+      
+      if (jsonMatch && jsonMatch.index !== undefined) {
+        matchIndex = jsonMatch.index
+        matchLength = jsonMatch[0].length
+      }
+      
+      // Criar um match que engloba o JSON para removê-lo do texto
+      const syntheticMatch = [processedContent.substring(matchIndex, matchIndex + matchLength), flashcardData.titulo] as RegExpMatchArray
+      syntheticMatch.index = matchIndex
       syntheticMatch.input = processedContent
 
       allMatches.push({
@@ -1321,7 +1333,7 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
         flashcardData
       })
 
-      console.log('[ArtifactRenderer] Flashcards markdown detectados:', flashcardData.cards.length)
+      console.log('[ArtifactRenderer] Flashcards markdown detectados:', flashcardData.cards.length, 'posição:', matchIndex)
     }
   }
 
