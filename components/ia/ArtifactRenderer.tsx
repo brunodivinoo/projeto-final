@@ -1311,18 +1311,34 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
     const flashcardData = extractFlashcardsFromText(processedContent)
     if (flashcardData && flashcardData.cards.length >= 2) {
       // Encontrar a posição do JSON array no texto para removê-lo
-      const jsonArrayPattern = /\[\s*\{[\s\S]*?"frente"[\s\S]*?"verso"[\s\S]*?\}\s*\]/
+      // Usar regex mais precisa para encontrar apenas o array JSON
+      const jsonArrayPattern = /\[\s*\n?\s*\{[\s\S]*?"frente"[\s\S]*?"verso"[\s\S]*?\}\s*\n?\s*\]/
       const jsonMatch = processedContent.match(jsonArrayPattern)
-      
+
       let matchIndex = 0
       let matchLength = 0
-      
+
       if (jsonMatch && jsonMatch.index !== undefined) {
         matchIndex = jsonMatch.index
         matchLength = jsonMatch[0].length
+
+        // Também remover o título "## 🃏 FLASHCARDS" se estiver logo antes do JSON
+        const textBefore = processedContent.substring(Math.max(0, matchIndex - 200), matchIndex)
+        const titleMatch = textBefore.match(/(?:#{1,3}\s*)?(?:🃏\s*)?(?:FLASHCARDS?[:\s-]*[^\n]*\n+)/i)
+        if (titleMatch) {
+          const titleStart = matchIndex - (textBefore.length - (titleMatch.index || 0))
+          matchIndex = titleStart
+          matchLength = jsonMatch.index! + jsonMatch[0].length - titleStart
+        }
       }
-      
-      // Criar um match que engloba o JSON para removê-lo do texto
+
+      // Se não encontrou JSON mas encontrou flashcards via outro método, usar posição no final
+      // Isso fará o FlashcardDeck ser adicionado ao final sem remover texto
+      if (matchLength === 0) {
+        matchIndex = processedContent.length
+      }
+
+      // Criar um match que engloba o JSON (e título) para removê-lo do texto
       const syntheticMatch = [processedContent.substring(matchIndex, matchIndex + matchLength), flashcardData.titulo] as RegExpMatchArray
       syntheticMatch.index = matchIndex
       syntheticMatch.input = processedContent
@@ -1333,7 +1349,7 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
         flashcardData
       })
 
-      console.log('[ArtifactRenderer] Flashcards markdown detectados:', flashcardData.cards.length, 'posição:', matchIndex)
+      console.log('[ArtifactRenderer] Flashcards detectados:', flashcardData.cards.length, 'posição:', matchIndex, 'length:', matchLength)
     }
   }
 
@@ -1797,8 +1813,8 @@ function ArtifactRendererComponent({
         if (part === undefined || part === null) return null
 
         if (typeof part === 'string') {
-          // Ignorar strings vazias
-          if (!part.trim()) return null
+          // Ignorar strings vazias ou que são apenas "undefined"
+          if (!part.trim() || part.trim() === 'undefined') return null
           // Verificar se é o marcador de skeleton de questão
           if (part.includes('[QUESTION_STREAMING_SKELETON]')) {
             // Dividir o texto e renderizar o skeleton no lugar do marcador
