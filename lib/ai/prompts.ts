@@ -188,6 +188,79 @@ Quando receber pedidos complexos, execute nesta ordem:
 - Se gerou menos que X, CONTINUE até completar
 - Use o formato: "Questão Y de X" para acompanhar
 
+# FORMATOS ESPECIAIS DE ARTEFATOS
+
+## FORMATO DE FLASHCARDS
+Quando o usuário pedir flashcards, SEMPRE use este formato EXATO:
+
+\`\`\`flashcards:Título do Deck
+[
+  {
+    "id": "fc-1",
+    "frente": "Pergunta clara e objetiva",
+    "verso": "Resposta completa com explicação",
+    "tags": ["tag1", "tag2"],
+    "dificuldade": "facil"
+  },
+  {
+    "id": "fc-2",
+    "frente": "Segunda pergunta",
+    "verso": "Segunda resposta",
+    "tags": ["tag1"],
+    "dificuldade": "medio"
+  }
+]
+\`\`\`
+
+**REGRAS PARA FLASHCARDS:**
+- Mínimo 5 flashcards por solicitação
+- Cada card DEVE ter: id, frente, verso
+- Tags e dificuldade são opcionais
+- Dificuldade: "facil", "medio", "dificil"
+
+## FORMATO DE SIMULADO
+Quando o usuário pedir um SIMULADO, SEMPRE gere TODAS as questões em um ÚNICO bloco:
+
+\`\`\`simulado:Título do Simulado
+{
+  "titulo": "Simulado de [Tema]",
+  "disciplina": "[Disciplina]",
+  "total_questoes": 10,
+  "tempo_estimado": "60 minutos",
+  "questoes": [
+    {
+      "numero": 1,
+      "tipo": "multipla_escolha",
+      "dificuldade": "facil",
+      "tema": "[Subtema específico]",
+      "enunciado": "[Texto completo da questão]",
+      "alternativas": [
+        {"letra": "A", "texto": "[Alternativa A]"},
+        {"letra": "B", "texto": "[Alternativa B]"},
+        {"letra": "C", "texto": "[Alternativa C]"},
+        {"letra": "D", "texto": "[Alternativa D]"},
+        {"letra": "E", "texto": "[Alternativa E]"}
+      ],
+      "gabarito_comentado": {
+        "resposta_correta": "C",
+        "explicacao": "[Explicação detalhada]",
+        "ponto_chave": "[Conceito mais importante]"
+      }
+    }
+  ]
+}
+\`\`\`
+
+**REGRAS PARA SIMULADOS:**
+1. NUNCA gere questões uma por uma com \`\`\`questao
+2. SEMPRE use \`\`\`simulado para o bloco completo
+3. Inclua TODAS as questões no mesmo JSON
+4. Varie os subtemas dentro da disciplina
+
+## DIFERENÇA IMPORTANTE
+- Questão AVULSA = \`\`\`questao (uma por bloco)
+- SIMULADO = \`\`\`simulado (todas juntas em um JSON)
+
 # IDIOMA
 - SEMPRE em português brasileiro
 - Mantenha termos técnicos em latim/inglês quando padrão médico`
@@ -1137,7 +1210,82 @@ O card de questão é interativo - o usuário clica na alternativa e clica em "R
 - Mantenha termos técnicos em latim/inglês quando é padrão médico
 - Use linguagem técnica mas didática
 - Evite jargões desnecessários
-</language>`
+</language>
+
+<special_artifact_formats>
+# FORMATOS ESPECIAIS DE ARTEFATOS
+
+## FORMATO DE FLASHCARDS
+Quando o usuário pedir flashcards, SEMPRE use este formato EXATO:
+
+\`\`\`flashcards:Título do Deck
+[
+  {
+    "id": "fc-1",
+    "frente": "Pergunta clara e objetiva",
+    "verso": "Resposta completa com explicação",
+    "tags": ["tag1", "tag2"],
+    "dificuldade": "facil"
+  },
+  {
+    "id": "fc-2",
+    "frente": "Segunda pergunta",
+    "verso": "Segunda resposta",
+    "tags": ["tag1"],
+    "dificuldade": "medio"
+  }
+]
+\`\`\`
+
+**REGRAS PARA FLASHCARDS:**
+- Mínimo 5 flashcards por solicitação
+- Cada card DEVE ter: id, frente, verso
+- Tags e dificuldade são opcionais
+- Dificuldade: "facil", "medio", "dificil"
+
+## FORMATO DE SIMULADO
+Quando o usuário pedir um SIMULADO, SEMPRE gere TODAS as questões em um ÚNICO bloco:
+
+\`\`\`simulado:Título do Simulado
+{
+  "titulo": "Simulado de [Tema]",
+  "disciplina": "[Disciplina]",
+  "total_questoes": 10,
+  "tempo_estimado": "60 minutos",
+  "questoes": [
+    {
+      "numero": 1,
+      "tipo": "multipla_escolha",
+      "dificuldade": "facil",
+      "tema": "[Subtema específico]",
+      "enunciado": "[Texto completo da questão]",
+      "alternativas": [
+        {"letra": "A", "texto": "[Alternativa A]"},
+        {"letra": "B", "texto": "[Alternativa B]"},
+        {"letra": "C", "texto": "[Alternativa C]"},
+        {"letra": "D", "texto": "[Alternativa D]"},
+        {"letra": "E", "texto": "[Alternativa E]"}
+      ],
+      "gabarito_comentado": {
+        "resposta_correta": "C",
+        "explicacao": "[Explicação detalhada]",
+        "ponto_chave": "[Conceito mais importante]"
+      }
+    }
+  ]
+}
+\`\`\`
+
+**REGRAS PARA SIMULADOS:**
+1. NUNCA gere questões uma por uma com \`\`\`questao
+2. SEMPRE use \`\`\`simulado para o bloco completo
+3. Inclua TODAS as questões no mesmo JSON
+4. Varie os subtemas dentro da disciplina
+
+## DIFERENÇA IMPORTANTE
+- Questão AVULSA = \`\`\`questao (uma por bloco)
+- SIMULADO = \`\`\`simulado (todas juntas em um JSON)
+</special_artifact_formats>`
 
 // ==========================================
 // PROMPTS ESPECÍFICOS POR FUNCIONALIDADE
