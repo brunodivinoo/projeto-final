@@ -1,10 +1,10 @@
-// API Route - Busca de Imagens Médicas Reais
-// Fonte: OpenI (NIH) + Wikimedia Commons
-// Documentação: Medicina/ESCALABILIDADE-E-PLANOS.md
+// API Route - Busca de Imagens Médicas BRASILEIRAS
+// Fontes: MOL USP, UNICAMP, SciELO, Fiocruz, universidades federais
+// TODAS as imagens incluem referências ABNT automaticamente
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { searchMedicalImages } from '@/lib/medical-images/service'
+import { searchMedicalImages, type ResultadoBusca } from '@/lib/medical-images/service'
 import type { PlanoIA } from '@/lib/ai'
 
 const supabase = createClient(
@@ -13,7 +13,6 @@ const supabase = createClient(
 )
 
 // Rate limiting simples em memória (MVP)
-// TODO: Migrar para Vercel KV quando escalar
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minuto
 const RATE_LIMIT_MAX = 10 // 10 requisições por minuto por usuário
@@ -78,82 +77,90 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Rate limiting
-    const { allowed, remaining } = checkRateLimit(userId)
-    if (!allowed) {
+    // Rate limit
+    const rateLimit = checkRateLimit(userId)
+    if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: 'Limite de requisições atingido. Aguarde 1 minuto.' },
-        {
-          status: 429,
-          headers: {
-            'X-RateLimit-Remaining': '0',
-            'Retry-After': '60'
-          }
-        }
+        { status: 429 }
       )
     }
 
-    // Buscar imagens
-    const result = await searchMedicalImages(query, { limit })
+    // Buscar imagens de fontes BRASILEIRAS
+    console.log(`[Imagens BR] Buscando: "${query}" para usuário ${userId}`)
 
-    // Headers de cache para CDN
-    const headers = new Headers({
-      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-      'X-RateLimit-Remaining': remaining.toString(),
-      'X-Source': result.fonte,
-      'X-Cached': result.cached.toString()
+    const resultado: ResultadoBusca = await searchMedicalImages(query, { limit })
+
+    // Mapear para formato esperado pelo frontend
+    const images = resultado.imagens.map(img => ({
+      id: img.id,
+      url: img.url,
+      thumbUrl: img.thumbUrl,
+      title: img.titulo,
+      titulo: img.titulo,
+      caption: img.descricao,
+      descricao: img.descricao,
+      source: 'brazilian_academic',
+      sourceUrl: img.fonteUrl,
+      sourceName: img.siglaInstituicao,
+      fonte: img.fonte,
+      siglaInstituicao: img.siglaInstituicao,
+      instituicao: img.instituicao,
+      modality: 'Medical',
+      license: img.licenca,
+      referenciaABNT: img.referenciaABNT
+    }))
+
+    return NextResponse.json({
+      images,
+      total: resultado.total,
+      cached: resultado.cached,
+      source: 'fontes_brasileiras_academicas',
+      queryUsed: resultado.consultaUsada,
+      originalQuery: resultado.consultaOriginal,
+      referencias: resultado.referencias,
+      suggestions: resultado.sugestoes
     })
 
-    // Retornar com formato compatível (images ao invés de imagens)
-    return NextResponse.json({
-      images: result.imagens,
-      total: result.total,
-      cached: result.cached,
-      source: result.fonte,
-      queryUsed: result.consultaUsada,
-      originalQuery: result.consultaOriginal,
-      references: result.referencias,
-      suggestions: result.sugestoes
-    }, { headers })
-
   } catch (error) {
-    console.error('Erro na API de imagens médicas:', error)
+    console.error('[Imagens BR] Erro na API:', error)
     return NextResponse.json(
-      { error: 'Erro ao buscar imagens' },
+      { error: 'Erro interno ao buscar imagens' },
       { status: 500 }
     )
   }
 }
 
-// POST para buscar múltiplas queries de uma vez (otimização)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { queries, user_id } = body
+    const { queries, user_id: userId } = body
 
+    // Validação
     if (!queries || !Array.isArray(queries) || queries.length === 0) {
       return NextResponse.json(
-        { error: 'Array "queries" é obrigatório' },
+        { error: 'Campo "queries" (array de termos) é obrigatório' },
         { status: 400 }
       )
     }
 
-    if (!user_id) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Campo "user_id" é obrigatório' },
         { status: 400 }
       )
     }
 
-    // Verificar plano
+    // Verificar plano do usuário
     const { data: profile } = await supabase
       .from('profiles_med')
       .select('plano')
-      .eq('id', user_id)
+      .eq('id', userId)
       .single()
 
     const plano = (profile?.plano || 'gratuito') as PlanoIA
 
+    // Apenas Premium e Residência têm acesso
     if (plano === 'gratuito') {
       return NextResponse.json(
         {
@@ -164,46 +171,85 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Rate limiting
-    const { allowed } = checkRateLimit(user_id)
-    if (!allowed) {
+    // Rate limit
+    const rateLimit = checkRateLimit(userId)
+    if (!rateLimit.allowed) {
       return NextResponse.json(
-        { error: 'Limite de requisições atingido' },
+        { error: 'Limite de requisições atingido. Aguarde 1 minuto.' },
         { status: 429 }
       )
     }
 
-    // Limitar a 3 queries por vez
-    const limitedQueries = queries.slice(0, 3)
+    // Buscar imagens para o primeiro termo que retornar resultados
+    let resultado: ResultadoBusca | null = null
+    let queryUsada = ''
 
-    // Buscar todas em paralelo
-    const results = await Promise.all(
-      limitedQueries.map((q: string) => searchMedicalImages(q, { limit: 3 }))
-    )
+    for (const query of queries.slice(0, 3)) { // Máximo 3 tentativas
+      console.log(`[Imagens BR] Tentando busca: "${query}"`)
 
-    // Combinar e remover duplicatas
-    const allImages = results.flatMap(r => r.imagens)
-    const uniqueImages = allImages.filter((img, index, self) =>
-      index === self.findIndex(i => i.id === img.id)
-    )
+      const res = await searchMedicalImages(query, { limit: 8 })
 
-    // Pegar informações da primeira busca que encontrou algo (ou da última se nenhuma encontrou)
-    const firstSuccessfulResult = results.find(r => r.imagens.length > 0) || results[results.length - 1]
+      if (res.imagens.length > 0) {
+        resultado = res
+        queryUsada = query
+        break
+      }
+    }
+
+    if (!resultado || resultado.imagens.length === 0) {
+      return NextResponse.json({
+        images: [],
+        total: 0,
+        cached: false,
+        source: 'fontes_brasileiras_academicas',
+        queryUsed: queries[0],
+        originalQuery: queries[0],
+        referencias: [],
+        suggestions: [
+          'Tente termos em português como: "sistema cardiovascular", "tecido epitelial", "sangue"',
+          'Use nomes de sistemas: "sistema nervoso", "sistema respiratório"',
+          'Consulte a lista de tópicos disponíveis na base brasileira'
+        ]
+      })
+    }
+
+    // Mapear para formato esperado pelo frontend
+    const images = resultado.imagens.map(img => ({
+      id: img.id,
+      url: img.url,
+      thumbUrl: img.thumbUrl,
+      title: img.titulo,
+      titulo: img.titulo,
+      caption: img.descricao,
+      descricao: img.descricao,
+      source: 'brazilian_academic',
+      sourceUrl: img.fonteUrl,
+      sourceName: img.siglaInstituicao,
+      fonte: img.fonte,
+      siglaInstituicao: img.siglaInstituicao,
+      instituicao: img.instituicao,
+      modality: 'Medical',
+      license: img.licenca,
+      referenciaABNT: img.referenciaABNT
+    }))
+
+    console.log(`[Imagens BR] ✓ Retornando ${images.length} imagens de fontes brasileiras`)
 
     return NextResponse.json({
-      images: uniqueImages,
-      total: uniqueImages.length,
-      queries: limitedQueries.length,
-      queryUsed: firstSuccessfulResult?.consultaUsada,
-      originalQuery: limitedQueries[0],
-      suggestions: uniqueImages.length === 0 ? firstSuccessfulResult?.sugestoes : undefined,
-      references: uniqueImages.map(img => img.referenciaABNT)
+      images,
+      total: resultado.total,
+      cached: resultado.cached,
+      source: 'fontes_brasileiras_academicas',
+      queryUsed: queryUsada,
+      originalQuery: queries[0],
+      referencias: resultado.referencias,
+      suggestions: resultado.sugestoes
     })
 
   } catch (error) {
-    console.error('Erro na API de imagens médicas (POST):', error)
+    console.error('[Imagens BR] Erro na API POST:', error)
     return NextResponse.json(
-      { error: 'Erro ao buscar imagens' },
+      { error: 'Erro interno ao buscar imagens' },
       { status: 500 }
     )
   }

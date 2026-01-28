@@ -1,6 +1,6 @@
-// API Route - Proxy de Imagens Médicas
+// API Route - Proxy de Imagens Médicas BRASILEIRAS
 // Resolve problemas de CORS servindo imagens através do nosso servidor
-// Versão robusta com redirect handling e validação de conteúdo
+// APENAS domínios de universidades e instituições brasileiras são permitidos
 
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -9,18 +9,90 @@ const imageCache = new Map<string, { data: ArrayBuffer; contentType: string; tim
 const CACHE_TTL = 60 * 60 * 1000 // 1 hora
 const MAX_CACHE_SIZE = 100
 
-// Domínios permitidos (expandido para cobrir redirects comuns)
+// Domínios BRASILEIROS permitidos (universidades e instituições científicas)
 const ALLOWED_DOMAINS = [
-  'openi.nlm.nih.gov',
-  'www.ncbi.nlm.nih.gov',
-  'ncbi.nlm.nih.gov',
-  'upload.wikimedia.org',
-  'commons.wikimedia.org',
-  // Domínios de CDN/storage que OpenI pode redirecionar
-  'www.nlm.nih.gov',
-  'nlm.nih.gov',
-  'nih.gov',
-  'pmc.ncbi.nlm.nih.gov'
+  // Universidade de São Paulo
+  'usp.br',
+  'mol.icb.usp.br',
+  'repositorio.usp.br',
+  'www.icb.usp.br',
+  'icb.usp.br',
+  
+  // Universidade Estadual de Campinas
+  'unicamp.br',
+  'anatpat.unicamp.br',
+  'repositorio.unicamp.br',
+  'www.fcm.unicamp.br',
+  'fcm.unicamp.br',
+  
+  // Universidade Estadual Paulista
+  'unesp.br',
+  'repositorio.unesp.br',
+  
+  // Universidade Federal de Juiz de Fora
+  'ufjf.br',
+  'atlas.anatomia.ufjf.br',
+  
+  // Universidade Federal Fluminense
+  'uff.br',
+  'neuroanatomia.uff.br',
+  
+  // Universidade Federal do Rio de Janeiro
+  'ufrj.br',
+  'nupem.ufrj.br',
+  
+  // Universidade Federal de Minas Gerais
+  'ufmg.br',
+  
+  // Universidade Federal do Rio Grande do Sul
+  'ufrgs.br',
+  'lume.ufrgs.br',
+  
+  // Universidade Federal de Goiás
+  'ufg.br',
+  'histologia.icb.ufg.br',
+  
+  // Universidade Estadual de Londrina
+  'uel.br',
+  'departamentos.uel.br',
+  
+  // Universidade Federal de Alfenas
+  'unifal-mg.edu.br',
+  
+  // Universidade Federal do Ceará
+  'ufc.br',
+  'repositorio.ufc.br',
+  
+  // Bibliotecas e repositórios científicos
+  'scielo.br',
+  'www.scielo.br',
+  'scielo.org',
+  'bvsalud.org',
+  'pesquisa.bvsalud.org',
+  'lilacs.bvsalud.org',
+  
+  // Fiocruz
+  'fiocruz.br',
+  'ioc.fiocruz.br',
+  'portal.fiocruz.br',
+  
+  // Colégio Brasileiro de Radiologia
+  'cbr.org.br',
+  'radiologiabrasileira.org.br',
+  
+  // Governo Federal
+  'gov.br',
+  'saude.gov.br',
+  
+  // Outras universidades federais
+  'ufpr.br',
+  'ufsc.br',
+  'ufba.br',
+  'ufpe.br',
+  'ufrn.br',
+  'ufpa.br',
+  'ufam.edu.br',
+  'unb.br'
 ]
 
 // Content-types válidos para imagens
@@ -51,10 +123,11 @@ function cleanOldCache() {
   }
 }
 
-// Verificar se o domínio é permitido
+// Verificar se o domínio é permitido (apenas brasileiros)
 function isDomainAllowed(hostname: string): boolean {
+  const hostLower = hostname.toLowerCase()
   return ALLOWED_DOMAINS.some(domain =>
-    hostname === domain || hostname.endsWith('.' + domain)
+    hostLower === domain || hostLower.endsWith('.' + domain)
   )
 }
 
@@ -90,177 +163,175 @@ function detectImageType(buffer: ArrayBuffer): string | null {
   if (arr[0] === 0x42 && arr[1] === 0x4D) {
     return 'image/bmp'
   }
+  // TIFF: 49 49 2A 00 ou 4D 4D 00 2A
+  if ((arr[0] === 0x49 && arr[1] === 0x49 && arr[2] === 0x2A && arr[3] === 0x00) ||
+      (arr[0] === 0x4D && arr[1] === 0x4D && arr[2] === 0x00 && arr[3] === 0x2A)) {
+    return 'image/tiff'
+  }
 
   return null
 }
 
-// Fetch com seguimento de redirects manual (para validar cada redirect)
-async function fetchWithRedirects(url: string, maxRedirects: number = 5): Promise<Response> {
-  let currentUrl = url
-  let redirectCount = 0
+export async function GET(request: NextRequest) {
+  // Limpar cache antigo
+  cleanOldCache()
 
-  while (redirectCount < maxRedirects) {
-    const response = await fetch(currentUrl, {
-      headers: {
-        'User-Agent': 'PreparaMed/1.0 (Medical Education App; +https://preparamed.com.br)',
-        'Accept': 'image/*, */*',
-        'Accept-Language': 'en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7',
-        'Referer': 'https://openi.nlm.nih.gov/'
-      },
-      redirect: 'manual', // Não seguir automaticamente para validar cada hop
-      signal: AbortSignal.timeout(20000)
-    })
+  const { searchParams } = new URL(request.url)
+  const imageUrl = searchParams.get('url')
 
-    // Se é redirect, verificar se o destino é permitido
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get('location')
-      if (!location) {
-        throw new Error('Redirect sem header Location')
-      }
-
-      // Resolver URL relativa
-      const nextUrl = new URL(location, currentUrl)
-
-      // Verificar se domínio do redirect é permitido
-      if (!isDomainAllowed(nextUrl.hostname)) {
-        throw new Error(`Redirect para domínio não permitido: ${nextUrl.hostname}`)
-      }
-
-      currentUrl = nextUrl.href
-      redirectCount++
-      continue
-    }
-
-    // Resposta final
-    return response
+  if (!imageUrl) {
+    return NextResponse.json(
+      { error: 'URL da imagem não fornecida' },
+      { status: 400 }
+    )
   }
 
-  throw new Error('Muitos redirects')
-}
-
-export async function GET(request: NextRequest) {
+  // Validar URL
+  let parsedUrl: URL
   try {
-    const { searchParams } = new URL(request.url)
-    const imageUrl = searchParams.get('url')
+    parsedUrl = new URL(imageUrl)
+  } catch {
+    return NextResponse.json(
+      { error: 'URL inválida' },
+      { status: 400 }
+    )
+  }
 
-    if (!imageUrl) {
-      return NextResponse.json(
-        { error: 'Parâmetro "url" é obrigatório' },
-        { status: 400 }
-      )
-    }
+  // Verificar domínio (APENAS BRASILEIROS)
+  if (!isDomainAllowed(parsedUrl.hostname)) {
+    console.log(`[Proxy] Domínio não permitido: ${parsedUrl.hostname}`)
+    return NextResponse.json(
+      { error: 'Domínio não permitido. Apenas fontes brasileiras acadêmicas são aceitas.' },
+      { status: 403 }
+    )
+  }
 
-    // Validar URL inicial
-    let parsedUrl: URL
-    try {
-      parsedUrl = new URL(imageUrl)
-    } catch {
-      return NextResponse.json(
-        { error: 'URL inválida' },
-        { status: 400 }
-      )
-    }
+  // Verificar cache
+  const cacheKey = imageUrl
+  const cached = imageCache.get(cacheKey)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return new NextResponse(cached.data, {
+      status: 200,
+      headers: {
+        'Content-Type': cached.contentType,
+        'Cache-Control': 'public, max-age=3600',
+        'X-Cache': 'HIT',
+        'X-Source': 'brazilian-academic'
+      }
+    })
+  }
 
-    if (!isDomainAllowed(parsedUrl.hostname)) {
-      return NextResponse.json(
-        { error: 'Domínio não permitido' },
-        { status: 403 }
-      )
-    }
+  try {
+    // Fetch com timeout e seguindo redirects
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
 
-    // Verificar cache
-    cleanOldCache()
-    const cached = imageCache.get(imageUrl)
-    if (cached) {
-      return new NextResponse(cached.data, {
+    let currentUrl = imageUrl
+    let redirectCount = 0
+    const maxRedirects = 5
+
+    while (redirectCount < maxRedirects) {
+      const response = await fetch(currentUrl, {
         headers: {
-          'Content-Type': cached.contentType,
-          'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
-          'X-Cache': 'HIT',
-          'Access-Control-Allow-Origin': '*'
+          'User-Agent': 'PreparaMed/1.0 (Aplicativo Educacional Médico Brasileiro; +https://preparamed.com.br)',
+          'Accept': 'image/*, */*',
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Referer': new URL(currentUrl).origin + '/'
+        },
+        redirect: 'manual',
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+
+      // Handle redirects
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location')
+        if (!location) break
+
+        const redirectUrl = new URL(location, currentUrl)
+
+        // Verificar se o redirect é para domínio brasileiro permitido
+        if (!isDomainAllowed(redirectUrl.hostname)) {
+          console.log(`[Proxy] Redirect para domínio não permitido: ${redirectUrl.hostname}`)
+          return NextResponse.json(
+            { error: 'Redirect para domínio não brasileiro' },
+            { status: 403 }
+          )
+        }
+
+        currentUrl = redirectUrl.toString()
+        redirectCount++
+        continue
+      }
+
+      if (!response.ok) {
+        return NextResponse.json(
+          { error: `Erro ao buscar imagem: ${response.status}` },
+          { status: response.status }
+        )
+      }
+
+      // Verificar content-type
+      const contentType = response.headers.get('content-type')
+      const buffer = await response.arrayBuffer()
+
+      // Detectar tipo real da imagem
+      const detectedType = detectImageType(buffer)
+      const finalContentType = detectedType || (isValidImageType(contentType) ? contentType : 'image/jpeg')
+
+      // Verificar se é realmente uma imagem
+      if (!detectedType && !isValidImageType(contentType)) {
+        return NextResponse.json(
+          { error: 'O arquivo não é uma imagem válida' },
+          { status: 400 }
+        )
+      }
+
+      // Verificar tamanho mínimo (evitar imagens quebradas)
+      if (buffer.byteLength < 100) {
+        return NextResponse.json(
+          { error: 'Imagem muito pequena ou corrompida' },
+          { status: 400 }
+        )
+      }
+
+      // Salvar no cache
+      imageCache.set(cacheKey, {
+        data: buffer,
+        contentType: finalContentType!,
+        timestamp: Date.now()
+      })
+
+      return new NextResponse(buffer, {
+        status: 200,
+        headers: {
+          'Content-Type': finalContentType!,
+          'Cache-Control': 'public, max-age=3600',
+          'X-Cache': 'MISS',
+          'X-Source': 'brazilian-academic',
+          'X-Original-Domain': parsedUrl.hostname
         }
       })
     }
 
-    // Baixar imagem com suporte a redirects
-    const response = await fetchWithRedirects(imageUrl)
-
-    if (!response.ok) {
-      console.error(`Proxy: Erro HTTP ${response.status} para ${imageUrl}`)
-      return NextResponse.json(
-        { error: `Erro ao baixar imagem: ${response.status}` },
-        { status: response.status }
-      )
-    }
-
-    // Verificar content-type do servidor
-    const serverContentType = response.headers.get('content-type')
-
-    // Baixar o conteúdo
-    const arrayBuffer = await response.arrayBuffer()
-
-    // Verificar se o conteúdo é muito pequeno (provavelmente erro)
-    if (arrayBuffer.byteLength < 100) {
-      console.error(`Proxy: Imagem muito pequena (${arrayBuffer.byteLength} bytes) para ${imageUrl}`)
-      return NextResponse.json(
-        { error: 'Imagem inválida ou corrompida' },
-        { status: 422 }
-      )
-    }
-
-    // Detectar tipo real da imagem pelos magic bytes
-    const detectedType = detectImageType(arrayBuffer)
-
-    // Usar tipo detectado, fallback para server content-type, fallback para jpeg
-    const contentType = detectedType ||
-      (isValidImageType(serverContentType) ? serverContentType!.split(';')[0].trim() : null) ||
-      'image/jpeg'
-
-    // Se não conseguiu detectar e o content-type não é imagem, pode ser erro HTML
-    if (!detectedType && !isValidImageType(serverContentType)) {
-      // Verificar se começa com HTML
-      const textDecoder = new TextDecoder('utf-8', { fatal: false })
-      const text = textDecoder.decode(arrayBuffer.slice(0, 500))
-      if (text.toLowerCase().includes('<!doctype') || text.toLowerCase().includes('<html')) {
-        console.error(`Proxy: Recebeu HTML ao invés de imagem para ${imageUrl}`)
-        return NextResponse.json(
-          { error: 'Fonte retornou HTML ao invés de imagem' },
-          { status: 422 }
-        )
-      }
-    }
-
-    // Salvar no cache
-    imageCache.set(imageUrl, {
-      data: arrayBuffer,
-      contentType,
-      timestamp: Date.now()
-    })
-
-    return new NextResponse(arrayBuffer, {
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
-        'X-Cache': 'MISS',
-        'X-Content-Type-Detected': detectedType || 'none',
-        'Access-Control-Allow-Origin': '*'
-      }
-    })
+    return NextResponse.json(
+      { error: 'Muitos redirects' },
+      { status: 400 }
+    )
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
-    console.error('Erro no proxy de imagens:', errorMessage)
+    console.error('[Proxy] Erro ao buscar imagem:', error)
 
-    // Retornar erro mais descritivo
-    if (errorMessage.includes('timeout') || errorMessage.includes('abort')) {
+    if (error instanceof Error && error.name === 'AbortError') {
       return NextResponse.json(
-        { error: 'Timeout ao baixar imagem - fonte muito lenta' },
+        { error: 'Timeout ao buscar imagem' },
         { status: 504 }
       )
     }
 
     return NextResponse.json(
-      { error: 'Erro ao processar imagem' },
+      { error: 'Erro interno ao processar imagem' },
       { status: 500 }
     )
   }

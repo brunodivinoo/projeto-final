@@ -585,16 +585,21 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
           ))}
         </div>
 
-        {/* Footer - mostra fonte */}
+        {/* Footer - mostra fonte BRASILEIRA */}
         <p className="text-white/40 text-xs mt-2">
           Clique para ampliar • Fonte: {
-            validImages[0]?.source === 'google' ? `🔍 ${validImages[0]?.sourceName || 'Google'}` :
-            validImages[0]?.source === 'wikipedia_pt' ? '🇧🇷 Wikipedia PT' :
-            validImages[0]?.source === 'wikimedia' ? '📚 Wikimedia Commons' :
-            validImages[0]?.source === 'openi' ? '🏥 PubMed/OpenI' :
-            `📷 ${validImages[0]?.sourceName || 'Fonte Médica'}`
+            validImages[0]?.siglaInstituicao ? `🇧🇷 ${validImages[0]?.siglaInstituicao}` :
+            validImages[0]?.fonte ? `🏛️ ${validImages[0]?.fonte}` :
+            validImages[0]?.sourceName ? `📚 ${validImages[0]?.sourceName}` :
+            '🇧🇷 Fonte Acadêmica Brasileira'
           }
         </p>
+        {/* Referência ABNT se disponível */}
+        {validImages[0]?.referenciaABNT && (
+          <p className="text-white/30 text-[10px] mt-1 italic line-clamp-2">
+            Ref: {validImages[0].referenciaABNT.substring(0, 100)}...
+          </p>
+        )}
       </div>
 
       {/* Modal de visualização ampliada - usando portal para fullscreen */}
