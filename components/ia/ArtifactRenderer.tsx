@@ -123,6 +123,32 @@ const QuestionArtifactCard = dynamic(() => import('./QuestionArtifactCard'), {
   )
 })
 
+// Importar FlashcardDeck dinamicamente para renderização interativa
+const FlashcardDeck = dynamic(() => import('./FlashcardDeck'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-white/10 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-white/40">
+        <div className="animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full" />
+        <span>Carregando flashcards interativos...</span>
+      </div>
+    </div>
+  )
+})
+
+// Importar SimuladoCard dinamicamente para renderização de simulados
+const SimuladoCard = dynamic(() => import('./SimuladoCard'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-white/10 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-white/40">
+        <div className="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full" />
+        <span>Carregando simulado...</span>
+      </div>
+    </div>
+  )
+})
+
 // Importar QuestionStreamingSkeleton dinamicamente para feedback visual durante geração
 const QuestionStreamingSkeleton = dynamic(() => import('./QuestionStreamingSkeleton'), {
   ssr: false,
@@ -171,6 +197,126 @@ const STAGING_REGEX = /```staging:([^\n]*)\n([\s\S]*?)```/g
 // Regex para detectar questões geradas pela IA (formato JSON) - COMPLETAS
 // Aceita: ```questao, ```question, ```question:Disciplina/Assunto
 const QUESTION_REGEX = /```quest(?:ao|ion)(?::[^\n]*)?\n([\s\S]*?)```/g
+
+// Regex para detectar simulados gerados pela IA (formato JSON completo)
+// Aceita: ```simulado:Titulo
+const SIMULADO_REGEX = /```simulado(?::([^\n]*))?\n([\s\S]*?)```/g
+
+// Regex para detectar flashcards gerados pela IA
+// Aceita: ```flashcards:Titulo ou detecta padrão FLASHCARD X ou **CARD X**
+const FLASHCARD_BLOCK_REGEX = /```flashcards?(?::([^\n]*))?\n([\s\S]*?)```/g
+
+// Regex para detectar flashcards em formato JSON direto
+const FLASHCARD_JSON_REGEX = /```(?:json)?\s*\n?\s*(\[\s*\{[^`]*"frente"[^`]*"verso"[^`]*\}\s*\])\s*```/g
+
+// Funcao para extrair flashcards do texto formatado - VERSÃO MELHORADA
+function extractFlashcardsFromText(text: string): { titulo: string; cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: string }> } | null {
+  // Detectar titulo dos flashcards
+  const tituloMatch = text.match(/#+\s*(?:🃏|📝|🧠)?\s*(?:FLASHCARDS?|Flashcards?):?\s*([^\n]+)/i) ||
+                      text.match(/\*\*(?:FLASHCARDS?|Flashcards?):?\s*([^*\n]+)\*\*/i) ||
+                      text.match(/Flashcards?:?\s+([^\n]+)/i)
+  const titulo = tituloMatch ? tituloMatch[1].trim() : 'Flashcards'
+
+  const cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: string }> = []
+
+  // PADRÃO 1: Formato JSON array - MAIS COMUM (a IA geralmente gera assim)
+  const jsonArrayMatch = text.match(/\[\s*\{[\s\S]*?"frente"[\s\S]*?"verso"[\s\S]*?\}\s*\]/g)
+  if (jsonArrayMatch) {
+    for (const jsonStr of jsonArrayMatch) {
+      try {
+        const parsed = JSON.parse(jsonStr)
+        if (Array.isArray(parsed)) {
+          parsed.forEach((card, idx) => {
+            if (card.frente && card.verso) {
+              cards.push({
+                id: `flashcard-${idx + 1}-${Date.now()}`,
+                frente: card.frente,
+                verso: card.verso,
+                referencia: card.referencia,
+                tags: card.tags,
+                dificuldade: card.dificuldade
+              })
+            }
+          })
+        }
+      } catch (e) {
+        console.log('[Flashcards] Erro ao parsear JSON array:', e)
+      }
+    }
+  }
+
+  // Se encontrou via JSON, retornar
+  if (cards.length >= 2) {
+    return { titulo, cards }
+  }
+
+  // PADRÃO 2: Formato JSON objeto único com array de cards
+  const jsonObjMatch = text.match(/\{[\s\S]*?"cards?"[\s\S]*?:\s*\[[\s\S]*?\][\s\S]*?\}/g)
+  if (jsonObjMatch) {
+    for (const jsonStr of jsonObjMatch) {
+      try {
+        const parsed = JSON.parse(jsonStr)
+        const cardsArray = parsed.cards || parsed.flashcards
+        if (Array.isArray(cardsArray)) {
+          cardsArray.forEach((card: { frente?: string; verso?: string; referencia?: string; tags?: string[]; dificuldade?: string }, idx: number) => {
+            if (card.frente && card.verso) {
+              cards.push({
+                id: `flashcard-${idx + 1}-${Date.now()}`,
+                frente: card.frente,
+                verso: card.verso,
+                referencia: card.referencia,
+                tags: card.tags,
+                dificuldade: card.dificuldade
+              })
+            }
+          })
+        }
+      } catch (e) {
+        console.log('[Flashcards] Erro ao parsear JSON objeto:', e)
+      }
+    }
+  }
+
+  if (cards.length >= 2) {
+    return { titulo, cards }
+  }
+
+  // PADRÃO 3: **CARD X** ou FLASHCARD X (markdown)
+  const cardPattern = /(?:\*\*(?:CARD|FLASHCARD)\s*(\d+)\*\*|(?:🃏|📝)\s*(?:CARD|FLASHCARD)\s*(\d+))(?:\s*[-–]\s*[^\n]*)?\n+\*\*(?:FRENTE|Frente):\*\*\s*([^\n]+(?:\n(?!\*\*(?:VERSO|Verso)).*)*)\n+\*\*(?:VERSO|Verso):\*\*\s*([\s\S]*?)(?=\n---|\n\*\*(?:CARD|FLASHCARD)|\n🃏|\n📝|$)/gi
+
+  let match
+  while ((match = cardPattern.exec(text)) !== null) {
+    const cardNum = match[1] || match[2]
+    const frente = match[3].trim().replace(/\n/g, ' ')
+    const verso = match[4].trim()
+
+    cards.push({
+      id: `flashcard-${cardNum}-${Date.now()}`,
+      frente,
+      verso
+    })
+  }
+
+  // PADRÃO 4: Formato simplificado com --- separador
+  if (cards.length === 0) {
+    const simplePattern = /(?:\*\*)?(?:PERGUNTA|FRENTE|Q)(?:\d+)?(?:\*\*)?[:\s]+([^\n]+)\n+(?:\*\*)?(?:RESPOSTA|VERSO|A)(?:\d+)?(?:\*\*)?[:\s]+([\s\S]*?)(?=\n---|\n(?:\*\*)?(?:PERGUNTA|FRENTE|Q)|\$)/gi
+
+    while ((match = simplePattern.exec(text)) !== null) {
+      cards.push({
+        id: `flashcard-${cards.length + 1}-${Date.now()}`,
+        frente: match[1].trim(),
+        verso: match[2].trim()
+      })
+    }
+  }
+
+  // Retornar se tem pelo menos 2 cards (era 3, reduzido para 2)
+  if (cards.length >= 2) {
+    return { titulo, cards }
+  }
+
+  return null
+}
 
 // Objeto para detectar questões INCOMPLETAS durante streaming (sem o ``` final)
 // CORREÇÃO: O regex antigo usava [\s\S]*$ que capturava tudo até o final do texto,
@@ -446,8 +592,30 @@ function convertAsciiToLayers(text: string): string | null {
 // Regex para detectar blocos de código que podem conter ASCII
 const CODE_BLOCK_REGEX = /```(?!mermaid|layers|staging|generate_image|artifact|quest)(\w*)\n([\s\S]*?)```/g
 
+// Interface para dados de simulado
+interface SimuladoData {
+  titulo: string
+  disciplina: string
+  total_questoes: number
+  tempo_estimado: string
+  dificuldade_media: string
+  questoes: Array<{
+    numero: number
+    tipo: string
+    dificuldade: string
+    tema: string
+    enunciado: string
+    alternativas: Array<{ letra: string; texto: string }>
+    gabarito_comentado: {
+      resposta_correta: string
+      explicacao: string
+      ponto_chave?: string
+    }
+  }>
+}
+
 interface Artifact {
-  type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question'
+  type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question' | 'flashcards' | 'simulado'
   subtype?: string
   title?: string
   content: string
@@ -456,6 +624,8 @@ interface Artifact {
   originalAscii?: string  // Guarda o ASCII original para referência
   conversionType?: 'flowchart' | 'layers' | 'tree' | 'table' | 'generic'
   questionData?: Question  // Dados estruturados da questão
+  flashcardData?: { titulo: string; cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: string }> }
+  simuladoData?: SimuladoData  // Dados estruturados do simulado
 }
 
 // Função para extrair termos de busca de imagens do conteúdo
@@ -970,11 +1140,13 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   // Combinar todas as regex em uma busca
   const allMatches: Array<{
     match: RegExpMatchArray
-    type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question'
+    type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question' | 'flashcards' | 'simulado'
     asciiType?: 'flowchart' | 'layers' | 'tree' | 'table' | 'generic'
     convertedContent?: string
     originalAscii?: string
     questionData?: Question
+    flashcardData?: { titulo: string; cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: string }> }
+    simuladoData?: SimuladoData
   }> = []
 
   // Buscar artefatos personalizados
@@ -1006,6 +1178,31 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   const stagingRegex = new RegExp(STAGING_REGEX.source, 'g')
   while ((match = stagingRegex.exec(processedContent)) !== null) {
     allMatches.push({ match, type: 'staging' })
+  }
+
+  // Buscar simulados gerados pela IA (formato JSON completo)
+  const simuladoRegex = new RegExp(SIMULADO_REGEX.source, 'g')
+  while ((match = simuladoRegex.exec(processedContent)) !== null) {
+    try {
+      const titulo = match[1]?.trim() || 'Simulado'
+      const jsonContent = match[2].trim()
+      const simuladoData = JSON.parse(jsonContent) as SimuladoData
+
+      // Validar estrutura mínima
+      if (simuladoData.questoes && Array.isArray(simuladoData.questoes) && simuladoData.questoes.length >= 2) {
+        // Garantir campos obrigatórios
+        if (!simuladoData.titulo) simuladoData.titulo = titulo
+        if (!simuladoData.total_questoes) simuladoData.total_questoes = simuladoData.questoes.length
+        if (!simuladoData.tempo_estimado) simuladoData.tempo_estimado = `${simuladoData.questoes.length * 3} minutos`
+        if (!simuladoData.disciplina) simuladoData.disciplina = 'Medicina'
+        if (!simuladoData.dificuldade_media) simuladoData.dificuldade_media = 'medio'
+
+        allMatches.push({ match, type: 'simulado', simuladoData })
+        console.log('[ArtifactRenderer] Simulado detectado:', simuladoData.titulo, 'com', simuladoData.questoes.length, 'questões')
+      }
+    } catch (error) {
+      console.log('[ArtifactRenderer] Erro ao parsear simulado:', error)
+    }
   }
 
   // Buscar questões geradas pela IA (COMPLETAS ou que podem ser reparadas)
@@ -1062,6 +1259,58 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
       if (parseLogAllowed) {
         console.error('[ArtifactRenderer] Erro ao parsear questão:', error)
       }
+    }
+  }
+
+  // Buscar flashcards em formato JSON direto (bloco de código ```json com array)
+  const flashcardJsonRegex = /```(?:json)?\s*\n(\s*\[[\s\S]*?"frente"[\s\S]*?"verso"[\s\S]*?\])\s*\n```/g
+  let flashcardJsonMatch
+  while ((flashcardJsonMatch = flashcardJsonRegex.exec(processedContent)) !== null) {
+    try {
+      const parsed = JSON.parse(flashcardJsonMatch[1])
+      if (Array.isArray(parsed) && parsed.length >= 2 && parsed[0].frente && parsed[0].verso) {
+        const flashcardData = {
+          titulo: 'Flashcards',
+          cards: parsed.map((card: { frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: string }, idx: number) => ({
+            id: `flashcard-${idx + 1}-${Date.now()}`,
+            frente: card.frente,
+            verso: card.verso,
+            referencia: card.referencia,
+            tags: card.tags,
+            dificuldade: card.dificuldade
+          }))
+        }
+
+        allMatches.push({
+          match: flashcardJsonMatch,
+          type: 'flashcards',
+          flashcardData
+        })
+
+        console.log('[ArtifactRenderer] Flashcards JSON detectados:', flashcardData.cards.length)
+      }
+    } catch (e) {
+      console.log('[ArtifactRenderer] Erro ao parsear flashcards JSON')
+    }
+  }
+
+  // Buscar flashcards no texto (formato markdown com FRENTE/VERSO)
+  // Só processa se não encontrou questões e não encontrou flashcards JSON
+  if (questionMatchCount === 0 && !allMatches.some(m => m.type === 'flashcards')) {
+    const flashcardData = extractFlashcardsFromText(processedContent)
+    if (flashcardData && flashcardData.cards.length >= 2) {
+      // Criar um match sintético que engloba todo o conteúdo de flashcards
+      const syntheticMatch = ['', flashcardData.titulo] as RegExpMatchArray
+      syntheticMatch.index = 0
+      syntheticMatch.input = processedContent
+
+      allMatches.push({
+        match: syntheticMatch,
+        type: 'flashcards',
+        flashcardData
+      })
+
+      console.log('[ArtifactRenderer] Flashcards markdown detectados:', flashcardData.cards.length)
     }
   }
 
@@ -1210,6 +1459,26 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
         endIndex,
         originalAscii: originalAscii,
         conversionType: asciiType
+      }
+    } else if (type === 'flashcards' && matchData.flashcardData) {
+      // Flashcards interativos
+      artifact = {
+        type: 'flashcards',
+        title: matchData.flashcardData.titulo,
+        content: '', // O conteudo fica em flashcardData
+        startIndex,
+        endIndex,
+        flashcardData: matchData.flashcardData
+      }
+    } else if (type === 'simulado' && matchData.simuladoData) {
+      // Simulado completo
+      artifact = {
+        type: 'simulado',
+        title: matchData.simuladoData.titulo,
+        content: '', // O conteudo fica em simuladoData
+        startIndex,
+        endIndex,
+        simuladoData: matchData.simuladoData
       }
     } else {
       artifact = {
@@ -1908,6 +2177,33 @@ function ArtifactRendererComponent({
                     }))
                   }
                 }}
+              />
+            </div>
+          )
+        }
+
+        // Flashcards interativos estilo Anki
+        if (part.type === 'flashcards' && part.flashcardData) {
+          return (
+            <div key={index} className="my-4">
+              <FlashcardDeck
+                titulo={part.flashcardData.titulo}
+                cards={part.flashcardData.cards}
+                userId={userId}
+                conversaId={conversaId}
+              />
+            </div>
+          )
+        }
+
+        // Simulado completo com múltiplas questões
+        if (part.type === 'simulado' && part.simuladoData) {
+          return (
+            <div key={index} className="my-4">
+              <SimuladoCard
+                simulado={part.simuladoData}
+                userId={userId}
+                conversaId={conversaId}
               />
             </div>
           )

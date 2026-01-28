@@ -31,6 +31,7 @@ import {
   MoreVertical,
   Pencil,
   Check,
+  FolderOpen,
 } from 'lucide-react'
 import ArtifactRenderer, { type PlanoUsuario } from '@/components/ia/ArtifactRenderer'
 import ArtifactsSidebar from '@/components/ia/ArtifactsSidebar'
@@ -40,7 +41,7 @@ import { VoiceButton } from '@/components/medicina/VoiceButton'
 import { ExamAnalyzerModal } from '@/components/medicina/ExamAnalyzer'
 import { ChatModeSelector, ChatModeIntro, useChatMode, type ChatMode } from '@/components/medicina/ChatModes'
 import { useChatModeStore, ChatMode as StoreChatMode, MODE_CONFIG } from '@/lib/stores/chatModeStore'
-import { useConversaStore } from '@/lib/stores/conversaStore'
+import { useConversaStore, type Conversa as StoreConversa } from '@/lib/stores/conversaStore'
 
 // Hook para obter o estado da sidebar de artefatos
 const useArtifactsSidebar = () => {
@@ -268,6 +269,7 @@ export default function IAPage() {
   const [streaming, setStreaming] = useState(false)
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [conversaAtual, setConversaAtual] = useState<string | null>(null)
+  const [carregandoConversa, setCarregandoConversa] = useState(false) // Loading ao abrir conversa
   const [showConversas, setShowConversas] = useState(false) // Agora usado apenas no mobile
   const [showOpcoes, setShowOpcoes] = useState(false)
   const [copiado, setCopiado] = useState<string | null>(null)
@@ -447,6 +449,11 @@ export default function IAPage() {
 
     console.log('[IA Page] Carregando conversa:', conversaId)
 
+    // IMPORTANTE: Definir a conversa atual IMEDIATAMENTE para mostrar na UI
+    setConversaAtual(conversaId)
+    setActiveConversation(chatMode as StoreChatMode, conversaId)
+    setCarregandoConversa(true)
+
     // Limpar artefatos ao trocar de conversa
     clearArtifacts()
     setCurrentConversa(conversaId)
@@ -461,10 +468,6 @@ export default function IAPage() {
         mensagensCount: data.mensagens?.length || 0,
         error: data.error
       })
-
-      // Sempre definir a conversa atual, mesmo se não houver mensagens
-      setConversaAtual(conversaId)
-      setActiveConversation(chatMode as StoreChatMode, conversaId)
 
       if (data.mensagens && Array.isArray(data.mensagens)) {
         const msgs: Mensagem[] = data.mensagens.map((m: { id: string; role: string; content: string; created_at: string; has_image?: boolean; has_pdf?: boolean; tokens?: number }) => {
@@ -526,6 +529,8 @@ export default function IAPage() {
       }
     } catch (error) {
       console.error('[IA Page] Erro ao carregar conversa:', error)
+    } finally {
+      setCarregandoConversa(false)
     }
     setShowConversas(false)
   }, [user, clearArtifacts, setCurrentConversa, chatMode, setActiveConversation])
@@ -583,6 +588,18 @@ export default function IAPage() {
       carregarConversa(conversaAtivaDoModo)
     }
   }, [activeConversationByMode, chatMode, mensagens.length, loading, carregarConversa, searchParams])
+
+  // NOVO: Reagir às mudanças da store de conversas (troca dinâmica de conversa)
+  // Isso permite trocar de conversa SEM reload da página
+  const { conversaSelecionada: storeConversaSelecionada, isChangingConversa } = useConversaStore()
+
+  useEffect(() => {
+    // Se a store está mudando de conversa e é diferente da atual
+    if (storeConversaSelecionada && storeConversaSelecionada !== conversaAtual && !isChangingConversa && !loading) {
+      console.log('[IA Page] Store mudou conversa:', storeConversaSelecionada)
+      carregarConversa(storeConversaSelecionada)
+    }
+  }, [storeConversaSelecionada, conversaAtual, isChangingConversa, loading, carregarConversa])
 
   // Sincronizar filtro de artefatos quando o modo de chat muda
   useEffect(() => {
@@ -1413,6 +1430,17 @@ export default function IAPage() {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <button
+                                onClick={() => {
+                                  setMenuConversaAberto(null)
+                                  carregarConversa(conv.id)
+                                  setShowConversas(false)
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
+                              >
+                                <FolderOpen className="w-4 h-4" />
+                                Abrir
+                              </button>
+                              <button
                                 onClick={() => iniciarRenomeacao(conv)}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
                               >
@@ -1627,7 +1655,16 @@ export default function IAPage() {
           className="flex-1 min-h-0 overflow-y-auto p-2 md:p-3 space-y-2 md:space-y-3"
           style={{ contain: 'layout style', willChange: streaming ? 'scroll-position' : 'auto' }}
         >
-          {mensagens.length === 0 ? (
+          {/* Loading ao abrir conversa */}
+          {carregandoConversa && mensagens.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center p-4">
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 flex items-center justify-center mb-3 md:mb-4">
+                <Loader2 className="w-7 h-7 md:w-8 md:h-8 text-purple-400 animate-spin" />
+              </div>
+              <h2 className="text-lg md:text-xl font-bold text-white mb-1.5">Carregando conversa...</h2>
+              <p className="text-white/60 text-xs md:text-sm">Aguarde um momento</p>
+            </div>
+          ) : mensagens.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4 max-w-4xl mx-auto w-full">
               {/* Seletor de Modo */}
               <div className="mb-6 w-full max-w-xl">

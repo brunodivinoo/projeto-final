@@ -29,6 +29,19 @@ import {
 import { useArtifactsStore, ARTIFACT_ICONS, ARTIFACT_LABELS, CHAT_MODE_CONFIG, type Artifact, type ArtifactType, type ChatModeType } from '@/stores/artifactsStore'
 import dynamic from 'next/dynamic'
 
+// Importar QuestionArtifactCard dinamicamente para renderizar questões
+const QuestionArtifactCard = dynamic(() => import('./QuestionArtifactCard'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-[#1A2332] border border-white/10 rounded-xl p-6">
+      <div className="flex items-center gap-2 text-white/40">
+        <div className="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full" />
+        <span>Carregando questão...</span>
+      </div>
+    </div>
+  )
+})
+
 // Funções auxiliares para extrair informações do JSON
 function tryParseJson(content: string): Record<string, unknown> | null {
   try {
@@ -379,16 +392,6 @@ const StagingTable = dynamic(() => import('./StagingTable'), {
   )
 })
 
-// Importar QuestionArtifactCard dinamicamente
-const QuestionArtifactCard = dynamic(() => import('./QuestionArtifactCard'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center h-48">
-      <div className="animate-spin w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full" />
-    </div>
-  )
-})
-
 interface ArtifactsSidebarProps {
   className?: string
   userId?: string
@@ -637,6 +640,50 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
               </p>
               <p className="text-white/40 text-xs text-center mt-2">
                 Clique em &quot;Tela cheia&quot; para visualizar
+              </p>
+            </div>
+          </div>
+        )
+      }
+
+    case 'question':
+      // Renderizar questão usando QuestionArtifactCard
+      const questionData = artifact.metadata?.question
+      if (questionData) {
+        return (
+          <div className={containerClass}>
+            <QuestionArtifactCard
+              question={questionData}
+              compact={!isFullscreen}
+            />
+          </div>
+        )
+      }
+      // Fallback: tentar parsear do content
+      try {
+        const parsedQuestion = JSON.parse(artifact.content)
+        return (
+          <div className={containerClass}>
+            <QuestionArtifactCard
+              question={parsedQuestion}
+              compact={!isFullscreen}
+            />
+          </div>
+        )
+      } catch {
+        // Se não conseguir parsear, mostrar preview visual
+        return (
+          <div className={`p-4 ${containerClass}`}>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl">❓</span>
+              <h4 className="text-white font-medium">{artifact.title}</h4>
+            </div>
+            <div className="bg-gradient-to-b from-emerald-500/10 to-green-500/10 rounded-lg p-4 border border-emerald-500/20">
+              <p className="text-white/60 text-sm text-center">
+                Questão disponível
+              </p>
+              <p className="text-white/40 text-xs text-center mt-2">
+                Clique em &quot;Tela cheia&quot; para responder
               </p>
             </div>
           </div>

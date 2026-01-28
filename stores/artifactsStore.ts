@@ -20,6 +20,8 @@ export type ArtifactType =
   | 'staging'
   | 'note'
   | 'question' // Questões geradas pela IA
+  | 'simulado' // Simulados completos (conjunto de questões)
+  | 'flashcards' // Flashcards gerados pela IA
   | 'image_generated' // Imagens geradas por IA (DALL-E 3)
   | 'image_uploaded' // Imagens enviadas pelo usuário
   | 'pdf_uploaded' // PDFs enviados pelo usuário
@@ -461,6 +463,8 @@ export const ARTIFACT_ICONS: Record<ArtifactType, string> = {
   staging: '📈',
   note: '📝',
   question: '❓',
+  simulado: '📋',
+  flashcards: '🃏',
   image_generated: '🖼️',
   image_uploaded: '📷',
   pdf_uploaded: '📄',
@@ -484,6 +488,8 @@ export const ARTIFACT_LABELS: Record<ArtifactType, string> = {
   staging: 'Estadiamento',
   note: 'Nota',
   question: 'Questão',
+  simulado: 'Simulado',
+  flashcards: 'Flashcards',
   image_generated: 'Imagem Gerada',
   image_uploaded: 'Imagem Enviada',
   pdf_uploaded: 'PDF Enviado',

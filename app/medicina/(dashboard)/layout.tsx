@@ -463,10 +463,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                               // Modo normal - layout fixo sem scroll
                               <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg group-hover:bg-white/5">
                                 <button
-                                  onClick={() => {
-                                    setConversaSelecionada(conversa.id)
+                                  onClick={async () => {
                                     setSidebarOpen(false)
-                                    router.push(`/medicina/dashboard/ia?c=${conversa.id}`)
+                                    // Usar o método otimizado da store para trocar sem reload
+                                    await useConversaStore.getState().trocarConversa(conversa.id)
                                   }}
                                   className={`
                                     flex-1 min-w-0 flex items-center gap-2 px-2 py-1 rounded transition-colors text-sm text-left
@@ -743,14 +743,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           onClick={(e) => e.stopPropagation()}
         >
           <button
-            onClick={() => {
+            onClick={async () => {
               const conversa = conversas.find(c => c.id === menuAberto)
               if (conversa) {
-                setConversaSelecionada(conversa.id)
                 setSidebarOpen(false)
                 setMenuAberto(null)
                 setMenuPosition(null)
-                router.push(`/medicina/dashboard/ia?c=${conversa.id}`)
+                // Usar o método otimizado da store
+                await useConversaStore.getState().trocarConversa(conversa.id)
               }
             }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
