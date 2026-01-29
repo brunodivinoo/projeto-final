@@ -222,24 +222,24 @@ export default function FlashcardDeck({
   const allReviewed = stats.naoVistos === 0
 
   return (
-    <div className={`bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-white/10 rounded-xl overflow-hidden transition-all ${
+    <div className={`aurora-gradient-animated rounded-2xl overflow-hidden transition-all shadow-xl ${
       isExpanded ? 'fixed inset-4 z-50' : ''
     }`}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
+      {/* Header com glassmorphism */}
+      <div className="flex items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-            <Brain className="w-4 h-4 text-white" />
+          <div className="w-10 h-10 rounded-xl aurora-gradient flex items-center justify-center shadow-lg">
+            <Brain className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="text-white font-semibold text-sm">{titulo}</h3>
-            <p className="text-white/40 text-xs">{cards.length} flashcards</p>
+            <h3 className="text-white font-semibold">{titulo}</h3>
+            <p className="text-white/70 text-xs">{cards.length} flashcards</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Timer */}
-          <div className="flex items-center gap-1 text-white/40 text-xs bg-white/5 px-2 py-1 rounded">
+          <div className="flex items-center gap-1 text-white/80 text-xs bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
             <Clock className="w-3 h-3" />
             {elapsedTime}
           </div>
@@ -282,49 +282,49 @@ export default function FlashcardDeck({
         </div>
       </div>
 
-      {/* Stats Panel */}
+      {/* Stats Panel com glassmorphism */}
       {showStats && (
-        <div className="px-4 py-3 bg-white/5 border-b border-white/10">
+        <div className="px-4 py-3 bg-black/20 backdrop-blur-sm">
           <div className="grid grid-cols-4 gap-3 text-center">
-            <div>
-              <div className="text-2xl font-bold text-emerald-400">{stats.acertos}</div>
-              <div className="text-xs text-white/40">Acertos</div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2">
+              <div className="text-2xl font-bold text-emerald-300">{stats.acertos}</div>
+              <div className="text-xs text-white/60">Acertos</div>
             </div>
-            <div>
-              <div className="text-2xl font-bold text-red-400">{stats.erros}</div>
-              <div className="text-xs text-white/40">Erros</div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2">
+              <div className="text-2xl font-bold text-red-300">{stats.erros}</div>
+              <div className="text-xs text-white/60">Erros</div>
             </div>
-            <div>
-              <div className="text-2xl font-bold text-amber-400">{stats.revisao}</div>
-              <div className="text-xs text-white/40">Revisao</div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2">
+              <div className="text-2xl font-bold text-amber-300">{stats.revisao}</div>
+              <div className="text-xs text-white/60">Revisão</div>
             </div>
-            <div>
-              <div className="text-2xl font-bold text-white/60">{stats.naoVistos}</div>
-              <div className="text-xs text-white/40">Restantes</div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2">
+              <div className="text-2xl font-bold text-white/80">{stats.naoVistos}</div>
+              <div className="text-xs text-white/60">Restantes</div>
             </div>
           </div>
 
           {/* Barra de progresso */}
-          <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden flex">
+          <div className="mt-3 h-2 bg-white/20 rounded-full overflow-hidden flex">
             <div
-              className="bg-emerald-500 transition-all"
+              className="bg-emerald-400 transition-all"
               style={{ width: `${(stats.acertos / stats.total) * 100}%` }}
             />
             <div
-              className="bg-red-500 transition-all"
+              className="bg-red-400 transition-all"
               style={{ width: `${(stats.erros / stats.total) * 100}%` }}
             />
             <div
-              className="bg-amber-500 transition-all"
+              className="bg-amber-400 transition-all"
               style={{ width: `${(stats.revisao / stats.total) * 100}%` }}
             />
           </div>
 
-          {/* Acoes */}
+          {/* Ações */}
           <div className="flex gap-2 mt-3">
             <button
               onClick={resetDeck}
-              className="flex-1 py-1.5 text-xs bg-white/10 hover:bg-white/20 rounded transition-colors text-white/80"
+              className="flex-1 py-2 text-xs bg-white/20 hover:bg-white/30 rounded-xl transition-colors text-white font-medium backdrop-blur-sm"
             >
               <RotateCcw className="w-3 h-3 inline mr-1" />
               Reiniciar
@@ -332,7 +332,7 @@ export default function FlashcardDeck({
             {stats.erros > 0 && (
               <button
                 onClick={reviewErrors}
-                className="flex-1 py-1.5 text-xs bg-red-500/20 hover:bg-red-500/30 rounded transition-colors text-red-400"
+                className="flex-1 py-2 text-xs bg-red-500/30 hover:bg-red-500/40 rounded-xl transition-colors text-white font-medium backdrop-blur-sm"
               >
                 Revisar Erros ({stats.erros})
               </button>
@@ -342,68 +342,77 @@ export default function FlashcardDeck({
       )}
 
       {/* Card Area */}
-      <div className={`p-4 ${isExpanded ? 'flex-1 flex flex-col justify-center' : ''}`}>
-        {/* Contador */}
-        <div className="text-center mb-3">
-          <span className="text-white/40 text-sm">
+      <div className={`p-6 ${isExpanded ? 'flex-1 flex flex-col justify-center' : ''}`}>
+        {/* Contador com badge estilizado */}
+        <div className="text-center mb-4">
+          <span className="bg-white/20 backdrop-blur-sm text-white/90 text-sm px-4 py-1.5 rounded-full">
             Card {currentIndex + 1} de {cards.length}
           </span>
         </div>
 
-        {/* Flashcard com flip animation */}
+        {/* Flashcard com flip animation estilo Aurora */}
         <div
-          className={`relative cursor-pointer perspective-1000 ${isExpanded ? 'min-h-[300px]' : 'min-h-[200px]'}`}
+          className={`relative cursor-pointer perspective-1000 ${isExpanded ? 'min-h-[320px]' : 'min-h-[240px]'}`}
           onClick={flipCard}
         >
-          <div className={`relative w-full h-full transition-transform duration-500 transform-style-preserve-3d ${
+          <div className={`relative w-full h-full flip-transition preserve-3d ${
             isFlipped ? 'rotate-y-180' : ''
           }`} style={{
             transformStyle: 'preserve-3d',
             transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
           }}>
-            {/* Frente */}
+            {/* Frente - Card branco com sombra */}
             <div
-              className="absolute inset-0 backface-hidden bg-gradient-to-br from-purple-600/30 to-pink-600/30 rounded-xl border border-white/20 p-6 flex flex-col items-center justify-center"
-              style={{ backfaceVisibility: 'hidden' }}
-            >
-              <div className="text-xs text-purple-300 mb-2 uppercase tracking-wider">Pergunta</div>
-              <p className="text-white text-center text-lg font-medium">{currentCard.frente}</p>
-              <div className="mt-4 text-white/30 text-xs">Clique ou pressione ESPAÇO para ver a resposta</div>
-            </div>
-
-            {/* Verso */}
-            <div
-              className="absolute inset-0 backface-hidden bg-gradient-to-br from-emerald-600/30 to-teal-600/30 rounded-xl border border-white/20 p-6 flex flex-col items-center justify-center"
+              className="absolute inset-0 backface-hidden rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center shadow-2xl"
               style={{
                 backfaceVisibility: 'hidden',
-                transform: 'rotateY(180deg)'
+                background: 'rgba(255, 255, 255, 0.95)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
               }}
             >
-              <div className="text-xs text-emerald-300 mb-2 uppercase tracking-wider">Resposta</div>
-              <p className="text-white text-center text-base">{currentCard.verso}</p>
+              <div className="w-12 h-12 rounded-full aurora-gradient flex items-center justify-center mb-6 shadow-lg">
+                <span className="text-white font-bold">{currentIndex + 1}</span>
+              </div>
+              <p className="text-xl sm:text-2xl font-medium text-center text-gray-800">{currentCard.frente}</p>
+              <p className="mt-6 text-sm text-purple-500/70">Toque para ver a resposta</p>
+            </div>
+
+            {/* Verso - Card branco com resposta */}
+            <div
+              className="absolute inset-0 backface-hidden rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center shadow-2xl"
+              style={{
+                backfaceVisibility: 'hidden',
+                transform: 'rotateY(180deg)',
+                background: 'rgba(255, 255, 255, 0.98)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+              }}
+            >
+              <p className="text-xl sm:text-2xl font-medium text-center text-gray-800 mb-6">{currentCard.verso}</p>
               {currentCard.referencia && (
-                <p className="mt-3 text-white/40 text-xs text-center">{currentCard.referencia}</p>
+                <p className="text-sm text-gray-500 text-center mb-6">{currentCard.referencia}</p>
               )}
             </div>
           </div>
         </div>
 
-        {/* Botoes de navegacao e resposta */}
-        <div className="mt-4">
+        {/* Botoes de navegacao e resposta - estilo Aurora */}
+        <div className="mt-6">
           {!isFlipped ? (
             /* Navegacao quando nao virado */
             <div className="flex items-center justify-center gap-4">
               <button
                 onClick={goToPrev}
                 disabled={currentIndex === 0}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="w-12 h-12 rounded-full flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
+                style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)' }}
               >
-                <ChevronLeft className="w-5 h-5 text-white" />
+                <ChevronLeft className="w-6 h-6 text-white" />
               </button>
 
               <button
                 onClick={flipCard}
-                className="px-6 py-2 bg-purple-500 hover:bg-purple-600 rounded-lg text-white font-medium transition-colors"
+                className="px-8 py-3 rounded-xl text-white font-medium transition-all hover:scale-105 active:scale-95 shadow-lg"
+                style={{ background: 'linear-gradient(135deg, hsl(280 80% 60%), hsl(200 90% 55%))' }}
               >
                 Mostrar Resposta
               </button>
@@ -411,41 +420,45 @@ export default function FlashcardDeck({
               <button
                 onClick={goToNext}
                 disabled={currentIndex === cards.length - 1}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="w-12 h-12 rounded-full flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
+                style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)' }}
               >
-                <ChevronRight className="w-5 h-5 text-white" />
+                <ChevronRight className="w-6 h-6 text-white" />
               </button>
             </div>
           ) : (
-            /* Botoes Anki quando virado */
+            /* Botoes Anki quando virado - estilo Aurora pastel */
             <div className="space-y-3">
-              <p className="text-center text-white/40 text-xs">Como foi?</p>
+              <p className="text-center text-white/60 text-sm">Como foi?</p>
               <div className="flex items-center justify-center gap-3">
                 <button
                   onClick={() => markAnswer('errou')}
-                  className="flex-1 max-w-[120px] py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-red-400 font-medium transition-colors"
+                  className="flex-1 max-w-[120px] py-3 rounded-xl font-medium transition-all hover:scale-105 active:scale-95"
+                  style={{ background: 'hsl(0 70% 95%)', color: 'hsl(0 70% 45%)' }}
                 >
                   <X className="w-4 h-4 mx-auto mb-1" />
                   <span className="text-sm">Errei</span>
-                  <span className="block text-xs text-red-400/60">(1)</span>
+                  <span className="block text-xs opacity-60">(1)</span>
                 </button>
 
                 <button
                   onClick={() => markAnswer('revisao')}
-                  className="flex-1 max-w-[120px] py-3 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 rounded-lg text-amber-400 font-medium transition-colors"
+                  className="flex-1 max-w-[120px] py-3 rounded-xl font-medium transition-all hover:scale-105 active:scale-95"
+                  style={{ background: 'hsl(45 80% 95%)', color: 'hsl(45 80% 35%)' }}
                 >
                   <Clock className="w-4 h-4 mx-auto mb-1" />
                   <span className="text-sm">Revisar</span>
-                  <span className="block text-xs text-amber-400/60">(2)</span>
+                  <span className="block text-xs opacity-60">(2)</span>
                 </button>
 
                 <button
                   onClick={() => markAnswer('acertou')}
-                  className="flex-1 max-w-[120px] py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-emerald-400 font-medium transition-colors"
+                  className="flex-1 max-w-[120px] py-3 rounded-xl font-medium transition-all hover:scale-105 active:scale-95"
+                  style={{ background: 'hsl(150 60% 95%)', color: 'hsl(150 60% 35%)' }}
                 >
                   <Check className="w-4 h-4 mx-auto mb-1" />
                   <span className="text-sm">Acertei</span>
-                  <span className="block text-xs text-emerald-400/60">(3)</span>
+                  <span className="block text-xs opacity-60">(3)</span>
                 </button>
               </div>
             </div>
@@ -453,28 +466,33 @@ export default function FlashcardDeck({
         </div>
       </div>
 
-      {/* Conclusao */}
+      {/* Conclusao - estilo Aurora */}
       {allReviewed && (
-        <div className="p-4 bg-emerald-500/10 border-t border-emerald-500/20">
+        <div className="p-6 bg-black/20 backdrop-blur-sm border-t border-white/10">
           <div className="text-center">
-            <div className="text-3xl mb-2">🎉</div>
-            <h4 className="text-emerald-400 font-bold">Parabens! Voce revisou todos os cards!</h4>
-            <p className="text-white/60 text-sm mt-1">
+            <div className="w-16 h-16 rounded-full aurora-gradient mx-auto mb-4 flex items-center justify-center shadow-lg">
+              <span className="text-2xl">🎉</span>
+            </div>
+            <h4 className="text-white font-bold text-lg">Parabens! Voce revisou todos os cards!</h4>
+            <p className="text-white/60 text-sm mt-2">
               Acertos: {stats.acertos} | Erros: {stats.erros} | Para revisao: {stats.revisao}
             </p>
-            <div className="flex gap-2 justify-center mt-3">
+            <div className="flex gap-3 justify-center mt-4">
               <button
                 onClick={resetDeck}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors"
+                className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:scale-105 active:scale-95"
+                style={{ background: 'rgba(255, 255, 255, 0.2)', color: 'white', backdropFilter: 'blur(10px)' }}
               >
+                <RotateCcw className="w-4 h-4 inline mr-2" />
                 Revisar Novamente
               </button>
               {stats.erros > 0 && (
                 <button
                   onClick={reviewErrors}
-                  className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-400 text-sm transition-colors"
+                  className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:scale-105 active:scale-95"
+                  style={{ background: 'hsl(0 70% 95%)', color: 'hsl(0 70% 45%)' }}
                 >
-                  Apenas Erros
+                  Apenas Erros ({stats.erros})
                 </button>
               )}
             </div>
