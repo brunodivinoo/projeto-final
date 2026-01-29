@@ -343,13 +343,6 @@ export default function FlashcardDeck({
 
       {/* Card Area */}
       <div className={`p-6 ${isExpanded ? 'flex-1 flex flex-col justify-center' : ''}`}>
-        {/* Contador com badge estilizado */}
-        <div className="text-center mb-4">
-          <span className="bg-white/20 backdrop-blur-sm text-white/90 text-sm px-4 py-1.5 rounded-full">
-            Card {currentIndex + 1} de {cards.length}
-          </span>
-        </div>
-
         {/* Flashcard com flip animation estilo Aurora */}
         <div
           className={`relative cursor-pointer perspective-1000 ${isExpanded ? 'min-h-[320px]' : 'min-h-[240px]'}`}
@@ -370,11 +363,15 @@ export default function FlashcardDeck({
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
               }}
             >
-              <div className="w-12 h-12 rounded-full aurora-gradient flex items-center justify-center mb-6 shadow-lg">
-                <span className="text-white font-bold">{currentIndex + 1}</span>
+              {/* Badge contador no topo */}
+              <div className="absolute top-4 right-4 bg-purple-500/20 text-purple-600 text-xs px-3 py-1 rounded-full font-medium">
+                {currentIndex + 1} / {cards.length}
               </div>
-              <p className="text-xl sm:text-2xl font-medium text-center text-gray-800">{currentCard.frente}</p>
-              <p className="mt-6 text-sm text-purple-500/70">Toque para ver a resposta</p>
+              <div className="w-14 h-14 rounded-full aurora-gradient flex items-center justify-center mb-5 shadow-lg">
+                <span className="text-white font-bold text-lg">{currentIndex + 1}</span>
+              </div>
+              <p className="text-xl sm:text-2xl font-medium text-center text-gray-800 px-4">{currentCard.frente}</p>
+              <p className="mt-4 text-sm text-purple-500/70">Toque para ver a resposta</p>
             </div>
 
             {/* Verso - Card branco com resposta */}
@@ -387,9 +384,13 @@ export default function FlashcardDeck({
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
               }}
             >
-              <p className="text-xl sm:text-2xl font-medium text-center text-gray-800 mb-6">{currentCard.verso}</p>
+              {/* Badge no verso */}
+              <div className="absolute top-4 right-4 bg-emerald-500/20 text-emerald-600 text-xs px-3 py-1 rounded-full font-medium">
+                Resposta
+              </div>
+              <p className="text-lg sm:text-xl font-medium text-center text-gray-800 px-4 mb-4">{currentCard.verso}</p>
               {currentCard.referencia && (
-                <p className="text-sm text-gray-500 text-center mb-6">{currentCard.referencia}</p>
+                <p className="text-xs text-gray-500 text-center px-4 italic">{currentCard.referencia}</p>
               )}
             </div>
           </div>

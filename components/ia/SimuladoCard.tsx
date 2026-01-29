@@ -10,7 +10,10 @@ import {
   BarChart3,
   Play,
   RotateCcw,
-  Flag
+  Flag,
+  X,
+  Pause,
+  PieChart
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
@@ -60,6 +63,8 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [started, setStarted] = useState(false)
   const [finished, setFinished] = useState(false)
+  const [paused, setPaused] = useState(false)
+  const [showStats, setShowStats] = useState(false)
   const [respostas, setRespostas] = useState<Record<number, { resposta: string; acertou: boolean }>>({})
 
   // Estatísticas
@@ -94,8 +99,18 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
   const handleReset = () => {
     setStarted(false)
     setFinished(false)
+    setPaused(false)
+    setShowStats(false)
     setRespostas({})
     setCurrentQuestion(0)
+  }
+
+  const handlePause = () => {
+    setPaused(true)
+  }
+
+  const handleResume = () => {
+    setPaused(false)
   }
 
   // Tela inicial
@@ -127,6 +142,67 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
             <Play className="w-5 h-5" />
             Iniciar Simulado
           </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Tela de pausa
+  if (paused) {
+    return (
+      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-white/10 rounded-xl overflow-hidden">
+        <div className="p-6">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-4">
+              <Pause className="w-8 h-8 text-amber-400" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-1">Simulado Pausado</h2>
+            <p className="text-white/60 text-sm">{simulado.titulo}</p>
+          </div>
+
+          {/* Progresso atual */}
+          <div className="bg-white/5 rounded-xl p-4 mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-white/60 text-sm">Progresso</span>
+              <span className="text-white font-medium">{stats.respondidas}/{simulado.questoes.length}</span>
+            </div>
+            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all"
+                style={{ width: `${(stats.respondidas / simulado.questoes.length) * 100}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-2 text-xs">
+              <span className="text-emerald-400">{stats.corretas} acertos</span>
+              <span className="text-red-400">{stats.erradas} erros</span>
+              <span className="text-white/40">{stats.pendentes} pendentes</span>
+            </div>
+          </div>
+
+          {/* Ações */}
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={handleResume}
+              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+            >
+              <Play className="w-5 h-5" />
+              Continuar Simulado
+            </button>
+            <button
+              onClick={handleReset}
+              className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Reiniciar do Zero
+            </button>
+            <button
+              onClick={() => { setPaused(false); setStarted(false) }}
+              className="w-full py-2 text-white/60 hover:text-white transition-colors flex items-center justify-center gap-2 text-sm"
+            >
+              <X className="w-4 h-4" />
+              Fechar Simulado
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -204,10 +280,27 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
       {/* Header com progresso */}
       <div className="px-4 py-3 bg-white/5 border-b border-white/10">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-white font-medium">{simulado.titulo}</span>
-          <span className="text-white/60 text-sm">
-            {stats.respondidas}/{simulado.questoes.length}
-          </span>
+          <span className="text-white font-medium text-sm truncate max-w-[60%]">{simulado.titulo}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-white/60 text-sm">
+              {stats.respondidas}/{simulado.questoes.length}
+            </span>
+            {/* Botões de controle */}
+            <button
+              onClick={() => setShowStats(!showStats)}
+              className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              title="Ver estatísticas"
+            >
+              <PieChart className="w-4 h-4 text-white/60" />
+            </button>
+            <button
+              onClick={handlePause}
+              className="p-1.5 bg-white/10 hover:bg-amber-500/30 rounded-lg transition-colors"
+              title="Pausar simulado"
+            >
+              <Pause className="w-4 h-4 text-white/60" />
+            </button>
+          </div>
         </div>
 
         {/* Barra de progresso */}
@@ -230,6 +323,34 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
             <Clock className="w-3 h-3" /> {simulado.tempo_estimado}
           </span>
         </div>
+
+        {/* Painel de estatísticas expandido */}
+        {showStats && (
+          <div className="mt-3 pt-3 border-t border-white/10">
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="bg-emerald-500/10 rounded-lg p-2">
+                <div className="text-lg font-bold text-emerald-400">{stats.corretas}</div>
+                <div className="text-[10px] text-white/40">Corretas</div>
+              </div>
+              <div className="bg-red-500/10 rounded-lg p-2">
+                <div className="text-lg font-bold text-red-400">{stats.erradas}</div>
+                <div className="text-[10px] text-white/40">Erradas</div>
+              </div>
+              <div className="bg-white/5 rounded-lg p-2">
+                <div className="text-lg font-bold text-white/60">{stats.pendentes}</div>
+                <div className="text-[10px] text-white/40">Pendentes</div>
+              </div>
+            </div>
+            {stats.respondidas > 0 && (
+              <div className="mt-2 text-center">
+                <span className="text-xs text-white/40">Aproveitamento: </span>
+                <span className={`text-sm font-bold ${stats.percentual >= 70 ? 'text-emerald-400' : stats.percentual >= 50 ? 'text-amber-400' : 'text-red-400'}`}>
+                  {stats.percentual}%
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Navegação por números */}

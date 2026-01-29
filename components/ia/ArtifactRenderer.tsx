@@ -1441,6 +1441,26 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   // Ordenar por índice
   allMatches.sort((a, b) => (a.match.index ?? 0) - (b.match.index ?? 0))
 
+  // Função auxiliar para remover headers/títulos redundantes antes de artefatos
+  // Remove linhas que começam com ## ou ### e contêm palavras como SIMULADO, FLASHCARD, etc.
+  const cleanTextBeforeArtifact = (text: string, artifactType: string): string => {
+    if (!text) return text
+    // Padrões de títulos a remover (aparecem logo antes do artefato)
+    const headerPatterns = [
+      /\n?#{1,4}\s*.*?(SIMULADO|FLASHCARD|QUESTÕES?|QUIZ|TESTE).*?\n?$/i,
+      /\n?#{1,4}\s*📋.*?\n?$/i,
+      /\n?#{1,4}\s*🧠.*?\n?$/i,
+      /\n?\*{2}.*?(SIMULADO|FLASHCARD|QUESTÕES?).*?\*{2}\n?$/i,
+      /\n---+\n?$/,
+    ]
+    let cleaned = text
+    for (const pattern of headerPatterns) {
+      cleaned = cleaned.replace(pattern, '\n')
+    }
+    // Remover espaços/quebras extras no final
+    return cleaned.replace(/\n{3,}$/, '\n\n')
+  }
+
   // Processar matches
   for (const matchData of allMatches) {
     const { match, type, asciiType, convertedContent, originalAscii, questionData } = matchData
@@ -1449,7 +1469,14 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
 
     // Adicionar texto antes do artefato
     if (startIndex > lastIndex) {
-      parts.push(processedContent.substring(lastIndex, startIndex))
+      let textBefore = processedContent.substring(lastIndex, startIndex)
+      // Limpar headers redundantes antes de simulados e flashcards
+      if (type === 'simulado' || type === 'flashcards') {
+        textBefore = cleanTextBeforeArtifact(textBefore, type)
+      }
+      if (textBefore.trim()) {
+        parts.push(textBefore)
+      }
     }
 
     let artifact: Artifact
@@ -1732,7 +1759,20 @@ function ArtifactRendererComponent({
   }, [userId, conversaId, artifacts])
 
   // Extrair termos de busca de imagens médicas reais
-  const imageSearchTerms = useMemo(() => extractImageSearchTerms(content), [content])
+  // Usar ref para estabilizar e evitar pisca-pisca durante streaming
+  const imageSearchTermsRef = useRef<string[]>([])
+  const imageSearchTerms = useMemo(() => {
+    const newTerms = extractImageSearchTerms(content)
+    // Só atualiza se realmente mudou (comparação por valor)
+    const currentTerms = imageSearchTermsRef.current
+    const changed = newTerms.length !== currentTerms.length ||
+      newTerms.some((term, i) => term !== currentTerms[i])
+    if (changed) {
+      imageSearchTermsRef.current = newTerms
+      return newTerms
+    }
+    return currentTerms // Retorna a referência antiga se não mudou
+  }, [content])
 
   // Extrair referências/fontes do conteúdo para citações interativas
   const references = useMemo(() => extractReferences(content), [content])
