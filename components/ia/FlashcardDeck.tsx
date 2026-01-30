@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   RotateCcw,
   ChevronLeft,
@@ -13,7 +14,13 @@ import {
   BarChart3,
   Minimize2,
   Maximize2,
-  Save
+  Save,
+  Sparkles,
+  Target,
+  Zap,
+  BookOpen,
+  Trophy,
+  ArrowRight
 } from 'lucide-react'
 
 export interface Flashcard {
@@ -54,30 +61,25 @@ export default function FlashcardDeck({
   const [showStats, setShowStats] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [startTime, setStartTime] = useState<Date | null>(null)
-  const [sessionStats, setSessionStats] = useState({
-    acertos: 0,
-    erros: 0,
-    revisoes: 0,
-    tempoTotal: 0
-  })
+  const [sessionComplete, setSessionComplete] = useState(false)
+  const [animatingAnswer, setAnimatingAnswer] = useState<string | null>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   // Inicializar progress
   useEffect(() => {
     const initialProgress = new Map<string, CardProgress>()
     initialCards.forEach(card => {
-      initialProgress.set(card.id, {
-        status: 'nao_visto',
-        vezes_revisado: 0
-      })
+      initialProgress.set(card.id, { status: 'nao_visto', vezes_revisado: 0 })
     })
     setProgress(initialProgress)
     setCards(initialCards)
     setStartTime(new Date())
+    setSessionComplete(false)
   }, [initialCards])
 
   const currentCard = cards[currentIndex]
 
-  // Estatisticas
+  // Estatísticas
   const stats = useMemo(() => {
     let acertos = 0, erros = 0, naoVistos = 0, revisao = 0
     progress.forEach(p => {
@@ -86,57 +88,55 @@ export default function FlashcardDeck({
       else if (p.status === 'revisao') revisao++
       else naoVistos++
     })
-    return { acertos, erros, naoVistos, revisao, total: cards.length }
+    const total = cards.length
+    const porcentagem = total > 0 ? Math.round(((acertos + revisao) / total) * 100) : 0
+    return { acertos, erros, naoVistos, revisao, total, porcentagem }
   }, [progress, cards.length])
 
   // Virar card
   const flipCard = useCallback(() => {
-    setIsFlipped(!isFlipped)
-  }, [isFlipped])
+    setIsFlipped(prev => !prev)
+  }, [])
 
   // Navegar
   const goToNext = useCallback(() => {
     if (currentIndex < cards.length - 1) {
-      setCurrentIndex(currentIndex + 1)
+      setCurrentIndex(prev => prev + 1)
       setIsFlipped(false)
+    } else if (stats.naoVistos === 0) {
+      setSessionComplete(true)
     }
-  }, [currentIndex, cards.length])
+  }, [currentIndex, cards.length, stats.naoVistos])
 
   const goToPrev = useCallback(() => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
+      setCurrentIndex(prev => prev - 1)
       setIsFlipped(false)
     }
   }, [currentIndex])
 
-  // Marcar resposta (estilo Anki)
+  // Marcar resposta com animação
   const markAnswer = useCallback((status: 'acertou' | 'errou' | 'revisao') => {
     if (!currentCard) return
 
-    setProgress(prev => {
-      const newProgress = new Map(prev)
-      const cardProgress = newProgress.get(currentCard.id) || { status: 'nao_visto', vezes_revisado: 0 }
-
-      newProgress.set(currentCard.id, {
-        ...cardProgress,
-        status,
-        vezes_revisado: cardProgress.vezes_revisado + 1,
-        ultima_revisao: new Date()
+    setAnimatingAnswer(status)
+    
+    setTimeout(() => {
+      setProgress(prev => {
+        const newProgress = new Map(prev)
+        const cardProgress = newProgress.get(currentCard.id) || { status: 'nao_visto', vezes_revisado: 0 }
+        newProgress.set(currentCard.id, {
+          ...cardProgress,
+          status,
+          vezes_revisado: cardProgress.vezes_revisado + 1,
+          ultima_revisao: new Date()
+        })
+        return newProgress
       })
-
-      return newProgress
-    })
-
-    // Atualizar stats da sessao
-    setSessionStats(prev => ({
-      ...prev,
-      acertos: prev.acertos + (status === 'acertou' ? 1 : 0),
-      erros: prev.erros + (status === 'errou' ? 1 : 0),
-      revisoes: prev.revisoes + (status === 'revisao' ? 1 : 0)
-    }))
-
-    // Ir para proximo
-    goToNext()
+      
+      setAnimatingAnswer(null)
+      goToNext()
+    }, 300)
   }, [currentCard, goToNext])
 
   // Embaralhar
@@ -151,49 +151,48 @@ export default function FlashcardDeck({
   const resetDeck = useCallback(() => {
     setCurrentIndex(0)
     setIsFlipped(false)
+    setSessionComplete(false)
     const resetProgress = new Map<string, CardProgress>()
     cards.forEach(card => {
       resetProgress.set(card.id, { status: 'nao_visto', vezes_revisado: 0 })
     })
     setProgress(resetProgress)
-    setSessionStats({ acertos: 0, erros: 0, revisoes: 0, tempoTotal: 0 })
     setStartTime(new Date())
   }, [cards])
 
-  // Revisar apenas errados
+  // Revisar erros
   const reviewErrors = useCallback(() => {
     const errorCards = cards.filter(c => progress.get(c.id)?.status === 'errou')
     if (errorCards.length > 0) {
       setCards(errorCards)
       setCurrentIndex(0)
       setIsFlipped(false)
+      setSessionComplete(false)
     }
   }, [cards, progress])
 
   // Teclas de atalho
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (sessionComplete) return
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault()
         flipCard()
       } else if (e.key === 'ArrowRight' || e.key === 'd') {
-        goToNext()
+        if (isFlipped) markAnswer('acertou')
+        else goToNext()
       } else if (e.key === 'ArrowLeft' || e.key === 'a') {
-        goToPrev()
-      } else if (e.key === '1' && isFlipped) {
-        markAnswer('errou')
-      } else if (e.key === '2' && isFlipped) {
-        markAnswer('revisao')
-      } else if (e.key === '3' && isFlipped) {
-        markAnswer('acertou')
-      }
+        if (isFlipped) markAnswer('errou')
+        else goToPrev()
+      } else if (e.key === '1' && isFlipped) markAnswer('errou')
+      else if (e.key === '2' && isFlipped) markAnswer('revisao')
+      else if (e.key === '3' && isFlipped) markAnswer('acertou')
     }
-
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [flipCard, goToNext, goToPrev, isFlipped, markAnswer])
+  }, [flipCard, goToNext, goToPrev, isFlipped, markAnswer, sessionComplete])
 
-  // Calcular tempo
+  // Timer
   const elapsedTime = useMemo(() => {
     if (!startTime) return '0:00'
     const diff = Math.floor((new Date().getTime() - startTime.getTime()) / 1000)
@@ -202,309 +201,357 @@ export default function FlashcardDeck({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }, [startTime])
 
-  // Timer atualiza a cada segundo
   const [, forceUpdate] = useState({})
   useEffect(() => {
     const interval = setInterval(() => forceUpdate({}), 1000)
     return () => clearInterval(interval)
   }, [])
 
-  if (!currentCard) {
+  if (!currentCard && !sessionComplete) {
     return (
-      <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6 text-center">
-        <Brain className="w-12 h-12 text-purple-400 mx-auto mb-3" />
-        <p className="text-white/60">Nenhum flashcard para revisar</p>
+      <div className="bg-white rounded-2xl shadow-lg p-8 text-center border border-gray-100">
+        <div className="w-16 h-16 rounded-2xl bg-purple-100 flex items-center justify-center mx-auto mb-4">
+          <Brain className="w-8 h-8 text-purple-500" />
+        </div>
+        <p className="text-gray-500">Nenhum flashcard para revisar</p>
       </div>
     )
   }
 
-  // Progresso concluido
-  const allReviewed = stats.naoVistos === 0
-
-  return (
-    <div className={`aurora-gradient-animated rounded-2xl overflow-hidden transition-all shadow-xl ${
-      isExpanded ? 'fixed inset-4 z-50' : ''
-    }`}>
-      {/* Header com glassmorphism */}
-      <div className="flex items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl aurora-gradient flex items-center justify-center shadow-lg">
-            <Brain className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h3 className="text-white font-semibold">{titulo}</h3>
-            <p className="text-white/70 text-xs">{cards.length} flashcards</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Timer */}
-          <div className="flex items-center gap-1 text-white/80 text-xs bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-            <Clock className="w-3 h-3" />
-            {elapsedTime}
-          </div>
-
-          {/* Botoes */}
-          <button
-            onClick={shuffleCards}
-            className="p-1.5 hover:bg-white/10 rounded transition-colors"
-            title="Embaralhar"
+  // Tela de conclusão
+  if (sessionComplete) {
+    const emoji = stats.porcentagem >= 80 ? '🎉' : stats.porcentagem >= 50 ? '👍' : '💪'
+    const message = stats.porcentagem >= 80 ? 'Excelente!' : stats.porcentagem >= 50 ? 'Bom trabalho!' : 'Continue praticando!'
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className={`bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 ${isExpanded ? 'fixed inset-4 z-50' : ''}`}
+      >
+        <div className="p-8 text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', delay: 0.2 }}
+            className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-6 shadow-lg"
           >
-            <Shuffle className="w-4 h-4 text-white/60" />
-          </button>
-          <button
-            onClick={() => setShowStats(!showStats)}
-            className="p-1.5 hover:bg-white/10 rounded transition-colors"
-            title="Estatísticas"
-          >
-            <BarChart3 className="w-4 h-4 text-white/60" />
-          </button>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1.5 hover:bg-white/10 rounded transition-colors"
-            title={isExpanded ? 'Minimizar' : 'Expandir'}
-          >
-            {isExpanded ? (
-              <Minimize2 className="w-4 h-4 text-white/60" />
-            ) : (
-              <Maximize2 className="w-4 h-4 text-white/60" />
-            )}
-          </button>
-          {onSaveToArtefatos && (
-            <button
-              onClick={() => onSaveToArtefatos(cards, titulo)}
-              className="p-1.5 hover:bg-white/10 rounded transition-colors"
-              title="Salvar na Biblioteca"
-            >
-              <Save className="w-4 h-4 text-white/60" />
-            </button>
-          )}
-        </div>
-      </div>
+            <span className="text-4xl">{emoji}</span>
+          </motion.div>
+          
+          <h3 className="text-2xl font-bold text-gray-800 mb-2">{message}</h3>
+          <p className="text-gray-500 mb-6">Você completou todos os {stats.total} flashcards</p>
 
-      {/* Stats Panel com glassmorphism */}
-      {showStats && (
-        <div className="px-4 py-3 bg-black/20 backdrop-blur-sm">
-          <div className="grid grid-cols-4 gap-3 text-center">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2">
-              <div className="text-2xl font-bold text-emerald-300">{stats.acertos}</div>
-              <div className="text-xs text-white/60">Acertos</div>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-4 mb-8 max-w-md mx-auto">
+            <div className="bg-emerald-50 rounded-xl p-4">
+              <div className="text-3xl font-bold text-emerald-600">{stats.acertos}</div>
+              <div className="text-sm text-emerald-600/70">Acertos</div>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2">
-              <div className="text-2xl font-bold text-red-300">{stats.erros}</div>
-              <div className="text-xs text-white/60">Erros</div>
+            <div className="bg-amber-50 rounded-xl p-4">
+              <div className="text-3xl font-bold text-amber-600">{stats.revisao}</div>
+              <div className="text-sm text-amber-600/70">Revisar</div>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2">
-              <div className="text-2xl font-bold text-amber-300">{stats.revisao}</div>
-              <div className="text-xs text-white/60">Revisão</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2">
-              <div className="text-2xl font-bold text-white/80">{stats.naoVistos}</div>
-              <div className="text-xs text-white/60">Restantes</div>
+            <div className="bg-red-50 rounded-xl p-4">
+              <div className="text-3xl font-bold text-red-600">{stats.erros}</div>
+              <div className="text-sm text-red-600/70">Erros</div>
             </div>
           </div>
 
-          {/* Barra de progresso */}
-          <div className="mt-3 h-2 bg-white/20 rounded-full overflow-hidden flex">
-            <div
-              className="bg-emerald-400 transition-all"
-              style={{ width: `${(stats.acertos / stats.total) * 100}%` }}
-            />
-            <div
-              className="bg-red-400 transition-all"
-              style={{ width: `${(stats.erros / stats.total) * 100}%` }}
-            />
-            <div
-              className="bg-amber-400 transition-all"
-              style={{ width: `${(stats.revisao / stats.total) * 100}%` }}
-            />
+          {/* Progress Ring */}
+          <div className="relative w-32 h-32 mx-auto mb-8">
+            <svg className="w-full h-full transform -rotate-90">
+              <circle cx="64" cy="64" r="56" stroke="#e5e7eb" strokeWidth="12" fill="none" />
+              <motion.circle
+                cx="64" cy="64" r="56"
+                stroke="url(#gradient)"
+                strokeWidth="12"
+                fill="none"
+                strokeLinecap="round"
+                initial={{ strokeDasharray: '0 352' }}
+                animate={{ strokeDasharray: `${stats.porcentagem * 3.52} 352` }}
+                transition={{ duration: 1, delay: 0.5 }}
+              />
+              <defs>
+                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#8b5cf6" />
+                  <stop offset="100%" stopColor="#ec4899" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-3xl font-bold text-gray-800">{stats.porcentagem}%</span>
+            </div>
           </div>
 
-          {/* Ações */}
-          <div className="flex gap-2 mt-3">
+          {/* Actions */}
+          <div className="flex flex-wrap justify-center gap-3">
             <button
               onClick={resetDeck}
-              className="flex-1 py-2 text-xs bg-white/20 hover:bg-white/30 rounded-xl transition-colors text-white font-medium backdrop-blur-sm"
+              className="flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-all"
             >
-              <RotateCcw className="w-3 h-3 inline mr-1" />
-              Reiniciar
+              <RotateCcw className="w-4 h-4" />
+              Revisar Tudo
             </button>
             {stats.erros > 0 && (
               <button
                 onClick={reviewErrors}
-                className="flex-1 py-2 text-xs bg-red-500/30 hover:bg-red-500/40 rounded-xl transition-colors text-white font-medium backdrop-blur-sm"
+                className="flex items-center gap-2 px-6 py-3 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl font-medium transition-all"
               >
-                Revisar Erros ({stats.erros})
+                <Target className="w-4 h-4" />
+                Apenas Erros ({stats.erros})
+              </button>
+            )}
+            {onSaveToArtefatos && (
+              <button
+                onClick={() => onSaveToArtefatos(initialCards, titulo)}
+                className="flex items-center gap-2 px-6 py-3 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-xl font-medium transition-all"
+              >
+                <Save className="w-4 h-4" />
+                Salvar na Biblioteca
               </button>
             )}
           </div>
         </div>
-      )}
+      </motion.div>
+    )
+  }
 
-      {/* Card Area */}
-      <div className={`p-6 ${isExpanded ? 'flex-1 flex flex-col justify-center' : ''}`}>
-        {/* Flashcard com flip animation estilo Aurora */}
-        <div
-          className={`relative cursor-pointer perspective-1000 ${isExpanded ? 'min-h-[320px]' : 'min-h-[240px]'}`}
-          onClick={flipCard}
-        >
-          <div className={`relative w-full h-full flip-transition preserve-3d ${
-            isFlipped ? 'rotate-y-180' : ''
-          }`} style={{
-            transformStyle: 'preserve-3d',
-            transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
-          }}>
-            {/* Frente - Card branco com sombra */}
-            <div
-              className="absolute inset-0 backface-hidden rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center shadow-2xl"
-              style={{
-                backfaceVisibility: 'hidden',
-                background: 'rgba(255, 255, 255, 0.95)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-              }}
-            >
-              {/* Badge contador no topo */}
-              <div className="absolute top-4 right-4 bg-purple-500/20 text-purple-600 text-xs px-3 py-1 rounded-full font-medium">
-                {currentIndex + 1} / {cards.length}
-              </div>
-              <div className="w-14 h-14 rounded-full aurora-gradient flex items-center justify-center mb-5 shadow-lg">
-                <span className="text-white font-bold text-lg">{currentIndex + 1}</span>
-              </div>
-              <p className="text-xl sm:text-2xl font-medium text-center text-gray-800 px-4">{currentCard.frente}</p>
-              <p className="mt-4 text-sm text-purple-500/70">Toque para ver a resposta</p>
-            </div>
+  const cardProgress = progress.get(currentCard.id)
 
-            {/* Verso - Card branco com resposta */}
-            <div
-              className="absolute inset-0 backface-hidden rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center shadow-2xl"
-              style={{
-                backfaceVisibility: 'hidden',
-                transform: 'rotateY(180deg)',
-                background: 'rgba(255, 255, 255, 0.98)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-              }}
-            >
-              {/* Badge no verso */}
-              <div className="absolute top-4 right-4 bg-emerald-500/20 text-emerald-600 text-xs px-3 py-1 rounded-full font-medium">
-                Resposta
-              </div>
-              <p className="text-lg sm:text-xl font-medium text-center text-gray-800 px-4 mb-4">{currentCard.verso}</p>
-              {currentCard.referencia && (
-                <p className="text-xs text-gray-500 text-center px-4 italic">{currentCard.referencia}</p>
-              )}
-            </div>
+  return (
+    <div className={`bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 transition-all ${isExpanded ? 'fixed inset-4 z-50 flex flex-col' : ''}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-md">
+            <Brain className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-800 text-sm">{titulo}</h3>
+            <p className="text-xs text-gray-500">{stats.total - stats.naoVistos} de {stats.total} revisados</p>
           </div>
         </div>
 
-        {/* Botoes de navegacao e resposta - estilo Aurora */}
-        <div className="mt-6">
-          {!isFlipped ? (
-            /* Navegacao quando nao virado */
-            <div className="flex items-center justify-center gap-4">
-              <button
-                onClick={goToPrev}
-                disabled={currentIndex === 0}
-                className="w-12 h-12 rounded-full flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
-                style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)' }}
-              >
-                <ChevronLeft className="w-6 h-6 text-white" />
-              </button>
-
-              <button
-                onClick={flipCard}
-                className="px-8 py-3 rounded-xl text-white font-medium transition-all hover:scale-105 active:scale-95 shadow-lg"
-                style={{ background: 'linear-gradient(135deg, hsl(280 80% 60%), hsl(200 90% 55%))' }}
-              >
-                Mostrar Resposta
-              </button>
-
-              <button
-                onClick={goToNext}
-                disabled={currentIndex === cards.length - 1}
-                className="w-12 h-12 rounded-full flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
-                style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)' }}
-              >
-                <ChevronRight className="w-6 h-6 text-white" />
-              </button>
-            </div>
-          ) : (
-            /* Botoes Anki quando virado - estilo Aurora pastel */
-            <div className="space-y-3">
-              <p className="text-center text-white/60 text-sm">Como foi?</p>
-              <div className="flex items-center justify-center gap-3">
-                <button
-                  onClick={() => markAnswer('errou')}
-                  className="flex-1 max-w-[120px] py-3 rounded-xl font-medium transition-all hover:scale-105 active:scale-95"
-                  style={{ background: 'hsl(0 70% 95%)', color: 'hsl(0 70% 45%)' }}
-                >
-                  <X className="w-4 h-4 mx-auto mb-1" />
-                  <span className="text-sm">Errei</span>
-                  <span className="block text-xs opacity-60">(1)</span>
-                </button>
-
-                <button
-                  onClick={() => markAnswer('revisao')}
-                  className="flex-1 max-w-[120px] py-3 rounded-xl font-medium transition-all hover:scale-105 active:scale-95"
-                  style={{ background: 'hsl(45 80% 95%)', color: 'hsl(45 80% 35%)' }}
-                >
-                  <Clock className="w-4 h-4 mx-auto mb-1" />
-                  <span className="text-sm">Revisar</span>
-                  <span className="block text-xs opacity-60">(2)</span>
-                </button>
-
-                <button
-                  onClick={() => markAnswer('acertou')}
-                  className="flex-1 max-w-[120px] py-3 rounded-xl font-medium transition-all hover:scale-105 active:scale-95"
-                  style={{ background: 'hsl(150 60% 95%)', color: 'hsl(150 60% 35%)' }}
-                >
-                  <Check className="w-4 h-4 mx-auto mb-1" />
-                  <span className="text-sm">Acertei</span>
-                  <span className="block text-xs opacity-60">(3)</span>
-                </button>
-              </div>
-            </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-gray-500 text-xs bg-gray-100 px-3 py-1.5 rounded-full">
+            <Clock className="w-3 h-3" />
+            {elapsedTime}
+          </div>
+          <button onClick={shuffleCards} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Embaralhar">
+            <Shuffle className="w-4 h-4 text-gray-500" />
+          </button>
+          <button onClick={() => setShowStats(!showStats)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Estatísticas">
+            <BarChart3 className="w-4 h-4 text-gray-500" />
+          </button>
+          <button onClick={() => setIsExpanded(!isExpanded)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            {isExpanded ? <Minimize2 className="w-4 h-4 text-gray-500" /> : <Maximize2 className="w-4 h-4 text-gray-500" />}
+          </button>
+          {onSaveToArtefatos && (
+            <button onClick={() => onSaveToArtefatos(cards, titulo)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Salvar">
+              <Save className="w-4 h-4 text-gray-500" />
+            </button>
           )}
         </div>
       </div>
 
-      {/* Conclusao - estilo Aurora */}
-      {allReviewed && (
-        <div className="p-6 bg-black/20 backdrop-blur-sm border-t border-white/10">
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-full aurora-gradient mx-auto mb-4 flex items-center justify-center shadow-lg">
-              <span className="text-2xl">🎉</span>
-            </div>
-            <h4 className="text-white font-bold text-lg">Parabens! Voce revisou todos os cards!</h4>
-            <p className="text-white/60 text-sm mt-2">
-              Acertos: {stats.acertos} | Erros: {stats.erros} | Para revisao: {stats.revisao}
-            </p>
-            <div className="flex gap-3 justify-center mt-4">
-              <button
-                onClick={resetDeck}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:scale-105 active:scale-95"
-                style={{ background: 'rgba(255, 255, 255, 0.2)', color: 'white', backdropFilter: 'blur(10px)' }}
-              >
-                <RotateCcw className="w-4 h-4 inline mr-2" />
-                Revisar Novamente
-              </button>
-              {stats.erros > 0 && (
-                <button
-                  onClick={reviewErrors}
-                  className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:scale-105 active:scale-95"
-                  style={{ background: 'hsl(0 70% 95%)', color: 'hsl(0 70% 45%)' }}
-                >
-                  Apenas Erros ({stats.erros})
+      {/* Progress Bar */}
+      <div className="h-1 bg-gray-100 flex">
+        <motion.div className="bg-emerald-500" animate={{ width: `${(stats.acertos / stats.total) * 100}%` }} />
+        <motion.div className="bg-amber-500" animate={{ width: `${(stats.revisao / stats.total) * 100}%` }} />
+        <motion.div className="bg-red-500" animate={{ width: `${(stats.erros / stats.total) * 100}%` }} />
+      </div>
+
+      {/* Stats Panel */}
+      <AnimatePresence>
+        {showStats && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-b border-gray-100 overflow-hidden"
+          >
+            <div className="p-4 bg-gray-50/50">
+              <div className="grid grid-cols-4 gap-3 text-center">
+                <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                  <div className="text-2xl font-bold text-emerald-600">{stats.acertos}</div>
+                  <div className="text-xs text-gray-500">Acertos</div>
+                </div>
+                <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                  <div className="text-2xl font-bold text-amber-600">{stats.revisao}</div>
+                  <div className="text-xs text-gray-500">Revisar</div>
+                </div>
+                <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                  <div className="text-2xl font-bold text-red-600">{stats.erros}</div>
+                  <div className="text-xs text-gray-500">Erros</div>
+                </div>
+                <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                  <div className="text-2xl font-bold text-gray-600">{stats.naoVistos}</div>
+                  <div className="text-xs text-gray-500">Restantes</div>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button onClick={resetDeck} className="flex-1 py-2 text-xs bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors font-medium">
+                  <RotateCcw className="w-3 h-3 inline mr-1" /> Reiniciar
                 </button>
+                {stats.erros > 0 && (
+                  <button onClick={reviewErrors} className="flex-1 py-2 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors font-medium">
+                    Revisar Erros ({stats.erros})
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Card Area */}
+      <div className={`p-6 ${isExpanded ? 'flex-1 flex flex-col justify-center' : ''}`}>
+        {/* Card Counter */}
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <span className="text-sm font-medium text-gray-400">Card</span>
+          <span className="px-3 py-1 bg-gray-100 rounded-full text-sm font-bold text-gray-700">
+            {currentIndex + 1} / {cards.length}
+          </span>
+          {cardProgress?.status && cardProgress.status !== 'nao_visto' && (
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+              cardProgress.status === 'acertou' ? 'bg-emerald-100 text-emerald-700' :
+              cardProgress.status === 'errou' ? 'bg-red-100 text-red-700' :
+              'bg-amber-100 text-amber-700'
+            }`}>
+              {cardProgress.status === 'acertou' ? '✓ Acertou' : cardProgress.status === 'errou' ? '✗ Errou' : '↻ Revisar'}
+            </span>
+          )}
+        </div>
+
+        {/* Flashcard */}
+        <div
+          ref={cardRef}
+          className={`relative cursor-pointer ${isExpanded ? 'min-h-[350px]' : 'min-h-[280px]'}`}
+          onClick={flipCard}
+          style={{ perspective: '1000px' }}
+        >
+          <motion.div
+            className="relative w-full h-full"
+            animate={{ rotateY: isFlipped ? 180 : 0 }}
+            transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
+            style={{ transformStyle: 'preserve-3d' }}
+          >
+            {/* Frente */}
+            <div
+              className={`absolute inset-0 rounded-2xl p-8 flex flex-col items-center justify-center shadow-lg border-2 transition-all ${
+                animatingAnswer === 'errou' ? 'border-red-300 bg-red-50' :
+                animatingAnswer === 'acertou' ? 'border-emerald-300 bg-emerald-50' :
+                animatingAnswer === 'revisao' ? 'border-amber-300 bg-amber-50' :
+                'border-gray-200 bg-white'
+              }`}
+              style={{ backfaceVisibility: 'hidden' }}
+            >
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-6 shadow-md">
+                <BookOpen className="w-6 h-6 text-white" />
+              </div>
+              <p className="text-xl font-medium text-center text-gray-800 leading-relaxed">{currentCard.frente}</p>
+              <p className="mt-6 text-sm text-purple-500 flex items-center gap-1">
+                <Sparkles className="w-4 h-4" /> Toque para ver a resposta
+              </p>
+            </div>
+
+            {/* Verso */}
+            <div
+              className="absolute inset-0 rounded-2xl p-8 flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg border-2 border-purple-200"
+              style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+            >
+              <div className="absolute top-4 right-4 px-3 py-1 bg-purple-500 text-white text-xs font-medium rounded-full">
+                Resposta
+              </div>
+              <p className="text-lg font-medium text-center text-gray-800 leading-relaxed mb-4">{currentCard.verso}</p>
+              {currentCard.referencia && (
+                <p className="text-xs text-purple-500 text-center italic">{currentCard.referencia}</p>
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
-      )}
 
-      {/* Atalhos */}
-      <div className="px-4 py-2 border-t border-white/5 bg-white/[0.02]">
-        <p className="text-white/30 text-[10px] text-center">
-          Atalhos: ESPACO (virar) | ← → (navegar) | 1 (errei) | 2 (revisar) | 3 (acertei)
+        {/* Botões de Ação */}
+        <div className="mt-6">
+          <AnimatePresence mode="wait">
+            {!isFlipped ? (
+              <motion.div
+                key="nav"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex items-center justify-center gap-4"
+              >
+                <button
+                  onClick={goToPrev}
+                  disabled={currentIndex === 0}
+                  className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center disabled:opacity-30 transition-all"
+                >
+                  <ChevronLeft className="w-6 h-6 text-gray-600" />
+                </button>
+                <button
+                  onClick={flipCard}
+                  className="px-8 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all hover:scale-105 active:scale-95"
+                >
+                  Mostrar Resposta
+                </button>
+                <button
+                  onClick={goToNext}
+                  disabled={currentIndex === cards.length - 1}
+                  className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center disabled:opacity-30 transition-all"
+                >
+                  <ChevronRight className="w-6 h-6 text-gray-600" />
+                </button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="answer"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-3"
+              >
+                <p className="text-center text-gray-500 text-sm">Como foi?</p>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => markAnswer('errou')}
+                    disabled={!!animatingAnswer}
+                    className="flex-1 max-w-[130px] py-4 rounded-xl bg-red-50 hover:bg-red-100 border-2 border-red-200 text-red-600 font-medium transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                  >
+                    <X className="w-5 h-5 mx-auto mb-1" />
+                    <span className="text-sm">Errei</span>
+                    <span className="block text-xs text-red-400">(1 ou ←)</span>
+                  </button>
+                  <button
+                    onClick={() => markAnswer('revisao')}
+                    disabled={!!animatingAnswer}
+                    className="flex-1 max-w-[130px] py-4 rounded-xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-600 font-medium transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                  >
+                    <Clock className="w-5 h-5 mx-auto mb-1" />
+                    <span className="text-sm">Revisar</span>
+                    <span className="block text-xs text-amber-400">(2)</span>
+                  </button>
+                  <button
+                    onClick={() => markAnswer('acertou')}
+                    disabled={!!animatingAnswer}
+                    className="flex-1 max-w-[130px] py-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200 text-emerald-600 font-medium transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                  >
+                    <Check className="w-5 h-5 mx-auto mb-1" />
+                    <span className="text-sm">Acertei</span>
+                    <span className="block text-xs text-emerald-400">(3 ou →)</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+        <p className="text-gray-400 text-[11px] text-center">
+          Atalhos: <span className="text-gray-500">Espaço</span> (virar) • <span className="text-gray-500">← →</span> (navegar) • <span className="text-gray-500">1 2 3</span> (responder)
         </p>
       </div>
     </div>

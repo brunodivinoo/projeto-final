@@ -527,3 +527,195 @@ html, body {
   transform: translateY(-2px);
   box-shadow: 0 10px 40px -10px rgba(139, 92, 246, 0.3);
 }
+
+
+/* ================================================
+   STREAMING OPTIMIZATION - Anti-Flickering
+   ================================================ */
+
+/* Otimizações para renderização de texto durante streaming */
+.streaming-text {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  will-change: contents;
+  contain: layout style;
+}
+
+/* Container de mensagem otimizado */
+.message-container {
+  contain: layout style;
+  content-visibility: auto;
+}
+
+/* Cursor de digitação suave */
+.typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  margin-left: 2px;
+  background-color: currentColor;
+  border-radius: 1px;
+  animation: blink 0.8s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Smooth content appear */
+.content-appear {
+  animation: content-fade-in 0.15s ease-out;
+}
+
+@keyframes content-fade-in {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Evitar reflow durante streaming */
+.streaming-container {
+  min-height: 1.5em;
+  overflow-anchor: auto;
+}
+
+/* ================================================
+   SIDEBAR IMPROVEMENTS
+   ================================================ */
+
+/* Smooth group expand/collapse */
+.group-expand-enter {
+  animation: group-expand 0.2s ease-out;
+}
+
+@keyframes group-expand {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Conversation item hover state */
+.conversation-item {
+  transition: all 0.15s ease;
+}
+
+.conversation-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.conversation-item.active {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+/* Search input focus state */
+.search-input-focus {
+  transition: all 0.2s ease;
+}
+
+.search-input-focus:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* ================================================
+   FLASHCARD IMPROVEMENTS
+   ================================================ */
+
+/* Card flip with bounce */
+.card-flip {
+  transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Answer button press effect */
+.answer-button {
+  transition: all 0.15s ease;
+}
+
+.answer-button:active {
+  transform: scale(0.95);
+}
+
+/* Progress ring animation */
+.progress-ring-animate {
+  transition: stroke-dasharray 1s ease-out;
+}
+
+/* Completion celebration */
+.celebration-bounce {
+  animation: celebration-bounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes celebration-bounce {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* ================================================
+   DROPDOWN MENU IMPROVEMENTS
+   ================================================ */
+
+/* Menu portal animation */
+.menu-portal-enter {
+  animation: menu-appear 0.1s ease-out;
+}
+
+@keyframes menu-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Menu item hover */
+.menu-item-hover {
+  transition: background-color 0.1s ease;
+}
+
+/* ================================================
+   PERFORMANCE UTILITIES
+   ================================================ */
+
+/* GPU acceleration for animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .message-container {
+    border: 2px solid currentColor;
+  }
+  
+  .conversation-item.active {
+    outline: 2px solid #10b981;
+  }
+}

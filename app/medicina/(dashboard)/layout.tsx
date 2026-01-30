@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import { MedAuthProvider, useMedAuth } from '@/contexts/MedAuthContext'
 import { TrialBanner } from '@/components/medicina/TrialBanner'
 import { UpgradeModal } from '@/components/medicina/UpgradeModal'
@@ -37,37 +38,57 @@ import {
   Clock,
   History,
   Trash2,
-  MoreVertical,
+  MoreHorizontal,
   Pencil,
   Check,
-  ChevronDown
+  ChevronDown,
+  Search,
+  Settings
 } from 'lucide-react'
 
-// Interface para conversas do histórico - usando store
-// import { type Conversa } from '@/lib/stores/conversaStore' - já importado via useConversaStore
-
-// Menu simplificado - Funcionalidades migradas para o Chat central
+// Menu simplificado
 const menuItems = [
-  { href: '/medicina/dashboard', label: 'Chat IA', icon: Brain, primary: true }, // Chat é a página principal
+  { href: '/medicina/dashboard', label: 'Chat IA', icon: Brain, primary: true },
   { href: '/medicina/dashboard/biblioteca', label: 'Biblioteca', icon: BookOpen },
   { href: '/medicina/dashboard/estatisticas', label: 'Estatísticas', icon: BarChart3 },
 ]
 
-// REMOVIDOS (migrados para o chat):
-// - Questões → Agora geradas via chat ("crie 5 questões sobre...")
-// - Simulados → Agora gerados via chat ("monte um simulado de...")
-// - Flashcards → Agora gerados via chat ("gere flashcards de...")
-// - Anotações → Agora artefatos salvos na biblioteca
-// - IA Tutora → Dashboard É o chat agora
+// Função para agrupar conversas por data
+function groupConversasByDate(conversas: { id: string; titulo: string; updated_at: string }[]) {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today.getTime() - 86400000)
+  const weekAgo = new Date(today.getTime() - 7 * 86400000)
+  const monthAgo = new Date(today.getTime() - 30 * 86400000)
+
+  const groups: { label: string; icon: typeof Clock; conversas: typeof conversas }[] = [
+    { label: 'Hoje', icon: Sparkles, conversas: [] },
+    { label: 'Ontem', icon: Clock, conversas: [] },
+    { label: 'Últimos 7 dias', icon: History, conversas: [] },
+    { label: 'Este mês', icon: History, conversas: [] },
+    { label: 'Anteriores', icon: History, conversas: [] }
+  ]
+
+  conversas.forEach(c => {
+    const date = new Date(c.updated_at)
+    if (date >= today) groups[0].conversas.push(c)
+    else if (date >= yesterday) groups[1].conversas.push(c)
+    else if (date >= weekAgo) groups[2].conversas.push(c)
+    else if (date >= monthAgo) groups[3].conversas.push(c)
+    else groups[4].conversas.push(c)
+  })
+
+  return groups.filter(g => g.conversas.length > 0)
+}
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { user, profile, plano, loading, signOut, trialStatus } = useMedAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false) // Sidebar recolhida no desktop
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  // Usar store de conversas para sincronização entre componentes
+  // Store de conversas
   const {
     conversas,
     conversaSelecionada,
@@ -79,29 +100,23 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   } = useConversaStore()
 
   const [loadingConversas, setLoadingConversas] = useState(false)
-  const [showAllConversas, setShowAllConversas] = useState(false) // Expandir histórico
-  const [menuAberto, setMenuAberto] = useState<string | null>(null) // Menu de 3 pontos
-  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null) // Posição do menu portal
-  const [editandoConversa, setEditandoConversa] = useState<string | null>(null) // Edição de título
+  const [searchQuery, setSearchQuery] = useState('')
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Hoje', 'Ontem', 'Últimos 7 dias']))
+  const [menuAberto, setMenuAberto] = useState<string | null>(null)
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null)
+  const [editandoConversa, setEditandoConversa] = useState<string | null>(null)
   const [novoTitulo, setNovoTitulo] = useState('')
   const [excluindoTodas, setExcluindoTodas] = useState(false)
-  const [perfilMenuAberto, setPerfilMenuAberto] = useState(false) // Menu dropdown do perfil
-  const menuRef = useRef<HTMLLIElement>(null)
+  const [perfilMenuAberto, setPerfilMenuAberto] = useState(false)
+  
+  const menuRef = useRef<HTMLDivElement>(null)
   const perfilMenuRef = useRef<HTMLDivElement>(null)
 
-  // Hook para modais de upgrade
-  const {
-    showModal,
-    modalTipo,
-    modalFeature,
-    conquista,
-    fecharModal
-  } = useUpgradePrompt()
+  const { showModal, modalTipo, modalFeature, conquista, fecharModal } = useUpgradePrompt()
 
-  // Buscar conversas recentes
+  // Buscar conversas
   const fetchConversas = useCallback(async () => {
     if (!user) return
-
     try {
       setLoadingConversas(true)
       const { data } = await supabase
@@ -109,116 +124,113 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         .select('id, titulo, updated_at')
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
-        .limit(50) // Buscar mais para permitir expandir
+        .limit(100)
 
-      if (data) {
-        setConversas(data)
-      }
+      if (data) setConversas(data)
     } catch (error) {
       console.error('Erro ao buscar conversas:', error)
     } finally {
       setLoadingConversas(false)
     }
-  }, [user])
+  }, [user, setConversas])
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/medicina/login')
-    }
+    if (!loading && !user) router.push('/medicina/login')
   }, [user, loading, router])
 
-  // Carregar conversas quando usuário estiver disponível
   useEffect(() => {
-    if (user && !loading) {
-      fetchConversas()
-    }
+    if (user && !loading) fetchConversas()
   }, [user, loading, fetchConversas])
 
-  // Fechar menu ao clicar fora (para o Portal)
+  // Fechar menus ao clicar fora
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      // Não fechar se clicou no próprio menu
       const target = e.target as HTMLElement
       if (target.closest('[data-menu-portal]')) return
-
       if (menuAberto) {
         setMenuAberto(null)
         setMenuPosition(null)
       }
     }
-
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
   }, [menuAberto])
 
-  // Sincronizar seleção com a URL atual
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (perfilMenuRef.current && !perfilMenuRef.current.contains(e.target as Node)) {
+        setPerfilMenuAberto(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Sincronizar com URL
   useEffect(() => {
     if (pathname === '/medicina/dashboard/ia' && typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const conversaId = params.get('c')
-      if (conversaId) {
-        setConversaSelecionada(conversaId)
-      }
+      if (conversaId) setConversaSelecionada(conversaId)
     } else if (pathname === '/medicina/dashboard') {
-      // Na home, limpar seleção
       setConversaSelecionada(null)
     }
-  }, [pathname])
+  }, [pathname, setConversaSelecionada])
 
-  // Função auxiliar para formatar tempo relativo
-  const formatRelativeTime = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
+  // Filtrar conversas pela busca
+  const filteredConversas = searchQuery.trim()
+    ? conversas.filter(c => (c.titulo || '').toLowerCase().includes(searchQuery.toLowerCase()))
+    : conversas
 
-    if (diffMins < 1) return 'Agora'
-    if (diffMins < 60) return `${diffMins}min`
-    if (diffHours < 24) return `${diffHours}h`
-    if (diffDays < 7) return `${diffDays}d`
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  // Agrupar por data
+  const groupedConversas = groupConversasByDate(filteredConversas)
+
+  // Toggle grupo
+  const toggleGroup = (label: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(label)) next.delete(label)
+      else next.add(label)
+      return next
+    })
   }
 
   // Deletar conversa
   const deletarConversa = async (conversaId: string) => {
     if (!user) return
     try {
-      await fetch(`/api/medicina/ia/chat?conversa_id=${conversaId}&user_id=${user.id}`, {
-        method: 'DELETE'
-      })
+      await fetch(`/api/medicina/ia/chat?conversa_id=${conversaId}&user_id=${user.id}`, { method: 'DELETE' })
       removeConversa(conversaId)
       setMenuAberto(null)
       setMenuPosition(null)
+      if (conversaSelecionada === conversaId) {
+        setConversaSelecionada(null)
+        router.push('/medicina/dashboard')
+      }
     } catch (error) {
-      console.error('Erro ao deletar conversa:', error)
+      console.error('Erro ao deletar:', error)
     }
   }
 
-  // Excluir todas as conversas
+  // Excluir todas
   const excluirTodasConversas = async () => {
     if (!user || conversas.length === 0) return
-    if (!confirm('Tem certeza que deseja excluir TODAS as conversas? Esta ação não pode ser desfeita.')) return
-
+    if (!confirm('Excluir TODAS as conversas? Esta ação não pode ser desfeita.')) return
     setExcluindoTodas(true)
     try {
-      // Deletar todas em paralelo
-      await Promise.all(
-        conversas.map(c =>
-          fetch(`/api/medicina/ia/chat?conversa_id=${c.id}&user_id=${user.id}`, { method: 'DELETE' })
-        )
-      )
-      // Usar store para limpar
+      await Promise.all(conversas.map(c =>
+        fetch(`/api/medicina/ia/chat?conversa_id=${c.id}&user_id=${user.id}`, { method: 'DELETE' })
+      ))
       useConversaStore.getState().clearAll()
+      router.push('/medicina/dashboard')
     } catch (error) {
-      console.error('Erro ao excluir conversas:', error)
+      console.error('Erro:', error)
     } finally {
       setExcluindoTodas(false)
     }
   }
 
-  // Salvar título editado
+  // Salvar título
   const salvarTitulo = async (conversaId: string) => {
     if (!user || !novoTitulo.trim()) {
       setEditandoConversa(null)
@@ -230,28 +242,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         .update({ titulo: novoTitulo.trim() })
         .eq('id', conversaId)
         .eq('user_id', user.id)
-
       updateConversa(conversaId, { titulo: novoTitulo.trim() })
       setEditandoConversa(null)
       setNovoTitulo('')
     } catch (error) {
-      console.error('Erro ao salvar título:', error)
+      console.error('Erro:', error)
     }
   }
-
-  // Fechar menu ao clicar fora
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuAberto(null)
-      }
-      if (perfilMenuRef.current && !perfilMenuRef.current.contains(e.target as Node)) {
-        setPerfilMenuAberto(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
   if (loading) {
     return (
@@ -261,9 +258,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!user) {
-    return null
-  }
+  if (!user) return null
 
   const handleSignOut = async () => {
     await signOut()
@@ -275,10 +270,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-white/10 px-4 py-3">
         <div className="flex items-center justify-between">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="text-white p-2"
-          >
+          <button onClick={() => setSidebarOpen(true)} className="text-white p-2">
             <Menu className="w-6 h-6" />
           </button>
           <Link href="/medicina/dashboard" className="flex items-center gap-2">
@@ -293,45 +285,47 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-50"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* Mobile Overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 left-0 z-50 h-full bg-slate-900 border-r border-white/10
-        transform transition-all duration-300 ease-in-out
+        fixed top-0 left-0 z-50 h-full bg-slate-900/95 backdrop-blur-xl border-r border-white/10
+        transform transition-all duration-300 ease-out
         lg:translate-x-0
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        ${sidebarCollapsed ? 'lg:w-20' : 'w-64'}
+        ${sidebarCollapsed ? 'lg:w-[72px]' : 'w-72'}
       `}>
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center justify-between">
               <Link href="/medicina/dashboard" className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/20">
                   <Stethoscope className="w-6 h-6 text-white" />
                 </div>
                 {!sidebarCollapsed && (
-                  <span className="text-white text-lg font-bold">PREPARAMED</span>
+                  <span className="text-white text-lg font-bold tracking-tight">PREPARAMED</span>
                 )}
               </Link>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden text-white/60 hover:text-white"
-              >
+              <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white/60 hover:text-white">
                 <X className="w-6 h-6" />
               </button>
             </div>
           </div>
 
-          {/* Navigation + Histórico */}
-          <nav className="flex-1 overflow-y-auto py-4 px-3">
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto py-4 px-3 scrollbar-thin">
             {/* Menu Principal */}
             <ul className="space-y-1">
               {menuItems.map((item) => {
@@ -343,28 +337,19 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                       onClick={() => setSidebarOpen(false)}
                       title={sidebarCollapsed ? item.label : undefined}
                       className={`
-                        flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+                        flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                         ${sidebarCollapsed ? 'justify-center' : ''}
                         ${isActive
-                          ? 'bg-emerald-500/20 text-emerald-400'
-                          : (item as { highlight?: boolean }).highlight
-                          ? 'text-amber-400 hover:bg-amber-500/10 hover:text-amber-300'
-                          : (item as { primary?: boolean }).primary
-                          ? 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 font-semibold'
+                          ? 'bg-emerald-500/20 text-emerald-400 shadow-lg shadow-emerald-500/10'
+                          : item.primary
+                          ? 'text-white hover:bg-white/5'
                           : 'text-white/60 hover:bg-white/5 hover:text-white'
                         }
                       `}
                     >
-                      <item.icon className={`w-5 h-5 flex-shrink-0 ${(item as { highlight?: boolean }).highlight && !isActive ? 'text-amber-400' : ''}`} />
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
                       {!sidebarCollapsed && (
-                        <>
-                          <span className="font-medium">{item.label}</span>
-                          {(item as { highlight?: boolean }).highlight && !isActive && (
-                            <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded font-bold">
-                              PRO
-                            </span>
-                          )}
-                        </>
+                        <span className={`font-medium ${item.primary ? 'text-sm' : 'text-sm'}`}>{item.label}</span>
                       )}
                     </Link>
                   </li>
@@ -372,194 +357,189 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               })}
             </ul>
 
-            {/* Separador e Histórico de Conversas - estilo Meta AI */}
+            {/* Histórico de Conversas - Estilo ChatGPT */}
             {!sidebarCollapsed && (
               <div className="mt-6 pt-4 border-t border-white/10">
-                {/* Botões de ação */}
-                <div className="mx-3 mb-3 space-y-2">
-                  {/* Botão Nova Conversa em destaque */}
-                  <Link
-                    href="/medicina/dashboard"
-                    onClick={() => { setSidebarOpen(false); setConversaSelecionada(null) }}
-                    className="flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/30 rounded-lg text-emerald-400 hover:text-emerald-300 transition-all text-sm font-medium"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Nova Conversa
-                  </Link>
+                {/* Nova Conversa */}
+                <Link
+                  href="/medicina/dashboard"
+                  onClick={() => { setSidebarOpen(false); setConversaSelecionada(null) }}
+                  className="flex items-center justify-center gap-2 mx-1 mb-3 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-white/80 hover:text-white transition-all group"
+                >
+                  <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
+                  <span className="text-sm font-medium">Nova conversa</span>
+                </Link>
 
-                  {/* Botão Excluir Todas */}
-                  {conversas.length > 0 && (
-                    <button
-                      onClick={excluirTodasConversas}
-                      disabled={excluindoTodas}
-                      className="w-full flex items-center justify-center gap-2 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all text-xs font-medium disabled:opacity-50"
-                    >
-                      {excluindoTodas ? (
-                        <>
-                          <div className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
-                          Excluindo...
-                        </>
-                      ) : (
-                        <>
-                          <Trash2 className="w-3 h-3" />
-                          Excluir Todas ({conversas.length})
-                        </>
-                      )}
-                    </button>
+                {/* Busca */}
+                {conversas.length > 5 && (
+                  <div className="relative mx-1 mb-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Buscar conversas..."
+                      className="w-full pl-9 pr-8 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition-all"
+                    />
+                    {searchQuery && (
+                      <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded">
+                        <X className="w-3 h-3 text-white/40" />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Lista Agrupada */}
+                <div className="space-y-1 max-h-[calc(100vh-450px)] overflow-y-auto scrollbar-thin pr-1">
+                  {groupedConversas.length === 0 ? (
+                    <div className="px-3 py-6 text-center">
+                      <MessageSquare className="w-8 h-8 text-white/10 mx-auto mb-2" />
+                      <p className="text-white/30 text-xs">
+                        {searchQuery ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa ainda'}
+                      </p>
+                    </div>
+                  ) : (
+                    groupedConversas.map((group) => (
+                      <div key={group.label} className="mb-2">
+                        {/* Header do Grupo */}
+                        <button
+                          onClick={() => toggleGroup(group.label)}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-white/40 hover:text-white/60 transition-colors"
+                        >
+                          <ChevronDown className={`w-3 h-3 transition-transform ${expandedGroups.has(group.label) ? '' : '-rotate-90'}`} />
+                          <span className="font-semibold uppercase tracking-wider">{group.label}</span>
+                          <span className="text-white/20 ml-auto">{group.conversas.length}</span>
+                        </button>
+
+                        {/* Conversas */}
+                        <AnimatePresence>
+                          {expandedGroups.has(group.label) && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.15 }}
+                              className="overflow-hidden"
+                            >
+                              {group.conversas.map((conversa) => {
+                                const isActive = conversaSelecionada === conversa.id
+                                const isEditing = editandoConversa === conversa.id
+
+                                return (
+                                  <div key={conversa.id} className="relative group px-1">
+                                    {isEditing ? (
+                                      <div className="flex items-center gap-1 py-1">
+                                        <input
+                                          type="text"
+                                          value={novoTitulo}
+                                          onChange={(e) => setNovoTitulo(e.target.value)}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') salvarTitulo(conversa.id)
+                                            if (e.key === 'Escape') setEditandoConversa(null)
+                                          }}
+                                          className="flex-1 min-w-0 bg-white/10 border border-emerald-500/50 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none"
+                                          autoFocus
+                                        />
+                                        <button onClick={() => salvarTitulo(conversa.id)} className="p-1.5 hover:bg-emerald-500/20 rounded-lg text-emerald-400">
+                                          <Check className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => setEditandoConversa(null)} className="p-1.5 hover:bg-white/10 rounded-lg text-white/40">
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div className={`flex items-center rounded-lg transition-all ${isActive ? 'bg-emerald-500/15' : 'hover:bg-white/5'}`}>
+                                        <button
+                                          onClick={async () => {
+                                            setSidebarOpen(false)
+                                            await useConversaStore.getState().trocarConversa(conversa.id)
+                                          }}
+                                          className={`flex-1 flex items-center gap-2 px-2.5 py-2 text-left min-w-0 ${isActive ? 'text-emerald-300' : 'text-white/60 hover:text-white/80'}`}
+                                        >
+                                          <MessageSquare className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-emerald-400' : 'opacity-40'}`} />
+                                          <span className="truncate text-sm" title={conversa.titulo || 'Nova conversa'}>
+                                            {conversa.titulo || 'Nova conversa'}
+                                          </span>
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            if (menuAberto === conversa.id) {
+                                              setMenuAberto(null)
+                                              setMenuPosition(null)
+                                            } else {
+                                              const rect = e.currentTarget.getBoundingClientRect()
+                                              setMenuPosition({ top: rect.top, left: rect.right + 8 })
+                                              setMenuAberto(conversa.id)
+                                            }
+                                          }}
+                                          className={`p-1.5 rounded-lg transition-all mr-1 ${isActive || menuAberto === conversa.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} hover:bg-white/10`}
+                                        >
+                                          <MoreHorizontal className="w-4 h-4 text-white/50" />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ))
                   )}
                 </div>
 
-                {/* Header do Histórico */}
+                {/* Limpar Histórico */}
                 {conversas.length > 0 && (
-                  <>
-                    <div className="flex items-center justify-between px-3 mb-2">
-                      <span className="text-white/40 text-xs font-medium uppercase tracking-wider flex items-center gap-1.5">
-                        <History className="w-3 h-3" />
-                        Histórico
-                      </span>
-                    </div>
-
-                    {/* Lista de Conversas - com overflow visible para dropdown */}
-                    <ul className="space-y-0.5 max-h-[250px] overflow-y-auto scrollbar-thin" style={{ overflowX: 'visible' }}>
-                      {(showAllConversas ? conversas : conversas.slice(0, 10)).map((conversa) => {
-                        // Seleção visual: apenas UMA pode estar selecionada
-                        const isActive = conversaSelecionada === conversa.id
-
-                        // Abreviar título para não ter scroll horizontal
-                        const tituloAbreviado = (conversa.titulo || 'Conversa sem título').length > 22
-                          ? (conversa.titulo || 'Conversa sem título').substring(0, 22) + '...'
-                          : (conversa.titulo || 'Conversa sem título')
-
-                        return (
-                          <li key={conversa.id} className="relative group" ref={menuAberto === conversa.id ? menuRef : undefined}>
-                            {editandoConversa === conversa.id ? (
-                              // Modo edição
-                              <div className="flex items-center gap-1 px-2 py-2">
-                                <input
-                                  type="text"
-                                  value={novoTitulo}
-                                  onChange={(e) => setNovoTitulo(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') salvarTitulo(conversa.id)
-                                    if (e.key === 'Escape') setEditandoConversa(null)
-                                  }}
-                                  className="flex-1 min-w-0 bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-emerald-500"
-                                  autoFocus
-                                />
-                                <button
-                                  onClick={() => salvarTitulo(conversa.id)}
-                                  className="p-1 hover:bg-emerald-500/20 rounded text-emerald-400 flex-shrink-0"
-                                >
-                                  <Check className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => setEditandoConversa(null)}
-                                  className="p-1 hover:bg-white/10 rounded text-white/40 flex-shrink-0"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                            ) : (
-                              // Modo normal - layout fixo sem scroll
-                              <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg group-hover:bg-white/5">
-                                <button
-                                  onClick={async () => {
-                                    setSidebarOpen(false)
-                                    // Usar o método otimizado da store para trocar sem reload
-                                    await useConversaStore.getState().trocarConversa(conversa.id)
-                                  }}
-                                  className={`
-                                    flex-1 min-w-0 flex items-center gap-2 px-2 py-1 rounded transition-colors text-sm text-left
-                                    ${isActive
-                                      ? 'bg-emerald-500/20 text-emerald-400'
-                                      : 'text-white/60 hover:text-white/80'
-                                    }
-                                  `}
-                                >
-                                  <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 opacity-50" />
-                                  <span className="truncate" title={conversa.titulo || 'Conversa sem título'}>
-                                    {tituloAbreviado}
-                                  </span>
-                                </button>
-
-                                {/* Botão 3 pontos - sempre visível e alinhado */}
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    if (menuAberto === conversa.id) {
-                                      setMenuAberto(null)
-                                      setMenuPosition(null)
-                                    } else {
-                                      const rect = e.currentTarget.getBoundingClientRect()
-                                      setMenuPosition({
-                                        top: rect.top,
-                                        left: rect.left - 140
-                                      })
-                                      setMenuAberto(conversa.id)
-                                    }
-                                  }}
-                                  className="p-1 hover:bg-white/10 rounded transition-all flex-shrink-0 opacity-50 group-hover:opacity-100"
-                                >
-                                  <MoreVertical className="w-4 h-4 text-white/60" />
-                                </button>
-
-                                {/* Menu dropdown agora é renderizado via Portal no final do componente */}
-                              </div>
-                            )}
-                          </li>
-                        )
-                      })}
-                    </ul>
-
-                    {/* Ver mais / Ver menos */}
-                    {conversas.length > 10 && (
-                      <button
-                        onClick={() => setShowAllConversas(!showAllConversas)}
-                        className="w-full flex items-center justify-center gap-1 mt-2 px-3 py-2 text-xs text-white/40 hover:text-white/60 transition-colors"
-                      >
-                        {showAllConversas ? (
-                          <>
-                            <ChevronUp className="w-3 h-3" />
-                            Ver menos
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="w-3 h-3" />
-                            Ver todas ({conversas.length})
-                          </>
-                        )}
-                      </button>
+                  <button
+                    onClick={excluirTodasConversas}
+                    disabled={excluindoTodas}
+                    className="w-full flex items-center justify-center gap-2 mt-3 mx-1 py-2 text-xs text-red-400/50 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all disabled:opacity-50"
+                  >
+                    {excluindoTodas ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                        Excluindo...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-3 h-3" />
+                        Limpar histórico
+                      </>
                     )}
-                  </>
+                  </button>
                 )}
               </div>
             )}
 
-            {/* Ícone de histórico quando sidebar recolhida */}
-            {sidebarCollapsed && conversas.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-white/10 flex justify-center">
+            {/* Ícones quando collapsed */}
+            {sidebarCollapsed && (
+              <div className="mt-4 pt-4 border-t border-white/10 flex flex-col items-center gap-2">
                 <Link
-                  href="/medicina/dashboard/ia"
-                  title="Histórico de conversas"
-                  className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+                  href="/medicina/dashboard"
+                  title="Nova conversa"
+                  className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
                 >
-                  <History className="w-5 h-5" />
+                  <Plus className="w-5 h-5" />
                 </Link>
+                {conversas.length > 0 && (
+                  <div title={`${conversas.length} conversas`} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40">
+                    <History className="w-5 h-5" />
+                  </div>
+                )}
               </div>
             )}
           </nav>
 
-          {/* Upgrade Banner (for free users) - esconde quando recolhido */}
+          {/* Upgrade Banner */}
           {plano === 'gratuito' && !sidebarCollapsed && (
-            <div className="mx-3 mb-4 p-4 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl border border-emerald-500/30">
+            <div className="mx-3 mb-4 p-4 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-xl border border-emerald-500/20">
               <div className="flex items-center gap-2 mb-2">
                 <Crown className="w-5 h-5 text-amber-400" />
                 <span className="text-white font-semibold text-sm">Upgrade</span>
               </div>
-              <p className="text-emerald-200/80 text-xs mb-3">
-                Desbloqueie questões ilimitadas e IA tutora
-              </p>
+              <p className="text-emerald-200/60 text-xs mb-3">Desbloqueie recursos avançados</p>
               <Link
                 href="/medicina/dashboard/assinatura"
                 className="block w-full py-2 text-center bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-colors"
@@ -569,22 +549,17 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Upgrade icon quando recolhido */}
           {plano === 'gratuito' && sidebarCollapsed && (
             <div className="mx-3 mb-3 flex justify-center">
-              <Link
-                href="/medicina/dashboard/assinatura"
-                title="Ver planos"
-                className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 flex items-center justify-center hover:from-emerald-500/30 hover:to-teal-500/30 transition-colors"
-              >
+              <Link href="/medicina/dashboard/assinatura" title="Ver planos" className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 flex items-center justify-center">
                 <Crown className="w-5 h-5 text-amber-400" />
               </Link>
             </div>
           )}
 
-          {/* Badges Mini Widget - esconde quando recolhido */}
+          {/* Badges */}
           {!sidebarCollapsed && (
-            <div className="mx-3 mb-3 p-3 bg-white/5 rounded-lg border border-white/10">
+            <div className="mx-3 mb-3 p-3 bg-white/5 rounded-xl border border-white/10">
               <BadgeMiniWidget />
             </div>
           )}
@@ -592,122 +567,86 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           {/* User Profile */}
           <div className="border-t border-white/10 p-4">
             {sidebarCollapsed ? (
-              // Versão recolhida - apenas avatar e logout
               <div className="flex flex-col items-center gap-3">
-                <Link
-                  href="/medicina/dashboard/perfil"
-                  title={profile?.nome || 'Perfil'}
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center hover:ring-2 hover:ring-emerald-500/50 transition-all"
-                >
-                  <span className="text-white font-bold">
-                    {profile?.nome?.[0]?.toUpperCase() || 'U'}
-                  </span>
+                <Link href="/medicina/dashboard/perfil" title={profile?.nome || 'Perfil'} className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center hover:ring-2 hover:ring-emerald-500/50 transition-all">
+                  <span className="text-white font-bold">{profile?.nome?.[0]?.toUpperCase() || 'U'}</span>
                 </Link>
-                <button
-                  onClick={handleSignOut}
-                  title="Sair"
-                  className="w-10 h-10 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center justify-center"
-                >
+                <button onClick={handleSignOut} title="Sair" className="w-10 h-10 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center justify-center">
                   <LogOut className="w-5 h-5" />
                 </button>
               </div>
             ) : (
-              // Versão expandida - com dropdown no perfil
               <div className="relative" ref={perfilMenuRef}>
-                {/* Área clicável do perfil */}
-                <button
-                  onClick={() => setPerfilMenuAberto(!perfilMenuAberto)}
-                  className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors"
-                >
+                <button onClick={() => setPerfilMenuAberto(!perfilMenuAberto)} className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold">
-                      {profile?.nome?.[0]?.toUpperCase() || 'U'}
-                    </span>
+                    <span className="text-white font-bold">{profile?.nome?.[0]?.toUpperCase() || 'U'}</span>
                   </div>
                   <div className="flex-1 min-w-0 text-left">
-                    <p className="text-white font-medium truncate text-sm">
-                      {profile?.nome || 'Estudante'}
-                    </p>
+                    <p className="text-white font-medium truncate text-sm">{profile?.nome || 'Estudante'}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full inline-block ${
                       plano === 'residencia' ? 'bg-amber-500/20 text-amber-400' :
                       plano === 'premium' ? 'bg-emerald-500/20 text-emerald-400' :
                       'bg-white/10 text-white/60'
                     }`}>
-                      {plano === 'residencia' ? 'Residência' :
-                       plano === 'premium' ? 'Premium' : 'Gratuito'}
+                      {plano === 'residencia' ? 'Residência' : plano === 'premium' ? 'Premium' : 'Gratuito'}
                     </span>
                   </div>
                   <ChevronDown className={`w-4 h-4 text-white/40 transition-transform ${perfilMenuAberto ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Dropdown do perfil */}
-                {perfilMenuAberto && (
-                  <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 border border-white/10 rounded-lg shadow-xl overflow-hidden z-50">
-                    <Link
-                      href="/medicina/dashboard/perfil"
-                      onClick={() => setPerfilMenuAberto(false)}
-                      className="flex items-center gap-2 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                <AnimatePresence>
+                  {perfilMenuAberto && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
                     >
-                      <User className="w-4 h-4" />
-                      Meu Perfil
-                    </Link>
-                    <Link
-                      href="/medicina/dashboard/assinatura"
-                      onClick={() => setPerfilMenuAberto(false)}
-                      className="flex items-center gap-2 px-3 py-2.5 text-sm text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
-                    >
-                      <Crown className="w-4 h-4" />
-                      Meu Plano
-                    </Link>
-                    <Link
-                      href="/medicina/dashboard/indicacoes"
-                      onClick={() => setPerfilMenuAberto(false)}
-                      className="flex items-center gap-2 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                    >
-                      <Gift className="w-4 h-4" />
-                      Indicações
-                    </Link>
-                    <div className="border-t border-white/10">
-                      <button
-                        onClick={() => {
-                          setPerfilMenuAberto(false)
-                          handleSignOut()
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Sair da conta
-                      </button>
-                    </div>
-                  </div>
-                )}
+                      <Link href="/medicina/dashboard/perfil" onClick={() => setPerfilMenuAberto(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                        <User className="w-4 h-4" />
+                        Meu Perfil
+                      </Link>
+                      <Link href="/medicina/dashboard/assinatura" onClick={() => setPerfilMenuAberto(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors">
+                        <Crown className="w-4 h-4" />
+                        Meu Plano
+                      </Link>
+                      <Link href="/medicina/dashboard/indicacoes" onClick={() => setPerfilMenuAberto(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                        <Gift className="w-4 h-4" />
+                        Indicações
+                      </Link>
+                      <div className="border-t border-white/10">
+                        <button onClick={() => { setPerfilMenuAberto(false); handleSignOut() }} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+                          <LogOut className="w-4 h-4" />
+                          Sair da conta
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
           </div>
 
-          {/* Toggle para recolher/expandir sidebar (apenas desktop) */}
+          {/* Toggle Sidebar */}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-slate-800 border border-white/10 rounded-full items-center justify-center text-white/60 hover:text-white hover:bg-slate-700 transition-colors shadow-lg"
-            title={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+            title={sidebarCollapsed ? 'Expandir' : 'Recolher'}
           >
-            {sidebarCollapsed ? (
-              <ChevronRight className="w-4 h-4" />
-            ) : (
-              <ChevronLeft className="w-4 h-4" />
-            )}
+            {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className={`pt-16 lg:pt-0 min-h-screen transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
+      <main className={`pt-16 lg:pt-0 min-h-screen transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-72'}`}>
         <div className="p-4 md:p-6 lg:p-8">
           {children}
         </div>
       </main>
 
-      {/* Back to top button (mobile) */}
+      {/* Back to top (mobile) */}
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         className="lg:hidden fixed bottom-6 right-6 w-12 h-12 bg-emerald-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-emerald-600 transition-colors"
@@ -715,49 +654,25 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <ChevronUp className="w-6 h-6" />
       </button>
 
-      {/* Trial Banner - Mostra quando trial está ativo */}
-      {trialStatus.ativo && (
-        <TrialBanner />
-      )}
+      {/* Trial Banner */}
+      {trialStatus.ativo && <TrialBanner />}
 
-      {/* Upgrade Modal - Mostra quando há necessidade de upgrade */}
+      {/* Upgrade Modal */}
       {showModal && (
-        <UpgradeModal
-          tipo={modalTipo}
-          feature={modalFeature}
-          conquista={conquista || undefined}
-          onClose={fecharModal}
-        />
+        <UpgradeModal tipo={modalTipo} feature={modalFeature} conquista={conquista || undefined} onClose={fecharModal} />
       )}
 
-      {/* Portal do Menu de Conversas - renderizado fora do container para evitar corte */}
+      {/* Menu Portal */}
       {menuAberto && menuPosition && typeof document !== 'undefined' && createPortal(
-        <div
+        <motion.div
           data-menu-portal
-          className="fixed bg-slate-800 border border-white/10 rounded-lg shadow-2xl py-1 min-w-[130px]"
-          style={{
-            top: menuPosition.top,
-            left: Math.max(10, menuPosition.left),
-            zIndex: 9999
-          }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="fixed bg-slate-800 border border-white/10 rounded-xl shadow-2xl py-1 min-w-[140px] z-[9999]"
+          style={{ top: menuPosition.top, left: Math.min(menuPosition.left, window.innerWidth - 160) }}
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            onClick={async () => {
-              const conversa = conversas.find(c => c.id === menuAberto)
-              if (conversa) {
-                setSidebarOpen(false)
-                setMenuAberto(null)
-                setMenuPosition(null)
-                // Usar o método otimizado da store
-                await useConversaStore.getState().trocarConversa(conversa.id)
-              }
-            }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-          >
-            <MessageSquare className="w-4 h-4" />
-            Abrir
-          </button>
           <button
             onClick={() => {
               const conversa = conversas.find(c => c.id === menuAberto)
@@ -774,28 +689,20 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             Renomear
           </button>
           <button
-            onClick={() => {
-              if (menuAberto) {
-                deletarConversa(menuAberto)
-              }
-            }}
+            onClick={() => menuAberto && deletarConversa(menuAberto)}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
           >
             <Trash2 className="w-4 h-4" />
             Excluir
           </button>
-        </div>,
+        </motion.div>,
         document.body
       )}
     </div>
   )
 }
 
-export default function MedicinaDashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function MedicinaDashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <MedAuthProvider>
       <DashboardContent>{children}</DashboardContent>
