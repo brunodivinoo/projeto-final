@@ -1357,7 +1357,7 @@ export default function IAPage() {
   // (gratuito agora tem 10 chats, então não bloqueia mais)
 
   return (
-    <div className={`h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] flex flex-col md:flex-row transition-all duration-300 ${
+    <div className={`h-[calc(100dvh-64px)] lg:h-[calc(100dvh-0px)] flex flex-col md:flex-row transition-all duration-300 ${
       isArtifactsSidebarOpen && hasArtifacts && !isMobile ? 'mr-[420px]' : ''
     }`}>
       {/* MOBILE: Sidebar como Drawer sobreposto */}
@@ -1538,8 +1538,8 @@ export default function IAPage() {
 
       {/* Chat Principal */}
       <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
-        {/* Header - Compacto */}
-        <div className="flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-white/10">
+        {/* Header - Oculto no mobile (já tem no layout principal) */}
+        <div className="hidden lg:flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-white/10">
           <div className="flex items-center gap-2 md:gap-3">
             {/* Botão menu/conversas - apenas mobile (desktop usa sidebar do layout) */}
             {isMobile && (
@@ -1701,7 +1701,7 @@ export default function IAPage() {
         {/* Chat Area - Responsivo e Compacto com CSS contain para anti-flickering */}
         <div
           ref={chatRef}
-          className="flex-1 min-h-0 overflow-y-auto p-2 md:p-3 space-y-2 md:space-y-3"
+          className="flex-1 min-h-0 overflow-y-auto p-2 md:p-4 lg:p-5 space-y-2 md:space-y-3"
           style={{ contain: 'layout style', willChange: streaming ? 'scroll-position' : 'auto' }}
         >
           {/* Loading ao abrir conversa */}
@@ -2029,8 +2029,8 @@ export default function IAPage() {
             </div>
           </div>
 
-          {/* Dica de atalho - minimal */}
-          <p className="text-center text-white/20 text-[9px] mt-1">
+          {/* Dica de atalho - apenas desktop */}
+          <p className="hidden lg:block text-center text-white/15 text-[8px] mt-0.5">
             Enter para enviar • Shift+Enter para nova linha
           </p>
         </div>
@@ -2058,3 +2058,4 @@ export default function IAPage() {
     </div>
   )
 }
+
