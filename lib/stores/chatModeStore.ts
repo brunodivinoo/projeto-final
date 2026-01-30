@@ -420,6 +420,10 @@ interface ChatModeState {
     tempoInicio: number | null
   }
   
+    // Conversas por modo
+  conversationsByMode: Record<ChatMode, Array<{id: string; titulo: string; updated_at: string}>>
+  activeConversationByMode: Record<ChatMode, string | null>
+  
   // UI State
   showModeDropdown: boolean
   showModeWelcome: boolean
@@ -444,6 +448,10 @@ interface ChatModeState {
   proximaQuestao: () => void
   finalizarSessaoQuestoes: () => void
   resetQuestoes: () => void
+  
+    // Actions - Conversas por modo
+  setConversations: (mode: ChatMode, conversas: Array<{id: string; titulo: string; updated_at: string}>) => void
+  setActiveConversation: (mode: ChatMode, conversaId: string | null) => void
   
   // Actions - UI
   setShowModeDropdown: (show: boolean) => void
@@ -479,6 +487,20 @@ export const useChatModeStore = create<ChatModeState>()(
       questoesSessao: initialQuestoesSessao,
       showModeDropdown: false,
       showModeWelcome: false,
+      
+      // Conversas por modo
+      conversationsByMode: {
+        chat: [],
+        caso_clinico: [],
+        tutor: [],
+        questoes: []
+      },
+      activeConversationByMode: {
+        chat: null,
+        caso_clinico: null,
+        tutor: null,
+        questoes: null
+      },
       isLoadingSessoes: false,
       
       // Actions - Modo
@@ -574,6 +596,21 @@ export const useChatModeStore = create<ChatModeState>()(
       resetQuestoes: () => set({ questoesSessao: initialQuestoesSessao }),
       
       // Actions - UI
+      // Actions - Conversas por modo
+      setConversations: (mode, conversas) => set((state) => ({
+        conversationsByMode: {
+          ...state.conversationsByMode,
+          [mode]: conversas
+        }
+      })),
+      
+      setActiveConversation: (mode, conversaId) => set((state) => ({
+        activeConversationByMode: {
+          ...state.activeConversationByMode,
+          [mode]: conversaId
+        }
+      })),
+      
       setShowModeDropdown: (show) => set({ showModeDropdown: show }),
       setShowModeWelcome: (show) => set({ showModeWelcome: show }),
       setIsLoadingSessoes: (loading) => set({ isLoadingSessoes: loading }),
