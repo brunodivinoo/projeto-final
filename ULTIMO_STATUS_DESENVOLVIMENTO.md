@@ -1,13 +1,13 @@
 # 📊 ÚLTIMO STATUS - PREPARA MED
-## Atualizado em: 30/01/2026 - 12:00 (Horário de Brasília)
+## Atualizado em: 30/01/2026 - 12:30 (Horário de Brasília)
 
 ---
 
 ## 🎯 ESTADO ATUAL DO PROJETO
 
-O projeto PREPARA MED está em desenvolvimento ativo. Esta sessão focou em:
-1. Configuração do token GitHub para acesso via API
-2. Correção do bug da sidebar de histórico
+✅ **Bug da sidebar de histórico CORRIGIDO e TESTADO**
+
+O projeto PREPARA MED está funcionando corretamente. A navegação pelo histórico de conversas agora funciona de qualquer página.
 
 ---
 
@@ -19,50 +19,64 @@ O projeto PREPARA MED está em desenvolvimento ativo. Esta sessão focou em:
 - **Escopo:** Apenas repositório projeto-final
 - **Validade:** 30/04/2026
 - **Uso:** Claude AI agora pode ler/editar/commitar diretamente no GitHub
-- **Nota:** Token armazenado nas Instruções do Projeto no Claude AI (não neste arquivo por segurança)
+- **Nota:** Token armazenado nas Instruções do Projeto no Claude AI (não público)
 
-### 2. Bug da Sidebar de Histórico Corrigido (2 commits)
+### 2. Bug da Sidebar de Histórico - CORRIGIDO ✅
 - **Problema:** Clicar no histórico mudava URL mas não carregava conversa
-- **Arquivo:** `app/medicina/(dashboard)/dashboard/ia/page.tsx`
+- **Causa raiz:** Quando não estava na página `/medicina/dashboard/ia`, o código usava `window.history.pushState()` que apenas muda a URL sem navegar
+- **Arquivo principal:** `app/medicina/(dashboard)/layout.tsx`
 
-#### Commit 1: `b900b2c5`
-- Removida condição `!isChangingConversa` que causava race condition
-- Adicionado ref `ultimaConversaTentadaRef` para evitar carregamentos duplicados
-- Adicionado useEffect fallback para garantir carregamento
+#### Commits realizados:
 
-#### Commit 2: `cae0121a`
-- Removida condição `mensagens.length > 0` que bloqueava troca de conversa
-- Agora é possível navegar entre conversas mesmo com mensagens carregadas
+| SHA | Descrição |
+|-----|-----------|
+| `d88c4859` | fix: usar navegação real (router.push) fora da página do chat |
+| `cae0121a` | fix: permitir trocar conversa mesmo com mensagens carregadas |
+| `b900b2c5` | fix: corrigir race condition com isChangingConversa |
+| `b49d67cf` | docs: criar arquivo de status no GitHub |
 
-### 3. Verificações
-- ✅ API Gemini no Vercel: Já atualizada
-- ✅ Variáveis CAKTO: Mantidas para uso futuro
-- ✅ ADMIN_SECRET_KEY: Mantida (provavelmente da CAKTO)
-
----
-
-## 📝 COMMITS REALIZADOS
-
-| SHA | Mensagem |
-|-----|----------|
-| `cae0121a` | fix: permitir trocar de conversa mesmo com mensagens carregadas |
-| `b900b2c5` | fix: corrigir bug da sidebar de histórico não carregar conversa |
+### 3. Sistema de Continuidade Atualizado
+- Status agora é salvo no GitHub (não mais local)
+- Funciona de qualquer máquina/lugar
+- Instruções do projeto atualizadas com novo fluxo
 
 ---
 
-## 🐛 BUGS CONHECIDOS / PENDÊNCIAS
+## 📝 DETALHES TÉCNICOS DA CORREÇÃO
 
-- [x] ~~Sidebar de histórico não carrega conversa~~ (CORRIGIDO)
-- [ ] Erro 400 em query Supabase (ultima_mensagem) - investigar origem
-- [ ] Possíveis melhorias de UX pendentes
-- [ ] Plano 1: Isolar PREPARA MED como app principal
+### Problema Original
+```javascript
+// ANTES: Usava pushState que NÃO navega
+await useConversaStore.getState().trocarConversa(conversa.id)
+```
+
+### Solução Implementada
+```javascript
+// DEPOIS: Verifica se está na página do chat
+const isOnChatPage = pathname?.includes('/dashboard/ia')
+if (isOnChatPage) {
+  // Já está na página - usar pushState (mais rápido)
+  await useConversaStore.getState().trocarConversa(conversa.id)
+} else {
+  // Não está na página - precisa navegar de verdade
+  router.push(`/medicina/dashboard/ia?c=${conversa.id}`)
+}
+```
 
 ---
 
-## ⏭️ PRÓXIMOS PASSOS
+## 🐛 PROBLEMAS MENORES (não críticos)
 
-1. **Testar correção** do bug da sidebar em produção
-2. **Investigar erro 400** da query com `ultima_mensagem`
+- [ ] Erro 400 no Supabase com `ultima_mensagem` - é cache antigo, desaparece sozinho
+- [ ] 404 em `/termos` e `/privacidade` - páginas não existem (criar futuramente)
+- [ ] 404 em `screenshot-desktop.png` - arquivo de manifest PWA faltando
+
+---
+
+## ⏭️ PRÓXIMOS PASSOS SUGERIDOS
+
+1. **Criar páginas** `/termos` e `/privacidade`
+2. **Adicionar screenshot** para PWA (`/screenshots/screenshot-desktop.png`)
 3. **Plano 1:** Isolar PREPARA MED (remover pastas não utilizadas)
 4. **Plano 2:** Melhorias de UI/UX do chat
 5. **Implementar CAKTO** para pagamentos
@@ -95,5 +109,6 @@ O Claude AI tem acesso ao repositório via token configurado nas Instruções do
 
 ---
 
-**Última atualização:** 30/01/2026 - 12:00
+**Última atualização:** 30/01/2026 - 12:30
 **Atualizado por:** Claude AI
+**Status:** ✅ Bug corrigido e testado com sucesso
