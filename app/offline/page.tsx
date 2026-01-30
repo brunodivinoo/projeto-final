@@ -96,7 +96,7 @@ export default function OfflinePage() {
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
-            <span className="font-medium">StudyHub</span>
+            <span className="font-medium">PREPARA MED</span>
           </div>
         </div>
       </div>
