@@ -452,7 +452,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                         <button
                                           onClick={async () => {
                                             setSidebarOpen(false)
-                                            await useConversaStore.getState().trocarConversa(conversa.id)
+                                            // CORREÇÃO: Usar navegação real se não está na página do chat
+                                            const isOnChatPage = pathname?.includes('/dashboard/ia')
+                                            if (isOnChatPage) {
+                                              // Já está na página do chat - usar pushState (mais rápido)
+                                              await useConversaStore.getState().trocarConversa(conversa.id)
+                                            } else {
+                                              // Não está na página do chat - precisa navegar
+                                              router.push(`/medicina/dashboard/ia?c=${conversa.id}`)
+                                            }
                                           }}
                                           className={`flex-1 flex items-center gap-2 px-2.5 py-2 text-left min-w-0 ${isActive ? 'text-emerald-300' : 'text-white/60 hover:text-white/80'}`}
                                         >
