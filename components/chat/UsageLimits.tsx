@@ -3,12 +3,13 @@
 /**
  * Indicador de Limites de Uso
  * Mostra uso atual vs limite do plano de forma não intrusiva
- * Inspirado na Meta AI: transparente e justo, não frustrante
+ * 
+ * CORREÇÃO: Dropdown agora abre para CIMA (bottom-full) para funcionar no footer
  */
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Crown, Sparkles, ChevronDown, Zap, MessageSquare, FileText, Brain } from 'lucide-react'
+import { Crown, Sparkles, ChevronUp, Zap, MessageSquare, FileText, Brain } from 'lucide-react'
 import Link from 'next/link'
 
 export interface UsageLimitsProps {
@@ -30,6 +31,21 @@ export interface UsageLimitsProps {
 
 export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimitsProps) {
   const [showDetails, setShowDetails] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Fechar ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowDetails(false)
+      }
+    }
+
+    if (showDetails) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showDetails])
 
   // Calcular porcentagem de uso geral (baseado em mensagens como principal)
   const usagePercent = limits.mensagens > 0
@@ -69,7 +85,7 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
   }
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} ref={containerRef}>
       <button
         onClick={() => setShowDetails(!showDetails)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10
@@ -95,19 +111,20 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
           <span className="text-xs text-white/70 font-medium">{getPlanLabel()}</span>
         )}
 
-        <ChevronDown className={`w-3 h-3 text-white/40 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
+        {/* Ícone aponta para onde o dropdown vai aparecer */}
+        <ChevronUp className={`w-3 h-3 text-white/40 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown com detalhes */}
+      {/* Dropdown com detalhes - ABRE PARA CIMA */}
       <AnimatePresence>
         {showDetails && (
           <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-72 p-4 rounded-xl border border-white/10
-                       shadow-xl shadow-black/50 z-50"
+            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-72 p-4 rounded-xl border border-white/10
+                       shadow-xl shadow-black/50 z-[100]"
             style={{ backgroundColor: '#0f172a' }}
           >
             <div className="flex items-center gap-2 mb-4">
@@ -154,6 +171,7 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
                 className="flex items-center justify-center gap-2 w-full mt-4 py-2.5 rounded-lg
                            bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700
                            text-white text-sm font-semibold transition-all"
+                onClick={() => setShowDetails(false)}
               >
                 <Sparkles className="w-4 h-4" />
                 Fazer upgrade
@@ -166,10 +184,19 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
                 className="flex items-center justify-center gap-2 w-full mt-4 py-2.5 rounded-lg
                            bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700
                            text-white text-sm font-semibold transition-all"
+                onClick={() => setShowDetails(false)}
               >
                 <Crown className="w-4 h-4" />
                 Upgrade para Residência
               </Link>
+            )}
+
+            {plan === 'residencia' && (
+              <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <p className="text-xs text-amber-200/80 text-center">
+                  ✨ Você tem acesso ilimitado a todos os recursos!
+                </p>
+              </div>
             )}
 
             {/* Dica para plano gratuito */}
@@ -179,17 +206,13 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
                 <br />Faça upgrade para acesso ilimitado!
               </p>
             )}
+
+            {/* Setinha apontando para baixo (onde está o botão) */}
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 border-r border-b border-white/10"
+                 style={{ backgroundColor: '#0f172a' }} />
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Overlay para fechar */}
-      {showDetails && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowDetails(false)}
-        />
-      )}
     </div>
   )
 }
