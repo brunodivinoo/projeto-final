@@ -267,10 +267,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 overflow-x-hidden" data-main-container>
-      {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-white/10 px-4 py-3 safe-top">
-        <div className="flex items-center justify-between max-w-full">
-          <button onClick={() => setSidebarOpen(true)} className="text-white p-2 -ml-2">
+      {/* Mobile Header - Com espaçamento adequado para notch/ilha dinâmica */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-white/10 px-5 pt-[env(safe-area-inset-top,12px)] pb-3">
+        <div className="flex items-center justify-between max-w-full mt-1">
+          <button onClick={() => setSidebarOpen(true)} className="text-white p-2.5 rounded-xl hover:bg-white/10 transition-colors">
             <Menu className="w-6 h-6" />
           </button>
           <Link href="/medicina/dashboard" className="flex items-center gap-2">
@@ -279,7 +279,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             </div>
             <span className="text-white font-bold">PREPARAMED</span>
           </Link>
-          <Link href="/medicina/dashboard/perfil" className="text-white p-2 -mr-2">
+          <Link href="/medicina/dashboard/perfil" className="text-white p-2.5 rounded-xl hover:bg-white/10 transition-colors">
             <User className="w-6 h-6" />
           </Link>
         </div>
@@ -650,7 +650,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
       {/* Main Content - Otimizado para ocupar mais espaço */}
       <main 
-        className={`pt-16 lg:pt-0 min-h-screen transition-all duration-300 overflow-x-hidden ${sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-72'}`}
+        className={`pt-[72px] lg:pt-0 min-h-screen transition-all duration-300 overflow-x-hidden ${sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-72'}`}
         data-main-container
       >
         <div className="p-3 md:p-4 lg:p-6 max-w-full overflow-x-hidden">
@@ -716,3 +716,4 @@ export default function MedicinaDashboardLayout({ children }: { children: React.
     </MedAuthProvider>
   )
 }
+
