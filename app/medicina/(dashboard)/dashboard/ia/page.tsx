@@ -672,11 +672,9 @@ export default function IAPage() {
         console.log('[IA Page] Ignorando carregamento - processando mensagem inicial')
         return
       }
-      // Não carregar se já tem mensagens (evita sobrescrever conversa em andamento)
-      if (mensagens.length > 0) {
-        console.log('[IA Page] Ignorando carregamento - já tem mensagens')
-        return
-      }
+      // CORREÇÃO: Permitir trocar de conversa mesmo com mensagens
+      // A condição anterior bloqueava troca de conversas
+      console.log('[IA Page] Carregando conversa via URL:', conversaId)
       carregarConversa(conversaId)
       return
     }
