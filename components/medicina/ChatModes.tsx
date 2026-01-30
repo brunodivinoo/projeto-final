@@ -1,250 +1,380 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageSquare,
   Stethoscope,
   GraduationCap,
   FileQuestion,
-  Brain,
   Sparkles,
   ChevronDown,
-  Lock
+  ChevronUp,
+  Lock,
+  CheckCircle,
+  Info,
+  Clock,
+  Target,
+  X,
+  BarChart3
 } from 'lucide-react'
 import { useMedAuth } from '@/contexts/MedAuthContext'
+import { 
+  useChatModeStore, 
+  MODE_CONFIG, 
+  MODE_SYSTEM_PROMPTS,
+  MODE_WELCOME_MESSAGES,
+  type ChatMode,
+  type SessaoModo,
+  type EstatisticasModo
+} from '@/lib/stores/chatModeStore'
+import { cn } from '@/lib/utils'
 
-export type ChatMode = 'chat' | 'caso_clinico' | 'tutor' | 'questoes'
+// Re-exportar tipos para compatibilidade
+export type { ChatMode } from '@/lib/stores/chatModeStore'
+export { MODE_CONFIG, MODE_SYSTEM_PROMPTS as MODE_PROMPTS }
 
-interface ChatModeConfig {
-  id: ChatMode
-  nome: string
-  descricao: string
-  icon: React.ElementType
-  cor: string
-  corBg: string
-  premium?: boolean
-  residencia?: boolean
+// Mapeamento de ícones
+const ICONS: Record<string, React.ElementType> = {
+  MessageSquare,
+  Stethoscope,
+  GraduationCap,
+  FileQuestion
 }
 
-export const CHAT_MODES: ChatModeConfig[] = [
-  {
-    id: 'chat',
-    nome: 'Chat Livre',
-    descricao: 'Tire dúvidas e converse livremente',
-    icon: MessageSquare,
-    cor: 'text-blue-400',
-    corBg: 'bg-blue-500/20'
-  },
-  {
-    id: 'caso_clinico',
-    nome: 'Caso Clínico',
-    descricao: 'Pratique com casos interativos',
-    icon: Stethoscope,
-    cor: 'text-emerald-400',
-    corBg: 'bg-emerald-500/20',
-    premium: true
-  },
-  {
-    id: 'tutor',
-    nome: 'Modo Tutor',
-    descricao: 'Aprendizado socrático guiado',
-    icon: GraduationCap,
-    cor: 'text-purple-400',
-    corBg: 'bg-purple-500/20',
-    premium: true
-  },
-  {
-    id: 'questoes',
-    nome: 'Questões',
-    descricao: 'Gere questões sobre qualquer tema',
-    icon: FileQuestion,
-    cor: 'text-amber-400',
-    corBg: 'bg-amber-500/20'
-  }
-]
+// Configuração dos modos (legado - compatibilidade)
+export const CHAT_MODES = Object.values(MODE_CONFIG).map(config => ({
+  id: config.id,
+  nome: config.label,
+  descricao: config.description,
+  icon: ICONS[config.icon],
+  cor: config.color,
+  corBg: config.bgColor,
+  premium: config.premium
+}))
 
-// Prompts do sistema para cada modo
-export const MODE_PROMPTS: Record<ChatMode, string> = {
-  chat: '', // Usa o prompt padrão
-  caso_clinico: `Você está no MODO CASO CLÍNICO.
-
-REGRAS ESPECIAIS:
-1. Apresente casos clínicos INTERATIVOS
-2. Não revele o diagnóstico imediatamente
-3. Faça perguntas ao aluno sobre:
-   - Hipóteses diagnósticas
-   - Exames a solicitar
-   - Conduta inicial
-4. Dê feedback construtivo a cada resposta
-5. Revele o diagnóstico e discussão completa ao final
-
-ESTRUTURA DO CASO:
-📋 **CASO CLÍNICO**
-*Identificação:* [Idade, sexo, ocupação]
-*QP:* [Queixa principal com tempo de evolução]
-*HDA:* [História detalhada]
-*Antecedentes:* [Relevantes]
-*Exame físico:* [Achados principais]
-
-❓ **Qual sua hipótese diagnóstica inicial?**
-❓ **Quais exames você solicitaria?**
-
-Aguarde a resposta do aluno antes de continuar.`,
-
-  tutor: `Você está no MODO TUTOR SOCRÁTICO.
-
-REGRAS ESPECIAIS:
-1. NUNCA dê respostas diretas imediatamente
-2. Use perguntas para guiar o raciocínio do aluno
-3. Faça o aluno "descobrir" as respostas
-4. Construa o conhecimento passo a passo
-5. Celebre quando ele chegar à conclusão correta
-
-TÉCNICAS A USAR:
-- "O que você já sabe sobre...?"
-- "O que aconteceria se...?"
-- "Qual seria o próximo passo lógico?"
-- "Como isso se relaciona com...?"
-- "Você pode me explicar por quê?"
-
-ESTRUTURA:
-1. Entenda o que o aluno já sabe
-2. Identifique lacunas no conhecimento
-3. Guie com perguntas direcionadas
-4. Confirme entendimento
-5. Aprofunde gradualmente
-
-Lembre-se: O objetivo é que o ALUNO construa o conhecimento, não você.`,
-
-  questoes: `Você está no MODO GERAÇÃO DE QUESTÕES.
-
-Quando o usuário pedir questões sobre um tema, gere questões no formato ESTRUTURADO usando o bloco \`\`\`questao.
-
-Pergunte:
-1. Quantas questões? (padrão: 3)
-2. Dificuldade? (fácil, médio, difícil)
-3. Estilo? (conceitual, caso clínico, imagem)
-
-Depois gere UMA questão por vez no formato JSON correto.`
-}
+// ============================================
+// COMPONENTE PRINCIPAL: ChatModeSelector
+// ============================================
 
 interface ChatModeSelectorProps {
   modoAtual: ChatMode
   onChange: (modo: ChatMode) => void
-  variant?: 'tabs' | 'dropdown' | 'pills'
+  variant?: 'tabs' | 'dropdown' | 'pills' | 'modern'
   className?: string
+  disabled?: boolean
+  showStats?: boolean
 }
 
 export function ChatModeSelector({
   modoAtual,
   onChange,
-  variant = 'tabs',
-  className = ''
+  variant = 'dropdown',
+  className = '',
+  disabled = false,
+  showStats = false
 }: ChatModeSelectorProps) {
   const { plano, podeUsarFuncionalidade } = useMedAuth()
-  const [aberto, setAberto] = useState(false)
+  const { 
+    estatisticas, 
+    showModeDropdown, 
+    setShowModeDropdown,
+    sessaoAtiva 
+  } = useChatModeStore()
+  
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [showPreview, setShowPreview] = useState<ChatMode | null>(null)
 
-  const modoConfig = CHAT_MODES.find(m => m.id === modoAtual) || CHAT_MODES[0]
+  const modoConfig = MODE_CONFIG[modoAtual]
+  const Icon = ICONS[modoConfig.icon]
 
-  const podeUsarModo = (modo: ChatModeConfig): boolean => {
-    if (modo.residencia) return plano === 'residencia'
-    if (modo.premium) return plano !== 'gratuito' || podeUsarFuncionalidade('ia')
-    return true
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowModeDropdown(false)
+        setShowPreview(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [setShowModeDropdown])
+
+  const podeUsarModo = (modo: ChatMode): boolean => {
+    const config = MODE_CONFIG[modo]
+    if (!config.premium) return true
+    return plano === 'premium' || plano === 'residencia' || podeUsarFuncionalidade?.('ia')
   }
 
-  // Variante Dropdown (compacta)
-  if (variant === 'dropdown') {
+  const handleModeChange = (modo: ChatMode) => {
+    if (!podeUsarModo(modo) || disabled) return
+    onChange(modo)
+    setShowModeDropdown(false)
+    setShowPreview(null)
+  }
+
+  const getEstatisticasModo = (modo: ChatMode): EstatisticasModo | undefined => {
+    return estatisticas.find(e => e.modo === modo)
+  }
+
+  // ============================================
+  // VARIANTE MODERN (Novo design melhorado)
+  // ============================================
+  if (variant === 'modern') {
     return (
-      <div className={`relative ${className}`}>
+      <div ref={dropdownRef} className={cn("relative", className)}>
+        {/* Botão Principal */}
         <button
-          onClick={() => setAberto(!aberto)}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${modoConfig.corBg} ${modoConfig.cor} transition-colors`}
+          onClick={() => !disabled && setShowModeDropdown(!showModeDropdown)}
+          disabled={disabled}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200",
+            "border backdrop-blur-sm",
+            disabled && "opacity-50 cursor-not-allowed",
+            !disabled && "hover:scale-[1.02] active:scale-[0.98]",
+            modoConfig.gradientFrom,
+            modoConfig.gradientTo,
+            modoConfig.borderColor,
+            "bg-gradient-to-r"
+          )}
         >
-          <modoConfig.icon className="w-4 h-4" />
-          <span className="text-sm font-medium">{modoConfig.nome}</span>
-          <ChevronDown className={`w-4 h-4 transition-transform ${aberto ? 'rotate-180' : ''}`} />
+          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", modoConfig.bgColor)}>
+            <Icon className={cn("w-4 h-4", modoConfig.color)} />
+          </div>
+          
+          <div className="flex flex-col items-start">
+            <span className={cn("text-sm font-medium", modoConfig.color)}>
+              {modoConfig.label}
+            </span>
+            <span className="text-[10px] text-white/40 hidden sm:block">
+              {modoConfig.description}
+            </span>
+          </div>
+          
+          <motion.div animate={{ rotate: showModeDropdown ? 180 : 0 }} transition={{ duration: 0.2 }}>
+            <ChevronDown className={cn("w-4 h-4 ml-1", modoConfig.color)} />
+          </motion.div>
         </button>
 
+        {/* Dropdown */}
         <AnimatePresence>
-          {aberto && (
+          {showModeDropdown && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="absolute top-full left-0 mt-1 w-56 bg-slate-800 border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden"
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className={cn(
+                "absolute z-50 mt-2",
+                "w-80 max-w-[calc(100vw-2rem)]",
+                "left-0 md:left-auto md:right-0",
+                "bg-slate-800/95 backdrop-blur-xl",
+                "border border-white/10 rounded-2xl",
+                "shadow-2xl shadow-black/50",
+                "overflow-hidden"
+              )}
             >
-              {CHAT_MODES.map(modo => {
-                const Icon = modo.icon
-                const disponivel = podeUsarModo(modo)
-
-                return (
-                  <button
-                    key={modo.id}
-                    onClick={() => {
-                      if (disponivel) {
-                        onChange(modo.id)
-                        setAberto(false)
-                      }
-                    }}
-                    disabled={!disponivel}
-                    className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${
-                      modoAtual === modo.id
-                        ? `${modo.corBg} ${modo.cor}`
-                        : disponivel
-                          ? 'text-white/80 hover:bg-white/5'
-                          : 'text-white/30 cursor-not-allowed'
-                    }`}
+              {/* Header */}
+              <div className="p-3 border-b border-white/10 bg-white/5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-white">Selecionar Modo</span>
+                  <button 
+                    onClick={() => setShowModeDropdown(false)}
+                    className="p-1 rounded-lg hover:bg-white/10 transition-colors md:hidden"
                   >
-                    <Icon className="w-5 h-5" />
-                    <div className="flex-1 text-left">
-                      <p className="font-medium">{modo.nome}</p>
-                      <p className="text-xs opacity-60">{modo.descricao}</p>
-                    </div>
-                    {!disponivel && <Lock className="w-4 h-4" />}
+                    <X className="w-4 h-4 text-white/50" />
                   </button>
-                )
-              })}
+                </div>
+              </div>
+
+              {/* Lista de Modos */}
+              <div className="p-2 max-h-[60vh] overflow-y-auto">
+                {Object.values(MODE_CONFIG).map((modo) => {
+                  const ModoIcon = ICONS[modo.icon]
+                  const isAtivo = modoAtual === modo.id
+                  const podeusar = podeUsarModo(modo.id)
+                  const stats = getEstatisticasModo(modo.id)
+
+                  return (
+                    <button
+                      key={modo.id}
+                      onClick={() => handleModeChange(modo.id)}
+                      disabled={!podeusar || disabled}
+                      className={cn(
+                        "w-full flex items-start gap-3 p-3 rounded-xl transition-all duration-200 mb-1",
+                        "text-left",
+                        isAtivo && "bg-white/10 ring-1 ring-white/20",
+                        podeusar && !isAtivo && "hover:bg-white/5",
+                        !podeusar && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
+                        modo.bgColor
+                      )}>
+                        <ModoIcon className={cn("w-5 h-5", modo.color)} />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-white">{modo.label}</span>
+                          {modo.premium && (
+                            <span className={cn(
+                              "text-[9px] px-1.5 py-0.5 rounded-full font-medium",
+                              podeusar ? "bg-amber-500/20 text-amber-400" : "bg-white/10 text-white/40"
+                            )}>
+                              {podeusar ? '✨ PRO' : '🔒 PRO'}
+                            </span>
+                          )}
+                          {isAtivo && <CheckCircle className="w-4 h-4 text-emerald-400" />}
+                        </div>
+                        <p className="text-xs text-white/50 mt-0.5">{modo.descriptionLonga}</p>
+
+                        {/* Estatísticas */}
+                        {showStats && stats && stats.total_sessoes > 0 && (
+                          <div className="flex items-center gap-3 mt-2 text-[10px] text-white/40">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {stats.total_sessoes} sessões
+                            </span>
+                            {modo.id === 'questoes' && stats.total_questoes > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Target className="w-3 h-3" />
+                                {stats.taxa_acerto}% acerto
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {!podeusar && <Lock className="w-4 h-4 text-white/30 flex-shrink-0" />}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Footer */}
+              <div className="p-3 border-t border-white/10 bg-white/5">
+                <div className="flex items-start gap-2">
+                  <Info className="w-3 h-3 text-white/30 flex-shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-white/40">
+                    O histórico da conversa é mantido ao trocar de modo.
+                  </p>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Overlay para fechar */}
-        {aberto && (
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setAberto(false)}
-          />
-        )}
       </div>
     )
   }
 
-  // Variante Pills (horizontal compacta)
+  // ============================================
+  // VARIANTE DROPDOWN (Padrão - design original melhorado)
+  // ============================================
+  if (variant === 'dropdown') {
+    return (
+      <div ref={dropdownRef} className={cn("relative", className)}>
+        <button
+          onClick={() => !disabled && setShowModeDropdown(!showModeDropdown)}
+          disabled={disabled}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-xl transition-all",
+            modoConfig.bgColor,
+            modoConfig.color,
+            disabled && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <Icon className="w-4 h-4" />
+          <span className="text-sm font-medium">{modoConfig.label}</span>
+          <ChevronDown className={cn("w-4 h-4 transition-transform", showModeDropdown && "rotate-180")} />
+        </button>
+
+        <AnimatePresence>
+          {showModeDropdown && (
+            <>
+              {/* Overlay */}
+              <div className="fixed inset-0 z-40" onClick={() => setShowModeDropdown(false)} />
+              
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute top-full left-0 mt-2 w-72 bg-slate-800/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+              >
+                <div className="p-2">
+                  {Object.values(MODE_CONFIG).map(modo => {
+                    const ModoIcon = ICONS[modo.icon]
+                    const disponivel = podeUsarModo(modo.id)
+                    const ativo = modoAtual === modo.id
+
+                    return (
+                      <button
+                        key={modo.id}
+                        onClick={() => handleModeChange(modo.id)}
+                        disabled={!disponivel || disabled}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all",
+                          ativo ? cn(modo.bgColor, modo.color) : disponivel ? "text-white/80 hover:bg-white/5" : "text-white/30 cursor-not-allowed"
+                        )}
+                      >
+                        <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", modo.bgColor)}>
+                          <ModoIcon className={cn("w-5 h-5", modo.color)} />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{modo.label}</p>
+                            {modo.premium && !disponivel && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white/40">PRO</span>
+                            )}
+                          </div>
+                          <p className="text-xs opacity-60">{modo.description}</p>
+                        </div>
+                        {ativo && <CheckCircle className="w-4 h-4" />}
+                        {!disponivel && <Lock className="w-4 h-4" />}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Dica */}
+                <div className="p-3 border-t border-white/10 bg-white/5">
+                  <p className="text-[10px] text-white/40 text-center">
+                    💡 Trocar modo altera como a IA responde
+                  </p>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
+    )
+  }
+
+  // ============================================
+  // VARIANTE PILLS (Compacta horizontal)
+  // ============================================
   if (variant === 'pills') {
     return (
-      <div className={`flex items-center gap-1 p-1 bg-white/5 rounded-lg ${className}`}>
-        {CHAT_MODES.map(modo => {
-          const Icon = modo.icon
-          const disponivel = podeUsarModo(modo)
+      <div className={cn("flex items-center gap-1 p-1 bg-white/5 rounded-xl overflow-x-auto", className)}>
+        {Object.values(MODE_CONFIG).map(modo => {
+          const ModoIcon = ICONS[modo.icon]
+          const disponivel = podeUsarModo(modo.id)
           const ativo = modoAtual === modo.id
 
           return (
             <button
               key={modo.id}
               onClick={() => disponivel && onChange(modo.id)}
-              disabled={!disponivel}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-all ${
-                ativo
-                  ? `${modo.corBg} ${modo.cor}`
-                  : disponivel
-                    ? 'text-white/60 hover:text-white hover:bg-white/5'
-                    : 'text-white/30 cursor-not-allowed'
-              }`}
-              title={modo.descricao}
+              disabled={!disponivel || disabled}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all whitespace-nowrap",
+                ativo ? cn(modo.bgColor, modo.color) : disponivel ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/30 cursor-not-allowed"
+              )}
+              title={modo.descriptionLonga}
             >
-              <Icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{modo.nome}</span>
+              <ModoIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">{modo.labelCurto}</span>
               {!disponivel && <Lock className="w-3 h-3 ml-1" />}
             </button>
           )
@@ -253,36 +383,34 @@ export function ChatModeSelector({
     )
   }
 
-  // Variante Tabs (padrão)
+  // ============================================
+  // VARIANTE TABS (Design original)
+  // ============================================
   return (
-    <div className={`flex items-center border-b border-white/10 ${className}`}>
-      {CHAT_MODES.map(modo => {
-        const Icon = modo.icon
-        const disponivel = podeUsarModo(modo)
+    <div className={cn("flex items-center border-b border-white/10 overflow-x-auto", className)}>
+      {Object.values(MODE_CONFIG).map(modo => {
+        const ModoIcon = ICONS[modo.icon]
+        const disponivel = podeUsarModo(modo.id)
         const ativo = modoAtual === modo.id
 
         return (
           <button
             key={modo.id}
             onClick={() => disponivel && onChange(modo.id)}
-            disabled={!disponivel}
-            className={`relative flex items-center gap-2 px-4 py-3 transition-colors ${
-              ativo
-                ? modo.cor
-                : disponivel
-                  ? 'text-white/60 hover:text-white'
-                  : 'text-white/30 cursor-not-allowed'
-            }`}
+            disabled={!disponivel || disabled}
+            className={cn(
+              "relative flex items-center gap-2 px-4 py-3 transition-colors whitespace-nowrap",
+              ativo ? modo.color : disponivel ? "text-white/60 hover:text-white" : "text-white/30 cursor-not-allowed"
+            )}
           >
-            <Icon className="w-4 h-4" />
-            <span className="text-sm font-medium">{modo.nome}</span>
+            <ModoIcon className="w-4 h-4" />
+            <span className="text-sm font-medium">{modo.label}</span>
             {!disponivel && <Lock className="w-3 h-3" />}
-
-            {/* Indicador ativo */}
+            
             {ativo && (
               <motion.div
                 layoutId="activeTab"
-                className={`absolute bottom-0 left-0 right-0 h-0.5 ${modo.corBg.replace('/20', '')}`}
+                className={cn("absolute bottom-0 left-0 right-0 h-0.5", modo.bgColor.replace('/20', ''))}
               />
             )}
           </button>
@@ -292,67 +420,43 @@ export function ChatModeSelector({
   )
 }
 
-// Componente de introdução do modo
+// ============================================
+// COMPONENTE: ChatModeIntro (Tela de boas-vindas do modo)
+// ============================================
+
 interface ChatModeIntroProps {
   modo: ChatMode
   onStart?: () => void
 }
 
 export function ChatModeIntro({ modo, onStart }: ChatModeIntroProps) {
-  const modoConfig = CHAT_MODES.find(m => m.id === modo)
+  const modoConfig = MODE_CONFIG[modo]
   if (!modoConfig || modo === 'chat') return null
 
-  const Icon = modoConfig.icon
-
-  const getInstrucoes = () => {
-    switch (modo) {
-      case 'caso_clinico':
-        return [
-          'Você receberá um caso clínico completo',
-          'Formule suas hipóteses diagnósticas',
-          'Proponha exames complementares',
-          'Defina a conduta inicial',
-          'Receba feedback detalhado ao final'
-        ]
-      case 'tutor':
-        return [
-          'Diga qual tema quer aprender',
-          'A IA fará perguntas para guiar você',
-          'Construa o conhecimento ativamente',
-          'Perfeito para fixar conceitos',
-          'Simula um professor particular'
-        ]
-      case 'questoes':
-        return [
-          'Escolha o tema das questões',
-          'Defina quantidade e dificuldade',
-          'Responda uma questão por vez',
-          'Receba feedback detalhado',
-          'Revise os pontos fracos'
-        ]
-      default:
-        return []
-    }
-  }
+  const Icon = ICONS[modoConfig.icon]
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`p-6 rounded-xl border ${modoConfig.corBg} border-white/10 max-w-lg mx-auto text-center`}
+      className={cn(
+        "p-6 rounded-2xl border max-w-lg mx-auto text-center",
+        modoConfig.bgColor,
+        modoConfig.borderColor
+      )}
     >
-      <div className={`w-16 h-16 rounded-2xl ${modoConfig.corBg} flex items-center justify-center mx-auto mb-4`}>
-        <Icon className={`w-8 h-8 ${modoConfig.cor}`} />
+      <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4", modoConfig.bgColor)}>
+        <Icon className={cn("w-8 h-8", modoConfig.color)} />
       </div>
 
-      <h3 className="text-xl font-bold text-white mb-2">{modoConfig.nome}</h3>
-      <p className="text-white/60 mb-4">{modoConfig.descricao}</p>
+      <h3 className="text-xl font-bold text-white mb-2">{modoConfig.label}</h3>
+      <p className="text-white/60 mb-4">{modoConfig.descriptionLonga}</p>
 
       <ul className="text-left space-y-2 mb-6">
-        {getInstrucoes().map((instrucao, i) => (
+        {modoConfig.features.map((feature, i) => (
           <li key={i} className="flex items-start gap-2 text-white/80 text-sm">
-            <Sparkles className={`w-4 h-4 ${modoConfig.cor} mt-0.5 flex-shrink-0`} />
-            {instrucao}
+            <Sparkles className={cn("w-4 h-4 mt-0.5 flex-shrink-0", modoConfig.color)} />
+            {feature}
           </li>
         ))}
       </ul>
@@ -360,12 +464,12 @@ export function ChatModeIntro({ modo, onStart }: ChatModeIntroProps) {
       {onStart && (
         <button
           onClick={onStart}
-          className={`w-full py-3 rounded-lg font-medium text-white transition-colors ${
-            modoConfig.cor === 'text-emerald-400' ? 'bg-emerald-600 hover:bg-emerald-700' :
-            modoConfig.cor === 'text-purple-400' ? 'bg-purple-600 hover:bg-purple-700' :
-            modoConfig.cor === 'text-amber-400' ? 'bg-amber-600 hover:bg-amber-700' :
-            'bg-blue-600 hover:bg-blue-700'
-          }`}
+          className={cn(
+            "w-full py-3 rounded-xl font-medium text-white transition-colors",
+            modo === 'caso_clinico' && "bg-emerald-600 hover:bg-emerald-700",
+            modo === 'tutor' && "bg-purple-600 hover:bg-purple-700",
+            modo === 'questoes' && "bg-amber-600 hover:bg-amber-700"
+          )}
         >
           Começar
         </button>
@@ -374,29 +478,78 @@ export function ChatModeIntro({ modo, onStart }: ChatModeIntroProps) {
   )
 }
 
-// Hook para usar o modo no chat
+// ============================================
+// COMPONENTE: ModeChangeMarker (Marcador de troca de modo no chat)
+// ============================================
+
+interface ModeChangeMarkerProps {
+  modo: ChatMode
+  timestamp?: string
+}
+
+export function ModeChangeMarker({ modo, timestamp }: ModeChangeMarkerProps) {
+  const config = MODE_CONFIG[modo]
+  const Icon = ICONS[config.icon]
+  
+  const time = timestamp 
+    ? new Date(timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    : null
+
+  return (
+    <div className="flex items-center justify-center py-4">
+      <div className={cn(
+        "flex items-center gap-2 px-4 py-2 rounded-full",
+        "bg-gradient-to-r border",
+        config.gradientFrom,
+        config.gradientTo,
+        config.borderColor
+      )}>
+        <Icon className={cn("w-4 h-4", config.color)} />
+        <span className={cn("text-sm font-medium", config.color)}>
+          Modo: {config.label}
+        </span>
+        {time && <span className="text-xs text-white/40">{time}</span>}
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// HOOK: useChatMode (para compatibilidade com código existente)
+// ============================================
+
 export function useChatMode() {
-  const [modo, setModo] = useState<ChatMode>('chat')
-  const [mostrarIntro, setMostrarIntro] = useState(false)
+  const {
+    currentMode,
+    setCurrentMode,
+    showModeWelcome,
+    setShowModeWelcome,
+    sessaoAtiva,
+    setSessaoAtiva
+  } = useChatModeStore()
 
-  const trocarModo = (novoModo: ChatMode) => {
-    setModo(novoModo)
-    setMostrarIntro(novoModo !== 'chat')
-  }
+  const trocarModo = useCallback((novoModo: ChatMode) => {
+    setCurrentMode(novoModo)
+    setShowModeWelcome(novoModo !== 'chat')
+  }, [setCurrentMode, setShowModeWelcome])
 
-  const iniciarModo = () => {
-    setMostrarIntro(false)
-  }
+  const iniciarModo = useCallback(() => {
+    setShowModeWelcome(false)
+  }, [setShowModeWelcome])
 
-  const getSystemPrompt = (): string => {
-    return MODE_PROMPTS[modo]
-  }
+  const getSystemPrompt = useCallback((): string => {
+    return MODE_SYSTEM_PROMPTS[currentMode]
+  }, [currentMode])
 
   return {
-    modo,
+    modo: currentMode,
     trocarModo,
-    mostrarIntro,
+    mostrarIntro: showModeWelcome,
     iniciarModo,
-    getSystemPrompt
+    getSystemPrompt,
+    sessaoAtiva,
+    setSessaoAtiva
   }
 }
+
+export default ChatModeSelector
