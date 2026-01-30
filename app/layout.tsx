@@ -42,17 +42,17 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   // === BASICO ===
   title: {
-    default: "StudyHub - Plataforma de Estudos Inteligente",
-    template: "%s | StudyHub"
+    default: "PREPARAMED - Plataforma de Estudos para Medicina",
+    template: "%s | PREPARAMED"
   },
-  description: "Plataforma completa de estudos com IA. Inclui PREPARA MED para estudantes de medicina e NutriVida para nutricao personalizada.",
+  description: "Plataforma completa de estudos com IA para estudantes de medicina preparando-se para residência médica. Questões, simulados, flashcards e tutor IA.",
   keywords: [
-    "estudos", "medicina", "residencia medica", "nutricao", "IA",
-    "inteligencia artificial", "questoes", "simulados", "PREPARA MED", "NutriVida"
+    "medicina", "residencia medica", "estudos medicina", "IA medica",
+    "inteligencia artificial", "questoes medicina", "simulados medicina", "PREPARAMED", "flashcards medicina"
   ],
-  authors: [{ name: "StudyHub" }],
-  creator: "StudyHub",
-  publisher: "StudyHub",
+  authors: [{ name: "PREPARAMED" }],
+  creator: "PREPARAMED",
+  publisher: "PREPARAMED",
 
   // === PWA MANIFEST ===
   manifest: "/manifest.json",
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "StudyHub",
+    title: "PREPARAMED",
   },
 
   // === FORMATO DE DETECCAO ===
@@ -87,20 +87,20 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "pt_BR",
-    siteName: "StudyHub",
-    title: "StudyHub - Plataforma de Estudos Inteligente",
-    description: "Estude com inteligencia artificial. PREPARA MED e NutriVida em uma unica plataforma.",
+    siteName: "PREPARAMED",
+    title: "PREPARAMED - Plataforma de Estudos para Medicina",
+    description: "Estude medicina com inteligência artificial. Questões, simulados, flashcards e tutor IA para residência médica.",
   },
 
   // === TWITTER ===
   twitter: {
     card: "summary_large_image",
-    title: "StudyHub - Plataforma de Estudos Inteligente",
-    description: "Estude com inteligencia artificial. PREPARA MED e NutriVida em uma unica plataforma.",
+    title: "PREPARAMED - Plataforma de Estudos para Medicina",
+    description: "Estude medicina com inteligência artificial. Questões, simulados, flashcards e tutor IA para residência médica.",
   },
 
   // === OUTROS ===
-  applicationName: "StudyHub",
+  applicationName: "PREPARAMED",
   category: "education",
 }
 
@@ -128,7 +128,7 @@ export default function RootLayout({
         {/* Apple Specific */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="StudyHub" />
+        <meta name="apple-mobile-web-app-title" content="PREPARAMED" />
 
         {/* Apple Touch Icons (fallback) */}
         <link rel="apple-touch-icon" href="/icons/icon-180x180.png" />

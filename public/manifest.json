@@ -1,18 +1,18 @@
 {
-  "name": "StudyHub - Plataforma de Estudos Inteligente",
-  "short_name": "StudyHub",
-  "description": "Plataforma completa de estudos com IA. Inclui PREPARA MED para estudantes de medicina e NutriVida para nutrição personalizada.",
+  "name": "PREPARAMED - Plataforma de Estudos para Medicina",
+  "short_name": "PREPARAMED",
+  "description": "Plataforma completa de estudos com IA para estudantes de medicina preparando-se para residência médica. Questões, simulados, flashcards e tutor IA.",
   "lang": "pt-BR",
   "dir": "ltr",
-  "start_url": "/",
+  "start_url": "/medicina",
   "scope": "/",
   "id": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "theme_color": "#6366f1",
-  "background_color": "#f6f7f8",
-  "categories": ["education", "health", "fitness", "productivity"],
+  "background_color": "#0f172a",
+  "categories": ["education", "medical", "productivity"],
 
   "icons": [
     {
@@ -112,24 +112,31 @@
 
   "shortcuts": [
     {
-      "name": "PREPARA MED - IA Médica",
-      "short_name": "PREPARA MED",
+      "name": "PREPARAMED IA",
+      "short_name": "IA",
       "description": "Assistente IA para estudantes de medicina",
       "url": "/medicina/dashboard/ia",
       "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
-      "name": "NutriVida - Nutrição",
-      "short_name": "NutriVida",
-      "description": "Sua nutricionista virtual com IA",
-      "url": "/nutrivida/dashboard",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "Questões - Simulados",
+      "name": "Questões",
       "short_name": "Questões",
       "description": "Pratique com questões de residência",
       "url": "/medicina/dashboard/questoes",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Simulados",
+      "short_name": "Simulados",
+      "description": "Simulados completos de residência",
+      "url": "/medicina/dashboard/simulados",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Flashcards",
+      "short_name": "Flashcards",
+      "description": "Revise com flashcards inteligentes",
+      "url": "/medicina/dashboard/flashcards",
       "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ],
