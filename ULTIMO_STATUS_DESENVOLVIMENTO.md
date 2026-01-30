@@ -1,67 +1,74 @@
 # 📊 ÚLTIMO STATUS - PREPARA MED
-## Atualizado em: 30/01/2026 - 12:30 (Horário de Brasília)
+## Atualizado em: 30/01/2026 - 15:30 (Horário de Brasília)
 
 ---
 
 ## 🎯 ESTADO ATUAL DO PROJETO
 
-✅ **Bug da sidebar de histórico CORRIGIDO e TESTADO**
+✅ **Melhorias de UI/UX implementadas**
+✅ **Correções de Mobile/PWA realizadas**
 
-O projeto PREPARA MED está funcionando corretamente. A navegação pelo histórico de conversas agora funciona de qualquer página.
+O projeto PREPARA MED recebeu importantes atualizações de interface e correções para mobile.
 
 ---
 
 ## ✅ O QUE FOI FEITO NA ÚLTIMA SESSÃO (30/01/2026)
 
-### 1. Token GitHub Configurado
-- **Token:** Fine-grained Personal Access Token
-- **Permissões:** Read and Write (completo)
-- **Escopo:** Apenas repositório projeto-final
-- **Validade:** 30/04/2026
-- **Uso:** Claude AI agora pode ler/editar/commitar diretamente no GitHub
-- **Nota:** Token armazenado nas Instruções do Projeto no Claude AI (não público)
+### 1. Correções Mobile/PWA - CRÍTICAS ✅
+- **Problema:** Scroll horizontal em todo o app (overflow-x)
+- **Solução:** 
+  - CSS global com `overflow-x: hidden !important` em html/body
+  - `touch-action: manipulation` para desabilitar zoom indesejado
+  - `max-width: 100vw` em todos os containers principais
+- **Arquivo:** `app/globals.css`
 
-### 2. Bug da Sidebar de Histórico - CORRIGIDO ✅
-- **Problema:** Clicar no histórico mudava URL mas não carregava conversa
-- **Causa raiz:** Quando não estava na página `/medicina/dashboard/ia`, o código usava `window.history.pushState()` que apenas muda a URL sem navegar
-- **Arquivo principal:** `app/medicina/(dashboard)/layout.tsx`
+### 2. Removido Botão Flutuante Verde no Mobile ✅
+- **Problema:** Botão de "Voltar ao topo" atrapalhava a UX no mobile
+- **Solução:** Removido completamente do layout e escondido via CSS
+- **Arquivos:** `app/medicina/(dashboard)/layout.tsx`, `app/globals.css`
 
-#### Commits realizados:
+### 3. ChatInput Melhorado ✅
+- **Problema:** Texto sumia quando mensagem era grande
+- **Solução:** 
+  - Textarea expansível com auto-resize
+  - Min-height 52px, max-height 200px
+  - Scroll interno quando necessário
+- **Arquivo:** `components/chat/ChatInput.tsx`
 
-| SHA | Descrição |
-|-----|-----------|
-| `d88c4859` | fix: usar navegação real (router.push) fora da página do chat |
-| `cae0121a` | fix: permitir trocar conversa mesmo com mensagens carregadas |
-| `b900b2c5` | fix: corrigir race condition com isChangingConversa |
-| `b49d67cf` | docs: criar arquivo de status no GitHub |
+### 4. QuickActions com Sugestões Completas ✅
+- **Problema:** Labels truncados ("de...", "sobre...")
+- **Solução:** 
+  - Labels completos com tópicos médicos populares
+  - Sugestões dinâmicas baseadas no histórico do usuário
+  - 20 tópicos médicos + 10 especialidades pré-definidas
+- **Arquivo:** `components/chat/QuickActions.tsx`
 
-### 3. Sistema de Continuidade Atualizado
-- Status agora é salvo no GitHub (não mais local)
-- Funciona de qualquer máquina/lugar
-- Instruções do projeto atualizadas com novo fluxo
+### 5. Página Inicial Otimizada ✅
+- **Melhorias:**
+  - Layout mais compacto no mobile
+  - Menos padding/margin desnecessários
+  - Cards de ação rápida com hover effects
+  - Sugestões personalizadas com base no histórico
+- **Arquivo:** `app/medicina/(dashboard)/dashboard/page.tsx`
+
+### 6. Layout Principal Corrigido ✅
+- **Melhorias:**
+  - Sidebar mobile com max-width 85vw (não ultrapassa tela)
+  - Overflow hidden em todos os níveis
+  - Safe areas para iOS (notch, home indicator)
+- **Arquivo:** `app/medicina/(dashboard)/layout.tsx`
 
 ---
 
-## 📝 DETALHES TÉCNICOS DA CORREÇÃO
+## 📝 COMMITS REALIZADOS
 
-### Problema Original
-```javascript
-// ANTES: Usava pushState que NÃO navega
-await useConversaStore.getState().trocarConversa(conversa.id)
-```
-
-### Solução Implementada
-```javascript
-// DEPOIS: Verifica se está na página do chat
-const isOnChatPage = pathname?.includes('/dashboard/ia')
-if (isOnChatPage) {
-  // Já está na página - usar pushState (mais rápido)
-  await useConversaStore.getState().trocarConversa(conversa.id)
-} else {
-  // Não está na página - precisa navegar de verdade
-  router.push(`/medicina/dashboard/ia?c=${conversa.id}`)
-}
-```
+| SHA | Descrição |
+|-----|-----------|
+| `3a4e9e87` | fix(mobile): corrigir overflow horizontal e remover botão flutuante |
+| `793ac851` | feat(ui): melhorar QuickActions com sugestões completas |
+| `9ff55ce4` | feat(ui): ChatInput com textarea expansível |
+| `9335f840` | fix(mobile): remover botão flutuante e corrigir overflow horizontal |
+| `e499f58d` | feat(ui): página inicial melhorada com menos espaços vazios |
 
 ---
 
@@ -77,8 +84,8 @@ if (isOnChatPage) {
 
 1. **Criar páginas** `/termos` e `/privacidade`
 2. **Adicionar screenshot** para PWA (`/screenshots/screenshot-desktop.png`)
-3. **Plano 1:** Isolar PREPARA MED (remover pastas não utilizadas)
-4. **Plano 2:** Melhorias de UI/UX do chat
+3. **Isolar PREPARA MED** (remover pastas não utilizadas)
+4. **Testar mobile** em dispositivos reais após deploy
 5. **Implementar CAKTO** para pagamentos
 
 ---
@@ -109,6 +116,6 @@ O Claude AI tem acesso ao repositório via token configurado nas Instruções do
 
 ---
 
-**Última atualização:** 30/01/2026 - 12:30
+**Última atualização:** 30/01/2026 - 15:30
 **Atualizado por:** Claude AI
-**Status:** ✅ Bug corrigido e testado com sucesso
+**Status:** ✅ Melhorias UI/UX e correções mobile implementadas
