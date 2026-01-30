@@ -21,8 +21,9 @@ export function cn(...inputs: (string | undefined | null | false | { [key: strin
     }
   }
   
-  // Remove duplicates and join
-  return [...new Set(classes.join(' ').split(' '))].filter(Boolean).join(' ')
+  // Remove duplicates and join - usar Array.from para compatibilidade
+  const uniqueClasses = Array.from(new Set(classes.join(' ').split(' '))).filter(Boolean)
+  return uniqueClasses.join(' ')
 }
 
 /**
@@ -83,7 +84,7 @@ export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
-  let timeoutId: NodeJS.Timeout | null = null
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
   
   return (...args: Parameters<T>) => {
     if (timeoutId) clearTimeout(timeoutId)
