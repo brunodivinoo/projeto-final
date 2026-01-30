@@ -59,10 +59,9 @@ export interface QuestaoSessao {
 }
 
 // ============================================
-// CONFIGURAÇÃO DOS MODOS
-// ============================================
 
-export const MODE_CONFIG: Record<ChatMode, {
+// Tipo para item de configuração de modo (para iteração tipada)
+export interface ModeConfigItem {
   id: ChatMode
   label: string
   labelCurto: string
@@ -77,7 +76,12 @@ export const MODE_CONFIG: Record<ChatMode, {
   descriptionLonga: string
   premium: boolean
   features: string[]
-}> = {
+}
+
+// CONFIGURAÇÃO DOS MODOS
+// ============================================
+
+export const MODE_CONFIG: Record<ChatMode, ModeConfigItem> = {
   chat: {
     id: 'chat',
     label: 'Chat Livre',
@@ -143,6 +147,11 @@ export const MODE_CONFIG: Record<ChatMode, {
     features: ['Questões personalizadas', 'Estilo de bancas', 'Gabarito comentado', 'Estatísticas']
   }
 }
+
+
+
+// Lista de modos para iteração tipada
+export const MODE_LIST: ModeConfigItem[] = Object.values(MODE_CONFIG)
 
 // ============================================
 // PROMPTS DO SISTEMA POR MODO
