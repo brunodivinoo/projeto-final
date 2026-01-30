@@ -595,18 +595,20 @@ export default function IAPage() {
 
   useEffect(() => {
     // Se a store está mudando de conversa e é diferente da atual
-    if (storeConversaSelecionada && storeConversaSelecionada !== conversaAtual && !isChangingConversa && !loading) {
+    // IMPORTANTE: NÃO interferir se estiver em loading/streaming
+    if (storeConversaSelecionada && storeConversaSelecionada !== conversaAtual && !isChangingConversa && !loading && !streaming) {
       console.log('[IA Page] Store mudou conversa:', storeConversaSelecionada)
       carregarConversa(storeConversaSelecionada)
     }
-  }, [storeConversaSelecionada, conversaAtual, isChangingConversa, loading, carregarConversa])
+  }, [storeConversaSelecionada, conversaAtual, isChangingConversa, loading, streaming, carregarConversa])
 
   // Listener para evento customizado de troca de conversa (backup)
   useEffect(() => {
     const handleConversaChanged = (event: CustomEvent<{ conversaId: string | null; previousId: string | null }>) => {
       const { conversaId, previousId } = event.detail
       console.log('[IA Page] Evento conversa-changed:', previousId, '->', conversaId)
-      if (conversaId && conversaId !== conversaAtual && !loading) {
+      // IMPORTANTE: NÃO interferir se estiver em loading/streaming
+      if (conversaId && conversaId !== conversaAtual && !loading && !streaming) {
         carregarConversa(conversaId)
       }
     }
@@ -615,7 +617,7 @@ export default function IAPage() {
     return () => {
       window.removeEventListener('conversa-changed', handleConversaChanged as EventListener)
     }
-  }, [conversaAtual, loading, carregarConversa])
+  }, [conversaAtual, loading, streaming, carregarConversa])
 
   // Sincronizar filtro de artefatos quando o modo de chat muda
   useEffect(() => {
@@ -633,7 +635,7 @@ export default function IAPage() {
     // Se tem conversa ID, carregar conversa
     if (conversaId && !mensagemInicial) {
       // Não interromper se estiver em streaming
-      if (loading) {
+      if (loading || streaming) {
         console.log('[IA Page] Ignorando carregamento - streaming em andamento')
         return
       }
@@ -675,7 +677,7 @@ export default function IAPage() {
       // Definir mensagem pendente (isso vai triggerar o próximo useEffect)
       setMensagemPendente(decodedMessage)
     }
-  }, [user, searchParams, router, carregarConversa, loading, conversaAtual, mensagens.length])
+  }, [user, searchParams, router, carregarConversa, loading, streaming, conversaAtual, mensagens.length])
 
   // Efeito para enviar mensagem pendente quando disponível
   useEffect(() => {
@@ -797,8 +799,13 @@ export default function IAPage() {
                 // ========== ATUALIZAR URL E HISTÓRICO IMEDIATAMENTE ==========
                 console.log('[IA Page] Conversa criada (direta):', data.conversa_id)
 
-                // Atualizar URL imediatamente (sem recarregar página)
-                router.replace(`/medicina/dashboard/ia?c=${data.conversa_id}`, { scroll: false })
+                // Atualizar URL usando history API (não causa re-render como router.replace)
+                // Isso evita interromper o streaming SSE
+                window.history.replaceState(
+                  { ...window.history.state, conversaId: data.conversa_id },
+                  '',
+                  `/medicina/dashboard/ia?c=${data.conversa_id}`
+                )
 
                 // Atualizar estado da conversa atual
                 setConversaAtual(data.conversa_id)
@@ -1141,8 +1148,13 @@ export default function IAPage() {
                 // ========== ATUALIZAR URL E HISTÓRICO IMEDIATAMENTE ==========
                 console.log('[IA Page] Conversa criada:', data.conversa_id)
 
-                // Atualizar URL imediatamente (sem recarregar página)
-                router.replace(`/medicina/dashboard/ia?c=${data.conversa_id}`, { scroll: false })
+                // Atualizar URL usando history API (não causa re-render como router.replace)
+                // Isso evita interromper o streaming SSE
+                window.history.replaceState(
+                  { ...window.history.state, conversaId: data.conversa_id },
+                  '',
+                  `/medicina/dashboard/ia?c=${data.conversa_id}`
+                )
 
                 // Atualizar estado da conversa atual
                 setConversaAtual(data.conversa_id)
