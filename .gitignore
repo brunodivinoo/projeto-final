@@ -1,6 +1,7 @@
 # Credenciais sensíveis
 .env
 .env.local
+INSTRUCOES_PROJETO_CLAUDE_AI.md
 .env.development.local
 .env.test.local
 .env.production.local
