@@ -549,6 +549,9 @@ export default function IAPage() {
   const processandoMensagemInicialRef = useRef<boolean>(false)
   // Ref para a função de enviar mensagem (para evitar problemas de hoisting)
   const enviarMensagemDiretaRef = useRef<((msg: string) => void) | null>(null)
+  // Refs para correção do bug de navegação do histórico
+  const ultimaConversaTentadaRef = useRef<string | null>(null)
+  const prevIsChangingRef = useRef(false)
   // Estado para mensagem pendente (usando state para triggerar re-render)
   const [mensagemPendente, setMensagemPendente] = useState<string | null>(null)
 
@@ -596,11 +599,31 @@ export default function IAPage() {
   useEffect(() => {
     // Se a store está mudando de conversa e é diferente da atual
     // IMPORTANTE: NÃO interferir se estiver em loading/streaming
-    if (storeConversaSelecionada && storeConversaSelecionada !== conversaAtual && !isChangingConversa && !loading && !streaming) {
+    // CORREÇÃO: Removido !isChangingConversa para evitar race condition
+    if (storeConversaSelecionada && storeConversaSelecionada !== conversaAtual && !loading && !streaming) {
+      // Evitar carregar a mesma conversa múltiplas vezes
+      if (ultimaConversaTentadaRef.current === storeConversaSelecionada) {
+        return
+      }
       console.log('[IA Page] Store mudou conversa:', storeConversaSelecionada)
+      ultimaConversaTentadaRef.current = storeConversaSelecionada
       carregarConversa(storeConversaSelecionada)
     }
-  }, [storeConversaSelecionada, conversaAtual, isChangingConversa, loading, streaming, carregarConversa])
+  }, [storeConversaSelecionada, conversaAtual, loading, streaming, carregarConversa])
+
+  // Fallback: quando isChangingConversa muda de true para false, verificar se precisa carregar
+  useEffect(() => {
+    // Detectar transição de true para false
+    if (prevIsChangingRef.current && !isChangingConversa) {
+      // A troca de conversa terminou, verificar se a conversa foi carregada
+      if (storeConversaSelecionada && storeConversaSelecionada !== conversaAtual && !loading && !streaming) {
+        console.log('[IA Page] Fallback: carregando conversa após isChangingConversa=false:', storeConversaSelecionada)
+        ultimaConversaTentadaRef.current = storeConversaSelecionada
+        carregarConversa(storeConversaSelecionada)
+      }
+    }
+    prevIsChangingRef.current = isChangingConversa
+  }, [isChangingConversa, storeConversaSelecionada, conversaAtual, loading, streaming, carregarConversa])
 
   // Listener para evento customizado de troca de conversa (backup)
   useEffect(() => {
