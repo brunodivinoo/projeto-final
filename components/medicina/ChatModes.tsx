@@ -22,11 +22,13 @@ import { useMedAuth } from '@/contexts/MedAuthContext'
 import { 
   useChatModeStore, 
   MODE_CONFIG, 
+  MODE_LIST,
   MODE_SYSTEM_PROMPTS,
   MODE_WELCOME_MESSAGES,
   type ChatMode,
   type SessaoModo,
-  type EstatisticasModo
+  type EstatisticasModo,
+  type ModeConfigItem
 } from '@/lib/stores/chatModeStore'
 import { cn } from '@/lib/utils'
 
@@ -43,7 +45,7 @@ const ICONS: Record<string, React.ElementType> = {
 }
 
 // Configuração dos modos (legado - compatibilidade)
-export const CHAT_MODES = Object.values(MODE_CONFIG).map(config => ({
+export const CHAT_MODES = MODE_LIST.map(config => ({
   id: config.id,
   nome: config.label,
   descricao: config.description,
@@ -189,7 +191,7 @@ export function ChatModeSelector({
 
               {/* Lista de Modos */}
               <div className="p-2 max-h-[60vh] overflow-y-auto">
-                {Object.values(MODE_CONFIG).map((modo) => {
+                {MODE_LIST.map((modo) => {
                   const ModoIcon = ICONS[modo.icon]
                   const isAtivo = modoAtual === modo.id
                   const podeusar = podeUsarModo(modo.id)
@@ -303,7 +305,7 @@ export function ChatModeSelector({
                 className="absolute top-full left-0 mt-2 w-72 bg-slate-800/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
               >
                 <div className="p-2">
-                  {Object.values(MODE_CONFIG).map(modo => {
+                  {MODE_LIST.map(modo => {
                     const ModoIcon = ICONS[modo.icon]
                     const disponivel = podeUsarModo(modo.id)
                     const ativo = modoAtual === modo.id
@@ -357,7 +359,7 @@ export function ChatModeSelector({
   if (variant === 'pills') {
     return (
       <div className={cn("flex items-center gap-1 p-1 bg-white/5 rounded-xl overflow-x-auto", className)}>
-        {Object.values(MODE_CONFIG).map(modo => {
+        {MODE_LIST.map(modo => {
           const ModoIcon = ICONS[modo.icon]
           const disponivel = podeUsarModo(modo.id)
           const ativo = modoAtual === modo.id
@@ -388,7 +390,7 @@ export function ChatModeSelector({
   // ============================================
   return (
     <div className={cn("flex items-center border-b border-white/10 overflow-x-auto", className)}>
-      {Object.values(MODE_CONFIG).map(modo => {
+      {MODE_LIST.map(modo => {
         const ModoIcon = ICONS[modo.icon]
         const disponivel = podeUsarModo(modo.id)
         const ativo = modoAtual === modo.id
