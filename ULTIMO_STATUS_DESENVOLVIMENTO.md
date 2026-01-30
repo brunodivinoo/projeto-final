@@ -1,274 +1,193 @@
 # 📊 ÚLTIMO STATUS - PREPARA MED
-## Atualizado em: 30/01/2026 - 17:55 (Horário de Brasília)
+## Atualizado em: 30/01/2026 - 21:45 (Horário de Brasília)
 
 ---
 
-## 🚨 ATENÇÃO PRÓXIMA SESSÃO - ERROS NO VERCEL
+## ✅ O QUE FOI FEITO NA SESSÃO ATUAL (30/01/2026 - noite)
 
-Os últimos commits desta sessão deram **ERRO no Vercel** e precisam ser corrigidos.
+### 1. IDENTIFICADO E CORRIGIDO O ERRO DE BUILD
+- **Problema**: Arquivo `lib/utils.ts` não existia
+- **Impacto**: Todos os novos componentes importavam `cn` de `@/lib/utils`
+- **Solução**: Criado `lib/utils.ts` com a função `cn` e utilitários
+- **Commit**: `211be013`
 
-### Commits com Erro (todos de 17:45-17:49):
-```
-d4e465b1 | feat: atualizar ChatModes com sistema de sessões e UI melhorada
-746c2bdb | feat: atualizar store de modos com sessões completas  
-c0d6da5d | feat: criar componente QuestaoInterativa
-764d21b0 | feat: criar ModeSelector com UI melhorada
-5abc25ba | feat: adicionar API de setup para modos
-2b33a16b | feat: adicionar API de questões por sessão
-fb57c944 | feat: adicionar API de sessões de modo
-```
+### 2. ANÁLISE DOS ARQUIVOS DO SISTEMA DE MODOS
+Todos os arquivos criados na sessão anterior foram verificados e estão **estruturalmente corretos**:
 
-### ⚠️ INSTRUÇÕES PARA CORRIGIR:
-
-1. **NÃO SIMPLIFICAR** - Manter toda a arquitetura planejada
-2. **NÃO REMOVER FUNCIONALIDADES** - Apenas corrigir erros de sintaxe/imports
-3. **VERIFICAR LOGS DO VERCEL** - Ver erros específicos de build
-4. **CORRIGIR UM POR UM** - Testar cada arquivo antes de subir
-
-### Prováveis Causas dos Erros:
-- Imports incorretos (caminhos relativos vs absolutos)
-- Tipos não exportados corretamente
-- Dependências faltando entre arquivos
-- Referências a arquivos que não existem ainda
+| Arquivo | Status | Observação |
+|---------|--------|------------|
+| `app/api/medicina/ia/sessoes/route.ts` | ✅ OK | API completa |
+| `app/api/medicina/ia/questoes-sessao/route.ts` | ✅ OK | API completa |
+| `app/api/medicina/setup/modos/route.ts` | ✅ OK | API de setup |
+| `lib/stores/chatModeStore.ts` | ✅ OK | Store completa |
+| `components/chat/ModeSelector.tsx` | ✅ OK | Componente completo |
+| `components/chat/QuestaoInterativa.tsx` | ✅ OK | Componente completo |
+| `components/medicina/ChatModes.tsx` | ✅ OK | Componente completo |
+| `lib/utils.ts` | ✅ CRIADO | **FIX do build** |
 
 ---
 
-## ✅ O QUE FOI FEITO NESTA SESSÃO (30/01/2026)
+## 📝 COMMITS DESTA SESSÃO
 
-### 1. Arquitetura Completa dos Modos de Chat
-- Documento completo criado: `/docs/ARQUITETURA_MODOS_CHAT.md`
-- 4 modos definidos: Chat Livre, Caso Clínico, Tutor, Questões
-- Sistema de sessões dentro de conversas
-- Fluxos detalhados de cada modo
-- Integração HuggingFace planejada
-
-### 2. Correções Mobile/PWA (FUNCIONANDO ✅)
-- Header mobile corrigido (espaçamento notch/ilha dinâmica)
-- Dropdown "Residência" abre para cima
-- Header redundante do chat removido
-- **Commits:** ab137822, e02967f5, 95c9d998
-
-### 3. Arquivos Criados (COM ERROS NO VERCEL ❌)
-
-| Arquivo | Caminho | Status |
-|---------|---------|--------|
-| API Sessões | `app/api/medicina/ia/sessoes/route.ts` | ❌ Erro |
-| API Questões | `app/api/medicina/ia/questoes-sessao/route.ts` | ❌ Erro |
-| API Setup | `app/api/medicina/setup/modos/route.ts` | ❌ Erro |
-| chatModeStore | `lib/stores/chatModeStore.ts` | ❌ Erro |
-| ModeSelector | `components/chat/ModeSelector.tsx` | ❌ Erro |
-| QuestaoInterativa | `components/chat/QuestaoInterativa.tsx` | ❌ Erro |
-| ChatModes | `components/medicina/ChatModes.tsx` | ❌ Erro |
-
-### 4. SQL para Banco de Dados
-- Tabelas: `sessoes_modo_med`, `casos_clinicos_med`, `questoes_sessao_med`
-- Colunas: `sessao_id` em mensagens, `modo` em conversas
-- Trigger: atualização automática de métricas
-- **Status:** SQL pronto, mas NÃO executado ainda no Supabase
+| SHA | Mensagem |
+|-----|----------|
+| `211be013` | fix: criar lib/utils.ts com função cn para corrigir erro de build |
 
 ---
 
-## 📋 ARQUITETURA COMPLETA DOS MODOS DE CHAT
+## ⏳ PENDÊNCIAS - PRÓXIMOS PASSOS
 
-### Conceito Principal: SESSÕES DE MODO
+### 🔴 CRÍTICO: Criar Tabelas no Supabase
 
-```
-CONVERSA ÚNICA
-├── SESSÃO 1: Chat Livre (14:30-14:45)
-│   ├── Mensagens 1-5
-│   ├── 2 flashcards gerados
-│   └── 1 resumo
-├── SESSÃO 2: Caso Clínico (14:45-15:15)
-│   ├── Mensagens 6-12
-│   ├── Caso IAM
-│   └── Score: 92%
-├── SESSÃO 3: Questões (15:15-15:45)
-│   ├── Mensagens 13-20
-│   ├── 10 questões
-│   └── Taxa acerto: 80%
-└── SESSÃO 4: Chat Livre (15:45-16:00)
-    ├── Mensagens 21-25
-    └── 1 resumo
-```
+As tabelas do sistema de modos **ainda não existem** no banco de dados.
 
-### Os 4 Modos
-
-#### 💬 CHAT LIVRE
-- Dúvidas gerais, explicações, resumos
-- Detecção automática de artefatos
-- Gratuito para todos
-
-#### 🏥 CASO CLÍNICO (Premium)
-- 5 etapas: Apresentação → Hipóteses → Exames → Diagnóstico → Discussão
-- Score 0-100
-- Feedback detalhado por etapa
-
-#### 🎓 MODO TUTOR (Premium)
-- Método Socrático
-- Perguntas guiadas
-- Nunca dá resposta direta
-- Flashcards automáticos ao final
-
-#### 📝 QUESTÕES
-- Configuração: tema, quantidade, dificuldade, banca
-- Uma questão por vez
-- Gabarito comentado
-- Estatísticas da sessão
-
-### Tabelas do Banco
+**Execute este SQL no Supabase Dashboard:**
+→ https://supabase.com/dashboard/project/zkcstkbpgwdoiihvfspp/sql
 
 ```sql
--- Sessões de modo
-sessoes_modo_med (
-  id, conversa_id, user_id, modo,
-  iniciado_em, finalizado_em,
-  total_mensagens, total_tokens,
-  metricas (jsonb)
-)
+-- 1. Tabela de sessões de modo
+CREATE TABLE IF NOT EXISTS sessoes_modo_med (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversa_id uuid NOT NULL REFERENCES conversas_ia_med(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  modo varchar(50) NOT NULL CHECK (modo IN ('chat', 'caso_clinico', 'tutor', 'questoes')),
+  iniciado_em timestamptz DEFAULT now(),
+  finalizado_em timestamptz,
+  total_mensagens int DEFAULT 0,
+  total_tokens int DEFAULT 0,
+  metricas jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
 
--- Casos clínicos
-casos_clinicos_med (
-  id, sessao_id, user_id,
-  titulo, especialidade, dificuldade,
-  caso_json, estado, etapa_atual,
-  hipoteses_usuario, exames_solicitados,
-  diagnostico_usuario, conduta_usuario,
-  score_final, tempo_resolucao_segundos,
-  feedback_ia
-)
+CREATE INDEX IF NOT EXISTS idx_sessoes_modo_conversa ON sessoes_modo_med(conversa_id);
+CREATE INDEX IF NOT EXISTS idx_sessoes_modo_user ON sessoes_modo_med(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessoes_modo_modo ON sessoes_modo_med(modo);
 
--- Questões por sessão
-questoes_sessao_med (
-  id, sessao_id, user_id,
-  questao_json, numero_questao,
-  resposta_usuario, resposta_correta,
-  acertou, tempo_resposta_segundos
-)
+ALTER TABLE sessoes_modo_med ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "sessoes_modo_all" ON sessoes_modo_med FOR ALL USING (auth.uid() = user_id);
+
+
+-- 2. Tabela de casos clínicos
+CREATE TABLE IF NOT EXISTS casos_clinicos_med (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  sessao_id uuid REFERENCES sessoes_modo_med(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  titulo varchar(255),
+  especialidade varchar(100),
+  dificuldade varchar(20),
+  caso_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  estado varchar(50) DEFAULT 'em_andamento',
+  etapa_atual varchar(50) DEFAULT 'apresentacao',
+  hipoteses_usuario jsonb DEFAULT '[]'::jsonb,
+  exames_solicitados jsonb DEFAULT '[]'::jsonb,
+  diagnostico_usuario varchar(255),
+  conduta_usuario text,
+  score_final int,
+  tempo_resolucao_segundos int,
+  feedback_ia text,
+  created_at timestamptz DEFAULT now(),
+  finalizado_em timestamptz
+);
+
+CREATE INDEX IF NOT EXISTS idx_casos_user ON casos_clinicos_med(user_id);
+CREATE INDEX IF NOT EXISTS idx_casos_sessao ON casos_clinicos_med(sessao_id);
+
+ALTER TABLE casos_clinicos_med ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "casos_clinicos_all" ON casos_clinicos_med FOR ALL USING (auth.uid() = user_id);
+
+
+-- 3. Tabela de questões por sessão
+CREATE TABLE IF NOT EXISTS questoes_sessao_med (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  sessao_id uuid REFERENCES sessoes_modo_med(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  questao_id uuid,
+  questao_json jsonb,
+  resposta_usuario varchar(10),
+  resposta_correta varchar(10),
+  acertou boolean,
+  tempo_resposta_segundos int,
+  tema varchar(255),
+  dificuldade varchar(50),
+  viu_gabarito boolean DEFAULT false,
+  feedback_lido boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_questoes_sessao_user ON questoes_sessao_med(user_id);
+CREATE INDEX IF NOT EXISTS idx_questoes_sessao_sessao ON questoes_sessao_med(sessao_id);
+CREATE INDEX IF NOT EXISTS idx_questoes_sessao_acertou ON questoes_sessao_med(acertou);
+
+ALTER TABLE questoes_sessao_med ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "questoes_sessao_all" ON questoes_sessao_med FOR ALL USING (auth.uid() = user_id);
+
+
+-- 4. Adicionar colunas nas tabelas existentes
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'mensagens_ia_med' AND column_name = 'sessao_id') THEN
+    ALTER TABLE mensagens_ia_med ADD COLUMN sessao_id uuid REFERENCES sessoes_modo_med(id);
+    CREATE INDEX idx_mensagens_sessao ON mensagens_ia_med(sessao_id);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'conversas_ia_med' AND column_name = 'modo') THEN
+    ALTER TABLE conversas_ia_med ADD COLUMN modo varchar(50) DEFAULT 'chat';
+  END IF;
+END $$;
+
+
+-- 5. Trigger para métricas
+CREATE OR REPLACE FUNCTION atualizar_metricas_sessao()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.sessao_id IS NOT NULL THEN
+    UPDATE sessoes_modo_med
+    SET total_mensagens = total_mensagens + 1,
+        total_tokens = total_tokens + COALESCE(NEW.tokens, 0),
+        updated_at = now()
+    WHERE id = NEW.sessao_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_atualizar_metricas ON mensagens_ia_med;
+CREATE TRIGGER trigger_atualizar_metricas
+AFTER INSERT ON mensagens_ia_med
+FOR EACH ROW EXECUTE FUNCTION atualizar_metricas_sessao();
+
+SELECT 'Tabelas criadas com sucesso!' as status;
 ```
 
-### Componentes de UI
+### 🟡 DEPOIS DE CRIAR AS TABELAS
 
-1. **ModeSelector** - Dropdown melhorado com:
-   - Ícones coloridos por modo
-   - Badge PRO para modos premium
-   - Estatísticas do usuário
-   - Preview de features
-
-2. **QuestaoInterativa** - Questão com:
-   - Timer
-   - Alternativas clicáveis
-   - Animação de resultado
-   - Gabarito comentado expandível
-
-3. **ModeChangeMarker** - Marcador visual no chat
-4. **ModeSessionCard** - Card de sessão para sidebar
-5. **EstatisticasQuestoes** - Estatísticas da sessão
-
----
-
-## 📌 PLANO DE IMPLEMENTAÇÃO - FASES
-
-### FASE 1: FUNDAÇÃO ✅ (Parcial - com erros)
-- [x] SQL das tabelas criado
-- [x] API de sessões criada (com erro)
-- [x] chatModeStore atualizado (com erro)
-- [x] ModeSelector novo (com erro)
-- [ ] **Executar SQL no Supabase** ⏳
-- [ ] **Corrigir erros de build** ⏳
-
-### FASE 2: MODOS BÁSICOS ⏳
-- [x] QuestaoInterativa criado (com erro)
-- [ ] Corrigir componentes
-- [ ] Integrar na página de chat
-- [ ] Testar Chat Livre aprimorado
-- [ ] Testar Modo Questões
-
-### FASE 3: MODOS PREMIUM ⏳
-- [ ] Caso Clínico interativo
-- [ ] Modo Tutor socrático
-- [ ] Integração HuggingFace
-
-### FASE 4: POLISH ⏳
-- [ ] Dashboard estatísticas
-- [ ] Histórico de sessões
-- [ ] Gamificação
-
----
-
-## ⏭️ PRÓXIMOS PASSOS (PRÓXIMA SESSÃO)
-
-### Prioridade 1: CORRIGIR ERROS DE BUILD
-1. Verificar logs do Vercel para ver erros específicos
-2. Corrigir imports e tipos em cada arquivo
-3. Garantir que todas as dependências existem
-4. Testar build local antes de subir
-
-### Prioridade 2: EXECUTAR SQL NO SUPABASE
-1. Acessar Supabase Dashboard
-2. Ir em SQL Editor
-3. Executar o SQL completo das tabelas
-4. Verificar se tabelas foram criadas
-
-### Prioridade 3: CONTINUAR FASE 2
-1. Integrar ModeSelector na página de chat
-2. Testar troca de modos
-3. Implementar marcadores visuais
-4. Testar QuestaoInterativa
-
----
-
-## 📁 ARQUIVOS LOCAIS CRIADOS (para referência)
-
-Os arquivos foram criados localmente em `/home/claude/prepara-med/` e também enviados ao GitHub (com erros):
-
-```
-Arquivos no GitHub (precisam correção):
-├── app/api/medicina/ia/sessoes/route.ts
-├── app/api/medicina/ia/questoes-sessao/route.ts
-├── app/api/medicina/setup/modos/route.ts
-├── lib/stores/chatModeStore.ts
-├── components/chat/ModeSelector.tsx
-├── components/chat/QuestaoInterativa.tsx
-└── components/medicina/ChatModes.tsx
-
-SQL para executar no Supabase:
-└── create_tables_modos.sql (288 linhas)
-```
+1. Testar a API de setup: `GET /api/medicina/setup/modos`
+2. Integrar ModeSelector na página de chat
+3. Testar troca de modos
+4. Implementar marcadores visuais no chat
 
 ---
 
 ## 🔗 LINKS ÚTEIS
 
-- **Produção:** https://projeto-final-zeta-navy.vercel.app
-- **Vercel Dashboard:** https://vercel.com/brunos-projects-5f2d50e2/projeto-final
-- **Supabase:** https://supabase.com/dashboard/project/zkcstkbpgwdoiihvfspp
-- **GitHub:** https://github.com/brunodivinoo/projeto-final
+- **Produção**: https://projeto-final-zeta-navy.vercel.app
+- **Supabase SQL Editor**: https://supabase.com/dashboard/project/zkcstkbpgwdoiihvfspp/sql
+- **Vercel Dashboard**: https://vercel.com/brunos-projects-5f2d50e2/projeto-final
+- **GitHub**: https://github.com/brunodivinoo/projeto-final
 
 ---
 
-## 📝 RESUMO PARA PRÓXIMA SESSÃO
+## 📋 RESUMO DO PROGRESSO - SISTEMA DE MODOS
 
-```
-SITUAÇÃO ATUAL:
-- Arquitetura completa dos modos de chat PLANEJADA ✅
-- 7 commits feitos com ERROS no Vercel ❌
-- SQL das tabelas PRONTO mas não executado ⏳
-- Fase 1 e 2 PARCIALMENTE implementadas
-
-AÇÃO NECESSÁRIA:
-1. Verificar logs de erro no Vercel
-2. Corrigir cada arquivo (imports, tipos, dependências)
-3. NÃO SIMPLIFICAR - manter arquitetura completa
-4. Executar SQL no Supabase
-5. Continuar implementação das fases
-
-LEMBRETE IMPORTANTE:
-O objetivo é ter um sistema de modos COMPLETO e FUNCIONAL,
-com sessões, estatísticas, questões interativas e casos clínicos.
-NÃO reduzir a funcionalidade para "fazer funcionar rápido".
-```
+| Fase | Status | Detalhes |
+|------|--------|----------|
+| **1. Fundação** | 🟡 90% | Código OK, falta SQL no banco |
+| **2. Modos Básicos** | ⏳ Próximo | Chat Livre + Questões |
+| **3. Modos Premium** | ⏳ | Caso Clínico + Tutor |
+| **4. Polish** | ⏳ | Estatísticas + Gamificação |
 
 ---
 
-**Sessão finalizada em:** 30/01/2026 às 17:55
-**Próxima ação:** Corrigir erros de build no Vercel
+**Sessão atualizada em**: 30/01/2026 às 21:45
+**Próxima ação**: Executar SQL no Supabase para criar tabelas
