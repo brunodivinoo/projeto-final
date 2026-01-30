@@ -18,7 +18,7 @@ import {
   Info
 } from 'lucide-react'
 import { useMedAuth } from '@/contexts/MedAuthContext'
-import { useChatModeStore, MODE_CONFIG, ChatMode } from '@/lib/stores/chatModeStore'
+import { useChatModeStore, MODE_CONFIG, MODE_LIST, ChatMode, type ModeConfigItem } from '@/lib/stores/chatModeStore'
 import { cn } from '@/lib/utils'
 
 // Mapeamento de ícones
@@ -177,7 +177,7 @@ export function ModeSelector({
             
             {/* Lista de Modos */}
             <div className="p-2 max-h-[60vh] overflow-y-auto">
-              {Object.values(MODE_CONFIG).map((modo) => {
+              {MODE_LIST.map((modo) => {
                 const Icon = ICONS[modo.icon]
                 const isAtivo = currentMode === modo.id
                 const podeusar = podeUsarModo(modo.id)
