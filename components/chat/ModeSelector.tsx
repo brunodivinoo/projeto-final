@@ -328,7 +328,7 @@ interface ModeSessionCardProps {
     iniciado_em: string
     finalizado_em: string | null
     total_mensagens: number
-    metricas: Record<string, any>
+    metricas: Record<string, string | number | boolean | string[] | null | undefined>
   }
   onClick?: () => void
   isActive?: boolean

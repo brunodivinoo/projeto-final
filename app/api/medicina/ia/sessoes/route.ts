@@ -31,7 +31,7 @@ export interface SessaoModo {
     caso_id?: string
     caso_estado?: string
     conceitos_aprendidos?: string[]
-    [key: string]: any
+    [key: string]: string | number | boolean | string[] | null | undefined
   }
   created_at: string
   updated_at: string
@@ -313,7 +313,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const updateData: any = {
+    const updateData: { updated_at: string; finalizado_em?: string; metricas?: Record<string, string | number | boolean | string[] | null | undefined> } = {
       updated_at: new Date().toISOString()
     }
 

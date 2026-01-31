@@ -24,7 +24,7 @@ export interface SessaoModo {
     caso_id?: string
     caso_estado?: string
     conceitos_aprendidos?: string[]
-    [key: string]: any
+    [key: string]: string | number | boolean | string[] | null | undefined
   }
 }
 

@@ -279,7 +279,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const updateData: any = {}
+    const updateData: { viu_gabarito?: boolean; feedback_lido?: boolean } = {}
     if (viu_gabarito !== undefined) updateData.viu_gabarito = viu_gabarito
     if (feedback_lido !== undefined) updateData.feedback_lido = feedback_lido
 

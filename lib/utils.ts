@@ -80,13 +80,13 @@ export function sleep(ms: number): Promise<void> {
 /**
  * Debounce a function
  */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
+export function debounce<A extends unknown[], R>(
+  func: (...args: A) => R,
   wait: number
-): (...args: Parameters<T>) => void {
+): (...args: A) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null
   
-  return (...args: Parameters<T>) => {
+  return (...args: A) => {
     if (timeoutId) clearTimeout(timeoutId)
     timeoutId = setTimeout(() => func(...args), wait)
   }
