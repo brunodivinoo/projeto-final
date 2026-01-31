@@ -47,6 +47,7 @@ import { QuestaoDetector, extrairQuestoes } from '@/components/chat/QuestaoDetec
 import { type QuestaoData } from '@/components/chat/QuestaoInterativa'
 import { useSessoesIA } from '@/hooks/useSessoesIA'
 import { SimulacaoConfig, gerarPromptSimulacao, type SimulacaoConfigData } from '@/components/chat/SimulacaoConfig'
+import { IndicadorProgresso, FichaDrawer, type DadosFicha, type SecaoFicha } from '@/components/chat/FichaAnamnese'
 
 // Hook para obter o estado da sidebar de artefatos
 // Considera artefatos filtrados pelo modo atual e conversa
@@ -356,6 +357,15 @@ export default function IAPage() {
 
   // Estado para simulação de atendimento (modo caso_clinico)
   const [showSimulacaoConfig, setShowSimulacaoConfig] = useState(false)
+
+  // Estado para ficha de anamnese (opcional na simulação)
+  const [fichaAtiva, setFichaAtiva] = useState(false)
+  const [fichaAberta, setFichaAberta] = useState(false)
+  const [dadosFicha, setDadosFicha] = useState<DadosFicha>({
+    identificacao: {},
+    interrogatorio: {},
+    exameFisico: {}
+  })
 
   // Estado para controlar dropdown de modo
   const [showModeDropdown, setShowModeDropdown] = useState(false)
@@ -1002,6 +1012,19 @@ export default function IAPage() {
   // Função para iniciar simulação de atendimento
   const iniciarSimulacao = useCallback((config: SimulacaoConfigData) => {
     setShowSimulacaoConfig(false)
+
+    // Ativar ficha de anamnese se configurado
+    if (config.usarFichaAnamnese) {
+      setFichaAtiva(true)
+      setDadosFicha({
+        identificacao: {},
+        interrogatorio: {},
+        exameFisico: {}
+      })
+    } else {
+      setFichaAtiva(false)
+    }
+
     const prompt = gerarPromptSimulacao(config)
     setInput(prompt)
     // Enviar automaticamente após um pequeno delay para permitir que o input seja atualizado
@@ -1644,6 +1667,13 @@ export default function IAPage() {
             />
           </div>
           <div className="flex items-center gap-1">
+            {/* Indicador de Ficha - Mobile */}
+            {fichaAtiva && chatMode === 'caso_clinico' && (
+              <IndicadorProgresso
+                dados={dadosFicha}
+                onClick={() => setFichaAberta(true)}
+              />
+            )}
             {isResidencia && <Crown className="w-4 h-4 text-amber-400" />}
             <button
               onClick={() => setShowOpcoes(!showOpcoes)}
@@ -1735,7 +1765,15 @@ export default function IAPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            {/* Indicador de Ficha - Desktop */}
+            {fichaAtiva && chatMode === 'caso_clinico' && (
+              <IndicadorProgresso
+                dados={dadosFicha}
+                onClick={() => setFichaAberta(true)}
+              />
+            )}
+
             {/* Botão de modo no mobile */}
             <div className="relative md:hidden" ref={modeDropdownMobileRef}>
               <button
@@ -2183,6 +2221,16 @@ export default function IAPage() {
 
       {/* Sidebar de Artefatos */}
       <ArtifactsSidebar userId={user?.id} />
+
+      {/* Drawer da Ficha de Anamnese */}
+      {fichaAtiva && (
+        <FichaDrawer
+          isOpen={fichaAberta}
+          onClose={() => setFichaAberta(false)}
+          dados={dadosFicha}
+          onDadosChange={setDadosFicha}
+        />
+      )}
 
       {/* Modal de Análise de Exames */}
       <ExamAnalyzerModal
