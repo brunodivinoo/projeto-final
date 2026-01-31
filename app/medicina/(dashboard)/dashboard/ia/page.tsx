@@ -46,12 +46,34 @@ import { ModeSelector, ModeIndicator } from '@/components/chat/ModeSelector'
 import { QuestaoDetector, extrairQuestoes } from '@/components/chat/QuestaoDetector'
 import { type QuestaoData } from '@/components/chat/QuestaoInterativa'
 import { useSessoesIA } from '@/hooks/useSessoesIA'
+import { SimulacaoConfig, gerarPromptSimulacao, type SimulacaoConfigData } from '@/components/chat/SimulacaoConfig'
 
 // Hook para obter o estado da sidebar de artefatos
+// Considera artefatos filtrados pelo modo atual e conversa
 const useArtifactsSidebar = () => {
   const isSidebarOpen = useArtifactsStore(state => state.isSidebarOpen)
-  const artifacts = useArtifactsStore(state => state.artifacts)
-  return { isSidebarOpen, hasArtifacts: artifacts.length > 0 }
+  const allArtifacts = useArtifactsStore(state => state.artifacts)
+  const currentConversaId = useArtifactsStore(state => state.currentConversaId)
+  const chatModeFilter = useArtifactsStore(state => state.chatModeFilter)
+
+  // Filtrar artefatos pela conversa atual e modo de chat (mesma lógica do ArtifactsSidebar)
+  const hasVisibleArtifacts = useMemo(() => {
+    let filtered = allArtifacts
+
+    // Filtrar por conversa
+    if (currentConversaId) {
+      filtered = filtered.filter(a => a.conversaId === currentConversaId || !a.conversaId)
+    }
+
+    // Filtrar por modo de chat
+    if (chatModeFilter !== 'all') {
+      filtered = filtered.filter(a => a.chatMode === chatModeFilter)
+    }
+
+    return filtered.length > 0
+  }, [allArtifacts, currentConversaId, chatModeFilter])
+
+  return { isSidebarOpen, hasArtifacts: hasVisibleArtifacts }
 }
 
 interface ImagemGerada {
@@ -331,6 +353,9 @@ export default function IAPage() {
 
   // Estado para questões respondidas (evitar re-responder)
   const [questoesRespondidas, setQuestoesRespondidas] = useState<Set<number>>(new Set())
+
+  // Estado para simulação de atendimento (modo caso_clinico)
+  const [showSimulacaoConfig, setShowSimulacaoConfig] = useState(false)
 
   // Estado para controlar dropdown de modo
   const [showModeDropdown, setShowModeDropdown] = useState(false)
@@ -974,6 +999,20 @@ export default function IAPage() {
     }
   }, [])
 
+  // Função para iniciar simulação de atendimento
+  const iniciarSimulacao = useCallback((config: SimulacaoConfigData) => {
+    setShowSimulacaoConfig(false)
+    const prompt = gerarPromptSimulacao(config)
+    setInput(prompt)
+    // Enviar automaticamente após um pequeno delay para permitir que o input seja atualizado
+    setTimeout(() => {
+      const enviarBtn = document.querySelector('[data-enviar-btn]') as HTMLButtonElement
+      if (enviarBtn) {
+        enviarBtn.click()
+      }
+    }, 100)
+  }, [])
+
   // Enviar mensagem com streaming
   const enviarMensagem = async () => {
     if (!input.trim() || !user || loading || !podeUsarIA) return
@@ -1595,7 +1634,29 @@ export default function IAPage() {
 
       {/* Chat Principal */}
       <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
-        {/* Header - Oculto no mobile (já tem no layout principal) */}
+        {/* Mobile Mode Bar - Barra compacta de seleção de modo para mobile */}
+        <div className="lg:hidden flex items-center justify-between px-3 py-2 border-b border-white/10 bg-slate-900/80 backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <ModeSelector
+              onModeChange={(modo) => trocarModoNaConversa(modo as ChatMode)}
+              variant="compact"
+              className="flex-shrink-0"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            {isResidencia && <Crown className="w-4 h-4 text-amber-400" />}
+            <button
+              onClick={() => setShowOpcoes(!showOpcoes)}
+              className={`p-1.5 rounded-lg transition-colors ${
+                showOpcoes ? 'bg-purple-500/20 text-purple-400' : 'text-white/40 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Header Desktop - Oculto no mobile (já tem barra de modo acima) */}
         <div className="hidden lg:flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-white/10">
           <div className="flex items-center gap-2 md:gap-3">
             {/* Botão menu/conversas - apenas mobile (desktop usa sidebar do layout) */}
@@ -1780,10 +1841,18 @@ export default function IAPage() {
                 />
               </div>
 
+              {/* Configurador de Simulação de Atendimento (modo caso_clinico) */}
+              {showSimulacaoConfig && chatMode === 'caso_clinico' && (
+                <SimulacaoConfig
+                  onStart={iniciarSimulacao}
+                  onCancel={() => setShowSimulacaoConfig(false)}
+                />
+              )}
+
               {/* Intro do modo ou sugestões */}
-              {mostrarIntro ? (
+              {mostrarIntro && !showSimulacaoConfig ? (
                 <ChatModeIntro modo={chatMode} onStart={iniciarModo} />
-              ) : (
+              ) : !showSimulacaoConfig ? (
                 <>
                   <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 flex items-center justify-center mb-3 md:mb-4">
                     <Brain className="w-7 h-7 md:w-8 md:h-8 text-purple-400" />
@@ -1837,6 +1906,25 @@ export default function IAPage() {
                     </div>
                   )}
 
+                  {/* Botão de Simulação de Atendimento (modo caso_clinico) */}
+                  {chatMode === 'caso_clinico' && (
+                    <div className="w-full max-w-xl mb-4">
+                      <button
+                        onClick={() => setShowSimulacaoConfig(true)}
+                        className="w-full flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-xl hover:from-emerald-500/30 hover:to-teal-500/30 transition-all text-left border border-emerald-500/30 hover:border-emerald-500/50 group"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Stethoscope className="w-5 h-5 text-emerald-400" />
+                        </div>
+                        <div className="flex-1">
+                          <span className="text-emerald-400 font-semibold block">Simulação de Atendimento</span>
+                          <span className="text-white/50 text-xs">Configure especialidade, dificuldade e cenário</span>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-emerald-400/50 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
+                      </button>
+                    </div>
+                  )}
+
                   {/* Sugestões padrão ou ações */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 w-full max-w-xl">
                     {(sugestoesInteligentes.actions.length > 0 ? sugestoesInteligentes.actions : sugestoes).map((sugestao, i) => (
@@ -1855,7 +1943,7 @@ export default function IAPage() {
                     ))}
                   </div>
                 </>
-              )}
+              ) : null}
             </div>
           ) : (
             mensagens.map((msg) => (
