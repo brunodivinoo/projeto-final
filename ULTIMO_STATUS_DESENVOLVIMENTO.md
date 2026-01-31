@@ -1,59 +1,66 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 31/01/2026 - 17:55 (Sessao Atual)
+## Atualizado em: 31/01/2026 - 21:30 (Sessao Atual)
 
 ---
 
-## O QUE FOI FEITO NESTA SESSAO (31/01/2026 - Tarde)
+## O QUE FOI FEITO NESTA SESSAO (31/01/2026 - Noite)
 
-### 1. VERIFICACAO DO BUILD VERCEL
-- Confirmado que o site esta funcionando em producao
-- URL atualizada: https://preparamed-navy.vercel.app (redirecionamento ativo)
-- API de health check: TODOS os servicos OK (Supabase, Anthropic, Gemini)
+### 1. MELHORIAS DE UX NO MODESELECTOR
+- Melhorado layout do texto no desktop (mais legível)
+- Fonte mais bold e tracking ajustado
+- Descrição com melhor contraste
 
-### 2. INTEGRACAO DO MODESELECTOR NA PAGINA DE CHAT
-- Substituido o ChatModeSelector legado pelo novo ModeSelector
-- ModeSelector integrado na tela inicial (quando nao ha mensagens)
-- Componente usa o chatModeStore para gerenciamento de estado
+### 2. MODOS DE CHAT NO MOBILE
+- Adicionada barra compacta de modos no mobile (lg:hidden)
+- Seletor de modo acessível na parte superior do chat
+- Botão de configurações no mobile
 
-### 3. CRIACAO DO HOOK useSessoesIA
-Arquivo: `hooks/useSessoesIA.ts` (264 linhas)
+### 3. REDIMENSIONAMENTO DO CHAT
+- Corrigido problema do espaço vazio quando sidebar fecha
+- Hook `useArtifactsSidebar` agora considera filtros por modo de chat
+- Chat preenche todo o espaço quando não há artefatos visíveis
 
-**Funcionalidades:**
-- `criarSessao(modo)` - Criar nova sessao de um modo
-- `finalizarSessao(metricas)` - Finalizar sessao ativa
-- `registrarQuestao(questao)` - Registrar resposta de questao
-- `buscarQuestoesErradas()` - Listar questoes erradas para revisao
-- `buscarEstatisticasQuestoes()` - Estatisticas por tema
-- Auto-carrega estatisticas ao montar
-- Auto-carrega sessoes ao mudar conversa
-
-### 4. CRIACAO DO QUESTAODETECTOR
-Arquivo: `components/chat/QuestaoDetector.tsx` (155 linhas)
+### 4. SIMULACAO DE ATENDIMENTO (MODO CASO CLINICO)
+Arquivo: `components/chat/SimulacaoConfig.tsx` (435 linhas)
 
 **Funcionalidades:**
-- Detecta blocos ```questao {...} ``` no conteudo do chat
-- Renderiza QuestaoInterativa para cada questao encontrada
-- Passa callback para registrar respostas
-- Evita re-responder questoes ja respondidas
+- Seleção de especialidade (14 opções + aleatório)
+- Seleção de dificuldade (Fácil, Médio, Difícil, R4)
+- Seleção de cenário (Ambulatório, PS, Enfermaria, UTI)
+- Opção de incluir exames no caso
+- Opção de paciente já trazer exames
+- Interface em 3 passos com animações
+- Geração automática de prompt de simulação
 
-### 5. ATUALIZACAO DO MemoizedMessage
-- Adicionados novos props: `onQuestaoResponder`, `questoesRespondidas`
-- Logica para detectar se mensagem contem questoes (`temQuestao`)
-- Condicional: se modo questoes + tem questao -> QuestaoDetector
-- Caso contrario -> ArtifactRenderer normal
+**Especialidades disponíveis:**
+- Clínica Médica, Cardiologia, Neurologia, Pediatria
+- Ortopedia, Pneumologia, Gastroenterologia, Nefrologia
+- Infectologia, Dermatologia, Psiquiatria, Ginecologia
+- Emergência, Aleatório
 
-### 6. HANDLER DE QUESTOES
-- Criado `handleQuestaoResponder` na pagina de IA
-- Marca questao como respondida no estado local
-- Registra na API via `registrarQuestao`
-- Atualiza estatisticas automaticamente
+### 5. ATUALIZACAO DO SYSTEM PROMPT CASO CLINICO
+- Modo simulação: IA age como paciente
+- Integração com busca web para exames reais
+- Instruções para referências brasileiras
+- Estrutura de etapas expandida
+- Níveis de dificuldade definidos
+
+### 6. MENSAGEM DE BOAS-VINDAS ATUALIZADA
+- Modo caso_clinico agora oferece duas opções:
+  - Simulação de Atendimento (novo!)
+  - Caso Clínico Tradicional
+
+### 7. INTEGRACAO HUGGINGFACE E SERPER
+- Verificado que Serper já está integrado via `serperImageService.ts`
+- HuggingFace configurado em `lib/huggingface/config.ts`
+- Tools de busca de imagens médicas funcionando
+- Busca web nativa do Claude ativada
 
 ---
 
 ## COMMITS REALIZADOS NESTA SESSAO
 
-- `9b227cc` - feat: integrar ModeSelector e QuestaoInterativa na pagina de chat
-- `03c7a14` - Merge PR #1 para main
+- `ce147b8` - feat: adicionar simulação de atendimento e melhorias de UX
 
 ---
 
@@ -61,9 +68,10 @@ Arquivo: `components/chat/QuestaoDetector.tsx` (155 linhas)
 
 | Arquivo | Tipo | Linhas |
 |---------|------|--------|
-| `hooks/useSessoesIA.ts` | Novo | 264 |
-| `components/chat/QuestaoDetector.tsx` | Novo | 155 |
-| `app/medicina/(dashboard)/dashboard/ia/page.tsx` | Modificado | +77/-20 |
+| `components/chat/SimulacaoConfig.tsx` | Novo | 435 |
+| `app/medicina/(dashboard)/dashboard/ia/page.tsx` | Modificado | +100 |
+| `components/chat/ModeSelector.tsx` | Modificado | +8/-4 |
+| `lib/stores/chatModeStore.ts` | Modificado | +81/-30 |
 
 ---
 
@@ -71,59 +79,66 @@ Arquivo: `components/chat/QuestaoDetector.tsx` (155 linhas)
 
 | Item | Status |
 |------|--------|
-| Site em producao | OK (https://preparamed-navy.vercel.app) |
-| TypeScript | 0 erros |
+| Site em produção | OK (https://preparamed-navy.vercel.app) |
+| TypeScript | 0 erros de código |
 | APIs | Todas funcionando |
-| Health Check | Supabase, Anthropic, Gemini OK |
-| Modos de Chat | Integrados |
-| Questoes Interativas | Implementado |
-| Sessoes | APIs conectadas |
+| Modos de Chat Desktop | OK |
+| Modos de Chat Mobile | OK (novo!) |
+| Simulação de Atendimento | Implementado (novo!) |
+| Busca de Imagens (Serper) | Integrado |
+| HuggingFace | Configurado |
+| Redimensionamento Chat | Corrigido |
 
 ---
 
-## SISTEMA DE MODOS DE CHAT (Status Geral)
+## SISTEMA DE SIMULACAO DE ATENDIMENTO
 
-### INFRAESTRUTURA (COMPLETA)
-- `chatModeStore.ts`: Tipos, MODE_CONFIG, MODE_LIST
-- 4 modos: chat, caso_clinico, tutor, questoes
-- System prompts e welcome messages por modo
+### COMO FUNCIONA
+1. Usuário entra no modo "Caso Clínico"
+2. Clica em "Simulação de Atendimento"
+3. Configura: especialidade, dificuldade, cenário
+4. Opcionalmente: incluir exames, paciente já traz exames
+5. IA inicia como paciente no cenário escolhido
+6. Usuário faz anamnese, exame físico, solicita exames
+7. IA busca exames reais via Serper e apresenta
+8. Usuário interpreta e dá conduta
+9. IA fornece feedback com score e referências
 
-### COMPONENTES (INTEGRADOS)
-- `ModeSelector.tsx` - Integrado na pagina inicial
-- `QuestaoInterativa.tsx` - Renderizado via QuestaoDetector
-- `QuestaoDetector.tsx` - Parser de questoes do chat
-- `ChatModes.tsx` - Mantido para compatibilidade
+### ESPECIALIDADES
+- Clínica Médica, Cardiologia, Neurologia, Pediatria
+- Ortopedia, Pneumologia, Gastroenterologia, Nefrologia
+- Infectologia, Dermatologia, Psiquiatria, Ginecologia
+- Emergência, Aleatório
 
-### APIs (CONECTADAS)
-- `/api/medicina/ia/sessoes` - CRUD de sessoes
-- `/api/medicina/ia/questoes-sessao` - Registro de questoes
-- Hook `useSessoesIA` conecta frontend com APIs
+### DIFICULDADES
+- Fácil: Casos típicos, diagnóstico clássico
+- Médio: Variações comuns, diagnóstico diferencial moderado
+- Difícil: Apresentações atípicas, múltiplos diagnósticos
+- R4: Casos raros, condutas avançadas
 
-### FLUXO COMPLETO
-1. Usuario seleciona modo no ModeSelector
-2. Sistema cria sessao automaticamente
-3. No modo questoes, IA gera ```questao {...}```
-4. QuestaoDetector renderiza QuestaoInterativa
-5. Usuario responde, callback registra na API
-6. Estatisticas atualizadas automaticamente
+### CENÁRIOS
+- Ambulatório: Consulta eletiva
+- Pronto-Socorro: Urgência/emergência
+- Enfermaria: Paciente internado
+- UTI: Terapia intensiva
 
 ---
 
 ## PROXIMOS PASSOS
 
-1. **Testar fluxo completo** - Verificar geracao de questoes pela IA
-2. **Criar sessao automatica** - Ao trocar de modo, criar sessao
-3. **Exibir estatisticas** - Mostrar progresso do usuario na UI
-4. **Modo Caso Clinico** - Implementar logica de etapas
-5. **Modo Tutor** - Implementar logica socratica
+1. **Testar simulação completa** - Verificar fluxo end-to-end
+2. **Salvar progresso da simulação** - Persistir no banco
+3. **Estatísticas de simulações** - Dashboard de desempenho
+4. **Modo Tutor** - Implementar lógica socrática
+5. **Gamificação** - Badges por simulações concluídas
 
 ---
 
 ## LINKS UTEIS
 
-- Producao: https://preparamed-navy.vercel.app
+- Produção: https://preparamed-navy.vercel.app
 - Medicina/IA: https://preparamed-navy.vercel.app/medicina/dashboard/ia
 - Supabase: https://supabase.com/dashboard/project/zkcstkbpgwdoiihvfspp
 - Vercel: https://vercel.com/brunos-projects-5f2d50e2/projeto-final
 - GitHub: https://github.com/brunodivinoo/projeto-final
-- PR #1: https://github.com/brunodivinoo/projeto-final/pull/1
+- Branch: claude/continue-prepara-med-BanAw
