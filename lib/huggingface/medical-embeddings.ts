@@ -42,7 +42,7 @@ export async function generateMedicalEmbedding(text: string): Promise<number[]> 
 
     // Salvar no cache (limitar tamanho do cache)
     if (embeddingsCache.size > 1000) {
-      const firstKey = embeddingsCache.keys().next().value
+      const firstKey = Array.from(embeddingsCache.keys())[0]
       if (firstKey) embeddingsCache.delete(firstKey)
     }
     embeddingsCache.set(cacheKey, embedding)
@@ -159,3 +159,4 @@ export async function semanticSearch(
 export function clearEmbeddingsCache(): void {
   embeddingsCache.clear()
 }
+
