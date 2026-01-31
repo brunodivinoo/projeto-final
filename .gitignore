@@ -8,7 +8,7 @@
 # Instruções do Claude AI (contém tokens e senhas - NUNCA commitar)
 INSTRUCOES_PROJETO_CLAUDE_AI.md
 INSTRUCOES_CLAUDE_AI_PREPARAMED.md
-ULTIMO_STATUS_DESENVOLVIMENTO.md
+# ULTIMO_STATUS_DESENVOLVIMENTO.md - mantido no repo para continuidade
 
 # Dependências
 node_modules/
@@ -34,6 +34,7 @@ dashboard_*.html
 
 # CLI tools (não versionar)
 db-*.js
+db-*.sh
 setup-*.sql
 teste-*.js
 cli-backup/
