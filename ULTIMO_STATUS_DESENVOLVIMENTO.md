@@ -1,119 +1,135 @@
-# 📊 ÚLTIMO STATUS - PREPARA MED
-## Atualizado em: 31/01/2026 - 12:50 (Finalização de Sessão)
+# ULTIMO STATUS - PREPARA MED
+## Atualizado em: 31/01/2026 - 19:55 (Sessão Atual)
 
 ---
 
-## ✅ O QUE FOI FEITO NA ÚLTIMA SESSÃO (31/01/2026)
+## ACESSO E CREDENCIAIS TESTADOS
+
+| Serviço | Status | Observação |
+|---------|--------|------------|
+| **GitHub API** | OK | Token funcionando - consegue ler/escrever no repositório |
+| **Anthropic (Claude)** | OK | API respondendo normalmente |
+| **HuggingFace** | OK | Conectado como brunodivinoo |
+| **Vercel (Produção)** | OK | App em produção funcionando |
+| **Supabase** | VERIFICAR | Chave pode estar desatualizada - app usa variáveis do Vercel |
+| **Gemini** | BLOQUEADO | API bloqueando por restrição de IP/região |
+
+### Credenciais Salvas
+- Arquivo `INSTRUCOES_CLAUDE_AI_PREPARAMED.md` criado com todas as credenciais
+- Arquivo já está no `.gitignore` (não será commitado)
+
+---
+
+## O QUE FOI FEITO NA SESSÃO ANTERIOR (31/01/2026 - 12:50)
 
 ### 1. AUDITORIA COMPLETA DO BUILD DO VERCEL
 - Baixados e analisados **50+ arquivos** do repositório
 - Compilação TypeScript completa em ambiente isolado
 - Identificação precisa da causa raiz dos erros de build
-- Verificação de que todas as rotas em produção estão funcionando
 
 ### 2. PROBLEMA IDENTIFICADO E CORRIGIDO
-**Causa raiz:** O TypeScript falhava no build do Vercel porque alguns arquivos usavam **iteração direta de Map/Set** (`.entries()`, `.values()`, `.keys()`, spread `[...]`) que requer `downlevelIteration` ou target ES2015+.
+**Causa raiz:** TypeScript falhava no build porque alguns arquivos usavam **iteração direta de Map/Set** que requer `downlevelIteration` ou target ES2015+.
 
-**Padrões problemáticos corrigidos:**
+**Padrões corrigidos:**
 ```javascript
-// ANTES (falhava no build)
+// ANTES (falhava)
 for (const x of map.entries())
-for (const x of map.values())
-[...map.values()]
 map.keys().next().value
 
 // DEPOIS (correto)
 for (const x of Array.from(map.entries()))
-for (const x of Array.from(map.values()))
-Array.from(map.values())
 Array.from(map.keys())[0]
 ```
 
 ### 3. ARQUIVOS CORRIGIDOS (3 arquivos, 6 correções)
 
-**lib/ai/cache.ts** (4 correções)
-- Linha 67: `for...of memoryCache.entries()` → `Array.from(memoryCache.entries())`
-- Linha 111: `for...of memoryCache.values()` → `Array.from(memoryCache.values())`
-- Linha 124: `[...memoryCache.values()]` → `Array.from(memoryCache.values())`
-- Linha 287: `for...of rateLimits.entries()` → `Array.from(rateLimits.entries())`
+| Arquivo | Correções |
+|---------|-----------|
+| `lib/ai/cache.ts` | 4 correções de iteração |
+| `lib/huggingface/medical-embeddings.ts` | 1 correção |
+| `lib/medical-images/service.ts` | 1 correção |
 
-**lib/huggingface/medical-embeddings.ts** (1 correção)
-- Linha 45: `embeddingsCache.keys().next().value` → `Array.from(embeddingsCache.keys())[0]`
-
-**lib/medical-images/service.ts** (1 correção)
-- Linha 226: `memoriaCache.keys().next().value` → `Array.from(memoriaCache.keys())[0]`
-
-### 4. RESULTADO DA COMPILAÇÃO
-- **TypeScript**: ✅ 0 erros de compilação
-- **Todas as rotas**: ✅ HTTP 200
+### 4. COMMITS DESSA SESSÃO
+- `cd4be55` - fix: corrigir erros no-explicit-any em 5 arquivos para build Vercel
+- `0172599` - docs: finalização de sessão 31/01/2026
+- `5c96cf9` - docs: atualizar status após correção de build
+- `129006e` - fix: usar Array.from() para acessar primeira chave do cache
+- `bafffb9` - fix: usar Array.from() para acessar primeira chave do Map
 
 ---
 
-## 📝 COMMITS REALIZADOS NESTA SESSÃO
-
-- `5c96cf99` - docs: atualizar status após correção de build
-- `129006e3` - fix: usar Array.from() para acessar primeira chave do cache
-- `bafffb90` - fix: usar Array.from() para acessar primeira chave do Map
-- `3590cd04` - fix: usar Array.from() para iteração de Map no cache
-
----
-
-## ✅ STATUS ATUAL DO PROJETO
+## STATUS ATUAL DO PROJETO
 
 | Item | Status |
 |------|--------|
-| Site em produção | ✅ Funcionando (HTTP 200) |
-| TypeScript | ✅ 0 erros |
-| Rotas principais | ✅ Todas OK |
-| Build Vercel | ⏳ Verificar no dashboard |
-| Banco de dados | ✅ Sem alterações |
+| Site em produção | Funcionando |
+| TypeScript | 0 erros |
+| Rotas principais | Todas OK |
+| Build Vercel | Verificar dashboard |
+| Banco de dados | Sem alterações |
 
 ---
 
-## 🐛 BUGS CONHECIDOS / PENDÊNCIAS
+## SISTEMA DE MODOS DE CHAT (Status Geral)
 
-- [ ] Verificar se o novo build do Vercel passou com sucesso no dashboard
-- [ ] Se o build ainda falhar, verificar os logs detalhados do Vercel para erros adicionais
-
----
-
-## ⏭️ PRÓXIMOS PASSOS
-
-1. **Confirmar build do Vercel** - Verificar no dashboard se passou
-2. **Continuar sistema de modos de chat** - Integrar ModeSelector e QuestaoInterativa na página principal
-3. **Testes end-to-end** - Testar fluxo completo de cada modo de chat
-4. **Implementar lógica de sessões** - Conectar APIs de sessões com os componentes
-
----
-
-## 📋 SISTEMA DE MODOS DE CHAT (Status Geral)
-
-### ✅ INFRAESTRUTURA (COMPLETA)
+### INFRAESTRUTURA (COMPLETA)
 - `chatModeStore.ts`: Tipos, MODE_CONFIG, MODE_LIST
 - 4 modos: chat, caso_clinico, tutor, questoes
 - System prompts e welcome messages por modo
 
-### ✅ COMPONENTES (CRIADOS)
+### COMPONENTES (CRIADOS)
 - `ModeSelector.tsx` - Seletor de modos com UI animada
 - `QuestaoInterativa.tsx` - Card de questão com feedback
 - `ChatModes.tsx` - Componente legado atualizado
 
-### ✅ APIs (CRIADAS)
+### APIs (CRIADAS)
 - `/api/medicina/ia/sessoes` - CRUD de sessões por modo
 - `/api/medicina/ia/questoes-sessao` - Questões por sessão
 - `/api/medicina/setup/modos` - Configuração de modos
 
-### ⏳ PENDENTE
+### PENDENTE
 - Integração na página de chat principal (page.tsx)
 - Testes end-to-end dos modos
 - Conexão das APIs com os componentes
 
 ---
 
-## 🔗 LINKS ÚTEIS
+## BUGS CONHECIDOS / PENDÊNCIAS
+
+- [ ] Verificar se o novo build do Vercel passou com sucesso
+- [ ] Verificar chaves do Supabase (podem estar desatualizadas)
+- [ ] Testar API do Gemini em produção (pode funcionar lá)
+
+---
+
+## PRÓXIMOS PASSOS
+
+1. **Confirmar build do Vercel** - Verificar no dashboard se passou
+2. **Integrar modos de chat** - ModeSelector e QuestaoInterativa na página principal
+3. **Testes end-to-end** - Testar fluxo completo de cada modo
+4. **Implementar sessões** - Conectar APIs com componentes
+
+---
+
+## LINKS ÚTEIS
 
 - Produção: https://projeto-final-zeta-navy.vercel.app
-- Medicina/IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
+- Dashboard IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
 - Supabase: https://supabase.com/dashboard/project/zkcstkbpgwdoiihvfspp
 - Vercel: https://vercel.com/brunos-projects-5f2d50e2/projeto-final
 - GitHub: https://github.com/brunodivinoo/projeto-final
+
+---
+
+## INSTRUÇÃO PARA CONTINUAR
+
+Ao iniciar nova sessão, Claude deve:
+1. Ler este arquivo (ULTIMO_STATUS_DESENVOLVIMENTO.md)
+2. Ler INSTRUCOES_CLAUDE_AI_PREPARAMED.md (credenciais)
+3. Informar status ao usuário
+4. Perguntar próximos passos
+
+Ao finalizar sessão (quando usuário disser "finalizar sessão"):
+1. Commit/push de alterações pendentes
+2. Atualizar este arquivo com o que foi feito
+3. Confirmar que sessão foi salva
