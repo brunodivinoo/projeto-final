@@ -1,5 +1,5 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 31/01/2026 - 21:30 (Sessao Atual)
+## Atualizado em: 31/01/2026 - 22:00 (Sessao Atual)
 
 ---
 
@@ -56,10 +56,35 @@ Arquivo: `components/chat/SimulacaoConfig.tsx` (435 linhas)
 - Tools de busca de imagens médicas funcionando
 - Busca web nativa do Claude ativada
 
+### 8. FICHA DE ANAMNESE PROFISSIONAL
+Arquivo: `components/chat/FichaAnamnese.tsx` (427 linhas)
+
+**Design: Discreto e profissional (sem gamificação)**
+
+**Componentes:**
+- `IndicadorProgresso`: Botão discreto "Ficha: 4/7" no header
+- `FichaDrawer`: Painel lateral com checklist de seções investigadas
+- `ResumoFinal`: Sumário simples ao término (sem scores)
+
+**Seções da Ficha (baseada em modelo padrão):**
+- Identificação (idade, sexo, profissão)
+- Queixa Principal
+- História da Doença Atual (HDA)
+- Interrogatório Sintomatológico
+- Antecedentes (HPP, HF, hábitos)
+- Exame Físico (sinais vitais, ectoscopia)
+- Conclusão (hipóteses, exames, conduta)
+
+**Integração:**
+- Toggle opcional "Acompanhar ficha de anamnese" no SimulacaoConfig
+- Ativada via checkbox no Step 3 da configuração
+- Não intrusiva, não atrapalha o fluxo principal
+
 ---
 
 ## COMMITS REALIZADOS NESTA SESSAO
 
+- `9357435` - feat: adicionar FichaAnamnese discreta para simulação clínica
 - `ce147b8` - feat: adicionar simulação de atendimento e melhorias de UX
 
 ---
@@ -68,7 +93,8 @@ Arquivo: `components/chat/SimulacaoConfig.tsx` (435 linhas)
 
 | Arquivo | Tipo | Linhas |
 |---------|------|--------|
-| `components/chat/SimulacaoConfig.tsx` | Novo | 435 |
+| `components/chat/FichaAnamnese.tsx` | Novo | 427 |
+| `components/chat/SimulacaoConfig.tsx` | Modificado | 463 |
 | `app/medicina/(dashboard)/dashboard/ia/page.tsx` | Modificado | +100 |
 | `components/chat/ModeSelector.tsx` | Modificado | +8/-4 |
 | `lib/stores/chatModeStore.ts` | Modificado | +81/-30 |
@@ -83,8 +109,9 @@ Arquivo: `components/chat/SimulacaoConfig.tsx` (435 linhas)
 | TypeScript | 0 erros de código |
 | APIs | Todas funcionando |
 | Modos de Chat Desktop | OK |
-| Modos de Chat Mobile | OK (novo!) |
-| Simulação de Atendimento | Implementado (novo!) |
+| Modos de Chat Mobile | OK |
+| Simulação de Atendimento | Implementado |
+| Ficha de Anamnese | Implementada (opcional, profissional) |
 | Busca de Imagens (Serper) | Integrado |
 | HuggingFace | Configurado |
 | Redimensionamento Chat | Corrigido |
@@ -98,11 +125,12 @@ Arquivo: `components/chat/SimulacaoConfig.tsx` (435 linhas)
 2. Clica em "Simulação de Atendimento"
 3. Configura: especialidade, dificuldade, cenário
 4. Opcionalmente: incluir exames, paciente já traz exames
-5. IA inicia como paciente no cenário escolhido
-6. Usuário faz anamnese, exame físico, solicita exames
-7. IA busca exames reais via Serper e apresenta
-8. Usuário interpreta e dá conduta
-9. IA fornece feedback com score e referências
+5. Opcionalmente: acompanhar ficha de anamnese (novo!)
+6. IA inicia como paciente no cenário escolhido
+7. Usuário faz anamnese, exame físico, solicita exames
+8. IA busca exames reais via Serper e apresenta
+9. Usuário interpreta e dá conduta
+10. IA fornece feedback com referências
 
 ### ESPECIALIDADES
 - Clínica Médica, Cardiologia, Neurologia, Pediatria
