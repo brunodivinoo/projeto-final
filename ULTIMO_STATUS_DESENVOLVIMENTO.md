@@ -84,6 +84,7 @@ Arquivo: `components/chat/FichaAnamnese.tsx` (427 linhas)
 
 ## COMMITS REALIZADOS NESTA SESSAO
 
+- `68f2542` - feat: integrar FichaAnamnese no chat de simulação clínica
 - `9357435` - feat: adicionar FichaAnamnese discreta para simulação clínica
 - `ce147b8` - feat: adicionar simulação de atendimento e melhorias de UX
 
@@ -95,7 +96,7 @@ Arquivo: `components/chat/FichaAnamnese.tsx` (427 linhas)
 |---------|------|--------|
 | `components/chat/FichaAnamnese.tsx` | Novo | 427 |
 | `components/chat/SimulacaoConfig.tsx` | Modificado | 463 |
-| `app/medicina/(dashboard)/dashboard/ia/page.tsx` | Modificado | +100 |
+| `app/medicina/(dashboard)/dashboard/ia/page.tsx` | Modificado | +149 |
 | `components/chat/ModeSelector.tsx` | Modificado | +8/-4 |
 | `lib/stores/chatModeStore.ts` | Modificado | +81/-30 |
 
