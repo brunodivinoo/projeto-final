@@ -223,7 +223,7 @@ function obterDoCache(chave: string): ImagemMedicaBrasileira[] | null {
 
 function salvarNoCache(chave: string, data: ImagemMedicaBrasileira[]): void {
   if (memoriaCache.size > 100) {
-    const primeiraChave = memoriaCache.keys().next().value
+    const primeiraChave = Array.from(memoriaCache.keys())[0]
     if (primeiraChave) memoriaCache.delete(primeiraChave)
   }
   memoriaCache.set(chave, { data, timestamp: Date.now() })
@@ -817,3 +817,4 @@ export function clearImageCache(): void {
 // Exportar tipos
 export type { ImagemMedicaBrasileira as MedicalImage }
 export type { ResultadoBusca as SearchResult }
+
