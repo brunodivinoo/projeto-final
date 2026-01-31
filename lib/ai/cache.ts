@@ -64,7 +64,7 @@ export function limparCacheExpirado(): number {
   let removidos = 0
   const agora = Date.now()
 
-  for (const [key, entry] of memoryCache.entries()) {
+  for (const [key, entry] of Array.from(memoryCache.entries())) {
     if (agora > entry.expiry) {
       memoryCache.delete(key)
       removidos++
@@ -108,7 +108,7 @@ export function getEstatisticasCache() {
   let expirados = 0
   const agora = Date.now()
 
-  for (const entry of memoryCache.values()) {
+  for (const entry of Array.from(memoryCache.values())) {
     if (agora > entry.expiry) {
       expirados++
     } else {
@@ -121,7 +121,7 @@ export function getEstatisticasCache() {
     ativos,
     expirados,
     memoria_estimada_kb: Math.round(
-      JSON.stringify([...memoryCache.values()]).length / 1024
+      JSON.stringify(Array.from(memoryCache.values())).length / 1024
     )
   }
 }
@@ -284,7 +284,7 @@ export function limparRateLimitsExpirados(): number {
   let removidos = 0
   const now = Date.now()
 
-  for (const [key, entry] of rateLimits.entries()) {
+  for (const [key, entry] of Array.from(rateLimits.entries())) {
     if (now > entry.resetAt) {
       rateLimits.delete(key)
       removidos++
@@ -303,3 +303,4 @@ setInterval(() => {
   limparCacheExpirado()
   limparRateLimitsExpirados()
 }, 5 * 60 * 1000)
+
