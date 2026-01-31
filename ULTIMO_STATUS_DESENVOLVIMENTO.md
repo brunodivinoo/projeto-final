@@ -1,119 +1,129 @@
-# 📊 ÚLTIMO STATUS - PREPARA MED
-## Atualizado em: 31/01/2026 - 12:50 (Finalização de Sessão)
+# ULTIMO STATUS - PREPARA MED
+## Atualizado em: 31/01/2026 - 17:55 (Sessao Atual)
 
 ---
 
-## ✅ O QUE FOI FEITO NA ÚLTIMA SESSÃO (31/01/2026)
+## O QUE FOI FEITO NESTA SESSAO (31/01/2026 - Tarde)
 
-### 1. AUDITORIA COMPLETA DO BUILD DO VERCEL
-- Baixados e analisados **50+ arquivos** do repositório
-- Compilação TypeScript completa em ambiente isolado
-- Identificação precisa da causa raiz dos erros de build
-- Verificação de que todas as rotas em produção estão funcionando
+### 1. VERIFICACAO DO BUILD VERCEL
+- Confirmado que o site esta funcionando em producao
+- URL atualizada: https://preparamed-navy.vercel.app (redirecionamento ativo)
+- API de health check: TODOS os servicos OK (Supabase, Anthropic, Gemini)
 
-### 2. PROBLEMA IDENTIFICADO E CORRIGIDO
-**Causa raiz:** O TypeScript falhava no build do Vercel porque alguns arquivos usavam **iteração direta de Map/Set** (`.entries()`, `.values()`, `.keys()`, spread `[...]`) que requer `downlevelIteration` ou target ES2015+.
+### 2. INTEGRACAO DO MODESELECTOR NA PAGINA DE CHAT
+- Substituido o ChatModeSelector legado pelo novo ModeSelector
+- ModeSelector integrado na tela inicial (quando nao ha mensagens)
+- Componente usa o chatModeStore para gerenciamento de estado
 
-**Padrões problemáticos corrigidos:**
-```javascript
-// ANTES (falhava no build)
-for (const x of map.entries())
-for (const x of map.values())
-[...map.values()]
-map.keys().next().value
+### 3. CRIACAO DO HOOK useSessoesIA
+Arquivo: `hooks/useSessoesIA.ts` (264 linhas)
 
-// DEPOIS (correto)
-for (const x of Array.from(map.entries()))
-for (const x of Array.from(map.values()))
-Array.from(map.values())
-Array.from(map.keys())[0]
-```
+**Funcionalidades:**
+- `criarSessao(modo)` - Criar nova sessao de um modo
+- `finalizarSessao(metricas)` - Finalizar sessao ativa
+- `registrarQuestao(questao)` - Registrar resposta de questao
+- `buscarQuestoesErradas()` - Listar questoes erradas para revisao
+- `buscarEstatisticasQuestoes()` - Estatisticas por tema
+- Auto-carrega estatisticas ao montar
+- Auto-carrega sessoes ao mudar conversa
 
-### 3. ARQUIVOS CORRIGIDOS (3 arquivos, 6 correções)
+### 4. CRIACAO DO QUESTAODETECTOR
+Arquivo: `components/chat/QuestaoDetector.tsx` (155 linhas)
 
-**lib/ai/cache.ts** (4 correções)
-- Linha 67: `for...of memoryCache.entries()` → `Array.from(memoryCache.entries())`
-- Linha 111: `for...of memoryCache.values()` → `Array.from(memoryCache.values())`
-- Linha 124: `[...memoryCache.values()]` → `Array.from(memoryCache.values())`
-- Linha 287: `for...of rateLimits.entries()` → `Array.from(rateLimits.entries())`
+**Funcionalidades:**
+- Detecta blocos ```questao {...} ``` no conteudo do chat
+- Renderiza QuestaoInterativa para cada questao encontrada
+- Passa callback para registrar respostas
+- Evita re-responder questoes ja respondidas
 
-**lib/huggingface/medical-embeddings.ts** (1 correção)
-- Linha 45: `embeddingsCache.keys().next().value` → `Array.from(embeddingsCache.keys())[0]`
+### 5. ATUALIZACAO DO MemoizedMessage
+- Adicionados novos props: `onQuestaoResponder`, `questoesRespondidas`
+- Logica para detectar se mensagem contem questoes (`temQuestao`)
+- Condicional: se modo questoes + tem questao -> QuestaoDetector
+- Caso contrario -> ArtifactRenderer normal
 
-**lib/medical-images/service.ts** (1 correção)
-- Linha 226: `memoriaCache.keys().next().value` → `Array.from(memoriaCache.keys())[0]`
-
-### 4. RESULTADO DA COMPILAÇÃO
-- **TypeScript**: ✅ 0 erros de compilação
-- **Todas as rotas**: ✅ HTTP 200
-
----
-
-## 📝 COMMITS REALIZADOS NESTA SESSÃO
-
-- `5c96cf99` - docs: atualizar status após correção de build
-- `129006e3` - fix: usar Array.from() para acessar primeira chave do cache
-- `bafffb90` - fix: usar Array.from() para acessar primeira chave do Map
-- `3590cd04` - fix: usar Array.from() para iteração de Map no cache
+### 6. HANDLER DE QUESTOES
+- Criado `handleQuestaoResponder` na pagina de IA
+- Marca questao como respondida no estado local
+- Registra na API via `registrarQuestao`
+- Atualiza estatisticas automaticamente
 
 ---
 
-## ✅ STATUS ATUAL DO PROJETO
+## COMMITS REALIZADOS NESTA SESSAO
+
+- `9b227cc` - feat: integrar ModeSelector e QuestaoInterativa na pagina de chat
+- `03c7a14` - Merge PR #1 para main
+
+---
+
+## ARQUIVOS CRIADOS/MODIFICADOS
+
+| Arquivo | Tipo | Linhas |
+|---------|------|--------|
+| `hooks/useSessoesIA.ts` | Novo | 264 |
+| `components/chat/QuestaoDetector.tsx` | Novo | 155 |
+| `app/medicina/(dashboard)/dashboard/ia/page.tsx` | Modificado | +77/-20 |
+
+---
+
+## STATUS ATUAL DO PROJETO
 
 | Item | Status |
 |------|--------|
-| Site em produção | ✅ Funcionando (HTTP 200) |
-| TypeScript | ✅ 0 erros |
-| Rotas principais | ✅ Todas OK |
-| Build Vercel | ⏳ Verificar no dashboard |
-| Banco de dados | ✅ Sem alterações |
+| Site em producao | OK (https://preparamed-navy.vercel.app) |
+| TypeScript | 0 erros |
+| APIs | Todas funcionando |
+| Health Check | Supabase, Anthropic, Gemini OK |
+| Modos de Chat | Integrados |
+| Questoes Interativas | Implementado |
+| Sessoes | APIs conectadas |
 
 ---
 
-## 🐛 BUGS CONHECIDOS / PENDÊNCIAS
+## SISTEMA DE MODOS DE CHAT (Status Geral)
 
-- [ ] Verificar se o novo build do Vercel passou com sucesso no dashboard
-- [ ] Se o build ainda falhar, verificar os logs detalhados do Vercel para erros adicionais
-
----
-
-## ⏭️ PRÓXIMOS PASSOS
-
-1. **Confirmar build do Vercel** - Verificar no dashboard se passou
-2. **Continuar sistema de modos de chat** - Integrar ModeSelector e QuestaoInterativa na página principal
-3. **Testes end-to-end** - Testar fluxo completo de cada modo de chat
-4. **Implementar lógica de sessões** - Conectar APIs de sessões com os componentes
-
----
-
-## 📋 SISTEMA DE MODOS DE CHAT (Status Geral)
-
-### ✅ INFRAESTRUTURA (COMPLETA)
+### INFRAESTRUTURA (COMPLETA)
 - `chatModeStore.ts`: Tipos, MODE_CONFIG, MODE_LIST
 - 4 modos: chat, caso_clinico, tutor, questoes
 - System prompts e welcome messages por modo
 
-### ✅ COMPONENTES (CRIADOS)
-- `ModeSelector.tsx` - Seletor de modos com UI animada
-- `QuestaoInterativa.tsx` - Card de questão com feedback
-- `ChatModes.tsx` - Componente legado atualizado
+### COMPONENTES (INTEGRADOS)
+- `ModeSelector.tsx` - Integrado na pagina inicial
+- `QuestaoInterativa.tsx` - Renderizado via QuestaoDetector
+- `QuestaoDetector.tsx` - Parser de questoes do chat
+- `ChatModes.tsx` - Mantido para compatibilidade
 
-### ✅ APIs (CRIADAS)
-- `/api/medicina/ia/sessoes` - CRUD de sessões por modo
-- `/api/medicina/ia/questoes-sessao` - Questões por sessão
-- `/api/medicina/setup/modos` - Configuração de modos
+### APIs (CONECTADAS)
+- `/api/medicina/ia/sessoes` - CRUD de sessoes
+- `/api/medicina/ia/questoes-sessao` - Registro de questoes
+- Hook `useSessoesIA` conecta frontend com APIs
 
-### ⏳ PENDENTE
-- Integração na página de chat principal (page.tsx)
-- Testes end-to-end dos modos
-- Conexão das APIs com os componentes
+### FLUXO COMPLETO
+1. Usuario seleciona modo no ModeSelector
+2. Sistema cria sessao automaticamente
+3. No modo questoes, IA gera ```questao {...}```
+4. QuestaoDetector renderiza QuestaoInterativa
+5. Usuario responde, callback registra na API
+6. Estatisticas atualizadas automaticamente
 
 ---
 
-## 🔗 LINKS ÚTEIS
+## PROXIMOS PASSOS
 
-- Produção: https://projeto-final-zeta-navy.vercel.app
-- Medicina/IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
+1. **Testar fluxo completo** - Verificar geracao de questoes pela IA
+2. **Criar sessao automatica** - Ao trocar de modo, criar sessao
+3. **Exibir estatisticas** - Mostrar progresso do usuario na UI
+4. **Modo Caso Clinico** - Implementar logica de etapas
+5. **Modo Tutor** - Implementar logica socratica
+
+---
+
+## LINKS UTEIS
+
+- Producao: https://preparamed-navy.vercel.app
+- Medicina/IA: https://preparamed-navy.vercel.app/medicina/dashboard/ia
 - Supabase: https://supabase.com/dashboard/project/zkcstkbpgwdoiihvfspp
 - Vercel: https://vercel.com/brunos-projects-5f2d50e2/projeto-final
 - GitHub: https://github.com/brunodivinoo/projeto-final
+- PR #1: https://github.com/brunodivinoo/projeto-final/pull/1
