@@ -24,7 +24,8 @@ import {
   Ambulance,
   Bed,
   X,
-  Info
+  Info,
+  ClipboardList
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -128,6 +129,7 @@ export interface SimulacaoConfigData {
   cenario: typeof CENARIOS[number]['id']
   comExames: boolean
   pacienteJaTrazExames: boolean
+  usarFichaAnamnese: boolean
 }
 
 interface SimulacaoConfigProps {
@@ -142,7 +144,8 @@ export function SimulacaoConfig({ onStart, onCancel }: SimulacaoConfigProps) {
     dificuldade: 'medio',
     cenario: 'ambulatorio',
     comExames: true,
-    pacienteJaTrazExames: false
+    pacienteJaTrazExames: false,
+    usarFichaAnamnese: false
   })
 
   const especialidadeSelecionada = ESPECIALIDADES.find(e => e.id === config.especialidade)
@@ -354,6 +357,22 @@ export function SimulacaoConfig({ onStart, onCancel }: SimulacaoConfigProps) {
                       </div>
                     </label>
                   )}
+
+                  <label className="flex items-center gap-3 p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={config.usarFichaAnamnese}
+                      onChange={(e) => setConfig(prev => ({ ...prev, usarFichaAnamnese: e.target.checked }))}
+                      className="w-5 h-5 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500"
+                    />
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="w-4 h-4 text-emerald-400" />
+                      <div>
+                        <span className="text-white font-medium">Acompanhar ficha de anamnese</span>
+                        <p className="text-xs text-white/50">Visualize o progresso da sua investigação clínica</p>
+                      </div>
+                    </div>
+                  </label>
                 </div>
 
                 {/* Resumo */}
@@ -372,6 +391,11 @@ export function SimulacaoConfig({ onStart, onCancel }: SimulacaoConfigProps) {
                     <span className={cn("px-2 py-1 rounded-lg", cenarioSelecionado?.bgColor, cenarioSelecionado?.color)}>
                       {cenarioSelecionado?.label}
                     </span>
+                    {config.usarFichaAnamnese && (
+                      <span className="px-2 py-1 rounded-lg bg-white/10 text-white/80 flex items-center gap-1">
+                        <ClipboardList className="w-3 h-3" /> Ficha
+                      </span>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -421,13 +445,17 @@ export function gerarPromptSimulacao(config: SimulacaoConfigData): string {
     ? 'uma especialidade aleatória (surpreenda-me!)'
     : especialidade?.label
 
+  const fichaTexto = config.usarFichaAnamnese
+    ? '\n**Ficha de Anamnese:** Sim, acompanharei o progresso da minha investigação clínica'
+    : ''
+
   return `Inicie uma simulação de atendimento médico com as seguintes configurações:
 
 **Especialidade:** ${especialidadeTexto}
 **Dificuldade:** ${dificuldade?.label} - ${dificuldade?.description}
 **Cenário:** ${cenario?.label} - ${cenario?.description}
 **Incluir exames:** ${config.comExames ? 'Sim' : 'Não'}
-**Paciente já traz exames:** ${config.pacienteJaTrazExames ? 'Sim, o paciente chega com exames prévios para eu analisar' : 'Não, eu solicitarei os exames'}
+**Paciente já traz exames:** ${config.pacienteJaTrazExames ? 'Sim, o paciente chega com exames prévios para eu analisar' : 'Não, eu solicitarei os exames'}${fichaTexto}
 
 Por favor, inicie a simulação apresentando o paciente no cenário escolhido.`
 }
