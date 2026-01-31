@@ -42,6 +42,10 @@ import { ExamAnalyzerModal } from '@/components/medicina/ExamAnalyzer'
 import { ChatModeSelector, ChatModeIntro, useChatMode, type ChatMode } from '@/components/medicina/ChatModes'
 import { useChatModeStore, ChatMode as StoreChatMode, MODE_CONFIG } from '@/lib/stores/chatModeStore'
 import { useConversaStore, type Conversa as StoreConversa } from '@/lib/stores/conversaStore'
+import { ModeSelector, ModeIndicator } from '@/components/chat/ModeSelector'
+import { QuestaoDetector, extrairQuestoes } from '@/components/chat/QuestaoDetector'
+import { type QuestaoData } from '@/components/chat/QuestaoInterativa'
+import { useSessoesIA } from '@/hooks/useSessoesIA'
 
 // Hook para obter o estado da sidebar de artefatos
 const useArtifactsSidebar = () => {
@@ -116,6 +120,8 @@ interface MemoizedMessageProps {
   chatMode: ChatModeType
   plano: PlanoUsuario
   trialAtivo: boolean
+  onQuestaoResponder?: (questao: QuestaoData, letra: string, acertou: boolean, tempo: number) => void
+  questoesRespondidas?: Set<number>
 }
 
 const MemoizedMessage = memo(function MemoizedMessage({
@@ -127,8 +133,12 @@ const MemoizedMessage = memo(function MemoizedMessage({
   conversaAtual,
   chatMode,
   plano,
-  trialAtivo
+  trialAtivo,
+  onQuestaoResponder,
+  questoesRespondidas = new Set()
 }: MemoizedMessageProps) {
+  // Verificar se a mensagem contém questões
+  const temQuestao = msg.tipo === 'ia' && chatMode === 'questoes' && msg.conteudo?.includes('```questao')
   return (
     <div
       className={`flex ${msg.tipo === 'usuario' ? 'justify-end' : 'gap-2 md:gap-3 justify-start'}`}
@@ -207,18 +217,27 @@ const MemoizedMessage = memo(function MemoizedMessage({
                   )}
                 </div>
               )}
-              <ArtifactRenderer
-                content={(msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')).replace(/\[GENERATED_IMAGE:[^\]]+\]/g, '')}
-                userId={user?.id}
-                messageId={msg.id}
-                conversaId={conversaAtual || undefined}
-                chatMode={chatMode}
-                planoUsuario={plano}
-                trialAtivo={trialAtivo}
-                onUpgradeClick={() => {
-                  window.location.href = '/medicina/planos'
-                }}
-              />
+              {/* Renderizar questões interativas se for modo questões */}
+              {temQuestao ? (
+                <QuestaoDetector
+                  conteudo={msg.conteudo}
+                  onResponder={onQuestaoResponder}
+                  questoesRespondidas={questoesRespondidas}
+                />
+              ) : (
+                <ArtifactRenderer
+                  content={(msg.conteudo || (streaming && !msg.conteudo ? 'Pensando...' : '')).replace(/\[GENERATED_IMAGE:[^\]]+\]/g, '')}
+                  userId={user?.id}
+                  messageId={msg.id}
+                  conversaId={conversaAtual || undefined}
+                  chatMode={chatMode}
+                  planoUsuario={plano}
+                  trialAtivo={trialAtivo}
+                  onUpgradeClick={() => {
+                    window.location.href = '/medicina/planos'
+                  }}
+                />
+              )}
             </div>
           ) : (
             <p className="whitespace-pre-wrap text-xs md:text-sm">{msg.conteudo}</p>
@@ -299,6 +318,19 @@ export default function IAPage() {
 
   // Modo de chat (Chat Livre, Caso Clínico, Tutor, Questões)
   const { modo: chatMode, trocarModo: trocarModoBase, mostrarIntro, iniciarModo, getSystemPrompt } = useChatMode()
+
+  // Hook de sessões para integração com APIs
+  const {
+    sessaoAtiva,
+    estatisticas,
+    criarSessao,
+    finalizarSessao,
+    registrarQuestao,
+    refreshEstatisticas
+  } = useSessoesIA({ userId: user?.id, conversaId: conversaAtual })
+
+  // Estado para questões respondidas (evitar re-responder)
+  const [questoesRespondidas, setQuestoesRespondidas] = useState<Set<number>>(new Set())
 
   // Estado para controlar dropdown de modo
   const [showModeDropdown, setShowModeDropdown] = useState(false)
@@ -1345,6 +1377,31 @@ export default function IAPage() {
     setTimeout(() => setCopiado(null), 2000)
   }
 
+  // Handler para questões respondidas
+  const handleQuestaoResponder = useCallback(async (
+    questao: QuestaoData,
+    letra: string,
+    acertou: boolean,
+    tempoSegundos: number
+  ) => {
+    // Marcar como respondida
+    setQuestoesRespondidas(prev => new Set([...prev, questao.numero]))
+
+    // Registrar na API
+    await registrarQuestao({
+      questao_json: questao as unknown as Record<string, unknown>,
+      resposta_usuario: letra,
+      resposta_correta: questao.gabarito_comentado.resposta_correta,
+      acertou,
+      tempo_resposta_segundos: tempoSegundos,
+      tema: questao.tema,
+      dificuldade: questao.dificuldade
+    })
+
+    // Atualizar estatísticas
+    refreshEstatisticas()
+  }, [registrarQuestao, refreshEstatisticas])
+
   // Sugestões rápidas
   const sugestoes = [
     { icon: BookOpen, texto: 'Explique a fisiopatologia da insuficiência cardíaca', cor: 'text-blue-400' },
@@ -1715,13 +1772,11 @@ export default function IAPage() {
             </div>
           ) : mensagens.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4 max-w-4xl mx-auto w-full">
-              {/* Seletor de Modo */}
-              <div className="mb-6 w-full max-w-xl">
-                <ChatModeSelector
-                  modoAtual={chatMode}
-                  onChange={trocarModo}
-                  variant="pills"
-                  className="justify-center"
+              {/* Seletor de Modo - Novo ModeSelector integrado */}
+              <div className="mb-6 w-full max-w-xl flex justify-center">
+                <ModeSelector
+                  onModeChange={(modo) => trocarModo(modo as ChatMode)}
+                  variant="full"
                 />
               </div>
 
@@ -1815,6 +1870,8 @@ export default function IAPage() {
                 chatMode={chatMode as ChatModeType}
                 plano={(plano || 'gratuito') as PlanoUsuario}
                 trialAtivo={trialStatus.ativo}
+                onQuestaoResponder={handleQuestaoResponder}
+                questoesRespondidas={questoesRespondidas}
               />
             ))
           )}
