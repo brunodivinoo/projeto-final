@@ -17,6 +17,13 @@
 - Removido drawer de conversas duplicado (redundante com sidebar)
 - Interface agora e mais limpa e focada na conversa
 
+#### Modal de Selecao de Modo (CORRIGIDO)
+- No mobile agora abre FULLSCREEN com fundo OPACO (bg-slate-900)
+- Nao e mais transparente sobre o conteudo
+- Desktop continua usando dropdown normal
+- Detecta mobile via window.innerWidth < 1024
+- Bloqueia scroll quando modal esta aberto
+
 #### Artefatos Fullscreen
 - Criado `MobileArtifactsScreen.tsx` (~280 linhas)
 - Tela fullscreen para visualizar artefatos
@@ -27,12 +34,6 @@
 - Botao de artefatos agora aparece integrado no header
 - Badge com contador de artefatos
 - Abre tela fullscreen ao clicar
-
-#### Modal de Modos Corrigido
-- Corrigido texto vazando ("MessageSquare", "Stethoscope")
-- Removido texto do icone redundante
-- Design mais compacto e limpo
-- Cores atualizadas para emerald (tema do app)
 
 #### Busca Web Nativa
 - Busca web agora habilitada por padrao
@@ -46,6 +47,7 @@
 | `components/mobile/MobileArtifactsScreen.tsx` | NOVO - Tela fullscreen de artefatos |
 | `components/mobile/MobileNavigation.tsx` | Modal de modos corrigido e compacto |
 | `components/mobile/index.ts` | Export do MobileArtifactsScreen |
+| `components/chat/ModeSelector.tsx` | Modal fullscreen no mobile com fundo opaco |
 | `app/medicina/(dashboard)/dashboard/ia/page.tsx` | Removido bottom nav, adicionado botao artefatos |
 | `app/medicina/(dashboard)/layout.tsx` | Removido pb-20 (nao tem mais bottom nav) |
 
@@ -54,6 +56,8 @@
 ## COMMITS REALIZADOS NESTA SESSAO
 
 - `e01b655` - feat(mobile): repaginar UI mobile - interface limpa estilo app de IA
+- `1f33c53` - docs: atualizar status apos repaginacao mobile
+- `6b2220d` - fix(mobile): modal de selecao de modo fullscreen com fundo opaco
 
 ---
 
@@ -62,44 +66,23 @@
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Build Vercel | PENDENTE (rede local indisponivel) |
+| Build Vercel | SUCESSO |
 | TypeScript | 0 erros |
 | UI Mobile | REPAGINADA - Interface limpa |
 | Bottom Nav | REMOVIDO |
+| Modal de Modos | FULLSCREEN com fundo opaco |
 | Artefatos Mobile | Fullscreen implementado |
-| Modal de Modos | Corrigido e compacto |
 | Busca Web | Habilitada por padrao |
-
----
-
-## ANTES vs DEPOIS
-
-### ANTES (Interface Poluida)
-- Bottom nav com 4 botoes grandes
-- Icones de Crown e Settings no header
-- Drawer de conversas redundante
-- Botao de artefatos "solto"
-- Texto dos icones vazando no modal
-- Busca web desabilitada por padrao
-
-### DEPOIS (Interface Limpa)
-- Sem bottom nav - tela toda para conversa
-- Header limpo com apenas seletor de modo
-- Historico apenas na sidebar (como no desktop)
-- Botao de artefatos integrado no header
-- Modal de modos compacto e funcional
-- Busca web habilitada nativamente
 
 ---
 
 ## PROXIMOS PASSOS
 
-1. **Verificar deploy na Vercel** - Confirmar que o build passou
-2. **Testar no mobile real** - Verificar responsividade no iPhone/Android
-3. **Ajustar detalhes visuais** - Cores, espacamentos, etc
-4. **Implementar simulacao de atendimento** - Salvar progresso
-5. **Modo Tutor** - Implementar logica socratica
-6. **Estatisticas de simulacoes** - Dashboard de desempenho
+1. **Testar no mobile real** - Verificar responsividade no iPhone/Android
+2. **Ajustar detalhes visuais** - Cores, espacamentos, etc
+3. **Implementar simulacao de atendimento** - Salvar progresso
+4. **Modo Tutor** - Implementar logica socratica
+5. **Estatisticas de simulacoes** - Dashboard de desempenho
 
 ---
 
@@ -110,4 +93,3 @@
 - Supabase: https://supabase.com/dashboard/project/zkcstkbpgwdoiihvfspp
 - Vercel: https://vercel.com/brunos-projects-5f2d50e2/projeto-final
 - GitHub: https://github.com/brunodivinoo/projeto-final
-- Branch: claude/prepara-med-continue-76mSD
