@@ -78,20 +78,20 @@ export function MobileModeSelector({ isOpen, onClose, onSelectMode, currentMode 
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[100] bg-slate-900/98 backdrop-blur-xl flex flex-col"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 pt-[env(safe-area-inset-top,12px)] pb-4 border-b border-white/10">
-            <h2 className="text-lg font-semibold text-white">Escolha o modo</h2>
+          {/* Header - Compacto */}
+          <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-3 border-b border-white/10">
+            <h2 className="text-base font-semibold text-white">Modo de Chat</h2>
             <button
               onClick={onClose}
-              className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 active:bg-white/10 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 active:bg-white/10 transition-colors"
             >
-              <X className="w-5 h-5 text-white/60" />
+              <X className="w-4 h-4 text-white/60" />
             </button>
           </div>
 
-          {/* Lista de modos */}
-          <div className="flex-1 overflow-y-auto px-4 py-6">
-            <div className="space-y-3 max-w-md mx-auto">
+          {/* Lista de modos - Compacta */}
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div className="space-y-2 max-w-md mx-auto">
               {MODE_LIST.map((modo) => {
                 const config = MODE_CONFIG[modo.id]
                 const Icon = MODE_ICONS[modo.id]
@@ -106,50 +106,37 @@ export function MobileModeSelector({ isOpen, onClose, onSelectMode, currentMode 
                       onClose()
                     }}
                     className={cn(
-                      "w-full p-5 rounded-2xl text-left transition-all",
-                      "border-2",
+                      "w-full p-3 rounded-xl text-left transition-all",
+                      "border",
                       isActive
-                        ? "border-indigo-500 bg-indigo-500/10"
+                        ? "border-emerald-500/50 bg-emerald-500/10"
                         : "border-white/10 bg-white/5 active:bg-white/10"
                     )}
                   >
-                    <div className="flex items-start gap-4">
-                      {/* Ícone */}
+                    <div className="flex items-center gap-3">
+                      {/* Ícone - Menor */}
                       <div className={cn(
-                        "w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0",
+                        "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
                         config.bgColor
                       )}>
-                        <Icon className={cn("w-7 h-7", config.color)} />
+                        <Icon className={cn("w-5 h-5", config.color)} />
                       </div>
 
-                      {/* Conteúdo */}
+                      {/* Conteúdo - Compacto */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xl">{config.icon}</span>
-                          <h3 className="text-base font-semibold text-white">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-medium text-white">
                             {modo.label}
                           </h3>
                           {isActive && (
-                            <span className="px-2 py-0.5 bg-indigo-500 text-white text-xs rounded-full">
+                            <span className="px-1.5 py-0.5 bg-emerald-500 text-white text-[10px] rounded">
                               Ativo
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-white/60 leading-relaxed">
+                        <p className="text-xs text-white/50 mt-0.5">
                           {config.description}
                         </p>
-
-                        {/* Features em destaque */}
-                        <div className="flex flex-wrap gap-1.5 mt-3">
-                          {modo.features.slice(0, 3).map((feature, i) => (
-                            <span
-                              key={i}
-                              className="px-2 py-1 bg-white/5 text-white/50 text-xs rounded-lg"
-                            >
-                              {feature}
-                            </span>
-                          ))}
-                        </div>
                       </div>
                     </div>
                   </motion.button>
@@ -158,13 +145,8 @@ export function MobileModeSelector({ isOpen, onClose, onSelectMode, currentMode 
             </div>
           </div>
 
-          {/* Footer com dica */}
-          <div className="px-5 py-4 border-t border-white/10 bg-white/5">
-            <p className="text-center text-sm text-white/40">
-              <Sparkles className="w-4 h-4 inline mr-1.5" />
-              Dica: O modo afeta como a IA responde suas perguntas
-            </p>
-          </div>
+          {/* Safe Area Bottom */}
+          <div className="pb-[env(safe-area-inset-bottom,8px)]" />
         </motion.div>
       )}
     </AnimatePresence>

@@ -2,7 +2,7 @@
 // COMPONENTES MOBILE - PREPARA MED
 // ==========================================
 
-// Navegação
+// Navegação (mantido para compatibilidade)
 export {
   MobileBottomNav,
   MobileHeader,
@@ -15,3 +15,6 @@ export { MobileChatInput } from './MobileChatInput'
 
 // Mensagens
 export { MobileChatMessage, MobileTypingIndicator } from './MobileChatMessage'
+
+// Artefatos
+export { MobileArtifactsScreen, MobileArtifactsButton } from './MobileArtifactsScreen'

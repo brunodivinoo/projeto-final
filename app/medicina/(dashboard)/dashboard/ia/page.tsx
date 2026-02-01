@@ -50,11 +50,9 @@ import { useSessoesIA } from '@/hooks/useSessoesIA'
 import { SimulacaoConfig, gerarPromptSimulacao, type SimulacaoConfigData } from '@/components/chat/SimulacaoConfig'
 import { IndicadorProgresso, FichaDrawer, type DadosFicha, DADOS_FICHA_VAZIO } from '@/components/chat/FichaAnamnese'
 import {
-  MobileBottomNav,
-  MobileHeader,
-  MobileConversasDrawer,
   MobileChatInput
 } from '@/components/mobile'
+import { MobileArtifactsScreen } from '@/components/mobile/MobileArtifactsScreen'
 
 // Hook para obter o estado da sidebar de artefatos
 // Considera artefatos filtrados pelo modo atual e conversa
@@ -325,7 +323,7 @@ export default function IAPage() {
   const [uso, setUso] = useState<UsoIA | null>(null)
 
   // Opções avançadas
-  const [useWebSearch, setUseWebSearch] = useState(false)
+  const [useWebSearch, setUseWebSearch] = useState(true) // Habilitado por padrão
   const [useExtendedThinking, setUseExtendedThinking] = useState(false)
   const [imagemBase64, setImagemBase64] = useState<string | null>(null)
   const [imagemTipo, setImagemTipo] = useState<string | null>(null)
@@ -391,6 +389,7 @@ export default function IAPage() {
   // Estado para componentes mobile
   const [mobileConversasOpen, setMobileConversasOpen] = useState(false)
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false)
+  const [mobileArtifactsOpen, setMobileArtifactsOpen] = useState(false)
 
   // Estado para menu de 3 pontinhos (renomear/excluir conversa)
   const [menuConversaAberto, setMenuConversaAberto] = useState<string | null>(null)
@@ -1677,16 +1676,14 @@ export default function IAPage() {
 
       {/* Chat Principal */}
       <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
-        {/* Mobile Mode Bar - Barra compacta de seleção de modo para mobile */}
+        {/* Mobile Mode Bar - Barra limpa para mobile */}
         <div className="lg:hidden flex items-center justify-between px-3 py-2 border-b border-white/10 bg-slate-900/80 backdrop-blur-sm">
+          <ModeSelector
+            onModeChange={(modo) => trocarModoNaConversa(modo as ChatMode)}
+            variant="compact"
+            className="flex-shrink-0"
+          />
           <div className="flex items-center gap-2">
-            <ModeSelector
-              onModeChange={(modo) => trocarModoNaConversa(modo as ChatMode)}
-              variant="compact"
-              className="flex-shrink-0"
-            />
-          </div>
-          <div className="flex items-center gap-1">
             {/* Indicador de Ficha - Mobile */}
             {fichaAtiva && chatMode === 'caso_clinico' && (
               <IndicadorProgresso
@@ -1695,15 +1692,18 @@ export default function IAPage() {
                 onClick={() => setFichaAberta(true)}
               />
             )}
-            {isResidencia && <Crown className="w-4 h-4 text-amber-400" />}
-            <button
-              onClick={() => setShowOpcoes(!showOpcoes)}
-              className={`p-1.5 rounded-lg transition-colors ${
-                showOpcoes ? 'bg-purple-500/20 text-purple-400' : 'text-white/40 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Settings className="w-4 h-4" />
-            </button>
+            {/* Botão Artefatos - Mobile (integrado) */}
+            {hasArtifacts && (
+              <button
+                onClick={() => setMobileArtifactsOpen(true)}
+                className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-white/5 active:bg-white/10 transition-colors"
+              >
+                <Layers className="w-4 h-4 text-white/60" />
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] flex items-center justify-center bg-emerald-500 text-white text-[9px] font-bold rounded-full px-1">
+                  {useArtifactsStore.getState().artifacts.filter(a => a.conversaId === conversaAtual || !a.conversaId).length}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -2275,72 +2275,11 @@ export default function IAPage() {
       {/* COMPONENTES MOBILE */}
       {/* ========================================== */}
 
-      {/* Bottom Navigation Bar - Mobile */}
-      <MobileBottomNav
-        onNewChat={novaConversa}
-        onOpenConversas={() => setMobileConversasOpen(true)}
-        onOpenSettings={() => setShowOpcoes(true)}
-        conversaAtiva={!!conversaAtual}
+      {/* Tela de Artefatos - Mobile (Fullscreen) */}
+      <MobileArtifactsScreen
+        isOpen={mobileArtifactsOpen}
+        onClose={() => setMobileArtifactsOpen(false)}
       />
-
-      {/* Drawer de Conversas - Mobile */}
-      <MobileConversasDrawer
-        isOpen={mobileConversasOpen}
-        onClose={() => setMobileConversasOpen(false)}
-      >
-        {/* Lista de conversas mobile */}
-        <div className="p-2 space-y-1">
-          {/* Botão Nova Conversa */}
-          <button
-            onClick={() => {
-              novaConversa()
-              setMobileConversasOpen(false)
-            }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-500/20 text-indigo-400 active:bg-indigo-500/30 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="font-medium">Nova Conversa</span>
-          </button>
-
-          {/* Separador */}
-          <div className="h-px bg-white/10 my-3" />
-
-          {/* Lista de conversas */}
-          {conversas.length > 0 ? (
-            <div className="space-y-1">
-              {conversas.map((conversa) => (
-                <button
-                  key={conversa.id}
-                  onClick={() => {
-                    carregarConversa(conversa.id)
-                    setMobileConversasOpen(false)
-                  }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                    conversaAtual === conversa.id
-                      ? 'bg-white/10 text-white'
-                      : 'text-white/60 active:bg-white/5'
-                  }`}
-                >
-                  <MessageSquare className="w-5 h-5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {conversa.titulo || 'Nova conversa'}
-                    </p>
-                    <p className="text-xs text-white/40 mt-0.5">
-                      {new Date(conversa.updated_at).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-white/40">
-              <MessageSquare className="w-10 h-10 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Nenhuma conversa ainda</p>
-            </div>
-          )}
-        </div>
-      </MobileConversasDrawer>
     </div>
   )
 }
