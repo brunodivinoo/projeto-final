@@ -51,14 +51,23 @@ export function ModeSelector({
     sessaoAtiva,
     estatisticas
   } = useChatModeStore()
-  
+
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [showPreview, setShowPreview] = useState<ChatMode | null>(null)
-  
+  const [isMobile, setIsMobile] = useState(false)
+
   const modoAtual = MODE_CONFIG[currentMode]
   const IconAtual = ICONS[modoAtual.icon]
-  
-  // Fechar dropdown ao clicar fora
+
+  // Detectar mobile
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Fechar dropdown ao clicar fora (apenas desktop)
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -66,33 +75,45 @@ export function ModeSelector({
         setShowPreview(null)
       }
     }
-    
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [setShowModeDropdown])
-  
+
+    if (!isMobile) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [setShowModeDropdown, isMobile])
+
+  // Bloquear scroll quando modal mobile aberto
+  useEffect(() => {
+    if (isMobile && showModeDropdown) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [isMobile, showModeDropdown])
+
   // Verificar se pode usar o modo
   const podeUsarModo = (modo: ChatMode): boolean => {
     const config = MODE_CONFIG[modo]
     if (!config.premium) return true
     return plano === 'premium' || plano === 'residencia'
   }
-  
+
   // Handler de troca de modo
   const handleModeChange = (modo: ChatMode) => {
     if (!podeUsarModo(modo) || disabled) return
-    
+
     setCurrentMode(modo)
     setShowModeDropdown(false)
     setShowPreview(null)
     onModeChange?.(modo)
   }
-  
+
   // Obter estatísticas do modo
   const getEstatisticasModo = (modo: ChatMode) => {
     return estatisticas.find(e => e.modo === modo)
   }
-  
+
   return (
     <div ref={dropdownRef} className={cn("relative", className)}>
       {/* Botão Principal */}
@@ -118,7 +139,7 @@ export function ModeSelector({
         )}>
           <IconAtual className={cn("w-4 h-4", modoAtual.color)} />
         </div>
-        
+
         {/* Texto - melhor legibilidade */}
         <div className="flex flex-col items-start min-w-0">
           <span className={cn("text-sm font-semibold tracking-tight", modoAtual.color)}>
@@ -130,7 +151,7 @@ export function ModeSelector({
             </span>
           )}
         </div>
-        
+
         {/* Chevron */}
         <motion.div
           animate={{ rotate: showModeDropdown ? 180 : 0 }}
@@ -139,10 +160,91 @@ export function ModeSelector({
           <ChevronDown className={cn("w-4 h-4 ml-1", modoAtual.color)} />
         </motion.div>
       </button>
-      
-      {/* Dropdown */}
+
+      {/* Modal Fullscreen para Mobile */}
       <AnimatePresence>
-        {showModeDropdown && (
+        {showModeDropdown && isMobile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-slate-900 flex flex-col"
+            style={{ paddingTop: 'env(safe-area-inset-top, 12px)' }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <h2 className="text-base font-semibold text-white">Modo de Chat</h2>
+              <button
+                onClick={() => setShowModeDropdown(false)}
+                className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 active:bg-white/10"
+              >
+                <X className="w-4 h-4 text-white/60" />
+              </button>
+            </div>
+
+            {/* Lista de Modos */}
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              <div className="space-y-2 max-w-md mx-auto">
+                {MODE_LIST.map((modo) => {
+                  const Icon = ICONS[modo.icon]
+                  const isAtivo = currentMode === modo.id
+                  const podeusar = podeUsarModo(modo.id)
+
+                  return (
+                    <button
+                      key={modo.id}
+                      onClick={() => handleModeChange(modo.id)}
+                      disabled={!podeusar || disabled}
+                      className={cn(
+                        "w-full p-3 rounded-xl text-left transition-all",
+                        "border",
+                        isAtivo
+                          ? "border-emerald-500/50 bg-emerald-500/10"
+                          : "border-white/10 bg-white/5 active:bg-white/10",
+                        !podeusar && "opacity-50"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
+                          modo.bgColor
+                        )}>
+                          <Icon className={cn("w-5 h-5", modo.color)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-medium text-white">
+                              {modo.label}
+                            </h3>
+                            {isAtivo && (
+                              <span className="px-1.5 py-0.5 bg-emerald-500 text-white text-[10px] rounded">
+                                Ativo
+                              </span>
+                            )}
+                            {!podeusar && (
+                              <Lock className="w-3 h-3 text-white/40" />
+                            )}
+                          </div>
+                          <p className="text-xs text-white/50 mt-0.5">
+                            {modo.description}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Safe Area Bottom */}
+            <div style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Dropdown para Desktop */}
+      <AnimatePresence>
+        {showModeDropdown && !isMobile && (
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
