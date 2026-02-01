@@ -1,77 +1,59 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 01/02/2026 - Sessao Atual
+## Atualizado em: 01/02/2026 - Sessao de Repaginacao Mobile
 
 ---
 
 ## O QUE FOI FEITO NESTA SESSAO (01/02/2026)
 
-### 1. CORRECAO DE ERROS DE BUILD VERCEL
-- Corrigido import de `SecaoFicha` que nao existia
-- Adicionado import de `ChevronRight` do lucide-react
-- Corrigido props do `IndicadorProgresso` (itensPreenchidos, totalItens)
-- Removido prop `onDadosChange` do `FichaDrawer`
-- Criado `fichaItensPreenchidos` com useMemo
+### 1. REPAGINACAO COMPLETA DA UI MOBILE
 
-### 2. COMPONENTES MOBILE CRIADOS
-**Novos arquivos:**
-- `components/mobile/MobileNavigation.tsx` (~340 linhas)
-- `components/mobile/MobileChatInput.tsx` (~340 linhas)
-- `components/mobile/MobileChatMessage.tsx` (~200 linhas)
-- `components/mobile/index.ts`
+**Objetivo:** Deixar a interface mobile limpa como um app de IA moderno (ref: StudyAI)
 
-**MobileNavigation.tsx inclui:**
-- `MobileBottomNav` - Barra de navegacao inferior com:
-  - Botao Historico (abrir drawer de conversas)
-  - Seletor de Modo (abre modal fullscreen)
-  - Botao Novo Chat
-  - Botao Configuracoes
-- `MobileModeSelector` - Modal fullscreen para selecao de modo
-- `MobileHeader` - Header compacto para mobile
-- `MobileConversasDrawer` - Drawer lateral para lista de conversas
+**Mudancas Realizadas:**
 
-**MobileChatInput.tsx inclui:**
-- Input otimizado para touch (min 44px targets)
-- Botao de acoes (+) que abre painel expansivel
-- Painel com: Imagem, PDF, Busca Web, Think+, Exame, Camera
-- Indicadores de opcoes ativas (Web, Think+)
-- Botao de envio/gravacao contextual
+#### Interface Limpa
+- Removido bottom nav pesado (Historico, Modo, Novo, Config)
+- Removido icones superiores (Crown, Settings) da mobile mode bar
+- Removido drawer de conversas duplicado (redundante com sidebar)
+- Interface agora e mais limpa e focada na conversa
 
-**MobileChatMessage.tsx inclui:**
-- Layout de mensagem otimizado para mobile
-- Baloes com cantos arredondados apropriados
-- Indicador de typing com animacao
-- Suporte a thinking expandivel
-- Botao de copiar
+#### Artefatos Fullscreen
+- Criado `MobileArtifactsScreen.tsx` (~280 linhas)
+- Tela fullscreen para visualizar artefatos
+- Busca e filtros por tipo
+- Design similar ao app de referencia
 
-### 3. INTEGRACAO NA PAGINA DE IA
-- Importados componentes mobile
-- Adicionado estado `mobileConversasOpen`
-- Integrado `MobileBottomNav` no final da pagina
-- Integrado `MobileConversasDrawer` com lista de conversas
-- Adicionado padding-bottom no chat area para bottom nav
+#### Botao de Artefatos Integrado
+- Botao de artefatos agora aparece integrado no header
+- Badge com contador de artefatos
+- Abre tela fullscreen ao clicar
 
-### 4. AJUSTES NO LAYOUT PRINCIPAL
-- Adicionado `pb-20 lg:pb-0` no main content
-- Mantido safe-area-inset-top existente
+#### Modal de Modos Corrigido
+- Corrigido texto vazando ("MessageSquare", "Stethoscope")
+- Removido texto do icone redundante
+- Design mais compacto e limpo
+- Cores atualizadas para emerald (tema do app)
+
+#### Busca Web Nativa
+- Busca web agora habilitada por padrao
+- Removido botao de Config do mobile
+- IA usa busca web automaticamente
+
+### 2. ARQUIVOS MODIFICADOS
+
+| Arquivo | Mudanca |
+|---------|---------|
+| `components/mobile/MobileArtifactsScreen.tsx` | NOVO - Tela fullscreen de artefatos |
+| `components/mobile/MobileNavigation.tsx` | Modal de modos corrigido e compacto |
+| `components/mobile/index.ts` | Export do MobileArtifactsScreen |
+| `app/medicina/(dashboard)/dashboard/ia/page.tsx` | Removido bottom nav, adicionado botao artefatos |
+| `app/medicina/(dashboard)/layout.tsx` | Removido pb-20 (nao tem mais bottom nav) |
 
 ---
 
 ## COMMITS REALIZADOS NESTA SESSAO
 
-- `aee3746` - feat: implementar UI mobile completa com bottom nav e componentes otimizados
-
----
-
-## ARQUIVOS CRIADOS/MODIFICADOS
-
-| Arquivo | Tipo | Linhas |
-|---------|------|--------|
-| `components/mobile/MobileNavigation.tsx` | Novo | ~340 |
-| `components/mobile/MobileChatInput.tsx` | Novo | ~340 |
-| `components/mobile/MobileChatMessage.tsx` | Novo | ~200 |
-| `components/mobile/index.ts` | Novo | 12 |
-| `app/medicina/(dashboard)/dashboard/ia/page.tsx` | Modificado | +85 |
-| `app/medicina/(dashboard)/layout.tsx` | Modificado | +3 |
+- `e01b655` - feat(mobile): repaginar UI mobile - interface limpa estilo app de IA
 
 ---
 
@@ -79,64 +61,53 @@
 
 | Item | Status |
 |------|--------|
-| Site em producao | OK (https://preparamed-navy.vercel.app) |
-| Build Vercel | SUCESSO |
+| Site em producao | https://projeto-final-zeta-navy.vercel.app |
+| Build Vercel | PENDENTE (rede local indisponivel) |
 | TypeScript | 0 erros |
-| APIs | Todas funcionando |
-| UI Mobile | REFORMULADA |
-| Bottom Navigation | Implementado |
-| Seletor de Modo Mobile | Implementado (fullscreen) |
-| Drawer de Conversas | Implementado |
-| Input Mobile | Otimizado para touch |
+| UI Mobile | REPAGINADA - Interface limpa |
+| Bottom Nav | REMOVIDO |
+| Artefatos Mobile | Fullscreen implementado |
+| Modal de Modos | Corrigido e compacto |
+| Busca Web | Habilitada por padrao |
 
 ---
 
-## COMPONENTES MOBILE - RESUMO
+## ANTES vs DEPOIS
 
-### MobileBottomNav
-- Barra fixa no bottom da tela (lg:hidden)
-- 4 botoes: Historico, Modo, Novo, Config
-- Safe-area-inset-bottom para iPhone
-- Integrado com chatModeStore
+### ANTES (Interface Poluida)
+- Bottom nav com 4 botoes grandes
+- Icones de Crown e Settings no header
+- Drawer de conversas redundante
+- Botao de artefatos "solto"
+- Texto dos icones vazando no modal
+- Busca web desabilitada por padrao
 
-### MobileModeSelector
-- Modal fullscreen para selecao de modo
-- Cards grandes com icone, titulo, descricao, features
-- Indicador visual do modo ativo
-- Animacoes de entrada/saida
-- Fecha com ESC ou botao X
-
-### MobileConversasDrawer
-- Drawer lateral esquerdo (85% width, max 320px)
-- Lista de conversas com data
-- Botao de nova conversa
-- Fecha ao selecionar conversa
-
-### MobileChatInput
-- Container com safe-area-inset-bottom
-- Textarea auto-resize (max 120px)
-- Botao (+) abre painel de acoes
-- Botao enviar/mic contextual
-- Indicadores de Web/Think+ ativos
+### DEPOIS (Interface Limpa)
+- Sem bottom nav - tela toda para conversa
+- Header limpo com apenas seletor de modo
+- Historico apenas na sidebar (como no desktop)
+- Botao de artefatos integrado no header
+- Modal de modos compacto e funcional
+- Busca web habilitada nativamente
 
 ---
 
 ## PROXIMOS PASSOS
 
-1. **Testar no mobile real** - Verificar responsividade
-2. **Implementar MobileChatInput na pagina** - Substituir input desktop no mobile
-3. **Testar simulacao de atendimento** - Verificar fluxo completo
-4. **Salvar progresso da simulacao** - Persistir no banco
-5. **Estatisticas de simulacoes** - Dashboard de desempenho
-6. **Modo Tutor** - Implementar logica socratica
+1. **Verificar deploy na Vercel** - Confirmar que o build passou
+2. **Testar no mobile real** - Verificar responsividade no iPhone/Android
+3. **Ajustar detalhes visuais** - Cores, espacamentos, etc
+4. **Implementar simulacao de atendimento** - Salvar progresso
+5. **Modo Tutor** - Implementar logica socratica
+6. **Estatisticas de simulacoes** - Dashboard de desempenho
 
 ---
 
 ## LINKS UTEIS
 
-- Producao: https://preparamed-navy.vercel.app
-- Medicina/IA: https://preparamed-navy.vercel.app/medicina/dashboard/ia
+- Producao: https://projeto-final-zeta-navy.vercel.app
+- Medicina/IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
 - Supabase: https://supabase.com/dashboard/project/zkcstkbpgwdoiihvfspp
 - Vercel: https://vercel.com/brunos-projects-5f2d50e2/projeto-final
 - GitHub: https://github.com/brunodivinoo/projeto-final
-- Branch: claude/continue-prepara-med-BHIGi
+- Branch: claude/prepara-med-continue-76mSD
