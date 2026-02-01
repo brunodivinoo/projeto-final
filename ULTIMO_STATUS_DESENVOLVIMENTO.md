@@ -1,61 +1,96 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 01/02/2026 - Sessao de Correcao de Cores (Continuacao)
+## Atualizado em: 01/02/2026 - Sessao de Correcao de Tema Claro (Dashboard Completo)
 
 ---
 
 ## O QUE FOI FEITO NESTA SESSAO (01/02/2026)
 
-### 1. CORRECAO DO POPUP "PLANO RESIDENCIA"
-
+### 1. PAGINA DE ESTATISTICAS
 **Problema identificado:**
-- Popup de limites de uso cortando na tela em dispositivos mobile
-- Posicionamento centralizado fazia o conteudo sair da tela
-
-**Solucao aplicada:**
-- Ajustado posicionamento para `right-0` em mobile, centralizado apenas em desktop
-- Adicionado `max-w-[calc(100vw-2rem)]` para limitar largura
-- Cores internas do popup ajustadas para tema escuro (fundo `#0f172a`)
-
-### 2. CORRECAO DE PAGINAS COM TEMA ESCURO PROPOSITAL
-
-**Problema identificado:**
-- A correcao em lote anterior trocou `bg-white/10` por `bg-slate-100` em TODAS as paginas
-- Paginas de login, cadastro e landing page tem design de tema ESCURO proposital
-- Resultado: cards claros com texto branco = invisivel
-
-**Paginas corrigidas:**
-| Pagina | Correcao |
-|--------|----------|
-| Login | Cards e inputs revertidos para `bg-white/10` |
-| Cadastro | Cards, inputs e progress steps revertidos |
-| Landing | Todos os cards, botoes e stats revertidos |
-
-### 3. CORRECAO DA PAGINA DE CHAT IA
-
-**Problema identificado:**
-- Drawer mobile com fundo escuro `bg-slate-900` mas alguns elementos com cores claras
-- Header mobile com fundo escuro inconsistente
-- Area de input com fundo escuro
+- Cards com `text-white` em fundo `bg-slate-100` - texto invisivel
+- Seletor de periodo com cores inconsistentes
 
 **Correcoes aplicadas:**
-- Drawer mobile: `bg-slate-900` → `bg-white`
-- Header mobile: `bg-slate-900/80` → `bg-white/80`
-- Area de input: `bg-slate-900/50` → `bg-slate-50`
-- Textos ajustados de `text-white` → `text-slate-800`
-- Bloco de "thinking": cores ajustadas para tema claro
+- Cards: `bg-slate-100` → `bg-white shadow-sm`
+- Textos numericos: `text-white` → cores semanticas (`text-emerald-600`, `text-teal-600`, etc)
+- Icones: fundos `bg-xxx-500/20` → `bg-xxx-100`
+- Seletor: `bg-slate-100` → `bg-emerald-500 text-white`
 
-### 4. CORRECAO DO MODE SELECTOR
-
+### 2. PAGINA DE BIBLIOTECA
 **Problema identificado:**
-- Modal fullscreen mobile com fundo escuro
-- Dropdown desktop com fundo escuro
-- Textos brancos em fundos que deveriam ser claros
+- Header e cards de stats com texto branco em fundo claro
 
 **Correcoes aplicadas:**
-- Modal mobile: `bg-slate-900` → `bg-white`
-- Dropdown desktop: `bg-slate-800/95` → `bg-white`
-- Headers: `bg-slate-100` → `bg-slate-50`
-- Textos: `text-white` → `text-slate-800`
+- Titulo: `text-white` → `text-slate-800`
+- Subtitulo: `text-emerald-200/70` → `text-slate-500`
+- Cards de stats: cores adequadas com `shadow-sm`
+- Badge de nivel: borda visivel
+
+### 3. SIDEBAR MOBILE (ChatHistorySidebar)
+**Problema identificado:**
+- Botoes e inputs com cores inconsistentes
+- Menu de contexto com fundo escuro
+
+**Correcoes aplicadas:**
+- Botao "Nova conversa": `bg-emerald-500` com texto branco
+- Input de busca: `bg-slate-50` com `text-slate-700`
+- Menu de contexto: `bg-white` com bordas claras
+- Input de edicao: `bg-white` com `text-slate-700`
+
+### 4. MODAL PLANO RESIDENCIA (UsageLimits)
+**Problema identificado:**
+- Popup com tema escuro (`#0f172a`) inconsistente com resto do app
+
+**Correcoes aplicadas:**
+- Fundo: `#0f172a` → `bg-white border-slate-200`
+- Titulo: `text-white` → `text-slate-800`
+- Labels: `text-slate-400` → `text-slate-500`
+- Valores: `text-slate-300` → `text-slate-700`
+- Barras de progresso: `bg-slate-700` → `bg-slate-200`
+- Mensagem de acesso ilimitado: `bg-emerald-50 text-emerald-700`
+
+### 5. PAGINA DE PERFIL
+**Problema identificado:**
+- Cards, inputs e selects com cores inconsistentes
+
+**Correcoes aplicadas:**
+- Cards: `bg-slate-100` → `bg-white shadow-sm`
+- Titulos: `text-white` → `text-slate-800`
+- Inputs: `text-white` → `text-slate-700` com `bg-slate-50`
+- Selects: opcoes com `bg-white`
+- Badges de plano: `bg-xxx-500/20` → `bg-xxx-100`
+
+### 6. PAGINA DE INDICACOES
+**Problema identificado:**
+- Banner, cards e inputs com tema escuro
+
+**Correcoes aplicadas:**
+- Banner: gradiente claro com borda visivel
+- Cards de beneficios: `bg-white shadow-sm`
+- Input de email: `bg-slate-50 text-slate-700`
+- Estatisticas: `bg-white` com numeros coloridos
+- Historico: `bg-slate-50` nos itens
+
+### 7. PAGINA DE ASSINATURAS
+**Problema identificado:**
+- Textos brancos em varios elementos
+
+**Correcoes aplicadas:**
+- Titulo principal: `text-white` → `text-slate-800`
+- Precos: `text-white` → `text-slate-800`
+- Cards de planos: icones com fundos claros (`bg-xxx-100`)
+- Tabela de comparacao: `bg-white shadow-sm`
+- Depoimentos: `bg-white shadow-sm`
+- FAQ: `bg-white shadow-sm`
+
+### 8. CHAT IA - SUGESTOES
+**Problema identificado:**
+- Botoes de sugestao com verde muito claro (`bg-emerald-50`)
+
+**Correcoes aplicadas:**
+- Sugestoes: `bg-white` com hover `bg-emerald-50`
+- Bordas: `border-emerald-300`
+- Icones de carregamento: `from-emerald-200 to-teal-200`
 
 ---
 
@@ -63,7 +98,7 @@
 
 | Hash | Descricao |
 |------|-----------|
-| `9b9f8cd` | fix: corrigir cores de tema claro em paginas de auth, landing e chat |
+| `4f806aa` | fix: corrigir tema claro em todas as paginas do dashboard |
 
 ---
 
@@ -71,23 +106,25 @@
 
 | PR | Titulo | Status |
 |----|--------|--------|
-| [#11](https://github.com/brunodivinoo/projeto-final/pull/11) | fix: corrigir cores de tema claro em paginas de auth, landing e chat | **MERGED** |
+| [#13](https://github.com/brunodivinoo/projeto-final/pull/13) | fix: corrigir tema claro em todas as paginas do dashboard | **MERGED** |
 
 ---
 
 ## ARQUIVOS MODIFICADOS
 
-**Total:** 6 arquivos modificados
-**Adicoes:** 56 linhas
-**Remocoes:** 56 linhas
+**Total:** 8 arquivos modificados
+**Adicoes:** 181 linhas
+**Remocoes:** 183 linhas
 
 ### Arquivos:
-- `app/medicina/login/page.tsx`
-- `app/medicina/cadastro/page.tsx`
-- `app/medicina/page.tsx` (landing)
+- `app/medicina/(dashboard)/dashboard/estatisticas/page.tsx`
+- `app/medicina/(dashboard)/dashboard/biblioteca/page.tsx`
+- `app/medicina/(dashboard)/dashboard/perfil/page.tsx`
+- `app/medicina/(dashboard)/dashboard/indicacoes/page.tsx`
+- `app/medicina/(dashboard)/dashboard/assinatura/page.tsx`
 - `app/medicina/(dashboard)/dashboard/ia/page.tsx`
-- `components/chat/ModeSelector.tsx`
 - `components/chat/UsageLimits.tsx`
+- `components/medicina/ChatHistorySidebar.tsx`
 
 ---
 
@@ -96,35 +133,47 @@
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Build Vercel | Aguardando deploy automatico |
+| Build Vercel | Deploy automatico em andamento |
 | TypeScript | Warnings apenas (variaveis nao usadas) |
-| Tema Claro | CORRIGIDO |
-| Paginas de Auth | CORRIGIDAS (tema escuro proposital mantido) |
-| Landing Page | CORRIGIDA (tema escuro proposital mantido) |
-| Chat IA | CORRIGIDO (tema claro aplicado) |
-| Popup de Limites | CORRIGIDO (nao corta mais em mobile) |
-| PR #11 | **MERGED** |
+| Tema Claro Dashboard | **CORRIGIDO** |
+| Pagina Estatisticas | **CORRIGIDA** |
+| Pagina Biblioteca | **CORRIGIDA** |
+| Pagina Perfil | **CORRIGIDA** |
+| Pagina Indicacoes | **CORRIGIDA** |
+| Pagina Assinaturas | **CORRIGIDA** |
+| Sidebar Mobile | **CORRIGIDA** |
+| Modal UsageLimits | **CORRIGIDO** |
+| Chat IA Sugestoes | **CORRIGIDAS** |
+| PR #13 | **MERGED** |
 
 ---
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Verificar deploy** - Aguardar Vercel fazer deploy automatico do merge
-2. **Testar em producao** - Verificar se todas as correcoes estao funcionando
-3. **Revisar outros componentes** - Verificar se ha mais componentes com cores inconsistentes
-4. **Implementar novas features** - Continuar desenvolvimento do app
+1. **Verificar deploy** - Aguardar Vercel fazer deploy automatico
+2. **Testar em producao** - Verificar todas as paginas corrigidas
+3. **Revisar componentes restantes** - Verificar se ha mais inconsistencias
+4. **Implementar novas features** - Continuar desenvolvimento
 
 ---
 
-## APRENDIZADOS DESTA SESSAO
+## PADRAO DE CORES - TEMA CLARO (Dashboard)
 
-### Importante lembrar:
-- **Paginas de auth (login/cadastro) e landing** usam tema ESCURO proposital
-- Nao aplicar correcoes de tema claro nessas paginas
-- Cards internos devem usar `bg-white/10` com `text-white`
-- Botoes secundarios devem usar `bg-white/10` com `text-white`
+| Elemento | Classe |
+|----------|--------|
+| Card | `bg-white border-slate-200 shadow-sm` |
+| Titulo | `text-slate-800` |
+| Subtitulo | `text-slate-500` |
+| Input | `bg-slate-50 border-slate-200 text-slate-700` |
+| Botao primario | `bg-emerald-500 text-white` |
+| Botao secundario | `bg-slate-100 text-slate-700` |
+| Numero destaque | `text-emerald-600`, `text-teal-600`, etc |
+| Icone em badge | `bg-xxx-100 text-xxx-600` |
 
-### Padrao de cores para tema escuro:
+---
+
+## PADRAO DE CORES - TEMA ESCURO (Auth/Landing)
+
 | Elemento | Classe |
 |----------|--------|
 | Card | `bg-white/10 border-white/20` |
@@ -137,11 +186,13 @@
 ## LINKS UTEIS
 
 - Producao: https://projeto-final-zeta-navy.vercel.app
-- Login: https://projeto-final-zeta-navy.vercel.app/medicina/login
-- Cadastro: https://projeto-final-zeta-navy.vercel.app/medicina/cadastro
-- Landing: https://projeto-final-zeta-navy.vercel.app/medicina
+- Estatisticas: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/estatisticas
+- Biblioteca: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/biblioteca
+- Perfil: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/perfil
+- Indicacoes: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/indicacoes
+- Assinatura: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/assinatura
 - Chat IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
 - Supabase: https://supabase.com/dashboard/project/zkcstkbpgwdoiihvfspp
 - Vercel: https://vercel.com/brunos-projects-5f2d50e2/projeto-final
 - GitHub: https://github.com/brunodivinoo/projeto-final
-- PR #11: https://github.com/brunodivinoo/projeto-final/pull/11
+- PR #13: https://github.com/brunodivinoo/projeto-final/pull/13
