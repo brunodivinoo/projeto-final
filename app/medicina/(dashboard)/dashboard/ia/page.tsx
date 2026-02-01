@@ -1277,9 +1277,6 @@ export default function IAPage() {
                     const stateAfter = useArtifactsStore.getState()
                     console.log('[IA Page] Artefatos DEPOIS:', stateAfter.artifacts.length)
                     console.log('[IA Page] Novo artefato ID:', newArtifactId)
-                    console.log('[IA Page] Sidebar open?:', stateAfter.isSidebarOpen)
-
-                    setSidebarOpen(true)
                     console.log('[IA Page] Imagem adicionada aos artefatos!')
                   } catch (err) {
                     console.error('[IA Page] Erro ao adicionar artefato:', err)

@@ -249,9 +249,8 @@ export function useChatIA(options: UseChatIAOptions = {}): ChatData & ChatAction
                         novaConversaId || '',
                         msgIATemp.id
                       )
-                      // Abrir sidebar de artefatos e filtrar por imagens geradas
+                      // Filtrar por imagens geradas (não abre automaticamente)
                       setCategoryFilter('images_generated')
-                      setSidebarOpen(true)
                       console.log('[useChatIA] Imagem adicionada aos artefatos com sucesso')
                     } catch (artifactError) {
                       console.error('[useChatIA] Erro ao adicionar artefato:', artifactError)
