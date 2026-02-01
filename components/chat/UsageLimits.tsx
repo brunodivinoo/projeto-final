@@ -123,7 +123,7 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-72 p-4 rounded-xl border border-slate-200
+            className="absolute right-0 sm:left-1/2 sm:-translate-x-1/2 bottom-full mb-3 w-[280px] max-w-[calc(100vw-2rem)] p-4 rounded-xl border border-slate-700
                        shadow-xl shadow-black/50 z-[100]"
             style={{ backgroundColor: '#0f172a' }}
           >
@@ -208,7 +208,7 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
             )}
 
             {/* Setinha apontando para baixo (onde está o botão) */}
-            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 border-r border-b border-slate-200"
+            <div className="absolute -bottom-2 right-6 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto w-4 h-4 rotate-45 border-r border-b border-slate-700"
                  style={{ backgroundColor: '#0f172a' }} />
           </motion.div>
         )}
@@ -233,20 +233,20 @@ function UsageBar({ icon, label, current, max, unlimited }: UsageBarProps) {
   return (
     <div>
       <div className="flex items-center justify-between text-xs mb-1.5">
-        <div className="flex items-center gap-2 text-slate-600">
+        <div className="flex items-center gap-2 text-slate-400">
           {icon}
           <span>{label}</span>
         </div>
         <span className={`font-medium ${
           unlimited ? 'text-emerald-400' :
           isFull ? 'text-red-400' :
-          isHigh ? 'text-amber-400' : 'text-slate-700'
+          isHigh ? 'text-amber-400' : 'text-slate-300'
         }`}>
           {unlimited ? '∞ ilimitado' : `${current}/${max}`}
         </span>
       </div>
       {!unlimited && (
-        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
           <div
             className={`h-full transition-all rounded-full ${
               isFull ? 'bg-red-500' :
