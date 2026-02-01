@@ -63,7 +63,9 @@ import {
   prepareAgentContext,
   formatAgentResponse,
   validateMedicalResponse,
-  FEATURES
+  FEATURES,
+  prepareImageContext,
+  extractTextFromImage
 } from '@/lib/huggingface'
 // ========== FIM INTEGRACAO HUGGING FACE ==========
 
@@ -471,6 +473,7 @@ async function streamClaude(params: StreamClaudeParams) {
   const userContent: Anthropic.ContentBlockParam[] = []
 
   // Adicionar imagem se houver
+  let ocrContext = ''
   if (imagem_base64 && imagem_tipo) {
     userContent.push({
       type: 'image',
@@ -480,6 +483,17 @@ async function streamClaude(params: StreamClaudeParams) {
         data: imagem_base64
       }
     })
+
+    // Tentar extrair texto da imagem com OCR para enriquecer o contexto
+    try {
+      const ocrResult = await extractTextFromImage(imagem_base64)
+      if (ocrResult.text && ocrResult.text.length > 10) {
+        ocrContext = `\n\n[TEXTO DETECTADO NA IMAGEM VIA OCR]:\n${ocrResult.text}\n`
+        console.log('[OCR] Texto extraído da imagem:', ocrResult.text.substring(0, 100) + '...')
+      }
+    } catch (ocrError) {
+      console.log('[OCR] Não foi possível extrair texto da imagem:', ocrError)
+    }
   }
 
   // Adicionar PDF se houver
@@ -575,10 +589,15 @@ async function streamClaude(params: StreamClaudeParams) {
     instrucoesQuestoes
   ].filter(Boolean).join('\n\n---\n\n')
 
-  // Construir mensagem enriquecida com instruções
-  const mensagemEnriquecida = todasInstrucoes
+  // Construir mensagem enriquecida com instruções + OCR context
+  let mensagemEnriquecida = todasInstrucoes
     ? mensagem + '\n\n' + todasInstrucoes
     : mensagem
+
+  // Adicionar contexto do OCR se disponível (texto extraído da imagem)
+  if (ocrContext) {
+    mensagemEnriquecida += ocrContext
+  }
 
   // Adicionar texto
   userContent.push({

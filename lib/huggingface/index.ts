@@ -71,6 +71,17 @@ export {
   type TeachingApproach
 } from './response-variation'
 
+// Visão e OCR de imagens
+export {
+  VISION_MODELS,
+  extractTextFromImage,
+  analyzeImage,
+  prepareImageContext,
+  hasSignificantText,
+  type OCRResult,
+  type ImageAnalysisResult
+} from './image-vision'
+
 // Importar FEATURES localmente para uso na funcao de inicializacao
 import { FEATURES as _FEATURES } from './config'
 
