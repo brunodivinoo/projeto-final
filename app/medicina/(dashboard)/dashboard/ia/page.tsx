@@ -479,6 +479,13 @@ export default function IAPage() {
   // Estado da sidebar de artefatos para ajustar layout
   const { isSidebarOpen: isArtifactsSidebarOpen, hasArtifacts } = useArtifactsSidebar()
 
+  // Título da conversa atual
+  const tituloConversa = useMemo(() => {
+    if (!conversaAtual) return null
+    const conversa = conversas.find(c => c.id === conversaAtual)
+    return conversa?.titulo || null
+  }, [conversaAtual, conversas])
+
   // Detectar mobile para responsividade
   const [isMobile, setIsMobile] = useState(false)
 
@@ -1676,14 +1683,18 @@ export default function IAPage() {
 
       {/* Chat Principal */}
       <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
-        {/* Mobile Mode Bar - Barra limpa para mobile */}
-        <div className="lg:hidden flex items-center justify-between px-3 py-2 border-b border-white/10 bg-slate-900/80 backdrop-blur-sm">
-          <ModeSelector
-            onModeChange={(modo) => trocarModoNaConversa(modo as ChatMode)}
-            variant="compact"
-            className="flex-shrink-0"
-          />
-          <div className="flex items-center gap-2">
+        {/* Mobile Header - Barra limpa: título + artefatos */}
+        <div className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b border-white/10 bg-slate-900/80 backdrop-blur-sm">
+          {/* Título do Chat */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
+              <Brain className="w-3.5 h-3.5 text-white" />
+            </div>
+            <span className="text-sm font-medium text-white truncate">
+              {tituloConversa || 'Nova Conversa'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
             {/* Indicador de Ficha - Mobile */}
             {fichaAtiva && chatMode === 'caso_clinico' && (
               <IndicadorProgresso
@@ -1692,7 +1703,7 @@ export default function IAPage() {
                 onClick={() => setFichaAberta(true)}
               />
             )}
-            {/* Botão Artefatos - Mobile (integrado) */}
+            {/* Botão Artefatos - Mobile */}
             {hasArtifacts && (
               <button
                 onClick={() => setMobileArtifactsOpen(true)}
@@ -2212,6 +2223,61 @@ export default function IAPage() {
                       />
                     </>
                   )}
+
+                  {/* Seletor de Modo - Compacto Mobile */}
+                  <div className="lg:hidden relative">
+                    <div className="w-px h-4 bg-white/10 mx-0.5" />
+                  </div>
+                  <div className="lg:hidden relative">
+                    <button
+                      onClick={() => setShowModeDropdown(!showModeDropdown)}
+                      className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${MODE_CONFIG[chatMode as StoreChatMode]?.bgColor || 'bg-blue-500/20'} ${MODE_CONFIG[chatMode as StoreChatMode]?.color || 'text-blue-400'}`}
+                      title="Modo de Chat"
+                    >
+                      <span className="text-sm">{MODE_CONFIG[chatMode as StoreChatMode]?.emoji || '💬'}</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform ${showModeDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* Dropdown de modos - abre para cima no mobile */}
+                    {showModeDropdown && (
+                      <>
+                        {/* Backdrop */}
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowModeDropdown(false)}
+                        />
+                        {/* Menu */}
+                        <div className="absolute bottom-full right-0 mb-2 bg-slate-800 border border-white/10 rounded-xl shadow-xl overflow-hidden z-50 min-w-[180px]">
+                          <div className="p-1">
+                            {(Object.keys(MODE_CONFIG) as StoreChatMode[]).map((mode) => {
+                              const config = MODE_CONFIG[mode]
+                              const isActive = chatMode === mode
+                              return (
+                                <button
+                                  key={mode}
+                                  onClick={() => {
+                                    trocarModoNaConversa(mode as ChatMode)
+                                    setShowModeDropdown(false)
+                                  }}
+                                  className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left text-sm transition-colors ${
+                                    isActive
+                                      ? `${config.bgColor} ${config.color}`
+                                      : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                  }`}
+                                >
+                                  <span className="text-base">{config.emoji}</span>
+                                  <div className="flex-1">
+                                    <div className="font-medium">{config.label}</div>
+                                  </div>
+                                  {isActive && <CheckCircle2 className="w-4 h-4" />}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Botão enviar/cancelar à direita */}
