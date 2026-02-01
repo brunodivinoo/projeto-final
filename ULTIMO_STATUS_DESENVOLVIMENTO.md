@@ -1,5 +1,26 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 31/01/2026 - 22:00 (Sessao Atual)
+## Atualizado em: 31/01/2026 - 22:30 (Sessao Finalizada)
+
+---
+
+## ⚠️ URGENTE - PRÓXIMA SESSÃO
+
+**TODOS OS COMMITS DESTA SESSÃO ESTÃO COM ERRO NO VERCEL BUILD!**
+
+Os seguintes commits precisam ser corrigidos na próxima sessão:
+| Commit | Mensagem | Status |
+|--------|----------|--------|
+| `04a7ffd` | docs: atualizar status após integração da FichaAnamnese | ❌ Error |
+| `68f2542` | feat: integrar FichaAnamnese no chat de simulação clínica | ❌ Error |
+| `bce6f12` | docs: atualizar status após FichaAnamnese | ❌ Error |
+| `9357435` | feat: adicionar FichaAnamnese discreta para simulação clínica | ❌ Error |
+| `d849e22` | docs: atualizar status após implementação de simulação de atendimento | ❌ Error |
+| `ce147b8` | feat: adicionar simulação de atendimento e melhorias de UX | ❌ Error |
+
+**Ação necessária na próxima sessão:**
+1. Verificar logs de erro do Vercel
+2. Corrigir problemas de TypeScript/build
+3. Testar build localmente antes de push
 
 ---
 
