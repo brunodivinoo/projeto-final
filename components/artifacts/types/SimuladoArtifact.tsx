@@ -132,7 +132,7 @@ export function SimuladoArtifact({
       case 'facil': return 'text-emerald-400 bg-emerald-400/10'
       case 'medio': return 'text-amber-400 bg-amber-400/10'
       case 'dificil': return 'text-red-400 bg-red-400/10'
-      default: return 'text-white/60 bg-white/10'
+      default: return 'text-slate-600 bg-slate-100'
     }
   }
 
@@ -153,7 +153,7 @@ export function SimuladoArtifact({
         </div>
 
         <h3 className="text-xl text-white font-bold mb-2">{title}</h3>
-        <p className="text-white/60 mb-6">
+        <p className="text-slate-600 mb-6">
           {questions.length} questões {timeLimit && `| ${timeLimit} minutos`}
         </p>
 
@@ -187,7 +187,7 @@ export function SimuladoArtifact({
         </button>
 
         {timeLimit && (
-          <p className="text-white/40 text-sm mt-4">
+          <p className="text-slate-500 text-sm mt-4">
             O tempo começa a contar ao clicar
           </p>
         )}
@@ -200,13 +200,13 @@ export function SimuladoArtifact({
     return (
       <div className="py-4">
         {/* Header com timer e progresso */}
-        <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
-          <span className="text-white/60 text-sm">
+        <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-200">
+          <span className="text-slate-600 text-sm">
             Questão {currentIndex + 1} de {questions.length}
           </span>
 
           <div className="flex items-center gap-4">
-            <span className="text-white/60 text-sm">
+            <span className="text-slate-600 text-sm">
               {respondidas}/{questions.length} respondidas
             </span>
 
@@ -239,7 +239,7 @@ export function SimuladoArtifact({
                 className={`w-full text-left p-4 rounded-xl border transition-all ${
                   respostas[question.id] === alt.letra
                     ? 'border-blue-500 bg-blue-500/20 text-white'
-                    : 'border-white/10 hover:border-white/30 text-white/80 hover:text-white'
+                    : 'border-slate-200 hover:border-white/30 text-slate-700 hover:text-white'
                 }`}
               >
                 <span className="font-semibold text-blue-400 mr-2">{alt.letra})</span>
@@ -254,7 +254,7 @@ export function SimuladoArtifact({
           <button
             onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
             disabled={currentIndex === 0}
-            className="px-4 py-2 rounded-lg bg-white/5 text-white/70 hover:bg-white/10
+            className="px-4 py-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-100
                        disabled:opacity-30 transition flex items-center gap-1"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -283,7 +283,7 @@ export function SimuladoArtifact({
         </div>
 
         {/* Navegação rápida */}
-        <div className="flex flex-wrap gap-1.5 mt-6 pt-4 border-t border-white/10">
+        <div className="flex flex-wrap gap-1.5 mt-6 pt-4 border-t border-slate-200">
           {questions.map((q, i) => (
             <button
               key={q.id}
@@ -293,7 +293,7 @@ export function SimuladoArtifact({
                   ? 'bg-blue-600 text-white'
                   : respostas[q.id]
                   ? 'bg-emerald-500/30 text-emerald-300'
-                  : 'bg-white/5 text-white/50 hover:bg-white/10'
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-100'
               }`}
             >
               {i + 1}
@@ -334,12 +334,12 @@ export function SimuladoArtifact({
             {resultado.percentual}%
           </div>
 
-          <p className="text-white/60 mb-1">
+          <p className="text-slate-600 mb-1">
             {resultado.acertos} de {resultado.total} questões corretas
           </p>
 
           {resultado.tempo > 0 && (
-            <p className="text-white/40 text-sm">
+            <p className="text-slate-500 text-sm">
               Tempo: {formatTime(resultado.tempo)}
             </p>
           )}
@@ -371,12 +371,12 @@ export function SimuladoArtifact({
 
                   <div className="flex-1">
                     <p className="text-white font-medium text-sm mb-1">Questão {i + 1}</p>
-                    <p className="text-white/60 text-sm line-clamp-2">{q.enunciado}</p>
+                    <p className="text-slate-600 text-sm line-clamp-2">{q.enunciado}</p>
 
                     {!acertou && (
                       <div className="mt-2 text-sm">
                         <span className="text-red-400">Sua: {resp?.resposta || 'Não respondida'}</span>
-                        <span className="text-white/40 mx-2">|</span>
+                        <span className="text-slate-500 mx-2">|</span>
                         <span className="text-emerald-400">Correta: {q.respostaCorreta}</span>
                       </div>
                     )}
@@ -394,7 +394,7 @@ export function SimuladoArtifact({
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="mt-2 p-3 rounded-lg bg-white/5 text-white/70 text-sm"
+                          className="mt-2 p-3 rounded-lg bg-slate-100 text-slate-600 text-sm"
                         >
                           {q.explicacao}
                         </motion.div>
@@ -416,7 +416,7 @@ export function SimuladoArtifact({
             setCurrentIndex(0)
             setShowExplicacao(null)
           }}
-          className="w-full mt-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/70
+          className="w-full mt-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-100 text-slate-600
                      hover:text-white transition flex items-center justify-center gap-2"
         >
           <RotateCcw className="w-4 h-4" />

@@ -57,7 +57,7 @@ export function XPModal({ isOpen, onClose }: XPModalProps) {
         >
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/50 dark:bg-black/20 flex items-center justify-center hover:bg-white/80 dark:hover:bg-black/40 transition-colors"
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-1000 dark:bg-black/20 flex items-center justify-center hover:bg-white/80 dark:hover:bg-black/40 transition-colors"
           >
             <span className="material-symbols-outlined text-slate-600 dark:text-slate-300">close</span>
           </button>
@@ -98,7 +98,7 @@ export function XPModal({ isOpen, onClose }: XPModalProps) {
                 <span className="text-slate-500 dark:text-slate-400">Progresso para Nível {proximoNivel.nivel}</span>
                 <span className="font-bold text-slate-700 dark:text-slate-300">{progressoNivel}%</span>
               </div>
-              <div className="h-3 bg-white/50 dark:bg-black/20 rounded-full overflow-hidden">
+              <div className="h-3 bg-slate-1000 dark:bg-black/20 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{

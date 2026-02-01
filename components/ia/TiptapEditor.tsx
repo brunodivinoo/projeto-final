@@ -666,7 +666,7 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
     content: markdownToHtml(content),
     editorProps: {
       attributes: {
-        class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[300px] p-4'
+        class: 'prose prose-sm dark:prose-slate max-w-none focus:outline-none min-h-[300px] p-4'
       }
     },
     onUpdate: ({ editor }) => {

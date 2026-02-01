@@ -391,19 +391,19 @@ export default function BibliotecaPage() {
                 Conteúdo organizado para sua preparação
               </p>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg">
               <GraduationCap className="w-4 h-4 text-emerald-400" />
-              <span className="text-white/80 text-sm capitalize">{nivelTeoria}</span>
+              <span className="text-slate-700 text-sm capitalize">{nivelTeoria}</span>
             </div>
           </div>
 
           {/* Barra de Progresso Geral */}
           <div className="mt-4">
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-white/60">Progresso Geral</span>
+              <span className="text-slate-600">Progresso Geral</span>
               <span className="text-emerald-400 font-medium">{stats.percentLido}%</span>
             </div>
-            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
                 style={{ width: `${stats.percentLido}%` }}
@@ -413,14 +413,14 @@ export default function BibliotecaPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-4 border border-slate-200">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
               <BookOpen className="w-5 h-5 text-blue-400" />
             </div>
             <div>
               <p className="text-2xl font-bold text-white">{stats.total}</p>
-              <p className="text-white/60 text-sm">Teorias</p>
+              <p className="text-slate-600 text-sm">Teorias</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
@@ -429,14 +429,14 @@ export default function BibliotecaPage() {
           </div>
         </div>
 
-        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-4 border border-slate-200">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <Clock className="w-5 h-5 text-amber-400" />
             </div>
             <div>
               <p className="text-2xl font-bold text-white">{Math.round(stats.tempoTotal / 60)}h</p>
-              <p className="text-white/60 text-sm">Conteúdo</p>
+              <p className="text-slate-600 text-sm">Conteúdo</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
@@ -447,22 +447,22 @@ export default function BibliotecaPage() {
       </div>
 
       {/* Search and Filters Bar */}
-      <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-4">
+      <div className="bg-slate-100 rounded-xl p-4 border border-slate-200 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
             <input
               type="text"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar por título, tema ou palavra-chave..."
-              className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             {busca && (
               <button
                 onClick={() => setBusca('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -476,7 +476,7 @@ export default function BibliotecaPage() {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                 showFiltros || temFiltrosAtivos
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
               }`}
             >
               <Filter className="w-5 h-5" />
@@ -486,11 +486,11 @@ export default function BibliotecaPage() {
               )}
             </button>
 
-            <div className="flex bg-white/5 rounded-lg p-1">
+            <div className="flex bg-slate-100 rounded-lg p-1">
               <button
                 onClick={() => setVisualizacao('hierarquia')}
                 className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                  visualizacao === 'hierarquia' ? 'bg-emerald-500 text-white' : 'text-white/60 hover:text-white'
+                  visualizacao === 'hierarquia' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-white'
                 }`}
                 title="Hierarquia"
               >
@@ -499,7 +499,7 @@ export default function BibliotecaPage() {
               <button
                 onClick={() => setVisualizacao('lista')}
                 className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                  visualizacao === 'lista' ? 'bg-emerald-500 text-white' : 'text-white/60 hover:text-white'
+                  visualizacao === 'lista' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-white'
                 }`}
                 title="Lista"
               >
@@ -508,7 +508,7 @@ export default function BibliotecaPage() {
               <button
                 onClick={() => setVisualizacao('cards')}
                 className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                  visualizacao === 'cards' ? 'bg-emerald-500 text-white' : 'text-white/60 hover:text-white'
+                  visualizacao === 'cards' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-white'
                 }`}
                 title="Cards"
               >
@@ -517,7 +517,7 @@ export default function BibliotecaPage() {
               <button
                 onClick={() => setVisualizacao('referencias')}
                 className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                  visualizacao === 'referencias' ? 'bg-emerald-500 text-white' : 'text-white/60 hover:text-white'
+                  visualizacao === 'referencias' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-white'
                 }`}
                 title="Livros de Referência"
               >
@@ -526,7 +526,7 @@ export default function BibliotecaPage() {
               <button
                 onClick={() => setVisualizacao('artefatos')}
                 className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                  visualizacao === 'artefatos' ? 'bg-emerald-500 text-white' : 'text-white/60 hover:text-white'
+                  visualizacao === 'artefatos' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-white'
                 }`}
                 title="Meus Artefatos"
               >
@@ -538,13 +538,13 @@ export default function BibliotecaPage() {
 
         {/* Expanded Filters */}
         {showFiltros && (
-          <div className="flex flex-wrap gap-4 pt-4 border-t border-white/10">
+          <div className="flex flex-wrap gap-4 pt-4 border-t border-slate-200">
             <div className="flex flex-col gap-1">
-              <label className="text-white/60 text-xs">Status</label>
+              <label className="text-slate-600 text-xs">Status</label>
               <select
                 value={filtroLido}
                 onChange={(e) => setFiltroLido(e.target.value as 'todos' | 'lidos' | 'nao_lidos')}
-                className="bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="todos" className="bg-slate-800">Todos</option>
                 <option value="lidos" className="bg-slate-800">Lidos</option>
@@ -553,11 +553,11 @@ export default function BibliotecaPage() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-white/60 text-xs">Dificuldade</label>
+              <label className="text-slate-600 text-xs">Dificuldade</label>
               <select
                 value={filtroDificuldade || ''}
                 onChange={(e) => setFiltroDificuldade(e.target.value ? Number(e.target.value) : null)}
-                className="bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="" className="bg-slate-800">Todas</option>
                 <option value="1" className="bg-slate-800">⭐ Fácil</option>
@@ -569,11 +569,11 @@ export default function BibliotecaPage() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-white/60 text-xs">Tempo de Leitura</label>
+              <label className="text-slate-600 text-xs">Tempo de Leitura</label>
               <select
                 value={filtroTempo}
                 onChange={(e) => setFiltroTempo(e.target.value as 'todos' | 'rapido' | 'medio' | 'longo')}
-                className="bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="todos" className="bg-slate-800">Todos</option>
                 <option value="rapido" className="bg-slate-800">Rápido (até 10min)</option>
@@ -587,7 +587,7 @@ export default function BibliotecaPage() {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors self-end ${
                 filtroFavoritos
                   ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
               }`}
             >
               <Star className={`w-4 h-4 ${filtroFavoritos ? 'fill-amber-400' : ''}`} />
@@ -597,7 +597,7 @@ export default function BibliotecaPage() {
             {temFiltrosAtivos && (
               <button
                 onClick={limparFiltros}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 self-end"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-100 self-end"
               >
                 <X className="w-4 h-4" />
                 Limpar
@@ -613,10 +613,10 @@ export default function BibliotecaPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
         </div>
       ) : disciplinas.filter(d => d.totalTeorias > 0).length === 0 ? (
-        <div className="bg-white/5 rounded-xl p-12 border border-white/10 text-center">
+        <div className="bg-slate-100 rounded-xl p-12 border border-slate-200 text-center">
           <BookOpen className="w-16 h-16 text-white/20 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">Nenhuma teoria encontrada</h3>
-          <p className="text-white/60 mb-4">Tente ajustar os filtros ou a busca</p>
+          <p className="text-slate-600 mb-4">Tente ajustar os filtros ou a busca</p>
           {temFiltrosAtivos && (
             <button
               onClick={limparFiltros}
@@ -636,11 +636,11 @@ export default function BibliotecaPage() {
               : 0
 
             return (
-              <div key={disciplina.id} className={`bg-white/5 rounded-xl border ${cores.border} overflow-hidden`}>
+              <div key={disciplina.id} className={`bg-slate-100 rounded-xl border ${cores.border} overflow-hidden`}>
                 {/* Disciplina Header */}
                 <button
                   onClick={() => toggleDisciplina(disciplina.id)}
-                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-xl ${cores.bg} flex items-center justify-center`}>
@@ -649,7 +649,7 @@ export default function BibliotecaPage() {
                     <div className="text-left">
                       <h3 className="text-lg font-semibold text-white">{disciplina.nome}</h3>
                       <div className="flex items-center gap-3 text-sm">
-                        <span className="text-white/60">
+                        <span className="text-slate-600">
                           {disciplina.totalTeorias} teorias
                         </span>
                         <span className={cores.text}>
@@ -662,7 +662,7 @@ export default function BibliotecaPage() {
                   <div className="flex items-center gap-4">
                     {/* Mini Progress Bar */}
                     <div className="hidden md:flex items-center gap-2">
-                      <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${cores.bg.replace('/20', '')}`}
                           style={{ width: `${progressoDisc}%` }}
@@ -670,7 +670,7 @@ export default function BibliotecaPage() {
                       </div>
                       <span className={`text-sm ${cores.text}`}>{progressoDisc}%</span>
                     </div>
-                    <ChevronDown className={`w-6 h-6 text-white/40 transition-transform ${
+                    <ChevronDown className={`w-6 h-6 text-slate-500 transition-transform ${
                       disciplina.expanded ? 'rotate-180' : ''
                     }`} />
                   </div>
@@ -678,7 +678,7 @@ export default function BibliotecaPage() {
 
                 {/* Assuntos */}
                 {disciplina.expanded && (
-                  <div className="border-t border-white/10">
+                  <div className="border-t border-slate-200">
                     {Array.from(disciplina.assuntos.values())
                       .filter(a => a.teorias.length > 0 || Array.from(a.subassuntos.values()).some(s => s.teorias.length > 0))
                       .map((assunto) => {
@@ -688,18 +688,18 @@ export default function BibliotecaPage() {
                         if (totalAssunto === 0) return null
 
                         return (
-                          <div key={assunto.id} className="border-b border-white/5 last:border-b-0">
+                          <div key={assunto.id} className="border-b border-slate-200 last:border-b-0">
                             {/* Assunto Header */}
                             <button
                               onClick={() => toggleAssunto(disciplina.id, assunto.id)}
-                              className="w-full px-6 py-3 pl-10 flex items-center justify-between hover:bg-white/5 transition-colors"
+                              className="w-full px-6 py-3 pl-10 flex items-center justify-between hover:bg-slate-100 transition-colors"
                             >
                               <div className="flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                                <span className="text-white/80 font-medium">{assunto.nome}</span>
-                                <span className="text-white/40 text-sm">({totalAssunto})</span>
+                                <span className="text-slate-700 font-medium">{assunto.nome}</span>
+                                <span className="text-slate-500 text-sm">({totalAssunto})</span>
                               </div>
-                              <ChevronRight className={`w-5 h-5 text-white/40 transition-transform ${
+                              <ChevronRight className={`w-5 h-5 text-slate-500 transition-transform ${
                                 assunto.expanded ? 'rotate-90' : ''
                               }`} />
                             </button>
@@ -717,7 +717,7 @@ export default function BibliotecaPage() {
                                   .filter(([, s]) => s.teorias.length > 0)
                                   .map(([subId, subassunto]) => (
                                     <div key={subId}>
-                                      <div className="px-6 py-2 pl-16 text-white/50 text-sm font-medium flex items-center gap-2">
+                                      <div className="px-6 py-2 pl-16 text-slate-500 text-sm font-medium flex items-center gap-2">
                                         <Sparkles className="w-3 h-3" />
                                         {subassunto.nome}
                                       </div>
@@ -734,7 +734,7 @@ export default function BibliotecaPage() {
 
                     {/* Caso não tenha assuntos mas tenha teorias */}
                     {disciplina.assuntos.size === 0 && (
-                      <div className="px-6 py-4 text-center text-white/40">
+                      <div className="px-6 py-4 text-center text-slate-500">
                         Nenhum conteúdo disponível ainda
                       </div>
                     )}
@@ -746,7 +746,7 @@ export default function BibliotecaPage() {
         </div>
       ) : visualizacao === 'lista' ? (
         /* Visualização em Lista */
-        <div className="bg-white/5 rounded-xl border border-white/10 divide-y divide-white/5">
+        <div className="bg-slate-100 rounded-xl border border-slate-200 divide-y divide-white/5">
           {todasTeorias
             .filter(t => {
               if (filtroLido === 'lidos' && !t.progresso?.lido) return false
@@ -785,14 +785,14 @@ export default function BibliotecaPage() {
               </div>
               <div className="flex-1">
                 <h3 className="text-purple-300 font-semibold mb-2">Meus Artefatos de Estudo</h3>
-                <p className="text-white/70 text-sm leading-relaxed">
+                <p className="text-slate-600 text-sm leading-relaxed">
                   Todos os seus artefatos gerados pela IA ficam salvos aqui, mesmo se você excluir a conversa original.
                   Questões, flashcards, simulados, planos de estudo e mais.
                 </p>
               </div>
               <div className="text-right">
                 <p className="text-3xl font-bold text-white">{statsArtefatos.total}</p>
-                <p className="text-white/50 text-sm">artefatos</p>
+                <p className="text-slate-500 text-sm">artefatos</p>
               </div>
             </div>
           </div>
@@ -804,7 +804,7 @@ export default function BibliotecaPage() {
               className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 !filtroTipoArtefato
                   ? 'bg-emerald-500 text-white'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
               }`}
             >
               Todos ({statsArtefatos.total})
@@ -818,7 +818,7 @@ export default function BibliotecaPage() {
                   className={`px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-1.5 ${
                     filtroTipoArtefato === tipo
                       ? 'bg-emerald-500 text-white'
-                      : 'bg-white/5 text-white/60 hover:bg-white/10'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   {config && <config.icon className="w-3.5 h-3.5" />}
@@ -834,10 +834,10 @@ export default function BibliotecaPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
             </div>
           ) : artefatos.length === 0 ? (
-            <div className="bg-white/5 rounded-xl p-12 border border-white/10 text-center">
+            <div className="bg-slate-100 rounded-xl p-12 border border-slate-200 text-center">
               <Brain className="w-16 h-16 text-white/20 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">Nenhum artefato ainda</h3>
-              <p className="text-white/60 mb-4">
+              <p className="text-slate-600 mb-4">
                 Use o Chat IA para criar questões, flashcards, simulados e muito mais!
               </p>
               <Link
@@ -859,7 +859,7 @@ export default function BibliotecaPage() {
                 return (
                   <div
                     key={artefato.id}
-                    className={`bg-white/5 rounded-xl border ${config.cor.split(' ')[2]} p-5 hover:bg-white/10 transition-all group`}
+                    className={`bg-slate-100 rounded-xl border ${config.cor.split(' ')[2]} p-5 hover:bg-slate-100 transition-all group`}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className={`px-2.5 py-1 rounded-lg ${config.cor.split(' ').slice(0, 2).join(' ')} text-xs font-medium flex items-center gap-1.5`}>
@@ -868,17 +868,17 @@ export default function BibliotecaPage() {
                       </div>
                       <button
                         onClick={() => arquivarArtefato(artefato.id)}
-                        className="p-1 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded transition-all"
+                        className="p-1 opacity-0 group-hover:opacity-100 hover:bg-slate-100 rounded transition-all"
                         title="Arquivar"
                       >
-                        <Archive className="w-4 h-4 text-white/40" />
+                        <Archive className="w-4 h-4 text-slate-500" />
                       </button>
                     </div>
 
                     <h4 className="text-white font-semibold mb-2 line-clamp-2">{artefato.titulo}</h4>
 
                     {artefato.descricao && (
-                      <p className="text-white/60 text-sm mb-3 line-clamp-2">{artefato.descricao}</p>
+                      <p className="text-slate-600 text-sm mb-3 line-clamp-2">{artefato.descricao}</p>
                     )}
 
                     <div className="flex flex-wrap gap-1 mb-3">
@@ -888,14 +888,14 @@ export default function BibliotecaPage() {
                         </span>
                       )}
                       {artefato.topico && (
-                        <span className="px-2 py-0.5 bg-white/10 text-white/60 text-xs rounded">
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded">
                           {artefato.topico}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between text-sm border-t border-white/10 pt-3 mt-3">
-                      <div className="flex items-center gap-3 text-white/50">
+                    <div className="flex items-center justify-between text-sm border-t border-slate-200 pt-3 mt-3">
+                      <div className="flex items-center gap-3 text-slate-500">
                         {artefato.vezes_respondido > 0 && (
                           <span className="flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
@@ -908,7 +908,7 @@ export default function BibliotecaPage() {
                           </span>
                         )}
                       </div>
-                      <span className="text-white/40 text-xs">
+                      <span className="text-slate-500 text-xs">
                         {new Date(artefato.created_at).toLocaleDateString('pt-BR')}
                       </span>
                     </div>
@@ -929,7 +929,7 @@ export default function BibliotecaPage() {
               </div>
               <div>
                 <h3 className="text-amber-300 font-semibold mb-2">Sobre as Referências</h3>
-                <p className="text-white/70 text-sm leading-relaxed">
+                <p className="text-slate-600 text-sm leading-relaxed">
                   Todas as questões e conteúdos do PREPARAMED são baseados em livros-texto consagrados da área médica.
                   As referências seguem o padrão ABNT e estão organizadas por prioridade e área de conhecimento.
                   Utilize estes livros como fonte primária de estudo complementar.
@@ -946,7 +946,7 @@ export default function BibliotecaPage() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Livros Essenciais</h2>
-                <p className="text-white/60 text-sm">Referências principais para todas as disciplinas</p>
+                <p className="text-slate-600 text-sm">Referências principais para todas as disciplinas</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -964,7 +964,7 @@ export default function BibliotecaPage() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Livros Complementares</h2>
-                <p className="text-white/60 text-sm">Referências especializadas por área</p>
+                <p className="text-slate-600 text-sm">Referências especializadas por área</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -975,18 +975,18 @@ export default function BibliotecaPage() {
           </div>
 
           {/* Livros por Disciplina */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-slate-100 border border-slate-200 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <Layers className="w-5 h-5 text-purple-400" />
               Referências por Disciplina
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {Object.entries(LIVROS_POR_DISCIPLINA).map(([disciplina, abreviacoes]) => (
-                <div key={disciplina} className="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors">
+                <div key={disciplina} className="bg-slate-100 rounded-lg p-4 hover:bg-slate-100 transition-colors">
                   <h4 className="text-emerald-400 font-medium mb-2">{disciplina}</h4>
                   <div className="flex flex-wrap gap-1">
                     {abreviacoes.map(abrev => (
-                      <span key={abrev} className="px-2 py-0.5 bg-white/10 text-white/70 text-xs rounded">
+                      <span key={abrev} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded">
                         {abrev}
                       </span>
                     ))}
@@ -997,7 +997,7 @@ export default function BibliotecaPage() {
           </div>
 
           {/* Fontes Online */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-slate-100 border border-slate-200 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <ExternalLink className="w-5 h-5 text-cyan-400" />
               Fontes Científicas Online
@@ -1026,7 +1026,7 @@ function TeoriaItem({ teoria, nivel, showDisciplina }: { teoria: Teoria; nivel: 
   return (
     <Link
       href={`/medicina/dashboard/biblioteca/${teoria.id}`}
-      className={`block px-6 py-3 ${paddingLeft} hover:bg-white/5 transition-colors`}
+      className={`block px-6 py-3 ${paddingLeft} hover:bg-slate-100 transition-colors`}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -1047,16 +1047,16 @@ function TeoriaItem({ teoria, nivel, showDisciplina }: { teoria: Teoria; nivel: 
             {teoria.assunto && !showDisciplina && (
               <span className="text-emerald-400/70">{teoria.assunto.nome}</span>
             )}
-            <span className="flex items-center gap-1 text-white/40">
+            <span className="flex items-center gap-1 text-slate-500">
               <Clock className="w-3 h-3" />
               {teoria.tempo_leitura_minutos}min
             </span>
-            <span className="text-white/40">
+            <span className="text-slate-500">
               {'⭐'.repeat(teoria.nivel_dificuldade)}
             </span>
           </div>
         </div>
-        <ChevronRight className="w-5 h-5 text-white/40 flex-shrink-0 mt-1" />
+        <ChevronRight className="w-5 h-5 text-slate-500 flex-shrink-0 mt-1" />
       </div>
     </Link>
   )
@@ -1069,7 +1069,7 @@ function TeoriaCard({ teoria }: { teoria: Teoria }) {
   return (
     <Link
       href={`/medicina/dashboard/biblioteca/${teoria.id}`}
-      className={`block bg-white/5 rounded-xl border ${cores.border} p-5 hover:bg-white/10 transition-colors group`}
+      className={`block bg-slate-100 rounded-xl border ${cores.border} p-5 hover:bg-slate-100 transition-colors group`}
     >
       <div className="flex items-start justify-between mb-3">
         <div className={`px-2 py-1 rounded-md ${cores.bg} ${cores.text} text-xs font-medium`}>
@@ -1090,18 +1090,18 @@ function TeoriaCard({ teoria }: { teoria: Teoria }) {
       </h3>
 
       {teoria.subtitulo && (
-        <p className="text-white/60 text-sm mb-3 line-clamp-2">{teoria.subtitulo}</p>
+        <p className="text-slate-600 text-sm mb-3 line-clamp-2">{teoria.subtitulo}</p>
       )}
 
       <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-3 text-white/50">
+        <div className="flex items-center gap-3 text-slate-500">
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
             {teoria.tempo_leitura_minutos}min
           </span>
           <span>{'⭐'.repeat(teoria.nivel_dificuldade)}</span>
         </div>
-        <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-emerald-400 transition-colors" />
+        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors" />
       </div>
     </Link>
   )
@@ -1120,25 +1120,25 @@ function LivroCard({ livro, destaque }: { livro: LivroReferencia; destaque?: boo
 
   return (
     <div
-      className={`bg-white/5 rounded-xl border ${destaque ? 'border-emerald-500/30' : 'border-white/10'} p-5 hover:bg-white/10 transition-all cursor-pointer`}
+      className={`bg-slate-100 rounded-xl border ${destaque ? 'border-emerald-500/30' : 'border-slate-200'} p-5 hover:bg-slate-100 transition-all cursor-pointer`}
       onClick={() => setExpandido(!expandido)}
     >
       <div className="flex items-start gap-4">
-        <div className={`w-12 h-12 rounded-xl ${destaque ? 'bg-emerald-500/20' : 'bg-white/10'} flex items-center justify-center flex-shrink-0`}>
-          <BookOpen className={`w-6 h-6 ${destaque ? 'text-emerald-400' : 'text-white/60'}`} />
+        <div className={`w-12 h-12 rounded-xl ${destaque ? 'bg-emerald-500/20' : 'bg-slate-100'} flex items-center justify-center flex-shrink-0`}>
+          <BookOpen className={`w-6 h-6 ${destaque ? 'text-emerald-400' : 'text-slate-600'}`} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <h4 className="text-white font-semibold line-clamp-2">{livro.titulo}</h4>
-            <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${destaque ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white/60'}`}>
+            <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${destaque ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-100 text-slate-600'}`}>
               {livro.abreviacao}
             </span>
           </div>
-          <p className="text-white/60 text-sm mt-1">{livro.autor}</p>
+          <p className="text-slate-600 text-sm mt-1">{livro.autor}</p>
           <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
-            <span className="px-2 py-0.5 bg-white/10 text-white/50 rounded">{livro.edicao}</span>
-            <span className="px-2 py-0.5 bg-white/10 text-white/50 rounded">{livro.ano}</span>
-            <span className="px-2 py-0.5 bg-white/10 text-white/50 rounded">{livro.editora}</span>
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded">{livro.edicao}</span>
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded">{livro.ano}</span>
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded">{livro.editora}</span>
           </div>
         </div>
       </div>
@@ -1154,9 +1154,9 @@ function LivroCard({ livro, destaque }: { livro: LivroReferencia; destaque?: boo
 
       {/* Referência ABNT expandida */}
       {expandido && (
-        <div className="mt-4 pt-4 border-t border-white/10">
-          <p className="text-white/40 text-xs mb-2">Referência ABNT:</p>
-          <p className="text-white/70 text-sm bg-white/5 p-3 rounded-lg font-mono">
+        <div className="mt-4 pt-4 border-t border-slate-200">
+          <p className="text-slate-500 text-xs mb-2">Referência ABNT:</p>
+          <p className="text-slate-600 text-sm bg-slate-100 p-3 rounded-lg font-mono">
             {formatarABNT()}
           </p>
         </div>
@@ -1164,7 +1164,7 @@ function LivroCard({ livro, destaque }: { livro: LivroReferencia; destaque?: boo
 
       {/* Indicador de expansão */}
       <div className="flex justify-center mt-3">
-        <ChevronDown className={`w-4 h-4 text-white/30 transition-transform ${expandido ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandido ? 'rotate-180' : ''}`} />
       </div>
     </div>
   )

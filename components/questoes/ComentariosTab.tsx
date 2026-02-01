@@ -459,7 +459,7 @@ export function ComentariosTab({ questaoId }: ComentariosTabProps) {
               </div>
             ) : (
               <div
-                className="text-sm text-gray-700 dark:text-gray-300 mb-2 break-words prose prose-sm dark:prose-invert max-w-none"
+                className="text-sm text-gray-700 dark:text-gray-300 mb-2 break-words prose prose-sm dark:prose-slate max-w-none"
                 dangerouslySetInnerHTML={{ __html: comentario.conteudo }}
               />
             )}

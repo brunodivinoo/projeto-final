@@ -235,7 +235,7 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
     return (
       <div className="text-center p-8">
         <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <p className="text-white/60">{error}</p>
+        <p className="text-slate-600">{error}</p>
       </div>
     )
   }
@@ -243,10 +243,10 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
   // Sem permissão
   if (!podeUsar && plano === 'gratuito') {
     return (
-      <div className="text-center p-8 bg-slate-800/50 rounded-xl border border-white/10">
+      <div className="text-center p-8 bg-slate-800/50 rounded-xl border border-slate-200">
         <Brain className="w-12 h-12 text-purple-400 mx-auto mb-4" />
         <h3 className="text-lg font-bold text-white mb-2">Flashcards Premium</h3>
-        <p className="text-white/60 mb-4">
+        <p className="text-slate-600 mb-4">
           Crie flashcards personalizados com repetição espaçada.
         </p>
         <a
@@ -268,19 +268,19 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
           <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 rounded-lg">
             <BookOpen className="w-4 h-4 text-purple-400" />
             <span className="text-white font-medium">{stats.total}</span>
-            <span className="text-white/60 text-sm">total</span>
+            <span className="text-slate-600 text-sm">total</span>
           </div>
 
           <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/20 rounded-lg">
             <Clock className="w-4 h-4 text-amber-400" />
             <span className="text-white font-medium">{stats.paraRevisar}</span>
-            <span className="text-white/60 text-sm">para revisar</span>
+            <span className="text-slate-600 text-sm">para revisar</span>
           </div>
 
           <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/20 rounded-lg">
             <Target className="w-4 h-4 text-emerald-400" />
             <span className="text-white font-medium">{stats.taxaAcerto}%</span>
-            <span className="text-white/60 text-sm">acertos</span>
+            <span className="text-slate-600 text-sm">acertos</span>
           </div>
         </div>
 
@@ -289,7 +289,7 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
           <button
             onClick={() => setMostrarFiltros(!mostrarFiltros)}
             className={`p-2 rounded-lg transition-colors ${
-              filtroDisciplina ? 'bg-purple-500/20 text-purple-400' : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+              filtroDisciplina ? 'bg-purple-500/20 text-purple-400' : 'bg-slate-100 text-slate-600 hover:text-white hover:bg-slate-100'
             }`}
           >
             <Filter className="w-5 h-5" />
@@ -298,7 +298,7 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
           {/* Embaralhar */}
           <button
             onClick={embaralharDeck}
-            className="p-2 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 bg-slate-100 text-slate-600 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
             title="Embaralhar"
           >
             <Shuffle className="w-5 h-5" />
@@ -333,11 +333,11 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="flex flex-wrap gap-2 p-3 bg-white/5 rounded-lg">
+            <div className="flex flex-wrap gap-2 p-3 bg-slate-100 rounded-lg">
               <button
                 onClick={() => filtrarPorDisciplina(null)}
                 className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  !filtroDisciplina ? 'bg-purple-500 text-white' : 'bg-white/10 text-white/60 hover:text-white'
+                  !filtroDisciplina ? 'bg-purple-500 text-white' : 'bg-slate-100 text-slate-600 hover:text-white'
                 }`}
               >
                 Todas
@@ -347,7 +347,7 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
                   key={disc}
                   onClick={() => filtrarPorDisciplina(disc)}
                   className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                    filtroDisciplina === disc ? 'bg-purple-500 text-white' : 'bg-white/10 text-white/60 hover:text-white'
+                    filtroDisciplina === disc ? 'bg-purple-500 text-white' : 'bg-slate-100 text-slate-600 hover:text-white'
                   }`}
                 >
                   {disc}
@@ -361,10 +361,10 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
       {/* Área do Flashcard */}
       {flashcards.length === 0 ? (
         // Sem flashcards
-        <div className="text-center p-12 bg-slate-800/50 rounded-xl border border-dashed border-white/20">
+        <div className="text-center p-12 bg-slate-800/50 rounded-xl border border-dashed border-slate-300">
           <Brain className="w-16 h-16 text-purple-400/50 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-white mb-2">Nenhum flashcard ainda</h3>
-          <p className="text-white/60 mb-4">
+          <p className="text-slate-600 mb-4">
             Crie seus primeiros flashcards ou peça para a IA gerar.
           </p>
           <button
@@ -389,7 +389,7 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
                 resetarSessao()
                 setSessaoCompleta(false)
               }}
-              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-white px-4 py-2 rounded-lg transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
               Revisar novamente
@@ -405,10 +405,10 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
         </div>
       ) : totalParaRevisar === 0 ? (
         // Nada para revisar hoje
-        <div className="text-center p-12 bg-slate-800/50 rounded-xl border border-white/10">
+        <div className="text-center p-12 bg-slate-800/50 rounded-xl border border-slate-200">
           <Clock className="w-16 h-16 text-amber-400/50 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-white mb-2">Nada para revisar agora</h3>
-          <p className="text-white/60 mb-4">
+          <p className="text-slate-600 mb-4">
             Seus flashcards estão programados para revisão futura.
           </p>
           <button
@@ -424,17 +424,17 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
         <div className="space-y-4">
           {/* Progresso */}
           <div className="flex items-center justify-between text-sm">
-            <span className="text-white/60">
+            <span className="text-slate-600">
               {indiceAtual + 1} de {totalParaRevisar}
             </span>
-            <div className="flex-1 mx-4 h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div className="flex-1 mx-4 h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-purple-500"
                 initial={{ width: 0 }}
                 animate={{ width: `${((indiceAtual + 1) / totalParaRevisar) * 100}%` }}
               />
             </div>
-            <span className="text-white/60">{totalParaRevisar - indiceAtual - 1} restantes</span>
+            <span className="text-slate-600">{totalParaRevisar - indiceAtual - 1} restantes</span>
           </div>
 
           {/* Flashcard */}
@@ -451,7 +451,7 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
             >
               {/* Frente */}
               <div
-                className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-white/10 p-6 flex flex-col items-center justify-center text-center backface-hidden"
+                className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-200 p-6 flex flex-col items-center justify-center text-center backface-hidden"
                 style={{ backfaceVisibility: 'hidden' }}
               >
                 {flashcardAtual.disciplina && (
@@ -460,7 +460,7 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
                   </span>
                 )}
                 <p className="text-white text-lg md:text-xl">{flashcardAtual.frente}</p>
-                <p className="absolute bottom-4 text-white/40 text-sm">Clique para virar</p>
+                <p className="absolute bottom-4 text-slate-500 text-sm">Clique para virar</p>
               </div>
 
               {/* Verso */}
@@ -527,7 +527,7 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
                 <h3 className="text-lg font-bold text-white">Criar Flashcard</h3>
                 <button
                   onClick={() => setMostrarCriar(false)}
-                  className="text-white/60 hover:text-white"
+                  className="text-slate-600 hover:text-white"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -535,22 +535,22 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-white/60 text-sm mb-1">Frente (Pergunta)</label>
+                  <label className="block text-slate-600 text-sm mb-1">Frente (Pergunta)</label>
                   <textarea
                     value={novoFrente}
                     onChange={e => setNovoFrente(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white placeholder-white/40 focus:outline-none focus:border-purple-500"
+                    className="w-full bg-slate-100 border border-slate-200 rounded-lg p-3 text-white placeholder-white/40 focus:outline-none focus:border-purple-500"
                     rows={3}
                     placeholder="Digite a pergunta ou termo..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white/60 text-sm mb-1">Verso (Resposta)</label>
+                  <label className="block text-slate-600 text-sm mb-1">Verso (Resposta)</label>
                   <textarea
                     value={novoVerso}
                     onChange={e => setNovoVerso(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white placeholder-white/40 focus:outline-none focus:border-purple-500"
+                    className="w-full bg-slate-100 border border-slate-200 rounded-lg p-3 text-white placeholder-white/40 focus:outline-none focus:border-purple-500"
                     rows={3}
                     placeholder="Digite a resposta ou definição..."
                   />
@@ -558,12 +558,12 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-white/60 text-sm mb-1">Disciplina</label>
+                    <label className="block text-slate-600 text-sm mb-1">Disciplina</label>
                     <input
                       type="text"
                       value={novoDisciplina}
                       onChange={e => setNovoDisciplina(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-white placeholder-white/40 focus:outline-none focus:border-purple-500"
+                      className="w-full bg-slate-100 border border-slate-200 rounded-lg p-2.5 text-white placeholder-white/40 focus:outline-none focus:border-purple-500"
                       placeholder="Ex: Cardiologia"
                       list="disciplinas-list"
                     />
@@ -575,12 +575,12 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
                   </div>
 
                   <div>
-                    <label className="block text-white/60 text-sm mb-1">Assunto</label>
+                    <label className="block text-slate-600 text-sm mb-1">Assunto</label>
                     <input
                       type="text"
                       value={novoAssunto}
                       onChange={e => setNovoAssunto(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-white placeholder-white/40 focus:outline-none focus:border-purple-500"
+                      className="w-full bg-slate-100 border border-slate-200 rounded-lg p-2.5 text-white placeholder-white/40 focus:outline-none focus:border-purple-500"
                       placeholder="Ex: ICC"
                     />
                   </div>
@@ -624,7 +624,7 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
                 </h3>
                 <button
                   onClick={() => !gerandoIA && setMostrarGerarIA(false)}
-                  className="text-white/60 hover:text-white"
+                  className="text-slate-600 hover:text-white"
                   disabled={gerandoIA}
                 >
                   <X className="w-5 h-5" />
@@ -635,14 +635,14 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
                 // Formulário de geração
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-white/60 text-sm mb-1">Disciplina *</label>
+                    <label className="block text-slate-600 text-sm mb-1">Disciplina *</label>
                     <select
                       value={disciplinaIA}
                       onChange={e => {
                         setDisciplinaIA(e.target.value)
                         setAssuntoIA('')
                       }}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-100 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500"
                       disabled={gerandoIA}
                     >
                       <option value="" className="bg-slate-800">Selecione uma disciplina</option>
@@ -653,11 +653,11 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
                   </div>
 
                   <div>
-                    <label className="block text-white/60 text-sm mb-1">Assunto (opcional)</label>
+                    <label className="block text-slate-600 text-sm mb-1">Assunto (opcional)</label>
                     <select
                       value={assuntoIA}
                       onChange={e => setAssuntoIA(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-100 border border-slate-200 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500"
                       disabled={!disciplinaIA || gerandoIA}
                     >
                       <option value="" className="bg-slate-800">Todos os assuntos</option>
@@ -668,7 +668,7 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
                   </div>
 
                   <div>
-                    <label className="block text-white/60 text-sm mb-1">Quantidade de Flashcards</label>
+                    <label className="block text-slate-600 text-sm mb-1">Quantidade de Flashcards</label>
                     <div className="flex items-center gap-4">
                       <input
                         type="range"
@@ -717,10 +717,10 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
 
                   <div className="space-y-3 max-h-64 overflow-y-auto">
                     {flashcardsGerados.map((fc, idx) => (
-                      <div key={idx} className="bg-white/5 border border-white/10 rounded-lg p-3">
-                        <p className="text-white/60 text-xs mb-1">Frente:</p>
+                      <div key={idx} className="bg-slate-100 border border-slate-200 rounded-lg p-3">
+                        <p className="text-slate-600 text-xs mb-1">Frente:</p>
                         <p className="text-white text-sm mb-2">{fc.frente}</p>
-                        <p className="text-white/60 text-xs mb-1">Verso:</p>
+                        <p className="text-slate-600 text-xs mb-1">Verso:</p>
                         <p className="text-emerald-200 text-sm">{fc.verso}</p>
                       </div>
                     ))}
@@ -732,7 +732,7 @@ export function FlashcardSystem({ disciplinaInicial }: FlashcardSystemProps) {
                         setFlashcardsGerados([])
                         setErroIA('')
                       }}
-                      className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 bg-slate-100 hover:bg-slate-200 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <RotateCcw className="w-4 h-4" />
                       Gerar novamente
@@ -772,7 +772,7 @@ export function FlashcardMiniWidget() {
         </div>
         <div>
           <p className="text-white font-medium">Flashcards</p>
-          <p className="text-white/60 text-sm">
+          <p className="text-slate-600 text-sm">
             {stats.paraRevisar > 0 ? (
               <span className="text-amber-400">{stats.paraRevisar} para revisar</span>
             ) : (

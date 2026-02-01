@@ -97,7 +97,7 @@ export function VoiceButton({
                 ? 'bg-red-500 text-white animate-pulse'
                 : showSuccess
                 ? 'bg-emerald-500/20 text-emerald-400'
-                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-100 hover:text-white'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
             title={isRecording ? 'Parar gravação' : isTranscribing ? 'Transcrevendo...' : 'Gravar áudio'}
           >
@@ -134,7 +134,7 @@ export function VoiceButton({
             className={`p-2 rounded-lg transition-all ${
               isPlaying
                 ? 'bg-blue-500 text-white'
-                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-100 hover:text-white'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
             title={isPlaying ? 'Parar áudio' : 'Ouvir resposta'}
           >
@@ -160,7 +160,7 @@ export function VoiceButton({
         className={`p-1.5 rounded-lg transition-all ${
           isRecording
             ? 'bg-red-500 text-white animate-pulse'
-            : 'text-white/40 hover:text-white hover:bg-white/5'
+            : 'text-slate-500 hover:text-white hover:bg-slate-100'
         } disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
         title={isRecording ? 'Parar gravação' : 'Gravar áudio'}
       >
@@ -186,7 +186,7 @@ export function VoiceButton({
           className={`p-3 rounded-full transition-all ${
             isRecording
               ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30'
-              : 'bg-slate-700 text-white/80 hover:bg-slate-600 hover:text-white'
+              : 'bg-slate-700 text-slate-700 hover:bg-slate-600 hover:text-white'
           } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {isTranscribing ? (
@@ -208,7 +208,7 @@ export function VoiceButton({
 
         {/* Status */}
         {isTranscribing && (
-          <span className="text-white/60 text-sm">Transcrevendo...</span>
+          <span className="text-slate-600 text-sm">Transcrevendo...</span>
         )}
 
         {/* Botão Ouvir */}
@@ -219,7 +219,7 @@ export function VoiceButton({
             className={`p-3 rounded-full transition-all ${
               isPlaying
                 ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-slate-700 text-white/80 hover:bg-slate-600 hover:text-white'
+                : 'bg-slate-700 text-slate-700 hover:bg-slate-600 hover:text-white'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {isSynthesizing ? (
@@ -233,7 +233,7 @@ export function VoiceButton({
         )}
 
         {isSynthesizing && (
-          <span className="text-white/60 text-sm">Gerando áudio...</span>
+          <span className="text-slate-600 text-sm">Gerando áudio...</span>
         )}
       </div>
 
@@ -273,7 +273,7 @@ export function SpeakButton({ text, disabled, className = '' }: SpeakButtonProps
       className={`p-1.5 rounded-lg transition-all ${
         isPlaying
           ? 'bg-blue-500/20 text-blue-400'
-          : 'text-white/40 hover:text-white hover:bg-white/5'
+          : 'text-slate-500 hover:text-white hover:bg-slate-100'
       } disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       title={isPlaying ? 'Parar áudio' : 'Ouvir'}
     >

@@ -231,7 +231,7 @@ export default function SimuladoPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         <Link
           href="/medicina/dashboard/simulados"
-          className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-slate-600 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           Voltar para Simulados
@@ -239,7 +239,7 @@ export default function SimuladoPage() {
 
         {/* Resultado Card */}
         <div className="bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-2xl p-8 border border-emerald-500/30 text-center">
-          <Trophy className={`w-16 h-16 mx-auto mb-4 ${taxa >= 70 ? 'text-amber-400' : 'text-white/40'}`} />
+          <Trophy className={`w-16 h-16 mx-auto mb-4 ${taxa >= 70 ? 'text-amber-400' : 'text-slate-500'}`} />
           <h1 className="text-3xl font-bold text-white mb-2">{simulado.nome}</h1>
           <p className="text-emerald-200/70 mb-6">Simulado Finalizado</p>
 
@@ -252,22 +252,22 @@ export default function SimuladoPage() {
               }`}>
                 {taxa}%
               </div>
-              <div className="text-white/60">Aproveitamento</div>
+              <div className="text-slate-600">Aproveitamento</div>
             </div>
             <div>
               <div className="text-5xl font-bold text-white">{acertos}/{questoes.length}</div>
-              <div className="text-white/60">Acertos</div>
+              <div className="text-slate-600">Acertos</div>
             </div>
             <div>
               <div className="text-5xl font-bold text-white">{formatTempo(tempoGasto)}</div>
-              <div className="text-white/60">Tempo Total</div>
+              <div className="text-slate-600">Tempo Total</div>
             </div>
           </div>
 
           <div className="flex justify-center gap-4">
             <Link
               href="/medicina/dashboard/simulados/novo"
-              className="flex items-center gap-2 px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+              className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-white rounded-lg hover:bg-slate-200 transition-colors"
             >
               <RefreshCw className="w-5 h-5" />
               Novo Simulado
@@ -283,7 +283,7 @@ export default function SimuladoPage() {
         </div>
 
         {/* Revisão das Questões */}
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <h2 className="text-lg font-bold text-white mb-4">Revisão das Questões</h2>
           <div className="space-y-4">
             {questoes.map((q, index) => {
@@ -294,17 +294,17 @@ export default function SimuladoPage() {
                 <div
                   key={q.id}
                   className={`p-4 rounded-lg border ${
-                    !respondeu ? 'bg-white/5 border-white/10' :
+                    !respondeu ? 'bg-slate-100 border-slate-200' :
                     acertou ? 'bg-emerald-500/10 border-emerald-500/30' :
                     'bg-red-500/10 border-red-500/30'
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white font-medium">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-white font-medium">
                       {index + 1}
                     </div>
                     <div className="flex-1">
-                      <p className="text-white/80 line-clamp-2 mb-2">{q.enunciado}</p>
+                      <p className="text-slate-700 line-clamp-2 mb-2">{q.enunciado}</p>
                       <div className="flex items-center gap-4 text-sm">
                         {respondeu ? (
                           acertou ? (
@@ -324,7 +324,7 @@ export default function SimuladoPage() {
                             </>
                           )
                         ) : (
-                          <span className="text-white/40">Não respondida (Correta: {q.gabarito})</span>
+                          <span className="text-slate-500">Não respondida (Correta: {q.gabarito})</span>
                         )}
                       </div>
                     </div>
@@ -349,7 +349,7 @@ export default function SimuladoPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/medicina/dashboard/simulados"
-            className="text-white/60 hover:text-white transition-colors"
+            className="text-slate-600 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
@@ -359,7 +359,7 @@ export default function SimuladoPage() {
         <div className="flex items-center gap-4">
           {tempoRestante !== null && (
             <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-              tempoRestante < 300 ? 'bg-red-500/20 text-red-400' : 'bg-white/5 text-white'
+              tempoRestante < 300 ? 'bg-red-500/20 text-red-400' : 'bg-slate-100 text-white'
             }`}>
               <Clock className="w-5 h-5" />
               <span className="font-mono">{formatTempo(tempoRestante)}</span>
@@ -376,10 +376,10 @@ export default function SimuladoPage() {
       </div>
 
       {/* Progresso */}
-      <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+      <div className="bg-slate-100 rounded-xl p-4 border border-slate-200">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-white/60 text-sm">Questão {questaoAtual + 1} de {questoes.length}</span>
-          <span className="text-white/60 text-sm">{respondidas} respondidas</span>
+          <span className="text-slate-600 text-sm">Questão {questaoAtual + 1} de {questoes.length}</span>
+          <span className="text-slate-600 text-sm">{respondidas} respondidas</span>
         </div>
         <div className="flex gap-1">
           {questoes.map((q, i) => (
@@ -389,7 +389,7 @@ export default function SimuladoPage() {
               className={`flex-1 h-2 rounded-full transition-colors ${
                 i === questaoAtual ? 'bg-emerald-500' :
                 respostas[q.id] ? 'bg-emerald-500/50' :
-                'bg-white/10'
+                'bg-slate-100'
               }`}
             />
           ))}
@@ -397,16 +397,16 @@ export default function SimuladoPage() {
       </div>
 
       {/* Questão */}
-      <div className="bg-white/5 rounded-xl border border-white/10">
+      <div className="bg-slate-100 rounded-xl border border-slate-200">
         {/* Meta */}
-        <div className="px-6 py-3 border-b border-white/10 flex items-center gap-2 text-sm">
+        <div className="px-6 py-3 border-b border-slate-200 flex items-center gap-2 text-sm">
           {questao.disciplina && (
             <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full">
               {questao.disciplina.nome}
             </span>
           )}
           {questao.banca && (
-            <span className="text-white/40">{questao.banca} {questao.ano && `• ${questao.ano}`}</span>
+            <span className="text-slate-500">{questao.banca} {questao.ano && `• ${questao.ano}`}</span>
           )}
         </div>
 
@@ -424,10 +424,10 @@ export default function SimuladoPage() {
               className={`w-full flex items-start gap-4 p-4 rounded-xl border-2 transition-all text-left ${
                 respostas[questao.id] === alt.letra
                   ? 'bg-emerald-500/20 border-emerald-500 text-white'
-                  : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10'
+                  : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-100'
               }`}
             >
-              <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center font-bold flex-shrink-0">
+              <span className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold flex-shrink-0">
                 {alt.letra}
               </span>
               <span className="flex-1 pt-1">{alt.texto}</span>
@@ -441,7 +441,7 @@ export default function SimuladoPage() {
         <button
           onClick={() => setQuestaoAtual(Math.max(0, questaoAtual - 1))}
           disabled={questaoAtual === 0}
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 text-white/60 rounded-lg hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
           Anterior
@@ -459,7 +459,7 @@ export default function SimuladoPage() {
                     ? 'bg-emerald-500 text-white'
                     : respostas[q.id]
                     ? 'bg-emerald-500/20 text-emerald-400'
-                    : 'bg-white/5 text-white/60 hover:bg-white/10'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 {realIndex + 1}
@@ -471,7 +471,7 @@ export default function SimuladoPage() {
         <button
           onClick={() => setQuestaoAtual(Math.min(questoes.length - 1, questaoAtual + 1))}
           disabled={questaoAtual === questoes.length - 1}
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 text-white/60 rounded-lg hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           Próxima
           <ChevronRight className="w-5 h-5" />

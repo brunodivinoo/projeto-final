@@ -195,18 +195,18 @@ const MemoizedMessage = memo(function MemoizedMessage({
 
         <div className={`rounded-lg md:rounded-xl p-2.5 md:p-3 ${
           msg.tipo === 'usuario'
-            ? 'bg-emerald-500/20 text-white'
-            : 'bg-white/5 text-white/90 border border-white/5'
+            ? 'bg-emerald-500 text-white shadow-sm'
+            : 'bg-white text-slate-800 border border-slate-200 shadow-sm'
         }`}>
           {(msg.hasImage || msg.hasPdf) && msg.tipo === 'usuario' && (
-            <div className="flex items-center gap-1.5 mb-1.5 pb-1.5 border-b border-white/10">
+            <div className="flex items-center gap-1.5 mb-1.5 pb-1.5 border-b border-white/30">
               {msg.hasImage && (
-                <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded flex items-center gap-1">
+                <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded flex items-center gap-1">
                   <ImageIcon className="w-3 h-3" /> Imagem
                 </span>
               )}
               {msg.hasPdf && (
-                <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded flex items-center gap-1">
+                <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded flex items-center gap-1">
                   <FileUp className="w-3 h-3" /> PDF
                 </span>
               )}
@@ -214,12 +214,12 @@ const MemoizedMessage = memo(function MemoizedMessage({
           )}
 
           {msg.tipo === 'ia' ? (
-            <div className="prose prose-invert prose-sm max-w-none text-xs md:text-sm">
+            <div className="prose prose-slate prose-sm max-w-none text-xs md:text-sm">
               {/* Renderizar imagem gerada se existir */}
               {msg.imagemGerada && (
-                <div className="my-4 rounded-xl overflow-hidden border border-white/10 bg-white/5">
-                  <div className="p-2 border-b border-white/10 bg-white/5">
-                    <p className="text-xs text-purple-400 font-medium flex items-center gap-2">
+                <div className="my-4 rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                  <div className="p-2 border-b border-slate-200 bg-slate-100">
+                    <p className="text-xs text-purple-600 font-medium flex items-center gap-2">
                       <ImageIcon className="w-4 h-4" />
                       {msg.imagemGerada.estrutura}
                     </p>
@@ -239,7 +239,7 @@ const MemoizedMessage = memo(function MemoizedMessage({
                     }}
                   />
                   {msg.imagemGerada.descricao && (
-                    <p className="p-2 text-xs text-white/60 text-center border-t border-white/10">
+                    <p className="p-2 text-xs text-slate-500 text-center border-t border-slate-200">
                       {msg.imagemGerada.descricao}
                     </p>
                   )}
@@ -273,16 +273,16 @@ const MemoizedMessage = memo(function MemoizedMessage({
         </div>
 
         {msg.tipo === 'ia' && msg.conteudo && (
-          <div className="flex items-center gap-2 mt-0.5 ml-1">
+          <div className="flex items-center gap-2 mt-1 ml-1">
             <button
               onClick={() => copiarResposta(msg.id, msg.conteudo)}
-              className="text-white/40 hover:text-white text-[10px] flex items-center gap-1"
+              className="text-slate-400 hover:text-slate-600 text-[10px] flex items-center gap-1 transition-colors"
             >
-              {copiado === msg.id ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              {copiado === msg.id ? <CheckCircle2 className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
               {copiado === msg.id ? 'Copiado!' : 'Copiar'}
             </button>
             {msg.tokens && (
-              <span className="text-white/30 text-[10px]">
+              <span className="text-slate-300 text-[10px]">
                 {msg.tokens.toLocaleString()} tokens
               </span>
             )}
@@ -1525,9 +1525,9 @@ export default function IAPage() {
                 <h3 className="text-white font-semibold">Conversas</h3>
                 <button
                   onClick={() => setShowConversas(false)}
-                  className="p-2 hover:bg-white/10 rounded-lg"
+                  className="p-2 hover:bg-slate-100 rounded-lg"
                 >
-                  <X className="w-5 h-5 text-white/60" />
+                  <X className="w-5 h-5 text-slate-600" />
                 </button>
               </div>
 
@@ -1546,7 +1546,7 @@ export default function IAPage() {
                   <div
                     key={conv.id}
                     className={`group p-3 rounded-lg cursor-pointer transition-colors relative ${
-                      conversaAtual === conv.id ? 'bg-purple-500/20' : 'hover:bg-white/5'
+                      conversaAtual === conv.id ? 'bg-purple-500/20' : 'hover:bg-slate-100'
                     }`}
                     onClick={() => {
                       if (conversaRenomeando !== conv.id) {
@@ -1568,7 +1568,7 @@ export default function IAPage() {
                                 if (e.key === 'Enter') renomearConversa(conv.id, novoTituloConversa)
                                 if (e.key === 'Escape') { setConversaRenomeando(null); setNovoTituloConversa('') }
                               }}
-                              className="flex-1 bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-purple-500"
+                              className="flex-1 bg-slate-100 border border-slate-300 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-purple-500"
                               autoFocus
                             />
                             <button
@@ -1586,14 +1586,14 @@ export default function IAPage() {
                           </div>
                         ) : (
                           <>
-                            <p className="text-white/80 text-sm truncate">{conv.titulo}</p>
+                            <p className="text-slate-700 text-sm truncate">{conv.titulo}</p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className={`text-xs px-2 py-0.5 rounded ${
                                 conv.modelo === 'claude' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
                               }`}>
                                 {conv.modelo === 'claude' ? 'Claude' : 'Gemini'}
                               </span>
-                              <span className="text-white/40 text-xs">
+                              <span className="text-slate-500 text-xs">
                                 {new Date(conv.created_at).toLocaleDateString('pt-BR')}
                               </span>
                             </div>
@@ -1609,15 +1609,15 @@ export default function IAPage() {
                               e.stopPropagation()
                               setMenuConversaAberto(menuConversaAberto === conv.id ? null : conv.id)
                             }}
-                            className="p-1 hover:bg-white/10 rounded transition-all"
+                            className="p-1 hover:bg-slate-100 rounded transition-all"
                           >
-                            <MoreVertical className="w-4 h-4 text-white/40" />
+                            <MoreVertical className="w-4 h-4 text-slate-500" />
                           </button>
 
                           {/* Dropdown do menu */}
                           {menuConversaAberto === conv.id && (
                             <div
-                              className="absolute right-0 top-full mt-1 bg-slate-800 border border-white/10 rounded-lg shadow-xl overflow-hidden z-50 min-w-[140px]"
+                              className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-200 rounded-lg shadow-xl overflow-hidden z-50 min-w-[140px]"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <button
@@ -1626,14 +1626,14 @@ export default function IAPage() {
                                   carregarConversa(conv.id)
                                   setShowConversas(false)
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors"
                               >
                                 <FolderOpen className="w-4 h-4" />
                                 Abrir
                               </button>
                               <button
                                 onClick={() => iniciarRenomeacao(conv)}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors"
                               >
                                 <Pencil className="w-4 h-4" />
                                 Renomear
@@ -1659,14 +1659,14 @@ export default function IAPage() {
 
               {/* Estatísticas de Uso */}
               {uso && (
-                <div className="mt-4 p-3 bg-white/5 rounded-lg border border-white/10">
-                  <h4 className="text-white/60 text-xs font-medium mb-2">Uso este mês</h4>
+                <div className="mt-4 p-3 bg-slate-100 rounded-lg border border-slate-200">
+                  <h4 className="text-slate-600 text-xs font-medium mb-2">Uso este mês</h4>
                   <div className="space-y-1 text-xs">
-                    <div className="flex justify-between text-white/80">
+                    <div className="flex justify-between text-slate-700">
                       <span>Chats</span>
                       <span>{uso.uso_mes.chats}{uso.limites.chats !== -1 && `/${uso.limites.chats}`}</span>
                     </div>
-                    <div className="flex justify-between text-white/80">
+                    <div className="flex justify-between text-slate-700">
                       <span>Tokens</span>
                       <span>{((uso.uso_mes.tokens_input + uso.uso_mes.tokens_output) / 1000).toFixed(1)}k</span>
                     </div>
@@ -1681,7 +1681,7 @@ export default function IAPage() {
       {/* Chat Principal */}
       <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
         {/* Mobile Header - Barra limpa: título + artefatos */}
-        <div className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b border-white/10 bg-slate-900/80 backdrop-blur-sm">
+        <div className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b border-slate-200 bg-slate-900/80 backdrop-blur-sm">
           {/* Título do Chat */}
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
@@ -1704,9 +1704,9 @@ export default function IAPage() {
             {hasArtifacts && (
               <button
                 onClick={() => setMobileArtifactsOpen(true)}
-                className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-white/5 active:bg-white/10 transition-colors"
+                className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-slate-100 active:bg-slate-100 transition-colors"
               >
-                <Layers className="w-4 h-4 text-white/60" />
+                <Layers className="w-4 h-4 text-slate-600" />
                 <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] flex items-center justify-center bg-emerald-500 text-white text-[9px] font-bold rounded-full px-1">
                   {useArtifactsStore.getState().artifacts.filter(a => a.conversaId === conversaAtual || !a.conversaId).length}
                 </span>
@@ -1716,26 +1716,26 @@ export default function IAPage() {
         </div>
 
         {/* Header Desktop - Oculto no mobile (já tem barra de modo acima) */}
-        <div className="hidden lg:flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-white/10">
+        <div className="hidden lg:flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-slate-200">
           <div className="flex items-center gap-2 md:gap-3">
             {/* Botão menu/conversas - apenas mobile (desktop usa sidebar do layout) */}
             {isMobile && (
               <button
                 onClick={() => setShowConversas(!showConversas)}
-                className="p-1.5 hover:bg-white/5 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
               >
-                <Menu className="w-4 h-4 text-white/60" />
+                <Menu className="w-4 h-4 text-slate-600" />
               </button>
             )}
 
             {/* Logo e info - Compacto */}
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+              <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
                 <Brain className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
               </div>
               <div>
-                <h1 className="text-xs md:text-sm font-bold text-white">PREPARAMED IA</h1>
-                <p className="text-white/50 text-[9px] md:text-[10px] hidden sm:block">
+                <h1 className="text-xs md:text-sm font-bold text-slate-800">PREPARAMED IA</h1>
+                <p className="text-slate-500 text-[9px] md:text-[10px] hidden sm:block">
                   {isResidencia ? 'Claude Opus | Ilimitado' : `Gemini Flash | ${uso?.uso_mes.chats || 0}/100`}
                 </p>
               </div>
@@ -1757,7 +1757,7 @@ export default function IAPage() {
             <button
               onClick={() => setShowOpcoes(!showOpcoes)}
               className={`p-1.5 rounded-lg transition-colors ${
-                showOpcoes ? 'bg-purple-500/20 text-purple-400' : 'text-white/40 hover:text-white hover:bg-white/5'
+                showOpcoes ? 'bg-emerald-100 text-emerald-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
               }`}
             >
               <Settings className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -1767,17 +1767,17 @@ export default function IAPage() {
 
         {/* Opções Avançadas */}
         {showOpcoes && isResidencia && (
-          <div className="p-4 border-b border-white/10 bg-white/5">
+          <div className="p-4 border-b border-slate-200 bg-slate-50">
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={useWebSearch}
                   onChange={(e) => setUseWebSearch(e.target.checked)}
-                  className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500"
+                  className="w-4 h-4 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500"
                 />
-                <Search className="w-4 h-4 text-blue-400" />
-                <span className="text-white/80 text-sm">Busca Web</span>
+                <Search className="w-4 h-4 text-blue-500" />
+                <span className="text-slate-700 text-sm">Busca Web</span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer">
@@ -1785,10 +1785,10 @@ export default function IAPage() {
                   type="checkbox"
                   checked={useExtendedThinking}
                   onChange={(e) => setUseExtendedThinking(e.target.checked)}
-                  className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500"
+                  className="w-4 h-4 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500"
                 />
-                <Zap className="w-4 h-4 text-amber-400" />
-                <span className="text-white/80 text-sm">Extended Thinking</span>
+                <Zap className="w-4 h-4 text-amber-500" />
+                <span className="text-slate-700 text-sm">Extended Thinking</span>
               </label>
             </div>
           </div>
@@ -1804,11 +1804,11 @@ export default function IAPage() {
           {/* Loading ao abrir conversa */}
           {carregandoConversa && mensagens.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4">
-              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 flex items-center justify-center mb-3 md:mb-4">
-                <Loader2 className="w-7 h-7 md:w-8 md:h-8 text-purple-400 animate-spin" />
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-3 md:mb-4">
+                <Loader2 className="w-7 h-7 md:w-8 md:h-8 text-emerald-500 animate-spin" />
               </div>
-              <h2 className="text-lg md:text-xl font-bold text-white mb-1.5">Carregando conversa...</h2>
-              <p className="text-white/60 text-xs md:text-sm">Aguarde um momento</p>
+              <h2 className="text-lg md:text-xl font-bold text-slate-800 mb-1.5">Carregando conversa...</h2>
+              <p className="text-slate-500 text-xs md:text-sm">Aguarde um momento</p>
             </div>
           ) : mensagens.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4 max-w-4xl mx-auto w-full">
@@ -1833,11 +1833,11 @@ export default function IAPage() {
                 <ChatModeIntro modo={chatMode} onStart={iniciarModo} />
               ) : !showSimulacaoConfig ? (
                 <>
-                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 flex items-center justify-center mb-3 md:mb-4">
-                    <Brain className="w-7 h-7 md:w-8 md:h-8 text-purple-400" />
+                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-3 md:mb-4 shadow-sm">
+                    <Brain className="w-7 h-7 md:w-8 md:h-8 text-emerald-600" />
                   </div>
-                  <h2 className="text-lg md:text-xl font-bold text-white mb-1.5">Como posso ajudar?</h2>
-                  <p className="text-white/60 mb-4 md:mb-6 max-w-md text-xs md:text-sm">
+                  <h2 className="text-lg md:text-xl font-bold text-slate-800 mb-1.5">Como posso ajudar?</h2>
+                  <p className="text-slate-500 mb-4 md:mb-6 max-w-md text-xs md:text-sm">
                     {isResidencia
                       ? 'Tire dúvidas, analise imagens, PDFs e use busca na web para informações atualizadas.'
                       : 'Tire dúvidas sobre medicina, peça explicações de conceitos ou ajuda com questões.'}
@@ -1846,7 +1846,7 @@ export default function IAPage() {
                   {/* Sugestões Inteligentes - Tópicos personalizados */}
                   {sugestoesInteligentes.topics.length > 0 && (
                     <div className="w-full max-w-xl mb-4">
-                      <p className="text-white/40 text-xs mb-2 flex items-center gap-1">
+                      <p className="text-slate-400 text-xs mb-2 flex items-center gap-1">
                         <Lightbulb className="w-3 h-3" /> Baseado no seu histórico
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -1854,10 +1854,10 @@ export default function IAPage() {
                           <button
                             key={`topic-${i}`}
                             onClick={() => setInput(sugestao.fullPrompt)}
-                            className="flex items-center gap-2 p-3 bg-purple-500/10 rounded-xl hover:bg-purple-500/20 transition-colors text-left border border-purple-500/20 hover:border-purple-500/30"
+                            className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors text-left border border-emerald-200 hover:border-emerald-300 shadow-sm"
                           >
                             <span className="text-lg flex-shrink-0">{sugestao.icon}</span>
-                            <span className="text-white/80 text-xs md:text-sm line-clamp-2">{sugestao.text}</span>
+                            <span className="text-slate-700 text-xs md:text-sm line-clamp-2">{sugestao.text}</span>
                           </button>
                         ))}
                       </div>
@@ -1867,7 +1867,7 @@ export default function IAPage() {
                   {/* Sugestões de Revisão */}
                   {sugestoesInteligentes.reviews.length > 0 && (
                     <div className="w-full max-w-xl mb-4">
-                      <p className="text-white/40 text-xs mb-2 flex items-center gap-1">
+                      <p className="text-slate-400 text-xs mb-2 flex items-center gap-1">
                         <BookOpen className="w-3 h-3" /> Revisões pendentes
                       </p>
                       <div className="grid grid-cols-1 gap-2">
@@ -1875,10 +1875,10 @@ export default function IAPage() {
                           <button
                             key={`review-${i}`}
                             onClick={() => setInput(sugestao.fullPrompt)}
-                            className="flex items-center gap-2 p-3 bg-amber-500/10 rounded-xl hover:bg-amber-500/20 transition-colors text-left border border-amber-500/20 hover:border-amber-500/30"
+                            className="flex items-center gap-2 p-3 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors text-left border border-amber-200 hover:border-amber-300 shadow-sm"
                           >
                             <span className="text-lg flex-shrink-0">{sugestao.icon}</span>
-                            <span className="text-white/80 text-xs md:text-sm">{sugestao.text}</span>
+                            <span className="text-slate-700 text-xs md:text-sm">{sugestao.text}</span>
                           </button>
                         ))}
                       </div>
@@ -1890,16 +1890,16 @@ export default function IAPage() {
                     <div className="w-full max-w-xl mb-4">
                       <button
                         onClick={() => setShowSimulacaoConfig(true)}
-                        className="w-full flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-xl hover:from-emerald-500/30 hover:to-teal-500/30 transition-all text-left border border-emerald-500/30 hover:border-emerald-500/50 group"
+                        className="w-full flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl hover:from-emerald-100 hover:to-teal-100 transition-all text-left border border-emerald-200 hover:border-emerald-300 group shadow-sm"
                       >
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Stethoscope className="w-5 h-5 text-emerald-400" />
+                        <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Stethoscope className="w-5 h-5 text-emerald-600" />
                         </div>
                         <div className="flex-1">
-                          <span className="text-emerald-400 font-semibold block">Simulação de Atendimento</span>
-                          <span className="text-white/50 text-xs">Configure especialidade, dificuldade e cenário</span>
+                          <span className="text-emerald-700 font-semibold block">Simulação de Atendimento</span>
+                          <span className="text-slate-500 text-xs">Configure especialidade, dificuldade e cenário</span>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-emerald-400/50 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
+                        <ChevronRight className="w-5 h-5 text-emerald-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
                       </button>
                     </div>
                   )}
@@ -1910,14 +1910,14 @@ export default function IAPage() {
                       <button
                         key={i}
                         onClick={() => setInput('fullPrompt' in sugestao ? sugestao.fullPrompt : sugestao.texto)}
-                        className="flex items-center gap-2 md:gap-3 p-3 md:p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-left border border-white/5 hover:border-white/10"
+                        className="flex items-center gap-2 md:gap-3 p-3 md:p-4 bg-white rounded-xl hover:bg-slate-50 transition-colors text-left border border-slate-200 hover:border-slate-300 shadow-sm"
                       >
                         {'icon' in sugestao && typeof sugestao.icon === 'string' ? (
                           <span className="text-lg flex-shrink-0">{sugestao.icon}</span>
                         ) : 'icon' in sugestao ? (
                           <sugestao.icon className={`w-4 h-4 md:w-5 md:h-5 ${'cor' in sugestao ? sugestao.cor : 'text-blue-400'} flex-shrink-0`} />
                         ) : null}
-                        <span className="text-white/80 text-xs md:text-sm">{'text' in sugestao ? sugestao.text : sugestao.texto}</span>
+                        <span className="text-slate-700 text-xs md:text-sm">{'text' in sugestao ? sugestao.text : sugestao.texto}</span>
                       </button>
                     ))}
                   </div>
@@ -1948,7 +1948,7 @@ export default function IAPage() {
               <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
                 <Bot className="w-3 h-3 md:w-5 md:h-5 text-white" />
               </div>
-              <div className="bg-white/5 rounded-xl md:rounded-2xl p-3 md:p-4 border border-white/5">
+              <div className="bg-slate-100 rounded-xl md:rounded-2xl p-3 md:p-4 border border-slate-200">
                 <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-purple-400 animate-spin" />
               </div>
             </div>
@@ -1976,7 +1976,7 @@ export default function IAPage() {
               <span>Gerando resposta...</span>
               <button
                 onClick={cancelarGeracao}
-                className="text-white/40 hover:text-red-400 transition-colors underline"
+                className="text-slate-500 hover:text-red-400 transition-colors underline"
               >
                 cancelar
               </button>
@@ -1985,10 +1985,10 @@ export default function IAPage() {
         )}
 
         {/* Input Area - Compacto */}
-        <div className="px-2 md:px-3 py-2 border-t border-white/10 bg-slate-900/50">
+        <div className="px-2 md:px-3 py-2 border-t border-slate-200 bg-slate-900/50">
           <div className="relative">
             {/* Container do input com borda visual */}
-            <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-purple-500/50 focus-within:border-purple-500/30 transition-all">
+            <div className="bg-slate-100 border border-slate-200 rounded-xl md:rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-purple-500/50 focus-within:border-purple-500/30 transition-all">
 
               {/* Área de anexos DENTRO do container */}
               {(imagemBase64 || pdfBase64) && (
@@ -2047,14 +2047,14 @@ export default function IAPage() {
               />
 
               {/* Barra de ações DENTRO do container */}
-              <div className="flex items-center justify-between px-2 md:px-4 py-2 border-t border-white/5 bg-white/[0.02]">
+              <div className="flex items-center justify-between px-2 md:px-4 py-2 border-t border-slate-200 bg-white/[0.02]">
                 {/* Botões de ação à esquerda */}
                 <div className="flex items-center gap-0.5 md:gap-1">
                   {isResidencia && (
                     <>
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="p-1.5 md:p-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                        className="p-1.5 md:p-2 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
                         title="Anexar imagem"
                       >
                         <ImageIcon className="w-4 h-4" />
@@ -2069,7 +2069,7 @@ export default function IAPage() {
 
                       <button
                         onClick={() => pdfInputRef.current?.click()}
-                        className="p-1.5 md:p-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                        className="p-1.5 md:p-2 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
                         title="Anexar PDF"
                       >
                         <FileUp className="w-4 h-4" />
@@ -2083,7 +2083,7 @@ export default function IAPage() {
                       />
 
                       {/* Separador */}
-                      <div className="w-px h-4 bg-white/10 mx-0.5 md:mx-1" />
+                      <div className="w-px h-4 bg-slate-100 mx-0.5 md:mx-1" />
 
                       {/* Toggle Web Search */}
                       <button
@@ -2091,7 +2091,7 @@ export default function IAPage() {
                         className={`p-1.5 md:p-2 rounded-lg transition-colors ${
                           useWebSearch
                             ? 'bg-blue-500/20 text-blue-400'
-                            : 'text-white/40 hover:text-white hover:bg-white/5'
+                            : 'text-slate-500 hover:text-white hover:bg-slate-100'
                         }`}
                         title="Busca na Web"
                       >
@@ -2104,7 +2104,7 @@ export default function IAPage() {
                         className={`p-1.5 md:p-2 rounded-lg transition-colors ${
                           useExtendedThinking
                             ? 'bg-amber-500/20 text-amber-400'
-                            : 'text-white/40 hover:text-white hover:bg-white/5'
+                            : 'text-slate-500 hover:text-white hover:bg-slate-100'
                         }`}
                         title="Extended Thinking"
                       >
@@ -2112,12 +2112,12 @@ export default function IAPage() {
                       </button>
 
                       {/* Separador */}
-                      <div className="w-px h-4 bg-white/10 mx-0.5 md:mx-1" />
+                      <div className="w-px h-4 bg-slate-100 mx-0.5 md:mx-1" />
 
                       {/* Botão Análise de Exames */}
                       <button
                         onClick={() => setShowExamAnalyzer(true)}
-                        className="p-1.5 md:p-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                        className="p-1.5 md:p-2 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
                         title="Analisar Exame"
                       >
                         <Stethoscope className="w-4 h-4" />

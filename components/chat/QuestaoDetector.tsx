@@ -93,7 +93,7 @@ export function QuestaoDetector({
           // O texto será renderizado pelo ArtifactRenderer
           // Aqui só renderizamos se houver texto entre questões
           return (
-            <div key={index} className="prose prose-invert prose-sm max-w-none text-xs md:text-sm">
+            <div key={index} className="prose prose-slate prose-sm max-w-none text-xs md:text-sm">
               {parte.conteudo}
             </div>
           )

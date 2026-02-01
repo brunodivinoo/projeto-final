@@ -2,13 +2,13 @@
 
 /**
  * Nova Página Inicial - Chat Centralizado v2.0
- * Inspirado na interface da Meta AI
+ * TEMA CLARO - Cores padronizadas para fundo claro
  *
  * Melhorias:
  * - Input de chat com textarea expansível
  * - Sugestões completas (não mais truncadas)
  * - Layout mais compacto no mobile
- * - Menos espaços vazios
+ * - Cores com alto contraste para legibilidade
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -248,7 +248,7 @@ export default function MedicinaDashboardPage() {
             </Link>
           </div>
 
-          <div className="mt-2 md:mt-3 h-1.5 md:h-2 bg-white/10 rounded-full overflow-hidden">
+          <div className="mt-2 md:mt-3 h-1.5 md:h-2 bg-slate-100 rounded-full overflow-hidden">
             <div
               className={`h-full ${corBarra} transition-all duration-1000`}
               style={{ width: `${percentualRestante}%` }}
@@ -259,7 +259,7 @@ export default function MedicinaDashboardPage() {
 
       {/* Banner de trial expirado */}
       {plano === 'gratuito' && isTrialExpired && (
-        <div className="mb-4 md:mb-6 bg-gradient-to-r from-slate-800 to-slate-700 border border-white/10 rounded-xl p-3 md:p-4">
+        <div className="mb-4 md:mb-6 bg-gradient-to-r from-slate-800 to-slate-700 border border-slate-200 rounded-xl p-3 md:p-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
             <div className="flex items-center gap-3 md:gap-4">
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-slate-600 flex items-center justify-center">
@@ -294,10 +294,10 @@ export default function MedicinaDashboardPage() {
           <Stethoscope className="w-8 h-8 md:w-9 md:h-9 text-white" />
         </div>
 
-        <h1 className="text-xl md:text-3xl font-bold text-white mb-1.5 md:mb-2 text-center">
+        <h1 className="text-xl md:text-3xl font-bold text-slate-800 mb-1.5 md:mb-2 text-center">
           {getGreeting()}, {profile?.nome?.split(' ')[0] || 'Estudante'}!
         </h1>
-        <p className="text-white/50 mb-6 md:mb-8 text-center text-sm md:text-base">
+        <p className="text-slate-500 mb-6 md:mb-8 text-center text-sm md:text-base">
           Como posso ajudar nos seus estudos hoje?
         </p>
 
@@ -328,9 +328,9 @@ export default function MedicinaDashboardPage() {
         {/* Se não tem conversas, mostrar dicas */}
         {recentConversations.length === 0 && (
           <div className="w-full max-w-2xl text-center py-6 md:py-8 px-4">
-            <MessageSquare className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 text-white/20" />
-            <h3 className="text-white/40 font-medium mb-1.5 md:mb-2 text-sm md:text-base">Primeira vez aqui?</h3>
-            <p className="text-white/30 text-xs md:text-sm mb-3 md:mb-4">
+            <MessageSquare className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 text-slate-300" />
+            <h3 className="text-slate-500 font-medium mb-1.5 md:mb-2 text-sm md:text-base">Primeira vez aqui?</h3>
+            <p className="text-slate-400 text-xs md:text-sm mb-3 md:mb-4">
               Experimente pedir: &quot;Crie 5 questões sobre infarto agudo do miocárdio&quot;
             </p>
             <div className="flex flex-wrap justify-center gap-2">
@@ -338,7 +338,7 @@ export default function MedicinaDashboardPage() {
                 <button
                   key={tema}
                   onClick={() => handleNewMessage(`Me explique sobre ${tema}`)}
-                  className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white/70 text-xs md:text-sm transition"
+                  className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 text-xs md:text-sm transition border border-slate-200"
                 >
                   {tema}
                 </button>
@@ -352,24 +352,24 @@ export default function MedicinaDashboardPage() {
       {/* FOOTER COM LINKS ÚTEIS */}
       {/* ============================================ */}
 
-      <div className="border-t border-white/10 pt-4 md:pt-6 mt-6 md:mt-8 pb-4">
+      <div className="border-t border-slate-200 pt-4 md:pt-6 mt-6 md:mt-8 pb-4">
         <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 text-xs md:text-sm">
           <Link
             href="/medicina/dashboard/biblioteca"
-            className="flex items-center gap-1.5 md:gap-2 text-white/40 hover:text-white/70 transition"
+            className="flex items-center gap-1.5 md:gap-2 text-slate-400 hover:text-slate-600 transition"
           >
             <BookOpen className="w-3.5 h-3.5 md:w-4 md:h-4" />
             Biblioteca
           </Link>
-          <span className="text-white/20">|</span>
+          <span className="text-slate-300">|</span>
           <Link
             href="/medicina/dashboard/estatisticas"
-            className="flex items-center gap-1.5 md:gap-2 text-white/40 hover:text-white/70 transition"
+            className="flex items-center gap-1.5 md:gap-2 text-slate-400 hover:text-slate-600 transition"
           >
             <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
             Estatísticas
           </Link>
-          <span className="text-white/20">|</span>
+          <span className="text-slate-300">|</span>
           <UsageLimits
             usage={usageData}
             limits={limitsData}

@@ -43,7 +43,7 @@ export function MarkdownText({ text, className = '' }: MarkdownTextProps) {
 
   return (
     <div
-      className={`prose prose-slate dark:prose-invert max-w-none ${className}`}
+      className={`prose prose-slate dark:prose-slate max-w-none ${className}`}
       dangerouslySetInnerHTML={{ __html: processMarkdown(text) }}
     />
   )

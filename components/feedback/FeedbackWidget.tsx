@@ -91,7 +91,7 @@ export function FeedbackWidget() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => setAberto(true)}
-            className="fixed bottom-4 left-4 z-40 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all shadow-lg"
+            className="fixed bottom-4 left-4 z-40 w-10 h-10 bg-slate-100 hover:bg-slate-200 backdrop-blur-sm border border-slate-300 rounded-full flex items-center justify-center text-slate-600 hover:text-white transition-all shadow-lg"
             title="Enviar feedback"
           >
             <MessageSquarePlus className="w-5 h-5" />
@@ -118,15 +118,15 @@ export function FeedbackWidget() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="relative bg-slate-900 border border-white/10 rounded-xl w-full max-w-md overflow-hidden shadow-2xl"
+              className="relative bg-slate-900 border border-slate-200 rounded-xl w-full max-w-md overflow-hidden shadow-2xl"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
                 <div className="flex items-center gap-2">
                   {etapa === 'form' && tipoInfo && (
                     <button
                       onClick={() => setEtapa('tipo')}
-                      className="text-white/40 hover:text-white transition-colors"
+                      className="text-slate-500 hover:text-white transition-colors"
                     >
                       ←
                     </button>
@@ -139,7 +139,7 @@ export function FeedbackWidget() {
                 </div>
                 <button
                   onClick={fechar}
-                  className="text-white/40 hover:text-white transition-colors"
+                  className="text-slate-500 hover:text-white transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -156,13 +156,13 @@ export function FeedbackWidget() {
                         <button
                           key={t.id}
                           onClick={() => selecionarTipo(t.id)}
-                          className="flex flex-col items-center gap-2 p-4 rounded-lg border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"
+                          className="flex flex-col items-center gap-2 p-4 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-100 transition-all"
                         >
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${t.cor}`}>
                             <Icon className="w-5 h-5" />
                           </div>
                           <span className="text-white text-sm font-medium">{t.label}</span>
-                          <span className="text-white/40 text-xs">{t.descricao}</span>
+                          <span className="text-slate-500 text-xs">{t.descricao}</span>
                         </button>
                       )
                     })}
@@ -178,7 +178,7 @@ export function FeedbackWidget() {
                         value={titulo}
                         onChange={e => setTitulo(e.target.value)}
                         placeholder="Título breve..."
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm placeholder-white/40 focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-white text-sm placeholder-white/40 focus:outline-none focus:border-emerald-500"
                         maxLength={100}
                       />
                     </div>
@@ -187,7 +187,7 @@ export function FeedbackWidget() {
                         value={descricao}
                         onChange={e => setDescricao(e.target.value)}
                         placeholder="Descreva com detalhes..."
-                        className="w-full h-24 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm placeholder-white/40 focus:outline-none focus:border-emerald-500 resize-none"
+                        className="w-full h-24 bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-white text-sm placeholder-white/40 focus:outline-none focus:border-emerald-500 resize-none"
                         maxLength={1000}
                       />
                     </div>
@@ -218,7 +218,7 @@ export function FeedbackWidget() {
                       <CheckCircle className="w-8 h-8 text-emerald-400" />
                     </div>
                     <p className="text-white font-medium">Feedback enviado!</p>
-                    <p className="text-white/60 text-sm mt-1">Obrigado por nos ajudar a melhorar</p>
+                    <p className="text-slate-600 text-sm mt-1">Obrigado por nos ajudar a melhorar</p>
                   </div>
                 )}
               </div>

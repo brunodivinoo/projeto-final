@@ -154,7 +154,7 @@ export default function PerfilPage() {
       </div>
 
       {/* Avatar Card */}
-      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+      <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
         <div className="flex items-center gap-6">
           <div className="relative">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
@@ -168,12 +168,12 @@ export default function PerfilPage() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-white">{form.nome || 'Estudante'}</h2>
-            <p className="text-white/60">{form.email}</p>
+            <p className="text-slate-600">{form.email}</p>
             <div className="mt-2 flex items-center gap-2">
               <span className={`text-xs px-3 py-1 rounded-full ${
                 plano === 'residencia' ? 'bg-amber-500/20 text-amber-400' :
                 plano === 'premium' ? 'bg-emerald-500/20 text-emerald-400' :
-                'bg-white/10 text-white/60'
+                'bg-slate-100 text-slate-600'
               }`}>
                 {plano === 'residencia' ? '👑 Residência' :
                  plano === 'premium' ? '⭐ Premium' : 'Gratuito'}
@@ -185,39 +185,39 @@ export default function PerfilPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <h3 className="text-lg font-semibold text-white mb-6">Informações Pessoais</h3>
 
           <div className="grid gap-6">
             <div>
-              <label className="block text-white/80 text-sm font-medium mb-2">
+              <label className="block text-slate-700 text-sm font-medium mb-2">
                 Nome Completo
               </label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
                   type="text"
                   value={form.nome}
                   onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   placeholder="Seu nome"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-white/80 text-sm font-medium mb-2">
+              <label className="block text-slate-700 text-sm font-medium mb-2">
                 E-mail
               </label>
               {editandoEmail ? (
                 <div className="space-y-2">
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                     <input
                       type="email"
                       value={novoEmail}
                       onChange={(e) => setNovoEmail(e.target.value)}
-                      className="w-full bg-white/5 border border-emerald-500/50 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      className="w-full bg-slate-100 border border-emerald-500/50 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                       placeholder="novo@email.com"
                     />
                   </div>
@@ -243,7 +243,7 @@ export default function PerfilPage() {
                         setEditandoEmail(false)
                         setNovoEmail(form.email)
                       }}
-                      className="px-4 py-2 bg-white/5 border border-white/10 text-white/60 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
+                      className="px-4 py-2 bg-slate-100 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-100 transition-colors"
                     >
                       Cancelar
                     </button>
@@ -251,12 +251,12 @@ export default function PerfilPage() {
                 </div>
               ) : (
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                   <input
                     type="email"
                     value={form.email}
                     disabled
-                    className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-12 pr-12 text-white/70 cursor-not-allowed"
+                    className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 pl-12 pr-12 text-slate-600 cursor-not-allowed"
                   />
                   <button
                     type="button"
@@ -274,40 +274,40 @@ export default function PerfilPage() {
                   Email de confirmação enviado para {novoEmail}. Verifique sua caixa de entrada.
                 </p>
               ) : (
-                <p className="text-white/40 text-xs mt-1">Clique no ícone para alterar o email</p>
+                <p className="text-slate-500 text-xs mt-1">Clique no ícone para alterar o email</p>
               )}
             </div>
           </div>
         </div>
 
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <h3 className="text-lg font-semibold text-white mb-6">Informações Acadêmicas</h3>
 
           <div className="grid gap-6">
             <div>
-              <label className="block text-white/80 text-sm font-medium mb-2">
+              <label className="block text-slate-700 text-sm font-medium mb-2">
                 Faculdade
               </label>
               <div className="relative">
-                <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
                   type="text"
                   value={form.faculdade}
                   onChange={(e) => setForm({ ...form, faculdade: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   placeholder="Nome da sua faculdade"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-white/80 text-sm font-medium mb-2">
+              <label className="block text-slate-700 text-sm font-medium mb-2">
                 Período do Curso
               </label>
               <select
                 value={form.periodo_curso}
                 onChange={(e) => setForm({ ...form, periodo_curso: parseInt(e.target.value) })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 {periodosCurso.map((periodo) => (
                   <option key={periodo.value} value={periodo.value} className="bg-slate-800">
@@ -319,13 +319,13 @@ export default function PerfilPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">
+                <label className="block text-slate-700 text-sm font-medium mb-2">
                   Estado
                 </label>
                 <select
                   value={form.estado}
                   onChange={(e) => setForm({ ...form, estado: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 >
                   <option value="" className="bg-slate-800">Selecione</option>
                   {estados.map((uf) => (
@@ -336,16 +336,16 @@ export default function PerfilPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">
+                <label className="block text-slate-700 text-sm font-medium mb-2">
                   Cidade
                 </label>
                 <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                   <input
                     type="text"
                     value={form.cidade}
                     onChange={(e) => setForm({ ...form, cidade: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     placeholder="Sua cidade"
                   />
                 </div>
@@ -390,14 +390,14 @@ export default function PerfilPage() {
       </form>
 
       {/* Statistics Card */}
-      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+      <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
         <h3 className="text-lg font-semibold text-white mb-6">Estatísticas Gerais</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
             <div className="text-3xl font-bold text-emerald-400">
               {profile?.questoes_respondidas || 0}
             </div>
-            <div className="text-white/60 text-sm">Questões</div>
+            <div className="text-slate-600 text-sm">Questões</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-teal-400">
@@ -405,7 +405,7 @@ export default function PerfilPage() {
                 ? Math.round((profile.questoes_corretas || 0) / profile.questoes_respondidas * 100)
                 : 0}%
             </div>
-            <div className="text-white/60 text-sm">Aproveitamento</div>
+            <div className="text-slate-600 text-sm">Aproveitamento</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-cyan-400">
@@ -413,13 +413,13 @@ export default function PerfilPage() {
                 ? Math.floor(profile.tempo_estudo_segundos / 3600)
                 : 0}h
             </div>
-            <div className="text-white/60 text-sm">Tempo de Estudo</div>
+            <div className="text-slate-600 text-sm">Tempo de Estudo</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-purple-400">
               {profile?.questoes_corretas || 0}
             </div>
-            <div className="text-white/60 text-sm">Acertos</div>
+            <div className="text-slate-600 text-sm">Acertos</div>
           </div>
         </div>
       </div>

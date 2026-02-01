@@ -72,7 +72,7 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
     switch (plan) {
       case 'residencia': return <Crown className="w-4 h-4 text-amber-400" />
       case 'premium': return <Sparkles className="w-4 h-4 text-emerald-400" />
-      default: return <Zap className="w-4 h-4 text-white/60" />
+      default: return <Zap className="w-4 h-4 text-slate-600" />
     }
   }
 
@@ -88,14 +88,14 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
     <div className={`relative ${className}`} ref={containerRef}>
       <button
         onClick={() => setShowDetails(!showDetails)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10
-                   border border-white/10 hover:border-white/20 transition-all"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-100
+                   border border-slate-200 hover:border-slate-300 transition-all"
       >
         {getPlanIcon()}
 
         {plan === 'gratuito' && limits.mensagens > 0 && (
           <div className="flex items-center gap-2">
-            <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div
                 className={`h-full ${getBarColor()} transition-all`}
                 style={{ width: `${Math.min(usagePercent, 100)}%` }}
@@ -108,11 +108,11 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
         )}
 
         {plan !== 'gratuito' && (
-          <span className="text-xs text-white/70 font-medium">{getPlanLabel()}</span>
+          <span className="text-xs text-slate-600 font-medium">{getPlanLabel()}</span>
         )}
 
         {/* Ícone aponta para onde o dropdown vai aparecer */}
-        <ChevronUp className={`w-3 h-3 text-white/40 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
+        <ChevronUp className={`w-3 h-3 text-slate-500 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown com detalhes - ABRE PARA CIMA */}
@@ -123,7 +123,7 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-72 p-4 rounded-xl border border-white/10
+            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-72 p-4 rounded-xl border border-slate-200
                        shadow-xl shadow-black/50 z-[100]"
             style={{ backgroundColor: '#0f172a' }}
           >
@@ -201,14 +201,14 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
 
             {/* Dica para plano gratuito */}
             {plan === 'gratuito' && isNearLimit && (
-              <p className="mt-3 text-xs text-white/40 text-center">
+              <p className="mt-3 text-xs text-slate-500 text-center">
                 Você está chegando no limite diário.
                 <br />Faça upgrade para acesso ilimitado!
               </p>
             )}
 
             {/* Setinha apontando para baixo (onde está o botão) */}
-            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 border-r border-b border-white/10"
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 border-r border-b border-slate-200"
                  style={{ backgroundColor: '#0f172a' }} />
           </motion.div>
         )}
@@ -233,20 +233,20 @@ function UsageBar({ icon, label, current, max, unlimited }: UsageBarProps) {
   return (
     <div>
       <div className="flex items-center justify-between text-xs mb-1.5">
-        <div className="flex items-center gap-2 text-white/60">
+        <div className="flex items-center gap-2 text-slate-600">
           {icon}
           <span>{label}</span>
         </div>
         <span className={`font-medium ${
           unlimited ? 'text-emerald-400' :
           isFull ? 'text-red-400' :
-          isHigh ? 'text-amber-400' : 'text-white/80'
+          isHigh ? 'text-amber-400' : 'text-slate-700'
         }`}>
           {unlimited ? '∞ ilimitado' : `${current}/${max}`}
         </span>
       </div>
       {!unlimited && (
-        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
           <div
             className={`h-full transition-all rounded-full ${
               isFull ? 'bg-red-500' :

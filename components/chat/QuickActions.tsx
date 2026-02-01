@@ -2,13 +2,12 @@
 
 /**
  * Ações Rápidas - Sugestões personalizadas na tela inicial
- * Versão 2.0 - Com sugestões completas e inteligentes
- * 
+ * TEMA CLARO - Cores padronizadas para fundo claro
+ *
  * Melhorias:
  * - Labels completos (não mais "de..." truncado)
  * - Prompts inteligentes baseados em assuntos populares
- * - Animações suaves
- * - Melhor UX no mobile
+ * - Cores com alto contraste para legibilidade
  */
 
 import { useState, useEffect } from 'react'
@@ -73,7 +72,7 @@ export function QuickActions({ actions, onSelect, className = '', userTopics = [
 
   // Combinar assuntos do usuário com populares
   useEffect(() => {
-    const availableTopics = userTopics.length > 0 
+    const availableTopics = userTopics.length > 0
       ? [...userTopics, ...POPULAR_TOPICS.filter(t => !userTopics.includes(t))]
       : POPULAR_TOPICS
 
@@ -83,9 +82,9 @@ export function QuickActions({ actions, onSelect, className = '', userTopics = [
       if (action.prompt.endsWith(' ')) {
         const topic = availableTopics[index % availableTopics.length]
         const specialty = SPECIALTIES[index % SPECIALTIES.length]
-        
+
         let suggestion = topic
-        
+
         // Sugestões específicas por categoria
         if (action.category === 'plano') {
           suggestion = specialty
@@ -114,10 +113,10 @@ export function QuickActions({ actions, onSelect, className = '', userTopics = [
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.05 }}
           onClick={() => onSelect(action)}
-          className="quick-action-card flex items-start gap-2.5 md:gap-3 p-3 md:p-4 rounded-xl 
-                     bg-white/[0.03] hover:bg-white/[0.08]
-                     border border-white/[0.08] hover:border-emerald-500/30 
-                     transition-all duration-200
+          className="quick-action-card flex items-start gap-2.5 md:gap-3 p-3 md:p-4 rounded-xl
+                     bg-white hover:bg-slate-50
+                     border border-slate-200 hover:border-emerald-300
+                     transition-all duration-200 shadow-sm hover:shadow
                      text-left group min-h-[72px]"
           title={action.fullLabel || action.label}
         >
@@ -125,11 +124,11 @@ export function QuickActions({ actions, onSelect, className = '', userTopics = [
             {action.icon}
           </span>
           <div className="flex-1 min-w-0">
-            <span className="text-white/80 text-xs md:text-sm group-hover:text-white transition-colors line-clamp-2">
+            <span className="text-slate-700 text-xs md:text-sm group-hover:text-slate-900 transition-colors line-clamp-2">
               {action.fullLabel || action.label}
             </span>
             {action.fullLabel && action.fullLabel !== action.label && (
-              <span className="block text-[10px] text-emerald-400/60 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="block text-[10px] text-emerald-500 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                 Clique para personalizar
               </span>
             )}

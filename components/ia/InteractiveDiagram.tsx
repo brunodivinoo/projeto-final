@@ -36,14 +36,14 @@ function ECGWave({ type, label, description, color = "#10b981" }: {
   }
 
   return (
-    <div className="bg-slate-800 rounded-lg p-3 border border-white/10">
+    <div className="bg-slate-800 rounded-lg p-3 border border-slate-200">
       <svg viewBox="0 0 100 70" className="w-full h-20">
         <rect x="0" y="0" width="100" height="70" fill="#0f172a" />
         <line x1="0" y1="50" x2="100" y2="50" stroke="#1e3a5f" strokeWidth="0.5" strokeDasharray="2"/>
         <path d={getPath()} fill="none" stroke={color} strokeWidth="2"/>
       </svg>
       <p className="font-semibold text-sm text-center mt-1 text-white">{label}</p>
-      {description && <p className="text-xs text-white/60 text-center">{description}</p>}
+      {description && <p className="text-xs text-slate-600 text-center">{description}</p>}
     </div>
   )
 }
@@ -69,11 +69,11 @@ function ECGGrid({ highlights = {}, title }: {
     if (highlights.qwave?.includes(lead)) {
       return { bg: 'bg-orange-500/20', border: 'border-orange-500', text: 'text-orange-400', icon: 'Q' }
     }
-    return { bg: 'bg-slate-800', border: 'border-white/10', text: 'text-white/60', icon: '' }
+    return { bg: 'bg-slate-800', border: 'border-slate-200', text: 'text-slate-600', icon: '' }
   }
 
   return (
-    <div className="bg-slate-900 rounded-lg p-4 border border-white/10">
+    <div className="bg-slate-900 rounded-lg p-4 border border-slate-200">
       {title && <h4 className="font-bold text-center mb-3 text-white">{title}</h4>}
       <div className="grid grid-cols-4 gap-2">
         {leads.flat().map((lead) => {
@@ -94,15 +94,15 @@ function ECGGrid({ highlights = {}, title }: {
       <div className="flex justify-center gap-4 mt-3 text-xs">
         <span className="flex items-center gap-1">
           <div className="w-3 h-3 bg-red-500 rounded"></div>
-          <span className="text-white/60">Supra ST</span>
+          <span className="text-slate-600">Supra ST</span>
         </span>
         <span className="flex items-center gap-1">
           <div className="w-3 h-3 bg-blue-500 rounded"></div>
-          <span className="text-white/60">Infra ST</span>
+          <span className="text-slate-600">Infra ST</span>
         </span>
         <span className="flex items-center gap-1">
           <div className="w-3 h-3 bg-orange-500 rounded"></div>
-          <span className="text-white/60">Onda Q</span>
+          <span className="text-slate-600">Onda Q</span>
         </span>
       </div>
     </div>
@@ -130,7 +130,7 @@ function ECGIAMDiagram() {
             className={`px-4 py-2 rounded-full font-medium transition-all text-sm ${
               activeSection === section.id
                 ? 'bg-red-600 text-white shadow-lg'
-                : 'bg-slate-800 text-white/60 hover:bg-slate-700 border border-white/10'
+                : 'bg-slate-800 text-slate-600 hover:bg-slate-700 border border-slate-200'
             }`}
           >
             {section.label}
@@ -139,16 +139,16 @@ function ECGIAMDiagram() {
       </div>
 
       {/* Conteúdo */}
-      <div className="bg-slate-800/50 rounded-xl p-4 border border-white/10">
+      <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-200">
         {activeSection === 'evolution' && (
           <div className="space-y-4">
             <h3 className="text-lg font-bold text-center text-white">Evolução Temporal do IAM</h3>
             <div className="grid md:grid-cols-4 gap-3">
               <div className="bg-red-900/30 rounded-xl p-3 border border-red-500/30">
                 <h4 className="font-bold text-red-400 text-center text-sm mb-2">HIPERAGUDO</h4>
-                <p className="text-xs text-center text-white/40 mb-2">Minutos a horas</p>
+                <p className="text-xs text-center text-slate-500 mb-2">Minutos a horas</p>
                 <ECGWave type="hyperacute" label="T Hiperagudas" color="#ef4444" />
-                <ul className="text-xs mt-2 space-y-1 text-white/60">
+                <ul className="text-xs mt-2 space-y-1 text-slate-600">
                   <li>• T altas e apiculadas</li>
                   <li>• ST começa a elevar</li>
                 </ul>
@@ -156,9 +156,9 @@ function ECGIAMDiagram() {
 
               <div className="bg-orange-900/30 rounded-xl p-3 border border-orange-500/30">
                 <h4 className="font-bold text-orange-400 text-center text-sm mb-2">AGUDO</h4>
-                <p className="text-xs text-center text-white/40 mb-2">Horas a dias</p>
+                <p className="text-xs text-center text-slate-500 mb-2">Horas a dias</p>
                 <ECGWave type="acute" label="Supra ST" color="#f97316" />
-                <ul className="text-xs mt-2 space-y-1 text-white/60">
+                <ul className="text-xs mt-2 space-y-1 text-slate-600">
                   <li>• Supra ST convexo</li>
                   <li>• Ondas Q surgem</li>
                 </ul>
@@ -166,9 +166,9 @@ function ECGIAMDiagram() {
 
               <div className="bg-yellow-900/30 rounded-xl p-3 border border-yellow-500/30">
                 <h4 className="font-bold text-yellow-400 text-center text-sm mb-2">SUBAGUDO</h4>
-                <p className="text-xs text-center text-white/40 mb-2">Dias a semanas</p>
+                <p className="text-xs text-center text-slate-500 mb-2">Dias a semanas</p>
                 <ECGWave type="subacute" label="T Invertidas + Q" color="#eab308" />
-                <ul className="text-xs mt-2 space-y-1 text-white/60">
+                <ul className="text-xs mt-2 space-y-1 text-slate-600">
                   <li>• ST normaliza</li>
                   <li>• T inverte</li>
                 </ul>
@@ -176,9 +176,9 @@ function ECGIAMDiagram() {
 
               <div className="bg-slate-700/30 rounded-xl p-3 border border-slate-500/30">
                 <h4 className="font-bold text-slate-300 text-center text-sm mb-2">CRÔNICO</h4>
-                <p className="text-xs text-center text-white/40 mb-2">{'>'}2 semanas</p>
+                <p className="text-xs text-center text-slate-500 mb-2">{'>'}2 semanas</p>
                 <ECGWave type="chronic" label="Onda Q" color="#94a3b8" />
-                <ul className="text-xs mt-2 space-y-1 text-white/60">
+                <ul className="text-xs mt-2 space-y-1 text-slate-600">
                   <li>• Q permanente</li>
                   <li>• T pode normalizar</li>
                 </ul>
@@ -191,7 +191,7 @@ function ECGIAMDiagram() {
           <div className="space-y-4">
             <h3 className="text-lg font-bold text-center text-white">Localização por Território</h3>
             <div className="grid md:grid-cols-3 gap-3">
-              <div className="bg-slate-900 rounded-xl overflow-hidden border border-white/10">
+              <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-200">
                 <div className="bg-red-600 text-white p-2">
                   <h4 className="font-bold text-center text-sm">IAM ANTERIOR</h4>
                   <p className="text-xs text-center text-red-200">DA</p>
@@ -206,7 +206,7 @@ function ECGIAMDiagram() {
                 </div>
               </div>
 
-              <div className="bg-slate-900 rounded-xl overflow-hidden border border-white/10">
+              <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-200">
                 <div className="bg-blue-600 text-white p-2">
                   <h4 className="font-bold text-center text-sm">IAM INFERIOR</h4>
                   <p className="text-xs text-center text-blue-200">CD/Cx</p>
@@ -221,7 +221,7 @@ function ECGIAMDiagram() {
                 </div>
               </div>
 
-              <div className="bg-slate-900 rounded-xl overflow-hidden border border-white/10">
+              <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-200">
                 <div className="bg-green-600 text-white p-2">
                   <h4 className="font-bold text-center text-sm">IAM LATERAL</h4>
                   <p className="text-xs text-center text-green-200">Cx/Diagonal</p>
@@ -267,15 +267,15 @@ function ECGIAMDiagram() {
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="bg-slate-800 rounded p-2">
                     <p className="font-bold text-orange-400">≥ 40 ms</p>
-                    <p className="text-xs text-white/40">Duração</p>
+                    <p className="text-xs text-slate-500">Duração</p>
                   </div>
                   <div className="bg-slate-800 rounded p-2">
                     <p className="font-bold text-orange-400">≥ 25%</p>
-                    <p className="text-xs text-white/40">da onda R</p>
+                    <p className="text-xs text-slate-500">da onda R</p>
                   </div>
                   <div className="bg-slate-800 rounded p-2">
                     <p className="font-bold text-orange-400">V1-V3</p>
-                    <p className="text-xs text-white/40">Qualquer Q</p>
+                    <p className="text-xs text-slate-500">Qualquer Q</p>
                   </div>
                 </div>
               </div>
@@ -308,7 +308,7 @@ function MetabolismDiagram() {
             className={`px-4 py-2 rounded-full font-medium transition-all text-sm ${
               activeTab === tab.id
                 ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-slate-800 text-white/60 hover:bg-slate-700 border border-white/10'
+                : 'bg-slate-800 text-slate-600 hover:bg-slate-700 border border-slate-200'
             }`}
           >
             {tab.label}
@@ -316,19 +316,19 @@ function MetabolismDiagram() {
         ))}
       </div>
 
-      <div className="bg-slate-800/50 rounded-xl p-4 border border-white/10">
+      <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-200">
         {activeTab === 'glycolysis' && (
           <div className="max-w-md mx-auto space-y-3">
             <h3 className="text-lg font-bold text-center text-white">Glicólise</h3>
-            <p className="text-center text-white/40 text-sm">Citoplasma | 10 reações</p>
+            <p className="text-center text-slate-500 text-sm">Citoplasma | 10 reações</p>
 
             <div className="bg-red-900/20 rounded-lg p-3 border border-red-500/20">
               <h4 className="font-bold text-red-400 text-sm mb-2">INVESTIMENTO (-2 ATP)</h4>
               <div className="space-y-2 text-sm">
                 <div className="bg-slate-800 rounded p-2 text-center text-blue-400 font-semibold">GLICOSE (6C)</div>
-                <div className="text-center text-white/40">↓ Hexoquinase (-1 ATP)</div>
+                <div className="text-center text-slate-500">↓ Hexoquinase (-1 ATP)</div>
                 <div className="bg-slate-800 rounded p-2 text-center text-blue-400">Glicose-6-P</div>
-                <div className="text-center text-white/40">↓ PFK-1 (-1 ATP)</div>
+                <div className="text-center text-slate-500">↓ PFK-1 (-1 ATP)</div>
                 <div className="bg-slate-800 rounded p-2 text-center text-blue-400">Frutose-1,6-bisP</div>
               </div>
             </div>
@@ -337,9 +337,9 @@ function MetabolismDiagram() {
               <h4 className="font-bold text-green-400 text-sm mb-2">RENDIMENTO (+4 ATP, +2 NADH)</h4>
               <div className="space-y-2 text-sm">
                 <div className="bg-slate-800 rounded p-2 text-center text-green-400">2× G3P (3C)</div>
-                <div className="text-center text-white/40">↓ (+2 NADH, +2 ATP)</div>
+                <div className="text-center text-slate-500">↓ (+2 NADH, +2 ATP)</div>
                 <div className="bg-slate-800 rounded p-2 text-center text-green-400">2× PEP</div>
-                <div className="text-center text-white/40">↓ Piruvato Quinase (+2 ATP)</div>
+                <div className="text-center text-slate-500">↓ Piruvato Quinase (+2 ATP)</div>
                 <div className="bg-slate-800 rounded p-2 text-center text-orange-400 font-bold">2× PIRUVATO (3C)</div>
               </div>
             </div>
@@ -364,7 +364,7 @@ function MetabolismDiagram() {
         {activeTab === 'krebs' && (
           <div className="space-y-4">
             <h3 className="text-lg font-bold text-center text-white">Ciclo de Krebs</h3>
-            <p className="text-center text-white/40 text-sm">Matriz Mitocondrial | 8 reações</p>
+            <p className="text-center text-slate-500 text-sm">Matriz Mitocondrial | 8 reações</p>
 
             <div className="relative max-w-md mx-auto">
               <svg viewBox="0 0 300 300" className="w-full">
@@ -428,7 +428,7 @@ function MetabolismDiagram() {
         {activeTab === 'etc' && (
           <div className="space-y-4">
             <h3 className="text-lg font-bold text-center text-white">Cadeia Transportadora de Elétrons</h3>
-            <p className="text-center text-white/40 text-sm">Membrana Mitocondrial Interna</p>
+            <p className="text-center text-slate-500 text-sm">Membrana Mitocondrial Interna</p>
 
             <div className="bg-gradient-to-b from-blue-900/30 to-slate-900/30 rounded-lg p-4">
               <p className="text-xs text-center text-blue-400 mb-3">Espaço Intermembranas (H⁺ alto)</p>
@@ -436,7 +436,7 @@ function MetabolismDiagram() {
               <div className="flex justify-around items-end">
                 <div className="text-center">
                   <div className="bg-red-600 rounded-lg p-2 text-white text-xs font-bold">I</div>
-                  <p className="text-xs text-white/60 mt-1">NADH</p>
+                  <p className="text-xs text-slate-600 mt-1">NADH</p>
                   <p className="text-xs text-blue-400">4 H⁺↑</p>
                 </div>
                 <div className="text-center">
@@ -444,7 +444,7 @@ function MetabolismDiagram() {
                 </div>
                 <div className="text-center">
                   <div className="bg-orange-600 rounded-lg p-2 text-white text-xs font-bold">II</div>
-                  <p className="text-xs text-white/60 mt-1">FADH₂</p>
+                  <p className="text-xs text-slate-600 mt-1">FADH₂</p>
                 </div>
                 <div className="text-center">
                   <div className="bg-green-600 rounded-lg p-2 text-white text-xs font-bold">III</div>
@@ -501,7 +501,7 @@ export default function InteractiveDiagram({ type, title }: InteractiveDiagramPr
         return <MetabolismDiagram />
       default:
         return (
-          <div className="text-center text-white/60 p-8">
+          <div className="text-center text-slate-600 p-8">
             Diagrama interativo não disponível para este tipo.
           </div>
         )
@@ -513,14 +513,14 @@ export default function InteractiveDiagram({ type, title }: InteractiveDiagramPr
       <div className="fixed inset-0 z-50 bg-slate-900/98 overflow-auto">
         <div className="min-h-screen p-4">
           {/* Header */}
-          <div className="flex items-center justify-between mb-4 sticky top-0 bg-slate-900/95 p-4 rounded-lg border border-white/10">
+          <div className="flex items-center justify-between mb-4 sticky top-0 bg-slate-900/95 p-4 rounded-lg border border-slate-200">
             <div className="flex items-center gap-2">
               <span className="text-xl">🎯</span>
               <h2 className="text-white font-semibold">{title}</h2>
             </div>
             <button
               onClick={() => setIsFullscreen(false)}
-              className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg"
+              className="p-2 text-slate-600 hover:text-white hover:bg-slate-100 rounded-lg"
             >
               <Minimize2 className="w-5 h-5" />
             </button>
@@ -536,20 +536,20 @@ export default function InteractiveDiagram({ type, title }: InteractiveDiagramPr
   }
 
   return (
-    <div className="my-4 bg-slate-800/50 border border-white/10 rounded-xl overflow-hidden">
+    <div className="my-4 bg-slate-800/50 border border-slate-200 rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800/80 border-b border-white/10">
+      <div className="flex items-center justify-between px-4 py-2 bg-slate-800/80 border-b border-slate-200">
         <div className="flex items-center gap-2">
           <span className="text-lg">🎯</span>
-          <span className="text-white/80 text-sm font-medium">{title}</span>
+          <span className="text-slate-700 text-sm font-medium">{title}</span>
           <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">Interativo</span>
         </div>
         <button
           onClick={() => setIsFullscreen(true)}
-          className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
           title="Tela cheia"
         >
-          <Maximize2 className="w-4 h-4 text-white/60" />
+          <Maximize2 className="w-4 h-4 text-slate-600" />
         </button>
       </div>
 

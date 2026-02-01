@@ -136,14 +136,14 @@ export default function MonitoramentoPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Monitoramento</h1>
-          <p className="text-white/60 mt-1">Feedbacks e logs de erros</p>
+          <p className="text-slate-600 mt-1">Feedbacks e logs de erros</p>
         </div>
         <button
           onClick={() => {
             carregarFeedbacks()
             carregarErros()
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-white rounded-lg transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
           Atualizar
@@ -159,7 +159,7 @@ export default function MonitoramentoPage() {
             </div>
             <div>
               <p className="text-amber-400 text-2xl font-bold">{feedbacksPendentes}</p>
-              <p className="text-white/60 text-sm">Feedbacks pendentes</p>
+              <p className="text-slate-600 text-sm">Feedbacks pendentes</p>
             </div>
           </div>
         </div>
@@ -171,7 +171,7 @@ export default function MonitoramentoPage() {
             </div>
             <div>
               <p className="text-red-400 text-2xl font-bold">{errosHoje}</p>
-              <p className="text-white/60 text-sm">Erros hoje</p>
+              <p className="text-slate-600 text-sm">Erros hoje</p>
             </div>
           </div>
         </div>
@@ -185,7 +185,7 @@ export default function MonitoramentoPage() {
               <p className="text-emerald-400 text-2xl font-bold">
                 {feedbacks.filter(f => f.status === 'resolvido').length}
               </p>
-              <p className="text-white/60 text-sm">Resolvidos</p>
+              <p className="text-slate-600 text-sm">Resolvidos</p>
             </div>
           </div>
         </div>
@@ -197,20 +197,20 @@ export default function MonitoramentoPage() {
             </div>
             <div>
               <p className="text-blue-400 text-2xl font-bold">{errors.length}</p>
-              <p className="text-white/60 text-sm">Erros (7 dias)</p>
+              <p className="text-slate-600 text-sm">Erros (7 dias)</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Abas */}
-      <div className="flex gap-2 border-b border-white/10 pb-2">
+      <div className="flex gap-2 border-b border-slate-200 pb-2">
         <button
           onClick={() => setAba('feedback')}
           className={`px-4 py-2 rounded-lg transition-colors ${
             aba === 'feedback'
               ? 'bg-emerald-500/20 text-emerald-400'
-              : 'text-white/60 hover:bg-white/5'
+              : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           Feedbacks ({feedbacks.length})
@@ -220,7 +220,7 @@ export default function MonitoramentoPage() {
           className={`px-4 py-2 rounded-lg transition-colors ${
             aba === 'erros'
               ? 'bg-red-500/20 text-red-400'
-              : 'text-white/60 hover:bg-white/5'
+              : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           Erros ({errors.length})
@@ -239,7 +239,7 @@ export default function MonitoramentoPage() {
             <select
               value={filtroStatus}
               onChange={e => setFiltroStatus(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none"
+              className="bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-white text-sm focus:outline-none"
             >
               <option value="" className="bg-slate-800">Todos os status</option>
               {Object.entries(statusInfo).map(([key, info]) => (
@@ -250,7 +250,7 @@ export default function MonitoramentoPage() {
             <select
               value={filtroTipo}
               onChange={e => setFiltroTipo(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none"
+              className="bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-white text-sm focus:outline-none"
             >
               <option value="" className="bg-slate-800">Todos os tipos</option>
               <option value="bug" className="bg-slate-800">Bug</option>
@@ -264,7 +264,7 @@ export default function MonitoramentoPage() {
           {/* Lista de feedbacks */}
           <div className="space-y-3">
             {feedbacks.length === 0 ? (
-              <div className="text-center py-12 text-white/40">
+              <div className="text-center py-12 text-slate-500">
                 Nenhum feedback encontrado
               </div>
             ) : (
@@ -275,7 +275,7 @@ export default function MonitoramentoPage() {
                 return (
                   <div
                     key={fb.id}
-                    className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-colors cursor-pointer"
+                    className="bg-slate-100 border border-slate-200 rounded-xl p-4 hover:border-slate-300 transition-colors cursor-pointer"
                     onClick={() => setFeedbackSelecionado(fb)}
                   >
                     <div className="flex items-start gap-4">
@@ -296,8 +296,8 @@ export default function MonitoramentoPage() {
                             {status.label}
                           </span>
                         </div>
-                        <p className="text-white/60 text-sm line-clamp-2">{fb.descricao}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-white/40">
+                        <p className="text-slate-600 text-sm line-clamp-2">{fb.descricao}</p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
                           {fb.usuario && (
                             <span className="flex items-center gap-1">
                               <User className="w-3 h-3" />
@@ -339,14 +339,14 @@ export default function MonitoramentoPage() {
           {/* Lista de erros */}
           <div className="space-y-3">
             {errors.length === 0 ? (
-              <div className="text-center py-12 text-white/40">
+              <div className="text-center py-12 text-slate-500">
                 Nenhum erro registrado
               </div>
             ) : (
               errors.map(err => (
                 <div
                   key={err.id}
-                  className="bg-white/5 border border-white/10 rounded-xl p-4"
+                  className="bg-slate-100 border border-slate-200 rounded-xl p-4"
                 >
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -358,7 +358,7 @@ export default function MonitoramentoPage() {
                         <span className="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-xs">
                           {err.error_type}
                         </span>
-                        <span className="text-white/40 text-xs">
+                        <span className="text-slate-500 text-xs">
                           {formatDate(err.created_at)}
                         </span>
                       </div>
@@ -366,18 +366,18 @@ export default function MonitoramentoPage() {
                         {err.error_message}
                       </p>
                       {err.pagina && (
-                        <p className="text-white/40 text-xs mt-1">
+                        <p className="text-slate-500 text-xs mt-1">
                           Página: {err.pagina}
                         </p>
                       )}
                       {err.usuario && (
-                        <p className="text-white/40 text-xs">
+                        <p className="text-slate-500 text-xs">
                           Usuário: {err.usuario.nome} ({err.usuario.email})
                         </p>
                       )}
                       {err.error_stack && (
                         <details className="mt-2">
-                          <summary className="text-white/40 text-xs cursor-pointer hover:text-white/60">
+                          <summary className="text-slate-500 text-xs cursor-pointer hover:text-slate-600">
                             Ver stack trace
                           </summary>
                           <pre className="mt-2 p-2 bg-black/30 rounded text-xs text-red-300 overflow-x-auto max-h-40">
@@ -408,7 +408,7 @@ export default function MonitoramentoPage() {
               <h3 className="text-lg font-bold text-white">{feedbackSelecionado.titulo}</h3>
               <button
                 onClick={() => setFeedbackSelecionado(null)}
-                className="text-white/40 hover:text-white"
+                className="text-slate-500 hover:text-white"
               >
                 ×
               </button>
@@ -416,20 +416,20 @@ export default function MonitoramentoPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="text-white/60 text-sm">Descrição</label>
+                <label className="text-slate-600 text-sm">Descrição</label>
                 <p className="text-white mt-1">{feedbackSelecionado.descricao}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-white/60 text-sm block mb-1">Status</label>
+                  <label className="text-slate-600 text-sm block mb-1">Status</label>
                   <select
                     value={feedbackSelecionado.status}
                     onChange={e => {
                       atualizarFeedback(feedbackSelecionado.id, { status: e.target.value } as Partial<Feedback>)
                       setFeedbackSelecionado({ ...feedbackSelecionado, status: e.target.value })
                     }}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                    className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-white text-sm"
                   >
                     {Object.entries(statusInfo).map(([key, info]) => (
                       <option key={key} value={key} className="bg-slate-800">{info.label}</option>
@@ -438,14 +438,14 @@ export default function MonitoramentoPage() {
                 </div>
 
                 <div>
-                  <label className="text-white/60 text-sm block mb-1">Prioridade</label>
+                  <label className="text-slate-600 text-sm block mb-1">Prioridade</label>
                   <select
                     value={feedbackSelecionado.prioridade}
                     onChange={e => {
                       atualizarFeedback(feedbackSelecionado.id, { prioridade: e.target.value } as Partial<Feedback>)
                       setFeedbackSelecionado({ ...feedbackSelecionado, prioridade: e.target.value })
                     }}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                    className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-white text-sm"
                   >
                     <option value="baixa" className="bg-slate-800">Baixa</option>
                     <option value="media" className="bg-slate-800">Média</option>
@@ -457,7 +457,7 @@ export default function MonitoramentoPage() {
 
               {feedbackSelecionado.usuario && (
                 <div>
-                  <label className="text-white/60 text-sm">Usuário</label>
+                  <label className="text-slate-600 text-sm">Usuário</label>
                   <p className="text-white mt-1">
                     {feedbackSelecionado.usuario.nome} ({feedbackSelecionado.usuario.email})
                   </p>
@@ -466,13 +466,13 @@ export default function MonitoramentoPage() {
 
               {feedbackSelecionado.pagina && (
                 <div>
-                  <label className="text-white/60 text-sm">Página</label>
+                  <label className="text-slate-600 text-sm">Página</label>
                   <p className="text-white mt-1 font-mono text-sm">{feedbackSelecionado.pagina}</p>
                 </div>
               )}
 
               <div>
-                <label className="text-white/60 text-sm">Data</label>
+                <label className="text-slate-600 text-sm">Data</label>
                 <p className="text-white mt-1">{formatDate(feedbackSelecionado.created_at)}</p>
               </div>
             </div>

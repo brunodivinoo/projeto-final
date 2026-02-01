@@ -128,7 +128,7 @@ function LayerCard({
     >
       {/* Linha de conexão com próxima camada */}
       {index > 0 && (
-        <div className="absolute -top-2 left-1/2 w-0.5 h-4 bg-white/20" />
+        <div className="absolute -top-2 left-1/2 w-0.5 h-4 bg-slate-200" />
       )}
 
       <div
@@ -192,7 +192,7 @@ function LayerCard({
                     {layer.staging}
                   </span>
                   {layer.stagingName && (
-                    <span className="text-xs text-white/60 mt-1">{layer.stagingName}</span>
+                    <span className="text-xs text-slate-600 mt-1">{layer.stagingName}</span>
                   )}
                 </div>
               )}
@@ -206,11 +206,11 @@ function LayerCard({
 
               {/* Botão expandir */}
               {hasDetails && (
-                <button className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+                <button className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
                   {isExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-white/60" />
+                    <ChevronUp className="w-5 h-5 text-slate-600" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-white/60" />
+                    <ChevronDown className="w-5 h-5 text-slate-600" />
                   )}
                 </button>
               )}
@@ -227,22 +227,22 @@ function LayerCard({
                 transition={{ duration: 0.3 }}
                 className="overflow-hidden"
               >
-                <div className="mt-4 pt-4 border-t border-white/10">
+                <div className="mt-4 pt-4 border-t border-slate-200">
                   {/* Subcamadas */}
                   {layer.sublayers && layer.sublayers.length > 0 && (
                     <div className="space-y-2">
-                      <span className="text-xs text-white/50 uppercase tracking-wider">Componentes:</span>
+                      <span className="text-xs text-slate-500 uppercase tracking-wider">Componentes:</span>
                       <ul className="space-y-1.5">
                         {layer.sublayers.map((sub, i) => {
                           const subName = typeof sub === 'string' ? sub : sub.name
                           const subDetail = typeof sub === 'string' ? null : sub.detail
                           return (
-                            <li key={i} className="flex items-start gap-2 text-sm text-white/80">
+                            <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
                               <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${colors.bg} ${colors.border} border`} />
                               <div>
                                 <span>{subName}</span>
                                 {subDetail && (
-                                  <span className="block text-xs text-white/50 mt-0.5">{subDetail}</span>
+                                  <span className="block text-xs text-slate-500 mt-0.5">{subDetail}</span>
                                 )}
                               </div>
                             </li>
@@ -254,10 +254,10 @@ function LayerCard({
 
                   {/* Detalhes extras */}
                   {layer.details && (
-                    <div className="mt-3 p-3 bg-white/5 rounded-lg">
+                    <div className="mt-3 p-3 bg-slate-100 rounded-lg">
                       <div className="flex items-start gap-2">
                         <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-sm text-white/70">{layer.details}</p>
+                        <p className="text-sm text-slate-600">{layer.details}</p>
                       </div>
                     </div>
                   )}
@@ -286,9 +286,9 @@ function CrossSectionView({
   return (
     <div className="relative">
       {/* Indicadores laterais */}
-      <div className="absolute left-0 top-0 bottom-0 w-16 flex flex-col justify-between py-2 pr-2 border-r border-white/10">
-        <div className="text-[10px] text-white/40 text-center">Lúmen</div>
-        <div className="text-[10px] text-white/40 text-center">Serosa</div>
+      <div className="absolute left-0 top-0 bottom-0 w-16 flex flex-col justify-between py-2 pr-2 border-r border-slate-200">
+        <div className="text-[10px] text-slate-500 text-center">Lúmen</div>
+        <div className="text-[10px] text-slate-500 text-center">Serosa</div>
       </div>
 
       {/* Visualização de corte */}
@@ -339,7 +339,7 @@ function CrossSectionView({
                   <div>
                     <h5 className="font-bold text-white text-sm">{layer.name}</h5>
                     {layer.sublayers && layer.sublayers.length > 0 && (
-                      <p className="text-[10px] text-white/50 truncate max-w-[200px]">
+                      <p className="text-[10px] text-slate-500 truncate max-w-[200px]">
                         {layer.sublayers.slice(0, 2).map(s => typeof s === 'string' ? s : s.name).join(' • ')}
                         {layer.sublayers.length > 2 && ` +${layer.sublayers.length - 2}`}
                       </p>
@@ -433,7 +433,7 @@ function TimelineView({
                     <div>
                       <h5 className="font-bold text-white text-sm">{layer.name}</h5>
                       {layer.staging && (
-                        <span className="text-[10px] text-white/50">{layer.stagingName || layer.staging}</span>
+                        <span className="text-[10px] text-slate-500">{layer.stagingName || layer.staging}</span>
                       )}
                     </div>
                   </div>
@@ -454,15 +454,15 @@ function TimelineView({
 
                 {/* Sublayers resumidas */}
                 {layer.sublayers && layer.sublayers.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-white/10">
+                  <div className="mt-2 pt-2 border-t border-slate-200">
                     <div className="flex flex-wrap gap-1">
                       {layer.sublayers.slice(0, 3).map((sub, i) => (
-                        <span key={i} className="px-1.5 py-0.5 bg-white/5 rounded text-[10px] text-white/60">
+                        <span key={i} className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] text-slate-600">
                           {typeof sub === 'string' ? sub : sub.name}
                         </span>
                       ))}
                       {layer.sublayers.length > 3 && (
-                        <span className="px-1.5 py-0.5 text-[10px] text-white/40">+{layer.sublayers.length - 3}</span>
+                        <span className="px-1.5 py-0.5 text-[10px] text-slate-500">+{layer.sublayers.length - 3}</span>
                       )}
                     </div>
                   </div>
@@ -508,18 +508,18 @@ function LayerDetailPanel({
       exit={{ opacity: 0, x: 20 }}
       className="absolute top-4 right-4 w-72 z-20"
     >
-      <div className="bg-slate-800/95 backdrop-blur-sm border border-white/20 rounded-xl shadow-2xl overflow-hidden">
+      <div className="bg-slate-800/95 backdrop-blur-sm border border-slate-300 rounded-xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className={`flex items-center justify-between px-4 py-3 bg-gradient-to-r ${colors.gradient} border-b border-white/10`}>
+        <div className={`flex items-center justify-between px-4 py-3 bg-gradient-to-r ${colors.gradient} border-b border-slate-200`}>
           <div className="flex items-center gap-2">
-            <Microscope className="w-4 h-4 text-white/80" />
+            <Microscope className="w-4 h-4 text-slate-700" />
             <span className="text-white font-medium text-sm">Detalhes da Camada</span>
           </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-white/10 rounded transition-colors"
+            className="p-1 hover:bg-slate-100 rounded transition-colors"
           >
-            <X className="w-4 h-4 text-white/60" />
+            <X className="w-4 h-4 text-slate-600" />
           </button>
         </div>
 
@@ -527,14 +527,14 @@ function LayerDetailPanel({
         <div className="p-4 space-y-4">
           {/* Nome */}
           <div>
-            <span className="text-xs text-white/40 uppercase tracking-wider">Camada</span>
+            <span className="text-xs text-slate-500 uppercase tracking-wider">Camada</span>
             <p className="text-white font-bold text-lg mt-1">{layer.name}</p>
           </div>
 
           {/* Estadiamento */}
           {layer.staging && (
             <div>
-              <span className="text-xs text-white/40 uppercase tracking-wider">Estadiamento</span>
+              <span className="text-xs text-slate-500 uppercase tracking-wider">Estadiamento</span>
               <div className="flex items-center gap-2 mt-1">
                 <span className={`
                   px-3 py-1.5 rounded-lg text-sm font-bold
@@ -547,7 +547,7 @@ function LayerDetailPanel({
                   {layer.staging}
                 </span>
                 {layer.stagingName && (
-                  <span className="text-white/60 text-sm">{layer.stagingName}</span>
+                  <span className="text-slate-600 text-sm">{layer.stagingName}</span>
                 )}
               </div>
             </div>
@@ -568,7 +568,7 @@ function LayerDetailPanel({
           {/* Sublayers */}
           {layer.sublayers && layer.sublayers.length > 0 && (
             <div>
-              <span className="text-xs text-white/40 uppercase tracking-wider">Componentes</span>
+              <span className="text-xs text-slate-500 uppercase tracking-wider">Componentes</span>
               <ul className="mt-2 space-y-1.5">
                 {layer.sublayers.map((sub, i) => {
                   const subName = typeof sub === 'string' ? sub : sub.name
@@ -577,9 +577,9 @@ function LayerDetailPanel({
                     <li key={i} className="flex items-start gap-2 text-sm">
                       <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${colors.bg} ${colors.border} border`} />
                       <div>
-                        <span className="text-white/80">{subName}</span>
+                        <span className="text-slate-700">{subName}</span>
                         {subDetail && (
-                          <span className="block text-xs text-white/40 mt-0.5">{subDetail}</span>
+                          <span className="block text-xs text-slate-500 mt-0.5">{subDetail}</span>
                         )}
                       </div>
                     </li>
@@ -594,7 +594,7 @@ function LayerDetailPanel({
             <div className="bg-slate-900/50 rounded-lg p-3">
               <div className="flex items-start gap-2">
                 <BookOpen className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-white/70">{layer.details}</p>
+                <p className="text-sm text-slate-600">{layer.details}</p>
               </div>
             </div>
           )}
@@ -681,10 +681,10 @@ export default function LayeredDiagram({
 
   const content = (
     <div className={`
-      ${isFullscreen ? 'h-full overflow-y-auto' : 'bg-slate-900/50 rounded-2xl border border-white/10 overflow-hidden'}
+      ${isFullscreen ? 'h-full overflow-y-auto' : 'bg-slate-900/50 rounded-2xl border border-slate-200 overflow-hidden'}
     `}>
       {/* Header */}
-      <div className="p-4 border-b border-white/10 bg-white/5">
+      <div className="p-4 border-b border-slate-200 bg-slate-100">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
@@ -693,7 +693,7 @@ export default function LayeredDiagram({
             <div>
               <h3 className="font-bold text-white text-lg">{title}</h3>
               {description && (
-                <p className="text-white/60 text-sm">{description}</p>
+                <p className="text-slate-600 text-sm">{description}</p>
               )}
             </div>
           </div>
@@ -701,7 +701,7 @@ export default function LayeredDiagram({
           <div className="flex items-center gap-2">
             {/* Stats */}
             <div className="flex items-center gap-4 mr-2 text-sm">
-              <span className="text-white/60">
+              <span className="text-slate-600">
                 <span className="font-bold text-white">{layers.length}</span> camadas
               </span>
               {invadedCount > 0 && (
@@ -713,7 +713,7 @@ export default function LayeredDiagram({
 
             {/* Seletor de modo de visualização */}
             {interactive && (
-              <div className="flex items-center gap-1 p-1 bg-white/5 rounded-lg">
+              <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
                 {viewModes.map((mode) => {
                   const IconComponent = mode.icon
                   return (
@@ -725,7 +725,7 @@ export default function LayeredDiagram({
                       }}
                       className={`
                         p-1.5 rounded-md transition-all duration-200 relative group
-                        ${viewMode === mode.id ? 'bg-purple-500/30 text-purple-300' : 'text-white/40 hover:text-white/60 hover:bg-white/5'}
+                        ${viewMode === mode.id ? 'bg-purple-500/30 text-purple-300' : 'text-slate-500 hover:text-slate-600 hover:bg-slate-100'}
                       `}
                       title={mode.label}
                     >
@@ -745,13 +745,13 @@ export default function LayeredDiagram({
               <>
                 <button
                   onClick={expandAll}
-                  className="px-3 py-1.5 text-xs bg-white/5 hover:bg-white/10 text-white/70 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs bg-slate-100 hover:bg-slate-100 text-slate-600 rounded-lg transition-colors"
                 >
                   Expandir
                 </button>
                 <button
                   onClick={collapseAll}
-                  className="px-3 py-1.5 text-xs bg-white/5 hover:bg-white/10 text-white/70 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs bg-slate-100 hover:bg-slate-100 text-slate-600 rounded-lg transition-colors"
                 >
                   Recolher
                 </button>
@@ -760,12 +760,12 @@ export default function LayeredDiagram({
 
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
             >
               {isFullscreen ? (
-                <X className="w-5 h-5 text-white/60" />
+                <X className="w-5 h-5 text-slate-600" />
               ) : (
-                <Maximize2 className="w-5 h-5 text-white/60" />
+                <Maximize2 className="w-5 h-5 text-slate-600" />
               )}
             </button>
           </div>
@@ -773,8 +773,8 @@ export default function LayeredDiagram({
 
         {/* Legenda de estadiamento */}
         {displayStaging && (
-          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/10">
-            <span className="text-xs text-white/50">Estadiamento:</span>
+          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-200">
+            <span className="text-xs text-slate-500">Estadiamento:</span>
             <div className="flex items-center gap-2 flex-wrap">
               {[
                 { label: 'Tis', color: 'bg-emerald-500/30 text-emerald-300' },
@@ -846,8 +846,8 @@ export default function LayeredDiagram({
 
       {/* Footer com info dinâmico */}
       {interactive && (
-        <div className="p-3 border-t border-white/10 bg-white/5">
-          <p className="text-xs text-white/40 text-center">
+        <div className="p-3 border-t border-slate-200 bg-slate-100">
+          <p className="text-xs text-slate-500 text-center">
             {viewMode === 'stacked'
               ? 'Clique nas camadas para ver detalhes'
               : viewMode === 'crossSection'
@@ -869,7 +869,7 @@ export default function LayeredDiagram({
           onClick={() => setIsFullscreen(false)}
         />
         {/* Container do conteúdo fullscreen */}
-        <div className={`fixed z-50 bg-slate-900 rounded-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl ${
+        <div className={`fixed z-50 bg-slate-900 rounded-2xl border border-slate-200 overflow-hidden flex flex-col shadow-2xl ${
           isMobile ? 'inset-0 rounded-none' : 'inset-4'
         }`}>
           {content}

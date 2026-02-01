@@ -49,8 +49,8 @@ import { ZoomIn } from 'lucide-react'
 const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
   ssr: false,
   loading: () => (
-    <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6 my-4">
-      <div className="flex items-center gap-2 text-white/40">
+    <div className="bg-slate-800/50 border border-slate-200 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full" />
         <span>Carregando diagrama...</span>
       </div>
@@ -62,8 +62,8 @@ const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
 const LayeredDiagram = dynamic(() => import('./LayeredDiagram'), {
   ssr: false,
   loading: () => (
-    <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6 my-4">
-      <div className="flex items-center gap-2 text-white/40">
+    <div className="bg-slate-800/50 border border-slate-200 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full" />
         <span>Carregando diagrama de camadas...</span>
       </div>
@@ -75,8 +75,8 @@ const LayeredDiagram = dynamic(() => import('./LayeredDiagram'), {
 const StagingTable = dynamic(() => import('./StagingTable'), {
   ssr: false,
   loading: () => (
-    <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6 my-4">
-      <div className="flex items-center gap-2 text-white/40">
+    <div className="bg-slate-800/50 border border-slate-200 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full" />
         <span>Carregando tabela de estadiamento...</span>
       </div>
@@ -89,7 +89,7 @@ const ImageGenerator = dynamic(() => import('./ImageGenerator'), {
   ssr: false,
   loading: () => (
     <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-6 my-4">
-      <div className="flex items-center gap-2 text-white/40">
+      <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full" />
         <span>Carregando gerador de imagens...</span>
       </div>
@@ -102,7 +102,7 @@ const MedicalImageGallery = dynamic(() => import('./MedicalImageGallery'), {
   ssr: false,
   loading: () => (
     <div className="bg-slate-800/30 rounded-xl p-4 my-4">
-      <div className="flex items-center gap-2 text-white/40">
+      <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full" />
         <span>Buscando imagens médicas...</span>
       </div>
@@ -114,8 +114,8 @@ const MedicalImageGallery = dynamic(() => import('./MedicalImageGallery'), {
 const QuestionArtifactCard = dynamic(() => import('./QuestionArtifactCard'), {
   ssr: false,
   loading: () => (
-    <div className="bg-[#1A2332] border border-white/10 rounded-xl p-6 my-4">
-      <div className="flex items-center gap-2 text-white/40">
+    <div className="bg-[#1A2332] border border-slate-200 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full" />
         <span>Carregando questão...</span>
       </div>
@@ -127,8 +127,8 @@ const QuestionArtifactCard = dynamic(() => import('./QuestionArtifactCard'), {
 const FlashcardDeck = dynamic(() => import('./FlashcardDeck'), {
   ssr: false,
   loading: () => (
-    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-white/10 rounded-xl p-6 my-4">
-      <div className="flex items-center gap-2 text-white/40">
+    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-200 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full" />
         <span>Carregando flashcards interativos...</span>
       </div>
@@ -140,8 +140,8 @@ const FlashcardDeck = dynamic(() => import('./FlashcardDeck'), {
 const SimuladoCard = dynamic(() => import('./SimuladoCard'), {
   ssr: false,
   loading: () => (
-    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-white/10 rounded-xl p-6 my-4">
-      <div className="flex items-center gap-2 text-white/40">
+    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-200 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full" />
         <span>Carregando simulado...</span>
       </div>
@@ -153,8 +153,8 @@ const SimuladoCard = dynamic(() => import('./SimuladoCard'), {
 const QuestionStreamingSkeleton = dynamic(() => import('./QuestionStreamingSkeleton'), {
   ssr: false,
   loading: () => (
-    <div className="bg-[#1A2332] border border-white/10 rounded-xl p-6 my-4">
-      <div className="flex items-center gap-2 text-white/40">
+    <div className="bg-[#1A2332] border border-slate-200 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full" />
         <span>Preparando questão...</span>
       </div>
@@ -1662,7 +1662,7 @@ const MemoizedImage = memo(function MemoizedImage({ src, alt, onClickImage }: Me
     >
       <button
         onClick={handleClick}
-        className="relative w-full bg-slate-800/50 rounded-lg overflow-hidden border border-white/10 hover:border-blue-500/50 transition-colors cursor-zoom-in"
+        className="relative w-full bg-slate-800/50 rounded-lg overflow-hidden border border-slate-200 hover:border-blue-500/50 transition-colors cursor-zoom-in"
         title="Clique para ampliar"
       >
         {/* Placeholder skeleton - só aparece se não carregou ainda */}
@@ -1901,7 +1901,7 @@ function ArtifactRendererComponent({
               components={{
                 // Headings - menores e mais compactos
                 h1: ({ children }) => (
-                  <h1 className="text-lg md:text-xl font-bold text-white mt-4 mb-2 pb-1 border-b border-white/10">
+                  <h1 className="text-lg md:text-xl font-bold text-white mt-4 mb-2 pb-1 border-b border-slate-200">
                     {children}
                   </h1>
                 ),
@@ -1916,7 +1916,7 @@ function ArtifactRendererComponent({
                   </h3>
                 ),
                 h4: ({ children }) => (
-                  <h4 className="text-sm font-semibold text-white/90 mt-2 mb-1">
+                  <h4 className="text-sm font-semibold text-slate-800 mt-2 mb-1">
                     {children}
                   </h4>
                 ),
@@ -1935,7 +1935,7 @@ function ArtifactRendererComponent({
                       : children
 
                   return (
-                    <p className="text-white/80 leading-relaxed mb-2 text-sm">
+                    <p className="text-slate-700 leading-relaxed mb-2 text-sm">
                       {processedChildren}
                     </p>
                   )
@@ -1943,12 +1943,12 @@ function ArtifactRendererComponent({
 
                 // Lists - espaçamento reduzido
                 ul: ({ children }) => (
-                  <ul className="list-disc list-inside space-y-0.5 mb-2 text-white/80 ml-2 text-sm">
+                  <ul className="list-disc list-inside space-y-0.5 mb-2 text-slate-700 ml-2 text-sm">
                     {children}
                   </ul>
                 ),
                 ol: ({ children }) => (
-                  <ol className="list-decimal list-inside space-y-0.5 mb-2 text-white/80 ml-2 text-sm">
+                  <ol className="list-decimal list-inside space-y-0.5 mb-2 text-slate-700 ml-2 text-sm">
                     {children}
                   </ol>
                 ),
@@ -1965,7 +1965,7 @@ function ArtifactRendererComponent({
                       : children
 
                   return (
-                    <li className="text-white/80 text-sm">
+                    <li className="text-slate-700 text-sm">
                       {processedChildren}
                     </li>
                   )
@@ -1978,7 +1978,7 @@ function ArtifactRendererComponent({
                   </strong>
                 ),
                 em: ({ children }) => (
-                  <em className="italic text-white/70">
+                  <em className="italic text-slate-600">
                     {children}
                   </em>
                 ),
@@ -2010,7 +2010,7 @@ function ArtifactRendererComponent({
 
                 // Pre (for code blocks without language) - mais compacto
                 pre: ({ children }) => (
-                  <pre className="bg-slate-800/80 rounded-lg p-3 my-2 overflow-x-auto text-xs font-mono text-white/80">
+                  <pre className="bg-slate-800/80 rounded-lg p-3 my-2 overflow-x-auto text-xs font-mono text-slate-700">
                     {children}
                   </pre>
                 ),
@@ -2018,7 +2018,7 @@ function ArtifactRendererComponent({
                 // Tables - células mais compactas
                 table: ({ children }) => (
                   <div className="overflow-x-auto my-3">
-                    <table className="min-w-full border-collapse border border-white/10 rounded-lg overflow-hidden text-sm">
+                    <table className="min-w-full border-collapse border border-slate-200 rounded-lg overflow-hidden text-sm">
                       {children}
                     </table>
                   </div>
@@ -2034,17 +2034,17 @@ function ArtifactRendererComponent({
                   </tbody>
                 ),
                 tr: ({ children }) => (
-                  <tr className="hover:bg-white/5 transition-colors">
+                  <tr className="hover:bg-slate-100 transition-colors">
                     {children}
                   </tr>
                 ),
                 th: ({ children }) => (
-                  <th className="px-2 md:px-3 py-2 text-left text-xs font-semibold text-emerald-400 border-b border-white/10">
+                  <th className="px-2 md:px-3 py-2 text-left text-xs font-semibold text-emerald-400 border-b border-slate-200">
                     {children}
                   </th>
                 ),
                 td: ({ children }) => (
-                  <td className="px-2 md:px-3 py-2 text-xs text-white/80">
+                  <td className="px-2 md:px-3 py-2 text-xs text-slate-700">
                     {children}
                   </td>
                 ),
@@ -2052,7 +2052,7 @@ function ArtifactRendererComponent({
                 // Blockquotes (para boxes de destaque) - mais compacto
                 blockquote: ({ children }) => (
                   <blockquote className="border-l-3 border-emerald-500 bg-emerald-500/10 pl-3 py-1.5 my-2 rounded-r-lg">
-                    <div className="text-white/80 text-sm">
+                    <div className="text-slate-700 text-sm">
                       {children}
                     </div>
                   </blockquote>
@@ -2072,7 +2072,7 @@ function ArtifactRendererComponent({
 
                 // Horizontal rule - espaçamento reduzido
                 hr: () => (
-                  <hr className="my-4 border-white/10" />
+                  <hr className="my-4 border-slate-200" />
                 ),
 
                 // Images - usando componente memoizado para evitar flickering
@@ -2126,8 +2126,8 @@ function ArtifactRendererComponent({
           } catch {
             // Se não for JSON válido, mostrar como texto
             return (
-              <div key={index} className="my-3 bg-slate-800/50 border border-white/10 rounded-xl p-3">
-                <pre className="text-white/80 text-xs whitespace-pre-wrap">{part.content}</pre>
+              <div key={index} className="my-3 bg-slate-800/50 border border-slate-200 rounded-xl p-3">
+                <pre className="text-slate-700 text-xs whitespace-pre-wrap">{part.content}</pre>
               </div>
             )
           }
@@ -2151,8 +2151,8 @@ function ArtifactRendererComponent({
           } catch {
             // Se não for JSON válido, mostrar como texto
             return (
-              <div key={index} className="my-3 bg-slate-800/50 border border-white/10 rounded-xl p-3">
-                <pre className="text-white/80 text-xs whitespace-pre-wrap">{part.content}</pre>
+              <div key={index} className="my-3 bg-slate-800/50 border border-slate-200 rounded-xl p-3">
+                <pre className="text-slate-700 text-xs whitespace-pre-wrap">{part.content}</pre>
               </div>
             )
           }
@@ -2311,10 +2311,10 @@ function ArtifactRendererComponent({
         // Outros tipos de artefato (tabela, comparação, mindmap) - responsivo
         if (part.type === 'artifact') {
           return (
-            <div key={index} className="my-3 bg-slate-800/50 border border-white/10 rounded-xl overflow-hidden max-h-[300px] md:max-h-[400px] overflow-auto">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 border-b border-white/10 sticky top-0">
+            <div key={index} className="my-3 bg-slate-800/50 border border-slate-200 rounded-xl overflow-hidden max-h-[300px] md:max-h-[400px] overflow-auto">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 border-b border-slate-200 sticky top-0">
                 <div className="w-2 h-2 rounded-full bg-blue-500" />
-                <span className="text-white/80 text-xs font-medium">
+                <span className="text-slate-700 text-xs font-medium">
                   {part.title || part.subtype}
                 </span>
               </div>

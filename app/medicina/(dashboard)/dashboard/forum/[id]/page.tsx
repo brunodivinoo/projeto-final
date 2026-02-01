@@ -229,26 +229,26 @@ export default function TopicoPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/medicina/dashboard/forum"
-          className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-slate-600 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           Voltar
         </Link>
 
         <div className="flex items-center gap-2">
-          <button className="p-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+          <button className="p-2 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors">
             <Share2 className="w-5 h-5" />
           </button>
-          <button className="p-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+          <button className="p-2 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors">
             <Flag className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Tópico Principal */}
-      <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+      <div className="bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
         {/* Meta */}
-        <div className="px-6 py-3 border-b border-white/10 flex flex-wrap items-center gap-2">
+        <div className="px-6 py-3 border-b border-slate-200 flex flex-wrap items-center gap-2">
           {topico.resolvido && (
             <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">
               <CheckCircle2 className="w-3 h-3" />
@@ -259,7 +259,7 @@ export default function TopicoPage() {
             {categoriaLabel[topico.categoria] || topico.categoria}
           </span>
           {topico.disciplina && (
-            <span className="text-white/40 text-xs">{topico.disciplina.nome}</span>
+            <span className="text-slate-500 text-xs">{topico.disciplina.nome}</span>
           )}
         </div>
 
@@ -267,7 +267,7 @@ export default function TopicoPage() {
         <div className="p-6">
           <h1 className="text-2xl font-bold text-white mb-4">{topico.titulo}</h1>
 
-          <p className="text-white/80 whitespace-pre-wrap mb-6">{topico.conteudo}</p>
+          <p className="text-slate-700 whitespace-pre-wrap mb-6">{topico.conteudo}</p>
 
           {/* Linked content */}
           {topico.questao && (
@@ -278,7 +278,7 @@ export default function TopicoPage() {
               <FileText className="w-5 h-5 text-purple-400" />
               <div>
                 <div className="text-purple-400 text-sm font-medium">Questão Relacionada</div>
-                <div className="text-white/60 text-sm line-clamp-1">{topico.questao.enunciado}</div>
+                <div className="text-slate-600 text-sm line-clamp-1">{topico.questao.enunciado}</div>
               </div>
             </Link>
           )}
@@ -291,13 +291,13 @@ export default function TopicoPage() {
               <BookOpen className="w-5 h-5 text-emerald-400" />
               <div>
                 <div className="text-emerald-400 text-sm font-medium">Teoria Relacionada</div>
-                <div className="text-white/60 text-sm">{topico.teoria.titulo}</div>
+                <div className="text-slate-600 text-sm">{topico.teoria.titulo}</div>
               </div>
             </Link>
           )}
 
           {/* Author */}
-          <div className="flex items-center justify-between pt-4 border-t border-white/10">
+          <div className="flex items-center justify-between pt-4 border-t border-slate-200">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">
@@ -311,13 +311,13 @@ export default function TopicoPage() {
                     <Crown className="w-4 h-4 text-amber-400" />
                   )}
                 </div>
-                <div className="text-white/40 text-xs">
+                <div className="text-slate-500 text-xs">
                   {formatDate(topico.created_at)}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 text-white/40 text-sm">
+            <div className="flex items-center gap-4 text-slate-500 text-sm">
               <span className="flex items-center gap-1">
                 <Eye className="w-4 h-4" />
                 {topico.visualizacoes}
@@ -338,18 +338,18 @@ export default function TopicoPage() {
         </h2>
 
         {respostas.length === 0 ? (
-          <div className="bg-white/5 rounded-xl p-8 border border-white/10 text-center">
+          <div className="bg-slate-100 rounded-xl p-8 border border-slate-200 text-center">
             <MessageSquare className="w-12 h-12 text-white/20 mx-auto mb-3" />
-            <p className="text-white/60">Seja o primeiro a responder!</p>
+            <p className="text-slate-600">Seja o primeiro a responder!</p>
           </div>
         ) : (
           respostas.map((resposta) => (
             <div
               key={resposta.id}
-              className={`bg-white/5 rounded-xl border overflow-hidden ${
+              className={`bg-slate-100 rounded-xl border overflow-hidden ${
                 resposta.melhor_resposta
                   ? 'border-emerald-500/50 bg-emerald-500/5'
-                  : 'border-white/10'
+                  : 'border-slate-200'
               }`}
             >
               {resposta.melhor_resposta && (
@@ -360,7 +360,7 @@ export default function TopicoPage() {
               )}
 
               <div className="p-5">
-                <p className="text-white/80 whitespace-pre-wrap mb-4">{resposta.conteudo}</p>
+                <p className="text-slate-700 whitespace-pre-wrap mb-4">{resposta.conteudo}</p>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -376,7 +376,7 @@ export default function TopicoPage() {
                           <Crown className="w-3 h-3 text-amber-400" />
                         )}
                       </div>
-                      <div className="text-white/40 text-xs">{formatDate(resposta.created_at)}</div>
+                      <div className="text-slate-500 text-xs">{formatDate(resposta.created_at)}</div>
                     </div>
                   </div>
 
@@ -385,14 +385,14 @@ export default function TopicoPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => votar(resposta.id, 'positivo')}
-                        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-emerald-500/10 transition-colors text-white/60 hover:text-emerald-400"
+                        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-emerald-500/10 transition-colors text-slate-600 hover:text-emerald-400"
                       >
                         <ThumbsUp className="w-4 h-4" />
                         <span className="text-sm">{resposta.votos_positivos}</span>
                       </button>
                       <button
                         onClick={() => votar(resposta.id, 'negativo')}
-                        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-red-500/10 transition-colors text-white/60 hover:text-red-400"
+                        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-red-500/10 transition-colors text-slate-600 hover:text-red-400"
                       >
                         <ThumbsDown className="w-4 h-4" />
                         <span className="text-sm">{resposta.votos_negativos}</span>
@@ -418,13 +418,13 @@ export default function TopicoPage() {
 
       {/* Nova Resposta */}
       {user && (
-        <div className="bg-white/5 rounded-xl p-5 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-5 border border-slate-200">
           <h3 className="text-white font-medium mb-3">Sua Resposta</h3>
           <textarea
             value={novaResposta}
             onChange={(e) => setNovaResposta(e.target.value)}
             placeholder="Escreva sua resposta..."
-            className="w-full min-h-[120px] bg-white/5 border border-white/10 rounded-lg py-3 px-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none mb-4"
+            className="w-full min-h-[120px] bg-slate-100 border border-slate-200 rounded-lg py-3 px-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none mb-4"
           />
           <div className="flex justify-end">
             <button

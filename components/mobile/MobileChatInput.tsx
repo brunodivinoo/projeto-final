@@ -74,8 +74,8 @@ function QuickActionButton({
         "transition-all active:scale-95",
         disabled && "opacity-50 pointer-events-none",
         isActive
-          ? `bg-white/10 ${activeColor}`
-          : "text-white/50 active:bg-white/5"
+          ? `bg-slate-100 ${activeColor}`
+          : "text-slate-500 active:bg-slate-100"
       )}
     >
       <Icon className="w-6 h-6" />
@@ -134,13 +134,13 @@ function ActionsExpanded({
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className={cn(
               "fixed bottom-0 left-0 right-0 z-50",
-              "bg-slate-800 rounded-t-3xl border-t border-white/10",
+              "bg-slate-800 rounded-t-3xl border-t border-slate-200",
               "pb-[env(safe-area-inset-bottom,16px)]"
             )}
           >
             {/* Handle */}
             <div className="flex justify-center py-3">
-              <div className="w-10 h-1 bg-white/20 rounded-full" />
+              <div className="w-10 h-1 bg-slate-200 rounded-full" />
             </div>
 
             {/* Grid de ações */}
@@ -216,7 +216,7 @@ function ActionsExpanded({
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-white/10 my-4" />
+              <div className="h-px bg-slate-100 my-4" />
 
               {/* Status das opções ativas */}
               <div className="flex flex-wrap gap-2">
@@ -238,9 +238,9 @@ function ActionsExpanded({
             {/* Botão de fechar */}
             <button
               onClick={onClose}
-              className="absolute top-3 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/5 active:bg-white/10"
+              className="absolute top-3 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 active:bg-slate-100"
             >
-              <X className="w-5 h-5 text-white/60" />
+              <X className="w-5 h-5 text-slate-600" />
             </button>
           </motion.div>
         </>
@@ -301,7 +301,7 @@ export function MobileChatInput({
       {/* Container do Input */}
       <div
         className={cn(
-          "bg-slate-900/95 backdrop-blur-xl border-t border-white/10",
+          "bg-slate-900/95 backdrop-blur-xl border-t border-slate-200",
           "pb-[env(safe-area-inset-bottom,8px)]",
           "lg:hidden", // Apenas mobile
           className
@@ -333,19 +333,19 @@ export function MobileChatInput({
             disabled={disabled || isLoading}
             className={cn(
               "w-11 h-11 flex items-center justify-center rounded-xl flex-shrink-0",
-              "bg-white/5 active:bg-white/10 transition-colors",
+              "bg-slate-100 active:bg-slate-100 transition-colors",
               "disabled:opacity-50"
             )}
           >
-            <Plus className="w-6 h-6 text-white/60" />
+            <Plus className="w-6 h-6 text-slate-600" />
           </button>
 
           {/* Textarea container */}
           <div
             className={cn(
               "flex-1 flex items-end gap-2 px-4 py-2.5 rounded-2xl",
-              "bg-white/5 border transition-all",
-              isFocused ? "border-indigo-500/50" : "border-white/10"
+              "bg-slate-100 border transition-all",
+              isFocused ? "border-indigo-500/50" : "border-slate-200"
             )}
           >
             <textarea
@@ -361,7 +361,7 @@ export function MobileChatInput({
               rows={1}
               className={cn(
                 "flex-1 bg-transparent text-white text-base resize-none",
-                "placeholder:text-white/30 outline-none",
+                "placeholder:text-slate-400 outline-none",
                 "min-h-[24px] max-h-[120px]",
                 "disabled:opacity-50"
               )}
@@ -371,7 +371,7 @@ export function MobileChatInput({
             {value.length > maxLength * 0.8 && (
               <span className={cn(
                 "text-[10px] flex-shrink-0",
-                value.length > maxLength * 0.95 ? "text-red-400" : "text-white/30"
+                value.length > maxLength * 0.95 ? "text-red-400" : "text-slate-400"
               )}>
                 {value.length}/{maxLength}
               </span>
@@ -404,14 +404,14 @@ export function MobileChatInput({
                 "transition-colors",
                 isRecording
                   ? "bg-red-500 active:bg-red-600"
-                  : "bg-white/5 active:bg-white/10",
+                  : "bg-slate-100 active:bg-slate-100",
                 "disabled:opacity-50"
               )}
             >
               {isRecording ? (
                 <MicOff className="w-5 h-5 text-white" />
               ) : (
-                <Mic className="w-5 h-5 text-white/60" />
+                <Mic className="w-5 h-5 text-slate-600" />
               )}
             </button>
           )}

@@ -76,7 +76,7 @@ export function FlashcardArtifact({
 
   if (cards.length === 0) {
     return (
-      <div className="text-center py-8 text-white/40">
+      <div className="text-center py-8 text-slate-500">
         Nenhum flashcard disponível
       </div>
     )
@@ -106,15 +106,15 @@ export function FlashcardArtifact({
               className={`p-4 rounded-xl border transition ${
                 card.learned
                   ? 'bg-emerald-500/10 border-emerald-500/30'
-                  : 'bg-white/5 border-white/10'
+                  : 'bg-slate-100 border-slate-200'
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
-                  <p className="text-white/60 text-xs mb-1">Frente:</p>
+                  <p className="text-slate-600 text-xs mb-1">Frente:</p>
                   <p className="text-white font-medium">{card.front}</p>
-                  <p className="text-white/60 text-xs mt-2 mb-1">Verso:</p>
-                  <p className="text-white/80">{card.back}</p>
+                  <p className="text-slate-600 text-xs mt-2 mb-1">Verso:</p>
+                  <p className="text-slate-700">{card.back}</p>
                 </div>
                 <button
                   onClick={() => {
@@ -125,7 +125,7 @@ export function FlashcardArtifact({
                   className={`p-2 rounded-lg transition ${
                     card.learned
                       ? 'bg-emerald-500/20 text-emerald-400'
-                      : 'bg-white/5 text-white/40 hover:text-white/60'
+                      : 'bg-slate-100 text-slate-500 hover:text-slate-600'
                   }`}
                 >
                   <CheckCircle className="w-5 h-5" />
@@ -144,10 +144,10 @@ export function FlashcardArtifact({
       {/* Header com progresso */}
       <div className="w-full flex items-center justify-between mb-4 px-2">
         <div className="flex items-center gap-3">
-          <span className="text-white/60 text-sm">
+          <span className="text-slate-600 text-sm">
             {currentIndex + 1} / {cards.length}
           </span>
-          <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-emerald-500 transition-all"
               style={{ width: `${progress}%` }}
@@ -160,7 +160,7 @@ export function FlashcardArtifact({
 
         <button
           onClick={() => setShowAll(true)}
-          className="text-sm text-white/40 hover:text-white/60 transition"
+          className="text-sm text-slate-500 hover:text-slate-600 transition"
         >
           Ver todos
         </button>
@@ -189,7 +189,7 @@ export function FlashcardArtifact({
                   : 'bg-gradient-to-br from-purple-600 to-indigo-700'
               } ${currentCard.learned ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-900' : ''}`}
             >
-              <p className="text-white/60 text-xs mb-2 uppercase tracking-wider">
+              <p className="text-slate-600 text-xs mb-2 uppercase tracking-wider">
                 {isFlipped ? 'Verso' : 'Frente'}
               </p>
               <p className="text-white text-lg font-medium leading-relaxed">
@@ -200,13 +200,13 @@ export function FlashcardArtifact({
         </AnimatePresence>
       </div>
 
-      <p className="text-white/40 text-xs mt-3">Clique no card para virar</p>
+      <p className="text-slate-500 text-xs mt-3">Clique no card para virar</p>
 
       {/* Controles principais */}
       <div className="flex items-center gap-3 mt-6">
         <button
           onClick={handlePrev}
-          className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition"
+          className="p-3 rounded-xl bg-slate-100 hover:bg-slate-100 text-slate-600 hover:text-white transition"
           title="Anterior"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -217,7 +217,7 @@ export function FlashcardArtifact({
           className={`px-5 py-2.5 rounded-xl font-medium transition flex items-center gap-2 ${
             currentCard.learned
               ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
-              : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-100 hover:text-white'
           }`}
         >
           <CheckCircle className={`w-4 h-4 ${currentCard.learned ? 'fill-emerald-400' : ''}`} />
@@ -226,7 +226,7 @@ export function FlashcardArtifact({
 
         <button
           onClick={handleNext}
-          className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition"
+          className="p-3 rounded-xl bg-slate-100 hover:bg-slate-100 text-slate-600 hover:text-white transition"
           title="Próximo"
         >
           <ChevronRight className="w-5 h-5" />
@@ -237,7 +237,7 @@ export function FlashcardArtifact({
       <div className="flex items-center gap-4 mt-4">
         <button
           onClick={handleShuffle}
-          className="text-sm text-white/40 hover:text-white/70 transition flex items-center gap-1.5"
+          className="text-sm text-slate-500 hover:text-slate-600 transition flex items-center gap-1.5"
         >
           <Shuffle className="w-4 h-4" />
           Embaralhar
@@ -247,7 +247,7 @@ export function FlashcardArtifact({
 
         <button
           onClick={handleReset}
-          className="text-sm text-white/40 hover:text-white/70 transition flex items-center gap-1.5"
+          className="text-sm text-slate-500 hover:text-slate-600 transition flex items-center gap-1.5"
         >
           <RotateCcw className="w-4 h-4" />
           Recomeçar
@@ -268,7 +268,7 @@ export function FlashcardArtifact({
                 ? 'bg-purple-500 scale-125'
                 : card.learned
                 ? 'bg-emerald-500/50 hover:bg-emerald-500/70'
-                : 'bg-white/20 hover:bg-white/40'
+                : 'bg-slate-200 hover:bg-white/40'
             }`}
             title={`Card ${i + 1}${card.learned ? ' (aprendido)' : ''}`}
           />

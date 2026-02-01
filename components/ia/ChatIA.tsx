@@ -198,7 +198,7 @@ export function ChatIA() {
                       {msg.role === 'user' ? (
                         <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       ) : (
-                        <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-img:rounded-lg prose-img:max-w-full prose-img:my-2">
+                        <div className="text-sm prose prose-sm dark:prose-slate max-w-none prose-p:my-1 prose-headings:my-2 prose-img:rounded-lg prose-img:max-w-full prose-img:my-2">
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{

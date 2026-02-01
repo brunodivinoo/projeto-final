@@ -6,17 +6,13 @@
 // ============================================================
 
 import type { Metadata, Viewport } from "next"
-import { Lexend } from "next/font/google"
 import "./globals.css"
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration"
 
 // ============================================================
-// FONTE
+// FONTE - Usando fontes do sistema (sem dependências externas)
 // ============================================================
-const lexend = Lexend({
-  subsets: ["latin"],
-  variable: "--font-lexend",
-})
+// A fonte é definida diretamente no CSS para usar system fonts
 
 // ============================================================
 // VIEWPORT - Configuracoes de visualizacao
@@ -147,7 +143,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
       </head>
 
-      <body className={`${lexend.className} antialiased bg-[#f6f7f8] text-slate-900`}>
+      <body className="font-sans antialiased bg-[#f8fafc] text-slate-900">
         {/* === CONTEUDO DA PAGINA === */}
         {children}
 

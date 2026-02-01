@@ -151,7 +151,7 @@ export default function QuestaoPage() {
     if (!showResult) {
       return selectedOption === letra
         ? 'bg-emerald-500/20 border-emerald-500 text-white'
-        : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10'
+        : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-100'
     }
 
     if (letra === questao?.gabarito) {
@@ -162,7 +162,7 @@ export default function QuestaoPage() {
       return 'bg-red-500/20 border-red-500 text-red-400'
     }
 
-    return 'bg-white/5 border-white/10 text-white/40'
+    return 'bg-slate-100 border-slate-200 text-slate-500'
   }
 
   if (loading) {
@@ -194,7 +194,7 @@ export default function QuestaoPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/medicina/dashboard/questoes"
-          className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-slate-600 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           Voltar
@@ -202,24 +202,24 @@ export default function QuestaoPage() {
 
         <div className="flex items-center gap-4">
           {!showResult && (
-            <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg">
+            <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg">
               <Clock className="w-4 h-4 text-emerald-400" />
               <span className="text-white font-mono">{formatTempo(tempoDecorrido)}</span>
             </div>
           )}
-          <button className="p-2 text-white/40 hover:text-white transition-colors">
+          <button className="p-2 text-slate-500 hover:text-white transition-colors">
             <Bookmark className="w-5 h-5" />
           </button>
-          <button className="p-2 text-white/40 hover:text-white transition-colors">
+          <button className="p-2 text-slate-500 hover:text-white transition-colors">
             <Flag className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Questão Card */}
-      <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+      <div className="bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
         {/* Meta */}
-        <div className="px-6 py-4 border-b border-white/10 flex flex-wrap items-center gap-3">
+        <div className="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center gap-3">
           {questao.disciplina && (
             <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-sm rounded-full">
               {questao.disciplina.nome}
@@ -231,12 +231,12 @@ export default function QuestaoPage() {
             </span>
           )}
           {questao.banca && (
-            <span className="px-3 py-1 bg-white/10 text-white/60 text-sm rounded-full">
+            <span className="px-3 py-1 bg-slate-100 text-slate-600 text-sm rounded-full">
               {questao.banca} {questao.ano && `• ${questao.ano}`}
             </span>
           )}
           {questao.instituicao && (
-            <span className="text-white/40 text-sm">
+            <span className="text-slate-500 text-sm">
               {questao.instituicao}
             </span>
           )}
@@ -258,7 +258,7 @@ export default function QuestaoPage() {
               disabled={showResult || !!respostaAnterior}
               className={`w-full flex items-start gap-4 p-4 rounded-xl border-2 transition-all text-left ${getLetraClass(alt.letra)}`}
             >
-              <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center font-bold flex-shrink-0">
+              <span className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold flex-shrink-0">
                 {alt.letra}
               </span>
               <span className="flex-1 pt-1">{alt.texto}</span>
@@ -325,42 +325,42 @@ export default function QuestaoPage() {
       {/* Estatísticas da Questão */}
       {showResult && (
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white/5 rounded-xl p-4 text-center border border-white/10">
+          <div className="bg-slate-100 rounded-xl p-4 text-center border border-slate-200">
             <div className="text-2xl font-bold text-white">{questao.total_respostas}</div>
-            <div className="text-white/60 text-sm">Respostas</div>
+            <div className="text-slate-600 text-sm">Respostas</div>
           </div>
-          <div className="bg-white/5 rounded-xl p-4 text-center border border-white/10">
+          <div className="bg-slate-100 rounded-xl p-4 text-center border border-slate-200">
             <div className="text-2xl font-bold text-emerald-400">{taxaAcertoQuestao}%</div>
-            <div className="text-white/60 text-sm">Taxa de Acerto</div>
+            <div className="text-slate-600 text-sm">Taxa de Acerto</div>
           </div>
-          <div className="bg-white/5 rounded-xl p-4 text-center border border-white/10">
+          <div className="bg-slate-100 rounded-xl p-4 text-center border border-slate-200">
             <div className="text-2xl font-bold text-white">{questao.dificuldade}/5</div>
-            <div className="text-white/60 text-sm">Dificuldade</div>
+            <div className="text-slate-600 text-sm">Dificuldade</div>
           </div>
         </div>
       )}
 
       {/* Explicação */}
       {showResult && (questao.explicacao || questao.comentario_ia) && (
-        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
           <button
             onClick={() => setShowExplicacao(!showExplicacao)}
-            className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+            className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-100 transition-colors"
           >
             <div className="flex items-center gap-3">
               <Lightbulb className="w-5 h-5 text-amber-400" />
               <span className="font-semibold text-white">Ver Explicação</span>
             </div>
-            <ChevronRight className={`w-5 h-5 text-white/40 transition-transform ${showExplicacao ? 'rotate-90' : ''}`} />
+            <ChevronRight className={`w-5 h-5 text-slate-500 transition-transform ${showExplicacao ? 'rotate-90' : ''}`} />
           </button>
 
           {showExplicacao && (
-            <div className="px-6 pb-6 border-t border-white/10 pt-4">
-              <div className="prose prose-invert max-w-none">
+            <div className="px-6 pb-6 border-t border-slate-200 pt-4">
+              <div className="prose prose-slate max-w-none">
                 {questao.explicacao && (
                   <div className="mb-4">
                     <h4 className="text-white font-semibold mb-2">Explicação</h4>
-                    <p className="text-white/80 whitespace-pre-wrap">{questao.explicacao}</p>
+                    <p className="text-slate-700 whitespace-pre-wrap">{questao.explicacao}</p>
                   </div>
                 )}
                 {questao.comentario_ia && (
@@ -369,7 +369,7 @@ export default function QuestaoPage() {
                       <span className="w-5 h-5 rounded bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-xs">IA</span>
                       Comentário da IA
                     </h4>
-                    <p className="text-white/80 whitespace-pre-wrap">{questao.comentario_ia}</p>
+                    <p className="text-slate-700 whitespace-pre-wrap">{questao.comentario_ia}</p>
                   </div>
                 )}
               </div>
@@ -384,7 +384,7 @@ export default function QuestaoPage() {
           {questao.teoria && (
             <Link
               href={`/medicina/dashboard/biblioteca/${questao.teoria.id}`}
-              className="flex items-center gap-2 px-4 py-2 bg-white/5 text-white/80 rounded-lg hover:bg-white/10 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
             >
               <BookOpen className="w-5 h-5" />
               Estudar Teoria
@@ -392,14 +392,14 @@ export default function QuestaoPage() {
           )}
           <Link
             href="/medicina/dashboard/anotacoes/nova"
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 text-white/80 rounded-lg hover:bg-white/10 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <PenTool className="w-5 h-5" />
             Fazer Anotação
           </Link>
           <Link
             href={`/medicina/dashboard/forum?questaoId=${questao.id}`}
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 text-white/80 rounded-lg hover:bg-white/10 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <MessageSquare className="w-5 h-5" />
             Discutir no Fórum

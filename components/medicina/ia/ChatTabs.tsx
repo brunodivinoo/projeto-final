@@ -24,7 +24,7 @@ export function ChatTabs({ onModeChange }: ChatTabsProps) {
   }
 
   return (
-    <div className="flex border-b border-white/10 bg-slate-900/50">
+    <div className="flex border-b border-slate-200 bg-slate-900/50">
       {(Object.keys(MODE_CONFIG) as ChatMode[]).map((mode) => {
         const config = MODE_CONFIG[mode]
         const Icon = MODE_ICONS[mode]
@@ -40,7 +40,7 @@ export function ChatTabs({ onModeChange }: ChatTabsProps) {
               transition-all relative group
               ${isActive
                 ? `${config.bgColor} ${config.color} border-b-2 border-current`
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+                : 'text-slate-600 hover:text-white hover:bg-slate-100'
               }
             `}
           >
@@ -51,7 +51,7 @@ export function ChatTabs({ onModeChange }: ChatTabsProps) {
             {conversationCount > 0 && (
               <span className={`
                 text-xs px-1.5 py-0.5 rounded-full
-                ${isActive ? `${config.bgColor} ${config.color}` : 'bg-white/10 text-white/50'}
+                ${isActive ? `${config.bgColor} ${config.color}` : 'bg-slate-100 text-slate-500'}
               `}>
                 {conversationCount}
               </span>
@@ -123,7 +123,7 @@ export function ModeChips({ onModeChange, compact = false }: ModeChipsProps) {
               transition-all text-sm font-medium
               ${isActive
                 ? `${config.bgColor} ${config.color} ring-2 ring-current ring-opacity-50`
-                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-100 hover:text-white'
               }
             `}
           >

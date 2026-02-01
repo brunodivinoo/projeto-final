@@ -148,7 +148,7 @@ export function ChatModeSelector({
             <span className={cn("text-sm font-medium", modoConfig.color)}>
               {modoConfig.label}
             </span>
-            <span className="text-[10px] text-white/40 hidden sm:block">
+            <span className="text-[10px] text-slate-500 hidden sm:block">
               {modoConfig.description}
             </span>
           </div>
@@ -171,20 +171,20 @@ export function ChatModeSelector({
                 "w-80 max-w-[calc(100vw-2rem)]",
                 "left-0 md:left-auto md:right-0",
                 "bg-slate-800/95 backdrop-blur-xl",
-                "border border-white/10 rounded-2xl",
+                "border border-slate-200 rounded-2xl",
                 "shadow-2xl shadow-black/50",
                 "overflow-hidden"
               )}
             >
               {/* Header */}
-              <div className="p-3 border-b border-white/10 bg-white/5">
+              <div className="p-3 border-b border-slate-200 bg-slate-100">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-white">Selecionar Modo</span>
                   <button 
                     onClick={() => setShowModeDropdown(false)}
-                    className="p-1 rounded-lg hover:bg-white/10 transition-colors md:hidden"
+                    className="p-1 rounded-lg hover:bg-slate-100 transition-colors md:hidden"
                   >
-                    <X className="w-4 h-4 text-white/50" />
+                    <X className="w-4 h-4 text-slate-500" />
                   </button>
                 </div>
               </div>
@@ -205,8 +205,8 @@ export function ChatModeSelector({
                       className={cn(
                         "w-full flex items-start gap-3 p-3 rounded-xl transition-all duration-200 mb-1",
                         "text-left",
-                        isAtivo && "bg-white/10 ring-1 ring-white/20",
-                        podeusar && !isAtivo && "hover:bg-white/5",
+                        isAtivo && "bg-slate-100 ring-1 ring-white/20",
+                        podeusar && !isAtivo && "hover:bg-slate-100",
                         !podeusar && "opacity-50 cursor-not-allowed"
                       )}
                     >
@@ -223,18 +223,18 @@ export function ChatModeSelector({
                           {modo.premium && (
                             <span className={cn(
                               "text-[9px] px-1.5 py-0.5 rounded-full font-medium",
-                              podeusar ? "bg-amber-500/20 text-amber-400" : "bg-white/10 text-white/40"
+                              podeusar ? "bg-amber-500/20 text-amber-400" : "bg-slate-100 text-slate-500"
                             )}>
                               {podeusar ? '✨ PRO' : '🔒 PRO'}
                             </span>
                           )}
                           {isAtivo && <CheckCircle className="w-4 h-4 text-emerald-400" />}
                         </div>
-                        <p className="text-xs text-white/50 mt-0.5">{modo.descriptionLonga}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{modo.descriptionLonga}</p>
 
                         {/* Estatísticas */}
                         {showStats && stats && stats.total_sessoes > 0 && (
-                          <div className="flex items-center gap-3 mt-2 text-[10px] text-white/40">
+                          <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-500">
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               {stats.total_sessoes} sessões
@@ -249,17 +249,17 @@ export function ChatModeSelector({
                         )}
                       </div>
 
-                      {!podeusar && <Lock className="w-4 h-4 text-white/30 flex-shrink-0" />}
+                      {!podeusar && <Lock className="w-4 h-4 text-slate-400 flex-shrink-0" />}
                     </button>
                   )
                 })}
               </div>
 
               {/* Footer */}
-              <div className="p-3 border-t border-white/10 bg-white/5">
+              <div className="p-3 border-t border-slate-200 bg-slate-100">
                 <div className="flex items-start gap-2">
-                  <Info className="w-3 h-3 text-white/30 flex-shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-white/40">
+                  <Info className="w-3 h-3 text-slate-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-slate-500">
                     O histórico da conversa é mantido ao trocar de modo.
                   </p>
                 </div>
@@ -302,7 +302,7 @@ export function ChatModeSelector({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 mt-2 w-72 bg-slate-800/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+                className="absolute top-full left-0 mt-2 w-72 bg-slate-800/95 backdrop-blur-xl border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden"
               >
                 <div className="p-2">
                   {MODE_LIST.map(modo => {
@@ -317,7 +317,7 @@ export function ChatModeSelector({
                         disabled={!disponivel || disabled}
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all",
-                          ativo ? cn(modo.bgColor, modo.color) : disponivel ? "text-white/80 hover:bg-white/5" : "text-white/30 cursor-not-allowed"
+                          ativo ? cn(modo.bgColor, modo.color) : disponivel ? "text-slate-700 hover:bg-slate-100" : "text-slate-400 cursor-not-allowed"
                         )}
                       >
                         <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", modo.bgColor)}>
@@ -327,7 +327,7 @@ export function ChatModeSelector({
                           <div className="flex items-center gap-2">
                             <p className="font-medium">{modo.label}</p>
                             {modo.premium && !disponivel && (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white/40">PRO</span>
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">PRO</span>
                             )}
                           </div>
                           <p className="text-xs opacity-60">{modo.description}</p>
@@ -340,8 +340,8 @@ export function ChatModeSelector({
                 </div>
 
                 {/* Dica */}
-                <div className="p-3 border-t border-white/10 bg-white/5">
-                  <p className="text-[10px] text-white/40 text-center">
+                <div className="p-3 border-t border-slate-200 bg-slate-100">
+                  <p className="text-[10px] text-slate-500 text-center">
                     💡 Trocar modo altera como a IA responde
                   </p>
                 </div>
@@ -358,7 +358,7 @@ export function ChatModeSelector({
   // ============================================
   if (variant === 'pills') {
     return (
-      <div className={cn("flex items-center gap-1 p-1 bg-white/5 rounded-xl overflow-x-auto", className)}>
+      <div className={cn("flex items-center gap-1 p-1 bg-slate-100 rounded-xl overflow-x-auto", className)}>
         {MODE_LIST.map(modo => {
           const ModoIcon = ICONS[modo.icon]
           const disponivel = podeUsarModo(modo.id)
@@ -371,7 +371,7 @@ export function ChatModeSelector({
               disabled={!disponivel || disabled}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all whitespace-nowrap",
-                ativo ? cn(modo.bgColor, modo.color) : disponivel ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/30 cursor-not-allowed"
+                ativo ? cn(modo.bgColor, modo.color) : disponivel ? "text-slate-600 hover:text-white hover:bg-slate-100" : "text-slate-400 cursor-not-allowed"
               )}
               title={modo.descriptionLonga}
             >
@@ -389,7 +389,7 @@ export function ChatModeSelector({
   // VARIANTE TABS (Design original)
   // ============================================
   return (
-    <div className={cn("flex items-center border-b border-white/10 overflow-x-auto", className)}>
+    <div className={cn("flex items-center border-b border-slate-200 overflow-x-auto", className)}>
       {MODE_LIST.map(modo => {
         const ModoIcon = ICONS[modo.icon]
         const disponivel = podeUsarModo(modo.id)
@@ -402,7 +402,7 @@ export function ChatModeSelector({
             disabled={!disponivel || disabled}
             className={cn(
               "relative flex items-center gap-2 px-4 py-3 transition-colors whitespace-nowrap",
-              ativo ? modo.color : disponivel ? "text-white/60 hover:text-white" : "text-white/30 cursor-not-allowed"
+              ativo ? modo.color : disponivel ? "text-slate-600 hover:text-white" : "text-slate-400 cursor-not-allowed"
             )}
           >
             <ModoIcon className="w-4 h-4" />
@@ -452,11 +452,11 @@ export function ChatModeIntro({ modo, onStart }: ChatModeIntroProps) {
       </div>
 
       <h3 className="text-xl font-bold text-white mb-2">{modoConfig.label}</h3>
-      <p className="text-white/60 mb-4">{modoConfig.descriptionLonga}</p>
+      <p className="text-slate-600 mb-4">{modoConfig.descriptionLonga}</p>
 
       <ul className="text-left space-y-2 mb-6">
         {modoConfig.features.map((feature, i) => (
-          <li key={i} className="flex items-start gap-2 text-white/80 text-sm">
+          <li key={i} className="flex items-start gap-2 text-slate-700 text-sm">
             <Sparkles className={cn("w-4 h-4 mt-0.5 flex-shrink-0", modoConfig.color)} />
             {feature}
           </li>
@@ -510,7 +510,7 @@ export function ModeChangeMarker({ modo, timestamp }: ModeChangeMarkerProps) {
         <span className={cn("text-sm font-medium", config.color)}>
           Modo: {config.label}
         </span>
-        {time && <span className="text-xs text-white/40">{time}</span>}
+        {time && <span className="text-xs text-slate-500">{time}</span>}
       </div>
     </div>
   )

@@ -115,7 +115,7 @@ export const StreamingMessage = memo(function StreamingMessage({
             <p className="text-sm whitespace-pre-wrap">{content}</p>
           </div>
           {timestamp && (
-            <p className="text-xs text-white/30 mt-1 text-right">
+            <p className="text-xs text-slate-400 mt-1 text-right">
               {timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
             </p>
           )}
@@ -139,9 +139,9 @@ export const StreamingMessage = memo(function StreamingMessage({
         {thinking && <ThinkingBlock content={thinking} />}
         
         {/* Conteúdo da mensagem */}
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl rounded-tl-md px-4 py-3 shadow-lg">
+        <div className="bg-slate-100 backdrop-blur-sm border border-slate-200 rounded-2xl rounded-tl-md px-4 py-3 shadow-lg">
           {content ? (
-            <div className="prose prose-invert prose-sm max-w-none">
+            <div className="prose prose-slate prose-sm max-w-none">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
@@ -150,7 +150,7 @@ export const StreamingMessage = memo(function StreamingMessage({
                     const isInline = !className
                     if (isInline) {
                       return (
-                        <code className="bg-white/10 px-1.5 py-0.5 rounded text-emerald-300 text-sm" {...props}>
+                        <code className="bg-slate-100 px-1.5 py-0.5 rounded text-emerald-300 text-sm" {...props}>
                           {children}
                         </code>
                       )
@@ -185,7 +185,7 @@ export const StreamingMessage = memo(function StreamingMessage({
               {isStreaming && <TypingCursor />}
             </div>
           ) : isStreaming ? (
-            <div className="flex items-center gap-2 text-white/40">
+            <div className="flex items-center gap-2 text-slate-500">
               <motion.div
                 className="flex gap-1"
                 animate={{ opacity: [0.4, 1, 0.4] }}
@@ -202,7 +202,7 @@ export const StreamingMessage = memo(function StreamingMessage({
 
         {/* Footer da mensagem */}
         <div className="flex items-center justify-between mt-1.5 px-1">
-          <div className="flex items-center gap-2 text-xs text-white/30">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
             {timestamp && (
               <span>{timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
             )}
@@ -217,7 +217,7 @@ export const StreamingMessage = memo(function StreamingMessage({
           {!isStreaming && content && onCopy && (
             <button
               onClick={onCopy}
-              className="flex items-center gap-1 px-2 py-1 text-xs text-white/40 hover:text-white/70 hover:bg-white/5 rounded transition-all"
+              className="flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-600 hover:bg-slate-100 rounded transition-all"
             >
               {copiado ? (
                 <>

@@ -380,7 +380,7 @@ export function QuestaoGenerator() {
       />
 
       {/* Configurações */}
-      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+      <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-cyan-400" />
           Configurar Geração de Questões
@@ -390,7 +390,7 @@ export function QuestaoGenerator() {
           {/* Disciplinas - Dropdown Multi-select */}
           <div ref={disciplinasDropdownRef} className="relative">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-white/70 text-sm flex items-center gap-2">
+              <label className="text-slate-600 text-sm flex items-center gap-2">
                 <BookOpen className="w-4 h-4" />
                 Disciplinas ({disciplinasSelecionadas.length} selecionadas)
               </label>
@@ -402,13 +402,13 @@ export function QuestaoGenerator() {
                 >
                   Selecionar todas
                 </button>
-                <span className="text-white/30">|</span>
+                <span className="text-slate-400">|</span>
                 <button
                   onClick={() => {
                     setDisciplinasSelecionadas([])
                     setAssuntosSelecionados([])
                   }}
-                  className="text-xs text-white/40 hover:text-white/60"
+                  className="text-xs text-slate-500 hover:text-slate-600"
                   disabled={gerando}
                 >
                   Limpar
@@ -421,15 +421,15 @@ export function QuestaoGenerator() {
               type="button"
               onClick={() => !gerando && setDisciplinasDropdownAberto(!disciplinasDropdownAberto)}
               disabled={gerando}
-              className="w-full flex items-center justify-between p-3 bg-slate-800/50 border border-white/10 rounded-lg text-left hover:border-cyan-500/50 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-between p-3 bg-slate-800/50 border border-slate-200 rounded-lg text-left hover:border-cyan-500/50 transition-colors disabled:opacity-50"
             >
-              <span className="text-white/80">
+              <span className="text-slate-700">
                 {disciplinasSelecionadas.length === 0
                   ? 'Clique para selecionar disciplinas...'
                   : `${disciplinasSelecionadas.length} disciplina(s) selecionada(s)`
                 }
               </span>
-              <ChevronDown className={`w-5 h-5 text-white/40 transition-transform ${disciplinasDropdownAberto ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform ${disciplinasDropdownAberto ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Tags das disciplinas selecionadas */}
@@ -461,9 +461,9 @@ export function QuestaoGenerator() {
 
             {/* Lista Dropdown */}
             {disciplinasDropdownAberto && (
-              <div className="absolute z-50 w-full mt-1 bg-slate-900 border border-white/20 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+              <div className="absolute z-50 w-full mt-1 bg-slate-900 border border-slate-300 rounded-lg shadow-xl max-h-64 overflow-y-auto">
                 {disciplinas.length === 0 ? (
-                  <div className="p-4 text-white/40 text-sm text-center">
+                  <div className="p-4 text-slate-500 text-sm text-center">
                     Nenhuma disciplina cadastrada
                   </div>
                 ) : (
@@ -480,7 +480,7 @@ export function QuestaoGenerator() {
                           setDisciplinasSelecionadas(prev => [...prev, d.id])
                         }
                       }}
-                      className={`w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/5 last:border-b-0 ${
+                      className={`w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-100 transition-colors border-b border-slate-200 last:border-b-0 ${
                         disciplinasSelecionadas.includes(d.id) ? 'bg-cyan-500/10' : ''
                       }`}
                     >
@@ -499,7 +499,7 @@ export function QuestaoGenerator() {
           <div className="space-y-4">
             {/* Quantidade por Assunto */}
             <div>
-              <label className="block text-white/70 text-sm mb-2">
+              <label className="block text-slate-600 text-sm mb-2">
                 Questões por Assunto/Período
               </label>
               <input
@@ -508,16 +508,16 @@ export function QuestaoGenerator() {
                 max={20}
                 value={quantidadePorAssunto}
                 onChange={(e) => setQuantidadePorAssunto(parseInt(e.target.value) || 1)}
-                className="w-full bg-slate-800/50 border border-white/10 rounded-lg p-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
+                className="w-full bg-slate-800/50 border border-slate-200 rounded-lg p-3 text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
                 disabled={gerando}
               />
             </div>
 
             {/* Total estimado */}
             <div className="p-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg border border-cyan-500/20">
-              <p className="text-white/60 text-sm">Total estimado de questões:</p>
+              <p className="text-slate-600 text-sm">Total estimado de questões:</p>
               <p className="text-3xl font-bold text-cyan-400">{totalEstimado}</p>
-              <p className="text-white/40 text-xs mt-1">
+              <p className="text-slate-500 text-xs mt-1">
                 {assuntosSelecionados.length} assuntos × {periodosSelecionados.length} períodos × {tiposQuestaoSelecionados.length} tipos × {quantidadePorAssunto} questões
               </p>
             </div>
@@ -526,7 +526,7 @@ export function QuestaoGenerator() {
           {/* Tipos de Questão - Multi-select - Full width */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-white/70 text-sm flex items-center gap-2">
+              <label className="text-slate-600 text-sm flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Tipos de Questão ({tiposQuestaoSelecionados.length} selecionados)
               </label>
@@ -538,10 +538,10 @@ export function QuestaoGenerator() {
                 >
                   Selecionar todos
                 </button>
-                <span className="text-white/30">|</span>
+                <span className="text-slate-400">|</span>
                 <button
                   onClick={() => setTiposQuestaoSelecionados(['multipla_escolha'])}
-                  className="text-xs text-white/40 hover:text-white/60"
+                  className="text-xs text-slate-500 hover:text-slate-600"
                   disabled={gerando}
                 >
                   Apenas básico
@@ -555,7 +555,7 @@ export function QuestaoGenerator() {
                   className={`flex items-start gap-2 cursor-pointer p-3 rounded-lg border transition-all ${
                     tiposQuestaoSelecionados.includes(tipo.value)
                       ? 'bg-purple-500/20 border-purple-500/50'
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      : 'bg-slate-100 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
                   <input
@@ -569,11 +569,11 @@ export function QuestaoGenerator() {
                       }
                     }}
                     disabled={gerando}
-                    className="rounded text-purple-500 bg-white/10 border-white/20 focus:ring-purple-500 mt-0.5"
+                    className="rounded text-purple-500 bg-slate-100 border-slate-300 focus:ring-purple-500 mt-0.5"
                   />
                   <div>
-                    <span className="text-white/90 text-sm font-medium">{tipo.label}</span>
-                    <p className="text-white/50 text-xs mt-0.5">{tipo.descricao}</p>
+                    <span className="text-slate-800 text-sm font-medium">{tipo.label}</span>
+                    <p className="text-slate-500 text-xs mt-0.5">{tipo.descricao}</p>
                   </div>
                 </label>
               ))}
@@ -584,7 +584,7 @@ export function QuestaoGenerator() {
           {disciplinasSelecionadas.length > 0 && (
             <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-white/70 text-sm">
+                <label className="text-slate-600 text-sm">
                   Assuntos ({assuntosSelecionados.length} de {assuntosFiltrados.length} selecionados)
                 </label>
                 <div className="flex gap-2">
@@ -595,19 +595,19 @@ export function QuestaoGenerator() {
                   >
                     Selecionar todos
                   </button>
-                  <span className="text-white/30">|</span>
+                  <span className="text-slate-400">|</span>
                   <button
                     onClick={limparSelecaoAssuntos}
-                    className="text-xs text-white/40 hover:text-white/60"
+                    className="text-xs text-slate-500 hover:text-slate-600"
                     disabled={gerando}
                   >
                     Limpar
                   </button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-3 bg-slate-800/50 rounded-lg border border-white/10">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-3 bg-slate-800/50 rounded-lg border border-slate-200">
                 {assuntosFiltrados.length === 0 ? (
-                  <p className="text-white/40 text-sm col-span-full">Nenhum assunto cadastrado para esta disciplina</p>
+                  <p className="text-slate-500 text-sm col-span-full">Nenhum assunto cadastrado para esta disciplina</p>
                 ) : (
                   assuntosFiltrados.map(a => (
                     <label
@@ -615,7 +615,7 @@ export function QuestaoGenerator() {
                       className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg transition-colors ${
                         assuntosSelecionados.includes(a.id)
                           ? 'bg-cyan-500/20 border border-cyan-500/30'
-                          : 'hover:bg-white/10 border border-transparent'
+                          : 'hover:bg-slate-100 border border-transparent'
                       }`}
                     >
                       <input
@@ -629,7 +629,7 @@ export function QuestaoGenerator() {
                           }
                         }}
                         disabled={gerando}
-                        className="rounded text-cyan-500 bg-white/10 border-white/30 focus:ring-cyan-500 flex-shrink-0"
+                        className="rounded text-cyan-500 bg-slate-100 border-white/30 focus:ring-cyan-500 flex-shrink-0"
                       />
                       <span className="text-white text-sm">{a.nome}</span>
                     </label>
@@ -642,7 +642,7 @@ export function QuestaoGenerator() {
           {/* Períodos */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-white/70 text-sm flex items-center gap-2">
+              <label className="text-slate-600 text-sm flex items-center gap-2">
                 <GraduationCap className="w-4 h-4" />
                 Períodos/Níveis ({periodosSelecionados.length} selecionados)
               </label>
@@ -654,10 +654,10 @@ export function QuestaoGenerator() {
                 >
                   Selecionar todos
                 </button>
-                <span className="text-white/30">|</span>
+                <span className="text-slate-400">|</span>
                 <button
                   onClick={limparSelecaoPeriodos}
-                  className="text-xs text-white/40 hover:text-white/60"
+                  className="text-xs text-slate-500 hover:text-slate-600"
                   disabled={gerando}
                 >
                   Limpar
@@ -671,7 +671,7 @@ export function QuestaoGenerator() {
                   className={`flex items-center gap-2 cursor-pointer p-3 rounded-lg border transition-all ${
                     periodosSelecionados.includes(p.value)
                       ? 'bg-cyan-500/20 border-cyan-500/50'
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      : 'bg-slate-100 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
                   <input
@@ -685,9 +685,9 @@ export function QuestaoGenerator() {
                       }
                     }}
                     disabled={gerando}
-                    className="rounded text-cyan-500 bg-white/10 border-white/20 focus:ring-cyan-500"
+                    className="rounded text-cyan-500 bg-slate-100 border-slate-300 focus:ring-cyan-500"
                   />
-                  <span className="text-white/80 text-xs">{p.label}</span>
+                  <span className="text-slate-700 text-xs">{p.label}</span>
                 </label>
               ))}
             </div>
@@ -696,7 +696,7 @@ export function QuestaoGenerator() {
         </div>
 
         {/* Botões de Ação */}
-        <div className="flex gap-4 mt-6 pt-6 border-t border-white/10">
+        <div className="flex gap-4 mt-6 pt-6 border-t border-slate-200">
           <button
             onClick={iniciarGeracao}
             disabled={gerando || disciplinasSelecionadas.length === 0 || assuntosSelecionados.length === 0 || periodosSelecionados.length === 0 || tiposQuestaoSelecionados.length === 0}
@@ -724,14 +724,14 @@ export function QuestaoGenerator() {
 
       {/* Barra de Progresso */}
       {(gerando || progresso.atual > 0) && (
-        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-4 border border-slate-200">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-white/70 text-sm">Progresso</span>
+            <span className="text-slate-600 text-sm">Progresso</span>
             <span className="text-cyan-400 font-medium">
               {progresso.atual} / {progresso.total}
             </span>
           </div>
-          <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+          <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500"
               style={{ width: `${progresso.total > 0 ? (progresso.atual / progresso.total) * 100 : 0}%` }}
@@ -741,7 +741,7 @@ export function QuestaoGenerator() {
       )}
 
       {/* Logs em Tempo Real */}
-      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+      <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
         <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
           <Layers className="w-5 h-5 text-green-400" />
           Logs de Geração
@@ -749,7 +749,7 @@ export function QuestaoGenerator() {
 
         <div className="bg-black/30 rounded-lg p-4 h-80 overflow-y-auto font-mono text-sm">
           {logs.length === 0 ? (
-            <p className="text-white/40">Aguardando início da geração...</p>
+            <p className="text-slate-500">Aguardando início da geração...</p>
           ) : (
             logs.map((log, i) => (
               <div
@@ -759,7 +759,7 @@ export function QuestaoGenerator() {
                   log.type === 'sucesso' ? 'text-green-400' :
                   log.type === 'aviso' ? 'text-yellow-400' :
                   log.type === 'concluido' ? 'text-cyan-400' :
-                  'text-white/70'
+                  'text-slate-600'
                 }`}
               >
                 {log.type === 'sucesso' && <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />}
@@ -784,40 +784,40 @@ export function QuestaoGenerator() {
 
       {/* Questões Geradas */}
       {questoesGeradas.length > 0 && (
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
             <FileText className="w-5 h-5 text-emerald-400" />
             Questões Geradas ({questoesGeradas.length})
           </h2>
           <div className="space-y-3 max-h-[600px] overflow-y-auto">
             {questoesGeradas.map((q, i) => (
-              <div key={q.id} className="bg-white/5 rounded-lg border border-white/10 hover:border-white/20 transition-colors overflow-hidden">
+              <div key={q.id} className="bg-slate-100 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors overflow-hidden">
                 {/* Header da questão - clicável */}
                 <button
                   onClick={() => toggleExpandirQuestao(q.id)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-white/5 transition-colors"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-100 transition-colors"
                 >
-                  <span className="text-white/80 text-sm flex-1 mr-4">
+                  <span className="text-slate-700 text-sm flex-1 mr-4">
                     <span className="text-cyan-400 font-medium">#{i + 1}</span> - {q.preview}
                   </span>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {q.expandido ? (
-                      <ChevronUp className="w-5 h-5 text-white/40" />
+                      <ChevronUp className="w-5 h-5 text-slate-500" />
                     ) : (
-                      <ChevronDown className="w-5 h-5 text-white/40" />
+                      <ChevronDown className="w-5 h-5 text-slate-500" />
                     )}
                   </div>
                 </button>
 
                 {/* Conteúdo expandido */}
                 {q.expandido && (
-                  <div className="px-4 pb-4 border-t border-white/10">
+                  <div className="px-4 pb-4 border-t border-slate-200">
                     {/* Enunciado */}
                     {q.enunciado ? (
                       <div className="space-y-4 mt-4">
                         <div>
                           <h4 className="text-cyan-400 text-sm font-medium mb-2">Enunciado:</h4>
-                          <p className="text-white/80 text-sm whitespace-pre-wrap bg-black/20 p-3 rounded-lg">
+                          <p className="text-slate-700 text-sm whitespace-pre-wrap bg-black/20 p-3 rounded-lg">
                             {q.enunciado}
                           </p>
                         </div>
@@ -833,7 +833,7 @@ export function QuestaoGenerator() {
                                   className={`p-2 rounded-lg text-sm ${
                                     alt.letra === q.gabarito
                                       ? 'bg-green-500/20 border border-green-500/40 text-green-300'
-                                      : 'bg-white/5 text-white/70'
+                                      : 'bg-slate-100 text-slate-600'
                                   }`}
                                 >
                                   <span className="font-medium">{alt.letra})</span> {alt.texto}
@@ -853,14 +853,14 @@ export function QuestaoGenerator() {
                               <MessageSquare className="w-4 h-4" />
                               Gabarito Comentado:
                             </h4>
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-white/80 text-sm whitespace-pre-wrap">
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-slate-700 text-sm whitespace-pre-wrap">
                               {q.comentario_ia || q.explicacao || 'Sem comentário disponível'}
                             </div>
                           </div>
                         )}
 
                         {/* Botões de ação */}
-                        <div className="flex items-center gap-2 pt-2 border-t border-white/10">
+                        <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
                           <button
                             onClick={() => window.open(`/medicina/admin/questoes/${q.id}`, '_blank')}
                             className="flex items-center gap-2 px-3 py-2 text-xs bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-colors"
@@ -880,7 +880,7 @@ export function QuestaoGenerator() {
                     ) : (
                       <div className="flex items-center justify-center py-4">
                         <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
-                        <span className="ml-2 text-white/60 text-sm">Carregando questão...</span>
+                        <span className="ml-2 text-slate-600 text-sm">Carregando questão...</span>
                       </div>
                     )}
                   </div>

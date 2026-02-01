@@ -268,19 +268,19 @@ export default function AdminHistoricoPage() {
           <History className="w-8 h-8 text-amber-400" />
           Histórico de Gerações
         </h1>
-        <p className="text-white/60 mt-1">
+        <p className="text-slate-600 mt-1">
           Acompanhe todas as gerações de questões realizadas
         </p>
       </div>
 
       {/* Abas */}
-      <div className="flex gap-2 border-b border-white/10 pb-1">
+      <div className="flex gap-2 border-b border-slate-200 pb-1">
         <button
           onClick={() => setAbaAtiva('questoes')}
           className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
             abaAtiva === 'questoes'
               ? 'bg-emerald-500/20 text-emerald-400 border-b-2 border-emerald-500'
-              : 'text-white/60 hover:text-white hover:bg-white/5'
+              : 'text-slate-600 hover:text-white hover:bg-slate-100'
           }`}
         >
           <span className="flex items-center gap-2">
@@ -293,7 +293,7 @@ export default function AdminHistoricoPage() {
           className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
             abaAtiva === 'logs'
               ? 'bg-amber-500/20 text-amber-400 border-b-2 border-amber-500'
-              : 'text-white/60 hover:text-white hover:bg-white/5'
+              : 'text-slate-600 hover:text-white hover:bg-slate-100'
           }`}
         >
           <span className="flex items-center gap-2">
@@ -305,34 +305,34 @@ export default function AdminHistoricoPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div className="bg-slate-100 border border-slate-200 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <FileText className="w-5 h-5 text-blue-400" />
-            <span className="text-white/60 text-sm">Total de Lotes</span>
+            <span className="text-slate-600 text-sm">Total de Lotes</span>
           </div>
           <p className="text-2xl font-bold text-white">{stats.total}</p>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div className="bg-slate-100 border border-slate-200 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle className="w-5 h-5 text-green-400" />
-            <span className="text-white/60 text-sm">Sucesso</span>
+            <span className="text-slate-600 text-sm">Sucesso</span>
           </div>
           <p className="text-2xl font-bold text-white">{stats.sucesso}</p>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div className="bg-slate-100 border border-slate-200 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <XCircle className="w-5 h-5 text-red-400" />
-            <span className="text-white/60 text-sm">Erros</span>
+            <span className="text-slate-600 text-sm">Erros</span>
           </div>
           <p className="text-2xl font-bold text-white">{stats.erro}</p>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div className="bg-slate-100 border border-slate-200 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <FileText className="w-5 h-5 text-emerald-400" />
-            <span className="text-white/60 text-sm">Questões Geradas</span>
+            <span className="text-slate-600 text-sm">Questões Geradas</span>
           </div>
           <p className="text-2xl font-bold text-white">{stats.questoesGeradas.toLocaleString()}</p>
         </div>
@@ -341,7 +341,7 @@ export default function AdminHistoricoPage() {
       {/* Conteúdo baseado na aba ativa */}
       {abaAtiva === 'questoes' ? (
         /* Lista de Questões Geradas */
-        <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+        <div className="bg-slate-100 border border-slate-200 rounded-xl overflow-hidden">
           {loadingQuestoes ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
@@ -349,12 +349,12 @@ export default function AdminHistoricoPage() {
           ) : questoesRecentes.length === 0 ? (
             <div className="text-center py-12">
               <Sparkles className="w-12 h-12 text-white/20 mx-auto mb-4" />
-              <p className="text-white/60">Nenhuma questão gerada por IA encontrada</p>
+              <p className="text-slate-600">Nenhuma questão gerada por IA encontrada</p>
             </div>
           ) : (
             <div className="divide-y divide-white/10">
               {questoesRecentes.map((questao) => (
-                <div key={questao.id} className="hover:bg-white/5 transition-colors">
+                <div key={questao.id} className="hover:bg-slate-100 transition-colors">
                   <div
                     className="p-4 cursor-pointer"
                     onClick={() => setExpandedQuestao(expandedQuestao === questao.id ? null : questao.id)}
@@ -384,7 +384,7 @@ export default function AdminHistoricoPage() {
                               {questao.periodo_dificuldade}º período
                             </span>
                           )}
-                          <span className="text-white/40 flex items-center gap-1">
+                          <span className="text-slate-500 flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {new Date(questao.created_at).toLocaleDateString('pt-BR', {
                               day: '2-digit',
@@ -396,7 +396,7 @@ export default function AdminHistoricoPage() {
                         </div>
                       </div>
 
-                      <div className="text-white/40">
+                      <div className="text-slate-500">
                         {expandedQuestao === questao.id ? (
                           <ChevronUp className="w-5 h-5" />
                         ) : (
@@ -408,12 +408,12 @@ export default function AdminHistoricoPage() {
 
                   {/* Detalhes expandidos */}
                   {expandedQuestao === questao.id && (
-                    <div className="px-4 pb-4 border-t border-white/10 bg-white/5">
+                    <div className="px-4 pb-4 border-t border-slate-200 bg-slate-100">
                       <div className="pt-4 space-y-4">
                         {/* Alternativas */}
                         {questao.alternativas && questao.alternativas.length > 0 && (
                           <div>
-                            <h4 className="text-white/60 text-sm font-medium mb-2">Alternativas:</h4>
+                            <h4 className="text-slate-600 text-sm font-medium mb-2">Alternativas:</h4>
                             <div className="space-y-2">
                               {questao.alternativas.map((alt, idx) => (
                                 <div
@@ -421,13 +421,13 @@ export default function AdminHistoricoPage() {
                                   className={`p-3 rounded-lg ${
                                     alt.correta || alt.letra === questao.resposta_correta
                                       ? 'bg-green-500/20 border border-green-500/30'
-                                      : 'bg-white/5 border border-white/10'
+                                      : 'bg-slate-100 border border-slate-200'
                                   }`}
                                 >
                                   <span className={`font-bold ${
                                     alt.correta || alt.letra === questao.resposta_correta
                                       ? 'text-green-400'
-                                      : 'text-white/60'
+                                      : 'text-slate-600'
                                   }`}>
                                     {alt.letra})
                                   </span>
@@ -444,12 +444,12 @@ export default function AdminHistoricoPage() {
                         {/* Gabarito Comentado */}
                         {questao.gabarito_comentado && (
                           <div>
-                            <h4 className="text-white/60 text-sm font-medium mb-2 flex items-center gap-2">
+                            <h4 className="text-slate-600 text-sm font-medium mb-2 flex items-center gap-2">
                               <BookOpen className="w-4 h-4" />
                               Gabarito Comentado:
                             </h4>
-                            <div className="p-4 bg-slate-800/50 rounded-lg border border-white/10">
-                              <p className="text-white/90 whitespace-pre-wrap text-sm leading-relaxed">
+                            <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-200">
+                              <p className="text-slate-800 whitespace-pre-wrap text-sm leading-relaxed">
                                 {questao.gabarito_comentado}
                               </p>
                             </div>
@@ -459,7 +459,7 @@ export default function AdminHistoricoPage() {
                         {/* Referência ABNT */}
                         {questao.referencia_abnt && (
                           <div>
-                            <h4 className="text-white/60 text-sm font-medium mb-2">Referência (ABNT):</h4>
+                            <h4 className="text-slate-600 text-sm font-medium mb-2">Referência (ABNT):</h4>
                             <p className="text-cyan-300 text-sm italic">
                               {questao.referencia_abnt}
                             </p>
@@ -482,7 +482,7 @@ export default function AdminHistoricoPage() {
               <select
                 value={filtros.status}
                 onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
-                className="appearance-none px-4 py-2 pl-10 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-amber-500 cursor-pointer min-w-[150px]"
+                className="appearance-none px-4 py-2 pl-10 bg-slate-100 border border-slate-200 rounded-lg text-white focus:outline-none focus:border-amber-500 cursor-pointer min-w-[150px]"
               >
                 <option value="">Todos status</option>
                 <option value="concluido">Concluído</option>
@@ -490,22 +490,22 @@ export default function AdminHistoricoPage() {
                 <option value="iniciado">Em andamento</option>
                 <option value="parcial">Parcial</option>
               </select>
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
             </div>
           </div>
 
           {/* Lista de Logs */}
-          <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+          <div className="bg-slate-100 border border-slate-200 rounded-xl overflow-hidden">
             {logs.length === 0 ? (
               <div className="text-center py-12">
                 <History className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                <p className="text-white/60">Nenhum registro encontrado</p>
+                <p className="text-slate-600">Nenhum registro encontrado</p>
               </div>
             ) : (
               <div className="divide-y divide-white/10">
                 {logs.map((log) => (
-                  <div key={log.id} className="p-4 hover:bg-white/5 transition-colors">
+                  <div key={log.id} className="p-4 hover:bg-slate-100 transition-colors">
                     <div className="flex items-start gap-4">
                       {/* Status Icon */}
                       <div className="mt-1">
@@ -520,8 +520,8 @@ export default function AdminHistoricoPage() {
                           </span>
                           {log.assunto_nome && (
                             <>
-                              <span className="text-white/30">›</span>
-                              <span className="text-white/70 text-sm">{log.assunto_nome}</span>
+                              <span className="text-slate-400">›</span>
+                              <span className="text-slate-600 text-sm">{log.assunto_nome}</span>
                             </>
                           )}
                           {log.periodo && (
@@ -531,7 +531,7 @@ export default function AdminHistoricoPage() {
                           )}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-white/40">
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
                             {new Date(log.created_at).toLocaleDateString('pt-BR', {
@@ -575,7 +575,7 @@ export default function AdminHistoricoPage() {
                         <p className="text-white mt-1 text-lg font-bold">
                           {log.questoes_sucesso || log.quantidade || 0}
                         </p>
-                        <p className="text-white/40 text-xs">questões</p>
+                        <p className="text-slate-500 text-xs">questões</p>
                       </div>
                     </div>
                   </div>

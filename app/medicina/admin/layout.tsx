@@ -42,7 +42,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#0A0F1C]">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#0A0F1C]/95 backdrop-blur-sm border-b border-white/10 px-4 py-3">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#0A0F1C]/95 backdrop-blur-sm border-b border-slate-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -68,14 +68,14 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 left-0 z-50 h-full w-64 bg-[#0D1424] border-r border-white/10
+        fixed top-0 left-0 z-50 h-full w-64 bg-[#0D1424] border-r border-slate-200
         transform transition-transform duration-300 ease-in-out
         lg:translate-x-0
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-4 border-b border-white/10">
+          <div className="p-4 border-b border-slate-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
@@ -83,12 +83,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 </div>
                 <div>
                   <span className="text-white text-lg font-bold block">Admin</span>
-                  <span className="text-white/40 text-xs">PREPARAMED</span>
+                  <span className="text-slate-500 text-xs">PREPARAMED</span>
                 </div>
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="lg:hidden text-white/60 hover:text-white"
+                className="lg:hidden text-slate-600 hover:text-white"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -99,7 +99,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="px-3 pt-4">
             <Link
               href="/medicina/dashboard"
-              className="flex items-center gap-2 px-4 py-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-sm"
+              className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-white hover:bg-slate-100 rounded-lg transition-colors text-sm"
             >
               <ChevronLeft className="w-4 h-4" />
               Voltar ao App
@@ -108,7 +108,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto py-4 px-3">
-            <p className="px-4 text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">
+            <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
               Menu Admin
             </p>
             <ul className="space-y-1">
@@ -125,7 +125,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                           ? 'bg-cyan-500/20 text-cyan-400'
                           : item.highlight
                           ? 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300'
-                          : 'text-white/60 hover:bg-white/5 hover:text-white'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-white'
                         }
                       `}
                     >
@@ -144,7 +144,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           </nav>
 
           {/* User Info */}
-          <div className="border-t border-white/10 p-4">
+          <div className="border-t border-slate-200 p-4">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
                 <span className="text-white font-bold">A</span>

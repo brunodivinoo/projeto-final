@@ -95,7 +95,7 @@ export default function SimuladosPage() {
       case 'finalizado':
         return { label: 'Finalizado', cor: 'text-emerald-400 bg-emerald-500/20', icon: CheckCircle2 }
       default:
-        return { label: status, cor: 'text-white/60 bg-white/10', icon: ClipboardList }
+        return { label: status, cor: 'text-slate-600 bg-slate-100', icon: ClipboardList }
     }
   }
 
@@ -126,7 +126,7 @@ export default function SimuladosPage() {
           className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-colors ${
             podeCriar
               ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700'
-              : 'bg-white/10 text-white/40 cursor-not-allowed'
+              : 'bg-slate-100 text-slate-500 cursor-not-allowed'
           }`}
           onClick={(e) => !podeCriar && e.preventDefault()}
         >
@@ -137,31 +137,31 @@ export default function SimuladosPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-4 border border-slate-200">
           <div className="flex items-center gap-3 mb-2">
             <ClipboardList className="w-5 h-5 text-purple-400" />
-            <span className="text-white/60 text-sm">Total</span>
+            <span className="text-slate-600 text-sm">Total</span>
           </div>
           <div className="text-2xl font-bold text-white">{total}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-4 border border-slate-200">
           <div className="flex items-center gap-3 mb-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-            <span className="text-white/60 text-sm">Finalizados</span>
+            <span className="text-slate-600 text-sm">Finalizados</span>
           </div>
           <div className="text-2xl font-bold text-white">{simuladosFinalizados.length}</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-4 border border-slate-200">
           <div className="flex items-center gap-3 mb-2">
             <Target className="w-5 h-5 text-teal-400" />
-            <span className="text-white/60 text-sm">Média Acertos</span>
+            <span className="text-slate-600 text-sm">Média Acertos</span>
           </div>
           <div className="text-2xl font-bold text-white">{mediaAcertos}%</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-4 border border-slate-200">
           <div className="flex items-center gap-3 mb-2">
             <Play className="w-5 h-5 text-amber-400" />
-            <span className="text-white/60 text-sm">Em andamento</span>
+            <span className="text-slate-600 text-sm">Em andamento</span>
           </div>
           <div className="text-2xl font-bold text-white">
             {simulados.filter(s => s.status === 'em_andamento').length}
@@ -184,7 +184,7 @@ export default function SimuladosPage() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filtroStatus === status
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
               }`}
             >
               {labels[status]}
@@ -199,12 +199,12 @@ export default function SimuladosPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
         </div>
       ) : simulados.length === 0 ? (
-        <div className="bg-white/5 rounded-xl p-12 border border-white/10 text-center">
+        <div className="bg-slate-100 rounded-xl p-12 border border-slate-200 text-center">
           <ClipboardList className="w-16 h-16 text-white/20 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">
             {filtroStatus ? 'Nenhum simulado encontrado' : 'Você ainda não fez nenhum simulado'}
           </h3>
-          <p className="text-white/60 mb-6">
+          <p className="text-slate-600 mb-6">
             {filtroStatus ? 'Tente outro filtro' : 'Comece seu primeiro simulado agora!'}
           </p>
           {!filtroStatus && podeCriar && (
@@ -230,7 +230,7 @@ export default function SimuladosPage() {
               <Link
                 key={simulado.id}
                 href={`/medicina/dashboard/simulados/${simulado.id}`}
-                className="block bg-white/5 rounded-xl p-5 border border-white/10 hover:border-white/20 transition-colors"
+                className="block bg-slate-100 rounded-xl p-5 border border-slate-200 hover:border-slate-300 transition-colors"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
@@ -242,7 +242,7 @@ export default function SimuladosPage() {
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-white/60">
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
                       <span className="flex items-center gap-1">
                         <ClipboardList className="w-4 h-4" />
                         {simulado.total_questoes} questões
@@ -275,12 +275,12 @@ export default function SimuladosPage() {
                         }`}>
                           {taxaAcerto}%
                         </div>
-                        <div className="text-white/40 text-xs">
+                        <div className="text-slate-500 text-xs">
                           {simulado.questoes_corretas}/{simulado.total_questoes} acertos
                         </div>
                       </div>
                     )}
-                    <ChevronRight className="w-5 h-5 text-white/40" />
+                    <ChevronRight className="w-5 h-5 text-slate-500" />
                   </div>
                 </div>
               </Link>

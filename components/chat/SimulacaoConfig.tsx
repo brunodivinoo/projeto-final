@@ -178,7 +178,7 @@ export function SimulacaoConfig({ onStart, onCancel }: SimulacaoConfigProps) {
             </div>
             <button
               onClick={onCancel}
-              className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -192,14 +192,14 @@ export function SimulacaoConfig({ onStart, onCancel }: SimulacaoConfigProps) {
                   "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all",
                   s < step ? "bg-emerald-500 text-white" :
                   s === step ? "bg-emerald-500/30 text-emerald-400 ring-2 ring-emerald-500" :
-                  "bg-white/10 text-white/40"
+                  "bg-slate-100 text-slate-500"
                 )}>
                   {s}
                 </div>
                 {s < 3 && (
                   <div className={cn(
                     "w-12 h-0.5 mx-1",
-                    s < step ? "bg-emerald-500" : "bg-white/10"
+                    s < step ? "bg-emerald-500" : "bg-slate-100"
                   )} />
                 )}
               </div>
@@ -236,7 +236,7 @@ export function SimulacaoConfig({ onStart, onCancel }: SimulacaoConfigProps) {
                           "flex items-center gap-2 p-3 rounded-xl border transition-all text-left",
                           isSelected
                             ? cn(esp.bgColor, esp.color, "border-current ring-2 ring-current/30")
-                            : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                            : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-white"
                         )}
                       >
                         <span className="text-lg">{esp.emoji}</span>
@@ -274,14 +274,14 @@ export function SimulacaoConfig({ onStart, onCancel }: SimulacaoConfigProps) {
                           "flex flex-col items-start gap-2 p-4 rounded-xl border transition-all text-left",
                           isSelected
                             ? cn(dif.bgColor, dif.borderColor, "ring-2 ring-current/30")
-                            : "bg-white/5 border-white/10 hover:bg-white/10"
+                            : "bg-slate-100 border-slate-200 hover:bg-slate-100"
                         )}
                       >
                         <div className="flex items-center gap-2">
-                          <Icon className={cn("w-5 h-5", isSelected ? dif.color : "text-white/60")} />
+                          <Icon className={cn("w-5 h-5", isSelected ? dif.color : "text-slate-600")} />
                           <span className={cn("font-medium", isSelected ? dif.color : "text-white")}>{dif.label}</span>
                         </div>
-                        <span className="text-xs text-white/50">{dif.description}</span>
+                        <span className="text-xs text-slate-500">{dif.description}</span>
                       </button>
                     )
                   })}
@@ -315,61 +315,61 @@ export function SimulacaoConfig({ onStart, onCancel }: SimulacaoConfigProps) {
                           "flex flex-col items-start gap-2 p-4 rounded-xl border transition-all text-left",
                           isSelected
                             ? cn(cen.bgColor, "border-current ring-2 ring-current/30", cen.color)
-                            : "bg-white/5 border-white/10 hover:bg-white/10"
+                            : "bg-slate-100 border-slate-200 hover:bg-slate-100"
                         )}
                       >
                         <div className="flex items-center gap-2">
-                          <Icon className={cn("w-5 h-5", isSelected ? cen.color : "text-white/60")} />
+                          <Icon className={cn("w-5 h-5", isSelected ? cen.color : "text-slate-600")} />
                           <span className={cn("font-medium", isSelected ? cen.color : "text-white")}>{cen.label}</span>
                         </div>
-                        <span className="text-xs text-white/50">{cen.description}</span>
+                        <span className="text-xs text-slate-500">{cen.description}</span>
                       </button>
                     )
                   })}
                 </div>
 
                 {/* Opções adicionais */}
-                <div className="mt-4 space-y-3 pt-4 border-t border-white/10">
-                  <label className="flex items-center gap-3 p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+                <div className="mt-4 space-y-3 pt-4 border-t border-slate-200">
+                  <label className="flex items-center gap-3 p-3 bg-slate-100 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
                     <input
                       type="checkbox"
                       checked={config.comExames}
                       onChange={(e) => setConfig(prev => ({ ...prev, comExames: e.target.checked }))}
-                      className="w-5 h-5 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500"
+                      className="w-5 h-5 rounded border-slate-300 bg-slate-100 text-emerald-500 focus:ring-emerald-500"
                     />
                     <div>
                       <span className="text-white font-medium">Incluir exames no caso</span>
-                      <p className="text-xs text-white/50">A IA trará exames reais para você analisar</p>
+                      <p className="text-xs text-slate-500">A IA trará exames reais para você analisar</p>
                     </div>
                   </label>
 
                   {config.comExames && (
-                    <label className="flex items-center gap-3 p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-colors ml-4">
+                    <label className="flex items-center gap-3 p-3 bg-slate-100 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors ml-4">
                       <input
                         type="checkbox"
                         checked={config.pacienteJaTrazExames}
                         onChange={(e) => setConfig(prev => ({ ...prev, pacienteJaTrazExames: e.target.checked }))}
-                        className="w-5 h-5 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500"
+                        className="w-5 h-5 rounded border-slate-300 bg-slate-100 text-emerald-500 focus:ring-emerald-500"
                       />
                       <div>
                         <span className="text-white font-medium">Paciente já traz exames</span>
-                        <p className="text-xs text-white/50">O paciente chega com exames prévios para análise</p>
+                        <p className="text-xs text-slate-500">O paciente chega com exames prévios para análise</p>
                       </div>
                     </label>
                   )}
 
-                  <label className="flex items-center gap-3 p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+                  <label className="flex items-center gap-3 p-3 bg-slate-100 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
                     <input
                       type="checkbox"
                       checked={config.usarFichaAnamnese}
                       onChange={(e) => setConfig(prev => ({ ...prev, usarFichaAnamnese: e.target.checked }))}
-                      className="w-5 h-5 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500"
+                      className="w-5 h-5 rounded border-slate-300 bg-slate-100 text-emerald-500 focus:ring-emerald-500"
                     />
                     <div className="flex items-center gap-2">
                       <ClipboardList className="w-4 h-4 text-emerald-400" />
                       <div>
                         <span className="text-white font-medium">Acompanhar ficha de anamnese</span>
-                        <p className="text-xs text-white/50">Visualize o progresso da sua investigação clínica</p>
+                        <p className="text-xs text-slate-500">Visualize o progresso da sua investigação clínica</p>
                       </div>
                     </div>
                   </label>
@@ -392,7 +392,7 @@ export function SimulacaoConfig({ onStart, onCancel }: SimulacaoConfigProps) {
                       {cenarioSelecionado?.label}
                     </span>
                     {config.usarFichaAnamnese && (
-                      <span className="px-2 py-1 rounded-lg bg-white/10 text-white/80 flex items-center gap-1">
+                      <span className="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 flex items-center gap-1">
                         <ClipboardList className="w-3 h-3" /> Ficha
                       </span>
                     )}
@@ -407,7 +407,7 @@ export function SimulacaoConfig({ onStart, onCancel }: SimulacaoConfigProps) {
         <div className="p-4 border-t border-emerald-500/20 bg-emerald-500/5 flex items-center justify-between">
           <button
             onClick={() => step > 1 ? setStep((step - 1) as 1 | 2) : onCancel()}
-            className="px-4 py-2 text-white/60 hover:text-white transition-colors"
+            className="px-4 py-2 text-slate-600 hover:text-white transition-colors"
           >
             {step > 1 ? 'Voltar' : 'Cancelar'}
           </button>

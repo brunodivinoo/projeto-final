@@ -180,21 +180,21 @@ export default function IndicacoesPage() {
           Ganhe recompensas por cada indicação!
         </h2>
         <div className="grid md:grid-cols-3 gap-4">
-          <div className="bg-white/5 rounded-lg p-4 text-center">
+          <div className="bg-slate-100 rounded-lg p-4 text-center">
             <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
               <Users className="w-6 h-6 text-emerald-400" />
             </div>
             <p className="text-white font-semibold">Amigo se cadastra</p>
             <p className="text-emerald-400 text-sm mt-1">+5 questões/dia para você</p>
           </div>
-          <div className="bg-white/5 rounded-lg p-4 text-center">
+          <div className="bg-slate-100 rounded-lg p-4 text-center">
             <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
               <Crown className="w-6 h-6 text-purple-400" />
             </div>
             <p className="text-white font-semibold">Amigo assina Premium</p>
             <p className="text-purple-400 text-sm mt-1">+7 dias grátis de Premium</p>
           </div>
-          <div className="bg-white/5 rounded-lg p-4 text-center">
+          <div className="bg-slate-100 rounded-lg p-4 text-center">
             <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
               <Gift className="w-6 h-6 text-amber-400" />
             </div>
@@ -227,11 +227,11 @@ export default function IndicacoesPage() {
       )}
 
       {/* Link de Indicação */}
-      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+      <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
         <h3 className="text-lg font-semibold text-white mb-4">Seu link de indicação</h3>
 
         <div className="flex gap-2 mb-4">
-          <div className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white/70 text-sm truncate">
+          <div className="flex-1 bg-slate-100 border border-slate-200 rounded-lg px-4 py-3 text-slate-600 text-sm truncate">
             {linkIndicacao}
           </div>
           <button
@@ -268,7 +268,7 @@ export default function IndicacoesPage() {
       </div>
 
       {/* Convidar por Email */}
-      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+      <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <Mail className="w-5 h-5 text-emerald-400" />
           Convidar por email
@@ -293,7 +293,7 @@ export default function IndicacoesPage() {
             value={emailConvite}
             onChange={(e) => setEmailConvite(e.target.value)}
             placeholder="email@amigo.com"
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className="flex-1 bg-slate-100 border border-slate-200 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
           />
           <button
             onClick={enviarConvite}
@@ -314,33 +314,33 @@ export default function IndicacoesPage() {
 
       {/* Estatísticas */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white/5 rounded-xl p-4 text-center border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-4 text-center border border-slate-200">
           <div className="text-3xl font-bold text-white">{indicacoes.length}</div>
-          <div className="text-white/60 text-sm">Convites enviados</div>
+          <div className="text-slate-600 text-sm">Convites enviados</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4 text-center border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-4 text-center border border-slate-200">
           <div className="text-3xl font-bold text-emerald-400">{indicacoesCadastradas}</div>
-          <div className="text-white/60 text-sm">Cadastros</div>
+          <div className="text-slate-600 text-sm">Cadastros</div>
         </div>
-        <div className="bg-white/5 rounded-xl p-4 text-center border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-4 text-center border border-slate-200">
           <div className="text-3xl font-bold text-purple-400">{indicacoesConvertidas}</div>
-          <div className="text-white/60 text-sm">Assinantes</div>
+          <div className="text-slate-600 text-sm">Assinantes</div>
         </div>
       </div>
 
       {/* Histórico de Indicações */}
       {indicacoes.length > 0 && (
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <h3 className="text-lg font-semibold text-white mb-4">Histórico de indicações</h3>
           <div className="space-y-3">
             {indicacoes.map((indicacao) => (
               <div
                 key={indicacao.id}
-                className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+                className="flex items-center justify-between p-3 bg-slate-100 rounded-lg"
               >
                 <div>
                   <p className="text-white font-medium">{indicacao.indicado_email}</p>
-                  <p className="text-white/50 text-xs">
+                  <p className="text-slate-500 text-xs">
                     {new Date(indicacao.created_at).toLocaleDateString('pt-BR')}
                   </p>
                 </div>
@@ -349,7 +349,7 @@ export default function IndicacoesPage() {
                     ? 'bg-purple-500/20 text-purple-400'
                     : indicacao.status === 'cadastrado'
                     ? 'bg-emerald-500/20 text-emerald-400'
-                    : 'bg-white/10 text-white/60'
+                    : 'bg-slate-100 text-slate-600'
                 }`}>
                   {indicacao.status === 'convertido'
                     ? 'Assinante'
@@ -364,7 +364,7 @@ export default function IndicacoesPage() {
       )}
 
       {/* Código de Indicação */}
-      <div className="text-center text-white/40 text-sm">
+      <div className="text-center text-slate-500 text-sm">
         Seu código de indicação: <span className="text-emerald-400 font-mono">{codigoIndicacao}</span>
       </div>
     </div>

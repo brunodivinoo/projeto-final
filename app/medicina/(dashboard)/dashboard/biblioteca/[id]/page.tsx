@@ -181,7 +181,7 @@ export default function TeoriaPage() {
 
     // String simples
     if (typeof conteudo === 'string') {
-      return <p className="text-white/80 whitespace-pre-wrap leading-relaxed">{conteudo}</p>
+      return <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{conteudo}</p>
     }
 
     // Array de blocos
@@ -201,7 +201,7 @@ export default function TeoriaPage() {
         return (
           <div className="space-y-8">
             {conteudo.titulo && (
-              <h2 className="text-2xl font-bold text-white border-b border-white/10 pb-4">{conteudo.titulo}</h2>
+              <h2 className="text-2xl font-bold text-white border-b border-slate-200 pb-4">{conteudo.titulo}</h2>
             )}
             {conteudo.secoes.map((secao: { titulo: string; conteudo: string }, index: number) => (
               <div key={index} className="space-y-3">
@@ -212,7 +212,7 @@ export default function TeoriaPage() {
                   {secao.titulo}
                 </h3>
                 <div className="pl-10">
-                  <p className="text-white/80 leading-relaxed whitespace-pre-wrap">{secao.conteudo}</p>
+                  <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{secao.conteudo}</p>
                 </div>
               </div>
             ))}
@@ -225,7 +225,7 @@ export default function TeoriaPage() {
         return (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-white">{conteudo.titulo}</h2>
-            <p className="text-white/80 leading-relaxed whitespace-pre-wrap">
+            <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
               {typeof conteudo.conteudo === 'string' ? conteudo.conteudo : JSON.stringify(conteudo.conteudo, null, 2)}
             </p>
           </div>
@@ -236,7 +236,7 @@ export default function TeoriaPage() {
       return renderObjectAsContent(conteudo as unknown as Record<string, unknown>)
     }
 
-    return <p className="text-white/80">{String(conteudo)}</p>
+    return <p className="text-slate-700">{String(conteudo)}</p>
   }
 
   // Renderizar objeto genérico de forma legível
@@ -254,18 +254,18 @@ export default function TeoriaPage() {
               <h3 className="text-lg font-semibold text-emerald-400">{formattedKey}</h3>
               <div className="pl-4 border-l-2 border-emerald-500/30">
                 {typeof value === 'string' ? (
-                  <p className="text-white/80 leading-relaxed whitespace-pre-wrap">{value}</p>
+                  <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{value}</p>
                 ) : Array.isArray(value) ? (
                   <ul className="space-y-2">
                     {value.map((item, i) => (
-                      <li key={i} className="text-white/80 flex items-start gap-2">
+                      <li key={i} className="text-slate-700 flex items-start gap-2">
                         <span className="text-emerald-400 mt-1">•</span>
                         {typeof item === 'string' ? item : JSON.stringify(item)}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-white/80">{JSON.stringify(value, null, 2)}</p>
+                  <p className="text-slate-700">{JSON.stringify(value, null, 2)}</p>
                 )}
               </div>
             </div>
@@ -277,7 +277,7 @@ export default function TeoriaPage() {
 
   const renderBloco = (bloco: ConteudoBloco | string, index: number) => {
     if (typeof bloco === 'string') {
-      return <p key={index} className="text-white/80 mb-4">{bloco}</p>
+      return <p key={index} className="text-slate-700 mb-4">{bloco}</p>
     }
 
     switch (bloco.tipo) {
@@ -286,10 +286,10 @@ export default function TeoriaPage() {
       case 'subtitulo':
         return <h3 key={index} className="text-lg font-semibold text-white mt-6 mb-3">{bloco.texto}</h3>
       case 'paragrafo':
-        return <p key={index} className="text-white/80 mb-4 leading-relaxed">{bloco.texto}</p>
+        return <p key={index} className="text-slate-700 mb-4 leading-relaxed">{bloco.texto}</p>
       case 'lista':
         return (
-          <ul key={index} className="list-disc list-inside text-white/80 mb-4 space-y-2">
+          <ul key={index} className="list-disc list-inside text-slate-700 mb-4 space-y-2">
             {bloco.itens?.map((item: string, i: number) => (
               <li key={i}>{item}</li>
             ))}
@@ -312,12 +312,12 @@ export default function TeoriaPage() {
           <figure key={index} className="mb-6">
             <img src={bloco.url} alt={bloco.legenda || ''} className="rounded-lg max-w-full" />
             {bloco.legenda && (
-              <figcaption className="text-white/40 text-sm mt-2 text-center">{bloco.legenda}</figcaption>
+              <figcaption className="text-slate-500 text-sm mt-2 text-center">{bloco.legenda}</figcaption>
             )}
           </figure>
         )
       default:
-        return <p key={index} className="text-white/80 mb-4">{bloco.texto || JSON.stringify(bloco)}</p>
+        return <p key={index} className="text-slate-700 mb-4">{bloco.texto || JSON.stringify(bloco)}</p>
     }
   }
 
@@ -346,7 +346,7 @@ export default function TeoriaPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/medicina/dashboard/biblioteca"
-          className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-slate-600 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           Voltar
@@ -358,19 +358,19 @@ export default function TeoriaPage() {
             className={`p-2 rounded-lg transition-colors ${
               progresso?.favorito
                 ? 'bg-amber-500/20 text-amber-400'
-                : 'text-white/40 hover:text-white hover:bg-white/5'
+                : 'text-slate-500 hover:text-white hover:bg-slate-100'
             }`}
           >
             <Star className={`w-5 h-5 ${progresso?.favorito ? 'fill-amber-400' : ''}`} />
           </button>
-          <button className="p-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+          <button className="p-2 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors">
             <Share2 className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Título e Meta */}
-      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+      <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
         <div className="flex flex-wrap items-center gap-2 mb-4">
           {teoria.disciplina && (
             <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-sm rounded-full">
@@ -391,10 +391,10 @@ export default function TeoriaPage() {
 
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">{teoria.titulo}</h1>
         {teoria.subtitulo && (
-          <p className="text-white/60 text-lg">{teoria.subtitulo}</p>
+          <p className="text-slate-600 text-lg">{teoria.subtitulo}</p>
         )}
 
-        <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-white/60">
+        <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-slate-600">
           <span className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
             {teoria.tempo_leitura_minutos} min de leitura
@@ -431,8 +431,8 @@ export default function TeoriaPage() {
                 nivelAtivo === nivel
                   ? 'bg-emerald-500 text-white'
                   : acessivel
-                  ? 'bg-white/5 text-white/60 hover:bg-white/10'
-                  : 'bg-white/5 text-white/30 cursor-not-allowed'
+                  ? 'bg-slate-100 text-slate-600 hover:bg-slate-100'
+                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
               }`}
             >
               {labels[nivel]}
@@ -451,7 +451,7 @@ export default function TeoriaPage() {
           </h3>
           <ul className="space-y-2">
             {teoria.pontos_chave.map((ponto, i) => (
-              <li key={i} className="flex items-start gap-3 text-white/80">
+              <li key={i} className="flex items-start gap-3 text-slate-700">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
                 {ponto}
               </li>
@@ -461,27 +461,27 @@ export default function TeoriaPage() {
       )}
 
       {/* Conteúdo Principal */}
-      <div className="bg-white/5 rounded-xl p-6 md:p-8 border border-white/10">
-        <div className="prose prose-invert max-w-none">
+      <div className="bg-slate-100 rounded-xl p-6 md:p-8 border border-slate-200">
+        <div className="prose prose-slate max-w-none">
           {renderConteudo(teoria.conteudo)}
         </div>
       </div>
 
       {/* Macetes */}
       {teoria.macetes && teoria.macetes.length > 0 && (
-        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
           <button
             onClick={() => setShowMacetes(!showMacetes)}
-            className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+            className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-100 transition-colors"
           >
             <div className="flex items-center gap-3">
               <Brain className="w-5 h-5 text-purple-400" />
               <span className="font-semibold text-white">Macetes para Memorização</span>
             </div>
-            <ChevronRight className={`w-5 h-5 text-white/40 transition-transform ${showMacetes ? 'rotate-90' : ''}`} />
+            <ChevronRight className={`w-5 h-5 text-slate-500 transition-transform ${showMacetes ? 'rotate-90' : ''}`} />
           </button>
           {showMacetes && (
-            <div className="px-6 pb-6 border-t border-white/10 pt-4 space-y-3">
+            <div className="px-6 pb-6 border-t border-slate-200 pt-4 space-y-3">
               {teoria.macetes.map((macete, i) => (
                 <div key={i} className="p-3 bg-purple-500/10 rounded-lg text-purple-200">
                   {macete}
@@ -494,19 +494,19 @@ export default function TeoriaPage() {
 
       {/* Pegadinhas */}
       {teoria.pegadinhas && teoria.pegadinhas.length > 0 && (
-        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
           <button
             onClick={() => setShowPegadinhas(!showPegadinhas)}
-            className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+            className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-100 transition-colors"
           >
             <div className="flex items-center gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-400" />
               <span className="font-semibold text-white">Pegadinhas Comuns em Provas</span>
             </div>
-            <ChevronRight className={`w-5 h-5 text-white/40 transition-transform ${showPegadinhas ? 'rotate-90' : ''}`} />
+            <ChevronRight className={`w-5 h-5 text-slate-500 transition-transform ${showPegadinhas ? 'rotate-90' : ''}`} />
           </button>
           {showPegadinhas && (
-            <div className="px-6 pb-6 border-t border-white/10 pt-4 space-y-3">
+            <div className="px-6 pb-6 border-t border-slate-200 pt-4 space-y-3">
               {teoria.pegadinhas.map((pegadinha, i) => (
                 <div key={i} className="p-3 bg-amber-500/10 rounded-lg text-amber-200">
                   {pegadinha}
@@ -524,13 +524,13 @@ export default function TeoriaPage() {
             <Link2 className="w-5 h-5 text-cyan-400" />
             Correlação Clínica
           </h3>
-          <p className="text-white/80 whitespace-pre-wrap">{teoria.correlacao_clinica}</p>
+          <p className="text-slate-700 whitespace-pre-wrap">{teoria.correlacao_clinica}</p>
         </div>
       )}
 
       {/* Questões Relacionadas */}
       {questoes.length > 0 && (
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <h3 className="flex items-center gap-2 text-lg font-semibold text-white mb-4">
             <FileText className="w-5 h-5 text-emerald-400" />
             Questões Relacionadas
@@ -540,11 +540,11 @@ export default function TeoriaPage() {
               <Link
                 key={q.id}
                 href={`/medicina/dashboard/questoes/${q.id}`}
-                className="block p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                className="block p-4 bg-slate-100 rounded-lg hover:bg-slate-100 transition-colors"
               >
-                <p className="text-white/80 line-clamp-2">{q.enunciado}</p>
+                <p className="text-slate-700 line-clamp-2">{q.enunciado}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-white/40 text-sm">Dificuldade: {q.dificuldade}/5</span>
+                  <span className="text-slate-500 text-sm">Dificuldade: {q.dificuldade}/5</span>
                 </div>
               </Link>
             ))}
@@ -565,14 +565,14 @@ export default function TeoriaPage() {
         )}
         <Link
           href="/medicina/dashboard/anotacoes/nova"
-          className="flex items-center gap-2 px-4 py-3 bg-white/5 text-white/80 rounded-lg hover:bg-white/10 transition-colors"
+          className="flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
         >
           <PenTool className="w-5 h-5" />
           Fazer Anotação
         </Link>
         <Link
           href="/medicina/dashboard/ia"
-          className="flex items-center gap-2 px-4 py-3 bg-white/5 text-white/80 rounded-lg hover:bg-white/10 transition-colors"
+          className="flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
         >
           <Brain className="w-5 h-5" />
           Perguntar à IA
