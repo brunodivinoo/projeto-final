@@ -25,6 +25,7 @@ import {
   Settings,
   Zap,
   ChevronDown,
+  ChevronRight,
   Menu,
   Square,
   Stethoscope,
@@ -47,7 +48,13 @@ import { QuestaoDetector, extrairQuestoes } from '@/components/chat/QuestaoDetec
 import { type QuestaoData } from '@/components/chat/QuestaoInterativa'
 import { useSessoesIA } from '@/hooks/useSessoesIA'
 import { SimulacaoConfig, gerarPromptSimulacao, type SimulacaoConfigData } from '@/components/chat/SimulacaoConfig'
-import { IndicadorProgresso, FichaDrawer, type DadosFicha, type SecaoFicha } from '@/components/chat/FichaAnamnese'
+import { IndicadorProgresso, FichaDrawer, type DadosFicha, DADOS_FICHA_VAZIO } from '@/components/chat/FichaAnamnese'
+import {
+  MobileBottomNav,
+  MobileHeader,
+  MobileConversasDrawer,
+  MobileChatInput
+} from '@/components/mobile'
 
 // Hook para obter o estado da sidebar de artefatos
 // Considera artefatos filtrados pelo modo atual e conversa
@@ -361,16 +368,29 @@ export default function IAPage() {
   // Estado para ficha de anamnese (opcional na simulação)
   const [fichaAtiva, setFichaAtiva] = useState(false)
   const [fichaAberta, setFichaAberta] = useState(false)
-  const [dadosFicha, setDadosFicha] = useState<DadosFicha>({
-    identificacao: {},
-    interrogatorio: {},
-    exameFisico: {}
-  })
+  const [dadosFicha, setDadosFicha] = useState<DadosFicha>(DADOS_FICHA_VAZIO)
+
+  // Calcular itens preenchidos da ficha
+  const fichaItensPreenchidos = useMemo(() => {
+    let count = 0
+    if (dadosFicha.identificacao?.idade || dadosFicha.identificacao?.sexo) count++
+    if (dadosFicha.queixaPrincipal) count++
+    if (dadosFicha.hda) count++
+    if (dadosFicha.interrogatorio?.cardiovascular || dadosFicha.interrogatorio?.respiratorio || dadosFicha.interrogatorio?.digestorio) count++
+    if (dadosFicha.historiaPatologica || dadosFicha.historiaFamiliar || dadosFicha.habitosVida) count++
+    if (dadosFicha.exameFisico?.sinaisVitais?.fc || dadosFicha.exameFisico?.ectoscopia) count++
+    if (dadosFicha.hipotesesDiagnosticas?.length || dadosFicha.conduta) count++
+    return count
+  }, [dadosFicha])
 
   // Estado para controlar dropdown de modo
   const [showModeDropdown, setShowModeDropdown] = useState(false)
   const modeDropdownDesktopRef = useRef<HTMLDivElement>(null)
   const modeDropdownMobileRef = useRef<HTMLDivElement>(null)
+
+  // Estado para componentes mobile
+  const [mobileConversasOpen, setMobileConversasOpen] = useState(false)
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false)
 
   // Estado para menu de 3 pontinhos (renomear/excluir conversa)
   const [menuConversaAberto, setMenuConversaAberto] = useState<string | null>(null)
@@ -1670,7 +1690,8 @@ export default function IAPage() {
             {/* Indicador de Ficha - Mobile */}
             {fichaAtiva && chatMode === 'caso_clinico' && (
               <IndicadorProgresso
-                dados={dadosFicha}
+                itensPreenchidos={fichaItensPreenchidos}
+                totalItens={7}
                 onClick={() => setFichaAberta(true)}
               />
             )}
@@ -1769,7 +1790,8 @@ export default function IAPage() {
             {/* Indicador de Ficha - Desktop */}
             {fichaAtiva && chatMode === 'caso_clinico' && (
               <IndicadorProgresso
-                dados={dadosFicha}
+                itensPreenchidos={fichaItensPreenchidos}
+                totalItens={7}
                 onClick={() => setFichaAberta(true)}
               />
             )}
@@ -1855,9 +1877,10 @@ export default function IAPage() {
         )}
 
         {/* Chat Area - Responsivo e Compacto com CSS contain para anti-flickering */}
+        {/* pb-24 lg:pb-0 para acomodar bottom nav no mobile */}
         <div
           ref={chatRef}
-          className="flex-1 min-h-0 overflow-y-auto p-2 md:p-4 lg:p-5 space-y-2 md:space-y-3"
+          className="flex-1 min-h-0 overflow-y-auto p-2 md:p-4 lg:p-5 pb-28 lg:pb-5 space-y-2 md:space-y-3"
           style={{ contain: 'layout style', willChange: streaming ? 'scroll-position' : 'auto' }}
         >
           {/* Loading ao abrir conversa */}
@@ -2228,7 +2251,6 @@ export default function IAPage() {
           isOpen={fichaAberta}
           onClose={() => setFichaAberta(false)}
           dados={dadosFicha}
-          onDadosChange={setDadosFicha}
         />
       )}
 
@@ -2248,6 +2270,77 @@ export default function IAPage() {
           setShowExamAnalyzer(false)
         }}
       />
+
+      {/* ========================================== */}
+      {/* COMPONENTES MOBILE */}
+      {/* ========================================== */}
+
+      {/* Bottom Navigation Bar - Mobile */}
+      <MobileBottomNav
+        onNewChat={novaConversa}
+        onOpenConversas={() => setMobileConversasOpen(true)}
+        onOpenSettings={() => setShowOpcoes(true)}
+        conversaAtiva={!!conversaAtual}
+      />
+
+      {/* Drawer de Conversas - Mobile */}
+      <MobileConversasDrawer
+        isOpen={mobileConversasOpen}
+        onClose={() => setMobileConversasOpen(false)}
+      >
+        {/* Lista de conversas mobile */}
+        <div className="p-2 space-y-1">
+          {/* Botão Nova Conversa */}
+          <button
+            onClick={() => {
+              novaConversa()
+              setMobileConversasOpen(false)
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-500/20 text-indigo-400 active:bg-indigo-500/30 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="font-medium">Nova Conversa</span>
+          </button>
+
+          {/* Separador */}
+          <div className="h-px bg-white/10 my-3" />
+
+          {/* Lista de conversas */}
+          {conversas.length > 0 ? (
+            <div className="space-y-1">
+              {conversas.map((conversa) => (
+                <button
+                  key={conversa.id}
+                  onClick={() => {
+                    carregarConversa(conversa.id)
+                    setMobileConversasOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                    conversaAtual === conversa.id
+                      ? 'bg-white/10 text-white'
+                      : 'text-white/60 active:bg-white/5'
+                  }`}
+                >
+                  <MessageSquare className="w-5 h-5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {conversa.titulo || 'Nova conversa'}
+                    </p>
+                    <p className="text-xs text-white/40 mt-0.5">
+                      {new Date(conversa.updated_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-white/40">
+              <MessageSquare className="w-10 h-10 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Nenhuma conversa ainda</p>
+            </div>
+          )}
+        </div>
+      </MobileConversasDrawer>
     </div>
   )
 }

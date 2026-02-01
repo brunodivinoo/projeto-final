@@ -649,8 +649,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content - Otimizado para ocupar mais espaço */}
-      <main 
-        className={`pt-[72px] lg:pt-0 min-h-screen transition-all duration-300 overflow-x-hidden ${sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-72'}`}
+      {/* pb-20 lg:pb-0 para acomodar bottom nav no mobile */}
+      <main
+        className={`pt-[72px] lg:pt-0 pb-20 lg:pb-0 min-h-screen transition-all duration-300 overflow-x-hidden ${sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-72'}`}
         data-main-container
       >
         <div className="p-3 md:p-4 lg:p-6 max-w-full overflow-x-hidden">
