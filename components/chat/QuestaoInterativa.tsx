@@ -124,7 +124,7 @@ export function QuestaoInterativa({
       case 'medio': return 'text-amber-400 bg-amber-500/20'
       case 'dificil': return 'text-red-400 bg-red-500/20'
       case 'muito_dificil': return 'text-purple-400 bg-purple-500/20'
-      default: return 'text-white/60 bg-white/10'
+      default: return 'text-slate-600 bg-slate-100'
     }
   }
   
@@ -164,16 +164,16 @@ export function QuestaoInterativa({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-slate-800/50 border border-white/10 rounded-2xl overflow-hidden"
+        className="bg-slate-800/50 border border-slate-200 rounded-2xl overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-100">
           <div className="flex items-center gap-3">
             {/* Número */}
             <span className="text-lg font-bold text-amber-400">
               #{questao.numero}
               {totalQuestoes && (
-                <span className="text-white/40 text-sm font-normal">
+                <span className="text-slate-500 text-sm font-normal">
                   /{totalQuestoes}
                 </span>
               )}
@@ -189,7 +189,7 @@ export function QuestaoInterativa({
             
             {/* Banca */}
             {questao.banca && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/10 text-white/60">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">
                 {questao.banca}
               </span>
             )}
@@ -199,7 +199,7 @@ export function QuestaoInterativa({
           {showTimer && (
             <div className={cn(
               "flex items-center gap-1.5 px-2 py-1 rounded-lg",
-              respondida ? "bg-white/10 text-white/40" : "bg-amber-500/20 text-amber-400"
+              respondida ? "bg-slate-100 text-slate-500" : "bg-amber-500/20 text-amber-400"
             )}>
               <Clock className="w-4 h-4" />
               <span className="text-sm font-mono">{formatarTempo(tempoDecorrido)}</span>
@@ -208,8 +208,8 @@ export function QuestaoInterativa({
         </div>
         
         {/* Tema */}
-        <div className="px-4 py-2 border-b border-white/5 bg-white/5">
-          <div className="flex items-center gap-2 text-xs text-white/50">
+        <div className="px-4 py-2 border-b border-slate-200 bg-slate-100">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
             <BookOpen className="w-3 h-3" />
             <span>{questao.tema}</span>
             {questao.subtema && (
@@ -226,14 +226,14 @@ export function QuestaoInterativa({
           {/* Caso clínico (se houver) */}
           {questao.caso_clinico && (
             <div className="mb-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-              <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
                 {questao.caso_clinico}
               </p>
             </div>
           )}
           
           {/* Enunciado principal */}
-          <p className="text-white/90 leading-relaxed mb-6 whitespace-pre-wrap">
+          <p className="text-slate-800 leading-relaxed mb-6 whitespace-pre-wrap">
             {questao.enunciado}
           </p>
           
@@ -254,7 +254,7 @@ export function QuestaoInterativa({
                     "w-full flex items-start gap-3 p-3 md:p-4 rounded-xl text-left transition-all duration-200",
                     "border",
                     // Estados
-                    !respondida && !isSelected && "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20",
+                    !respondida && !isSelected && "bg-slate-100 border-slate-200 hover:bg-slate-100 hover:border-slate-300",
                     !respondida && isSelected && "bg-amber-500/20 border-amber-500/50",
                     // Resultado
                     showResult && isCorreta && "bg-emerald-500/20 border-emerald-500/50",
@@ -266,7 +266,7 @@ export function QuestaoInterativa({
                   <span className={cn(
                     "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-sm",
                     "transition-all duration-200",
-                    !respondida && !isSelected && "bg-white/10 text-white/60",
+                    !respondida && !isSelected && "bg-slate-100 text-slate-600",
                     !respondida && isSelected && "bg-amber-500 text-white",
                     showResult && isCorreta && "bg-emerald-500 text-white",
                     showResult && isSelected && !isCorreta && "bg-red-500 text-white"
@@ -279,10 +279,10 @@ export function QuestaoInterativa({
                   {/* Texto */}
                   <span className={cn(
                     "flex-1 text-sm md:text-base",
-                    !respondida && "text-white/80",
+                    !respondida && "text-slate-700",
                     showResult && isCorreta && "text-emerald-300",
                     showResult && isSelected && !isCorreta && "text-red-300",
-                    respondida && !showResult && "text-white/40"
+                    respondida && !showResult && "text-slate-500"
                   )}>
                     {alt.texto}
                   </span>
@@ -303,7 +303,7 @@ export function QuestaoInterativa({
                 "flex items-center justify-center gap-2",
                 respostaSelecionada
                   ? "bg-amber-500 text-white hover:bg-amber-400"
-                  : "bg-white/10 text-white/30 cursor-not-allowed"
+                  : "bg-slate-100 text-slate-400 cursor-not-allowed"
               )}
             >
               Confirmar Resposta
@@ -370,7 +370,7 @@ export function QuestaoInterativa({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           onClick={() => setMostrarGabarito(true)}
-          className="w-full mt-4 py-3 rounded-xl font-medium bg-white/10 text-white hover:bg-white/20 transition-colors flex items-center justify-center gap-2"
+          className="w-full mt-4 py-3 rounded-xl font-medium bg-slate-100 text-white hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
         >
           <BookOpen className="w-5 h-5" />
           Ver Gabarito Comentado
@@ -396,10 +396,10 @@ function GabaritoCard({ gabarito, acertou, tempoResposta, onProxima, onRefazer }
   const [showAnalise, setShowAnalise] = useState(false)
   
   return (
-    <div className="bg-slate-800/50 border border-white/10 rounded-2xl overflow-hidden">
+    <div className="bg-slate-800/50 border border-slate-200 rounded-2xl overflow-hidden">
       {/* Header do Gabarito */}
       <div className={cn(
-        "px-4 py-3 border-b border-white/10",
+        "px-4 py-3 border-b border-slate-200",
         acertou ? "bg-emerald-500/20" : "bg-red-500/20"
       )}>
         <div className="flex items-center justify-between">
@@ -417,7 +417,7 @@ function GabaritoCard({ gabarito, acertou, tempoResposta, onProxima, onRefazer }
             </span>
           </div>
           
-          <div className="flex items-center gap-3 text-sm text-white/50">
+          <div className="flex items-center gap-3 text-sm text-slate-500">
             <span>Resposta: <strong className="text-emerald-400">{gabarito.resposta_correta}</strong></span>
             <span>•</span>
             <span>Tempo: {Math.floor(tempoResposta / 60)}:{(tempoResposta % 60).toString().padStart(2, '0')}</span>
@@ -427,11 +427,11 @@ function GabaritoCard({ gabarito, acertou, tempoResposta, onProxima, onRefazer }
       
       {/* Explicação */}
       <div className="p-4 md:p-6">
-        <h3 className="flex items-center gap-2 text-sm font-medium text-white/60 mb-3">
+        <h3 className="flex items-center gap-2 text-sm font-medium text-slate-600 mb-3">
           <BookOpen className="w-4 h-4" />
           Explicação
         </h3>
-        <p className="text-white/80 leading-relaxed whitespace-pre-wrap">
+        <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
           {gabarito.explicacao}
         </p>
         
@@ -464,17 +464,17 @@ function GabaritoCard({ gabarito, acertou, tempoResposta, onProxima, onRefazer }
                         "p-3 rounded-lg border",
                         alt.letra === gabarito.resposta_correta
                           ? "bg-emerald-500/10 border-emerald-500/20"
-                          : "bg-white/5 border-white/10"
+                          : "bg-slate-100 border-slate-200"
                       )}
                     >
                       <div className="flex items-start gap-2">
                         <span className={cn(
                           "font-bold",
-                          alt.letra === gabarito.resposta_correta ? "text-emerald-400" : "text-white/60"
+                          alt.letra === gabarito.resposta_correta ? "text-emerald-400" : "text-slate-600"
                         )}>
                           {alt.letra})
                         </span>
-                        <p className="text-sm text-white/70">{alt.analise}</p>
+                        <p className="text-sm text-slate-600">{alt.analise}</p>
                       </div>
                     </div>
                   ))}
@@ -493,7 +493,7 @@ function GabaritoCard({ gabarito, acertou, tempoResposta, onProxima, onRefazer }
                 <Lightbulb className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <span className="text-xs font-medium text-amber-400">Ponto-Chave</span>
-                  <p className="text-sm text-white/80 mt-1">{gabarito.ponto_chave}</p>
+                  <p className="text-sm text-slate-700 mt-1">{gabarito.ponto_chave}</p>
                 </div>
               </div>
             </div>
@@ -506,7 +506,7 @@ function GabaritoCard({ gabarito, acertou, tempoResposta, onProxima, onRefazer }
                 <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <span className="text-xs font-medium text-red-400">Atenção (Pegadinha)</span>
-                  <p className="text-sm text-white/80 mt-1">{gabarito.pegadinha}</p>
+                  <p className="text-sm text-slate-700 mt-1">{gabarito.pegadinha}</p>
                 </div>
               </div>
             </div>
@@ -519,7 +519,7 @@ function GabaritoCard({ gabarito, acertou, tempoResposta, onProxima, onRefazer }
                 <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <span className="text-xs font-medium text-purple-400">Dica de Memorização</span>
-                  <p className="text-sm text-white/80 mt-1">{gabarito.dica_memorizacao}</p>
+                  <p className="text-sm text-slate-700 mt-1">{gabarito.dica_memorizacao}</p>
                 </div>
               </div>
             </div>
@@ -541,7 +541,7 @@ function GabaritoCard({ gabarito, acertou, tempoResposta, onProxima, onRefazer }
           {onRefazer && (
             <button
               onClick={onRefazer}
-              className="flex-1 py-3 px-4 rounded-xl font-medium bg-white/10 text-white hover:bg-white/20 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-3 px-4 rounded-xl font-medium bg-slate-100 text-white hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-4 h-4" />
               Refazer
@@ -583,10 +583,10 @@ export function EstatisticasQuestoes({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-slate-800/50 border border-white/10 rounded-2xl overflow-hidden"
+      className="bg-slate-800/50 border border-slate-200 rounded-2xl overflow-hidden"
     >
       {/* Header */}
-      <div className="p-4 border-b border-white/10 bg-gradient-to-r from-amber-500/20 to-amber-600/10">
+      <div className="p-4 border-b border-slate-200 bg-gradient-to-r from-amber-500/20 to-amber-600/10">
         <h2 className="text-lg font-bold text-white flex items-center gap-2">
           <Target className="w-5 h-5 text-amber-400" />
           Sessão Finalizada
@@ -596,31 +596,31 @@ export function EstatisticasQuestoes({
       {/* Stats Grid */}
       <div className="p-4 md:p-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="text-center p-4 rounded-xl bg-white/5">
+          <div className="text-center p-4 rounded-xl bg-slate-100">
             <p className="text-3xl font-bold text-amber-400">{taxa}%</p>
-            <p className="text-xs text-white/50 mt-1">Taxa de Acerto</p>
+            <p className="text-xs text-slate-500 mt-1">Taxa de Acerto</p>
           </div>
-          <div className="text-center p-4 rounded-xl bg-white/5">
+          <div className="text-center p-4 rounded-xl bg-slate-100">
             <p className="text-3xl font-bold text-emerald-400">{acertos}</p>
-            <p className="text-xs text-white/50 mt-1">Acertos</p>
+            <p className="text-xs text-slate-500 mt-1">Acertos</p>
           </div>
-          <div className="text-center p-4 rounded-xl bg-white/5">
+          <div className="text-center p-4 rounded-xl bg-slate-100">
             <p className="text-3xl font-bold text-red-400">{erros}</p>
-            <p className="text-xs text-white/50 mt-1">Erros</p>
+            <p className="text-xs text-slate-500 mt-1">Erros</p>
           </div>
-          <div className="text-center p-4 rounded-xl bg-white/5">
+          <div className="text-center p-4 rounded-xl bg-slate-100">
             <p className="text-3xl font-bold text-blue-400">{tempoMedio}s</p>
-            <p className="text-xs text-white/50 mt-1">Tempo Médio</p>
+            <p className="text-xs text-slate-500 mt-1">Tempo Médio</p>
           </div>
         </div>
         
         {/* Barra de Progresso */}
         <div className="mb-6">
-          <div className="flex justify-between text-sm text-white/60 mb-2">
+          <div className="flex justify-between text-sm text-slate-600 mb-2">
             <span>Progresso</span>
             <span>{acertos}/{total}</span>
           </div>
-          <div className="h-3 bg-white/10 rounded-full overflow-hidden flex">
+          <div className="h-3 bg-slate-100 rounded-full overflow-hidden flex">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${taxa}%` }}
@@ -639,14 +639,14 @@ export function EstatisticasQuestoes({
         {/* Por Tema */}
         {questoesPorTema && Object.keys(questoesPorTema).length > 0 && (
           <div className="mb-6">
-            <h3 className="text-sm font-medium text-white/60 mb-3">Desempenho por Tema</h3>
+            <h3 className="text-sm font-medium text-slate-600 mb-3">Desempenho por Tema</h3>
             <div className="space-y-2">
               {Object.entries(questoesPorTema).map(([tema, stats]) => {
                 const taxaTema = Math.round((stats.acertos / stats.total) * 100)
                 return (
                   <div key={tema} className="flex items-center gap-3">
-                    <span className="text-sm text-white/70 w-32 truncate">{tema}</span>
-                    <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                    <span className="text-sm text-slate-600 w-32 truncate">{tema}</span>
+                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${taxaTema}%` }}
@@ -657,7 +657,7 @@ export function EstatisticasQuestoes({
                         )}
                       />
                     </div>
-                    <span className="text-sm text-white/50 w-16 text-right">
+                    <span className="text-sm text-slate-500 w-16 text-right">
                       {stats.acertos}/{stats.total}
                     </span>
                   </div>
@@ -681,7 +681,7 @@ export function EstatisticasQuestoes({
           {onRevisarErros && erros > 0 && (
             <button
               onClick={onRevisarErros}
-              className="flex-1 py-3 px-4 rounded-xl font-medium bg-white/10 text-white hover:bg-white/20 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-3 px-4 rounded-xl font-medium bg-slate-100 text-white hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
             >
               <BookOpen className="w-4 h-4" />
               Revisar Erros ({erros})

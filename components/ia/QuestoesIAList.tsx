@@ -184,7 +184,7 @@ export function QuestoesIAList({
           {badge > 0 && (
             <span className={`ml-2 px-1.5 py-0.5 text-xs rounded-full ${
               dropdownAberto === nome
-                ? 'bg-white/20 text-white'
+                ? 'bg-slate-200 text-white'
                 : 'bg-[#137fec] text-white'
             }`}>
               {badge}

@@ -329,7 +329,7 @@ export default function AdminDisciplinasPage() {
             <BookOpen className="w-8 h-8 text-purple-400" />
             Gerenciar Disciplinas
           </h1>
-          <p className="text-white/60 mt-1">
+          <p className="text-slate-600 mt-1">
             {disciplinas.length} disciplinas cadastradas
           </p>
         </div>
@@ -347,13 +347,13 @@ export default function AdminDisciplinasPage() {
 
       {/* Busca */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
         <input
           type="text"
           placeholder="Buscar disciplinas..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500"
+          className="w-full pl-10 pr-4 py-3 bg-slate-100 border border-slate-200 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500"
         />
       </div>
 
@@ -370,7 +370,7 @@ export default function AdminDisciplinasPage() {
               value={novoNome}
               onChange={(e) => setNovoNome(e.target.value)}
               placeholder="Nome..."
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500 mb-4"
+              className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500 mb-4"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') adicionar()
@@ -380,7 +380,7 @@ export default function AdminDisciplinasPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setAdicionando(null)}
-                className="flex-1 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+                className="flex-1 py-2 bg-slate-100 text-white rounded-lg hover:bg-slate-200 transition-colors"
               >
                 Cancelar
               </button>
@@ -397,11 +397,11 @@ export default function AdminDisciplinasPage() {
       )}
 
       {/* Lista de Disciplinas */}
-      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-slate-100 border border-slate-200 rounded-xl overflow-hidden">
         {disciplinasFiltradas.length === 0 ? (
           <div className="text-center py-12">
             <BookOpen className="w-12 h-12 text-white/20 mx-auto mb-4" />
-            <p className="text-white/60">Nenhuma disciplina encontrada</p>
+            <p className="text-slate-600">Nenhuma disciplina encontrada</p>
           </div>
         ) : (
           <div className="divide-y divide-white/10">
@@ -409,10 +409,10 @@ export default function AdminDisciplinasPage() {
               <div key={disciplina.id}>
                 {/* Disciplina */}
                 <div
-                  className="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors cursor-pointer"
+                  className="flex items-center gap-3 p-4 hover:bg-slate-100 transition-colors cursor-pointer"
                   onClick={() => toggleDisciplina(disciplina.id)}
                 >
-                  <button className="text-white/60 hover:text-white">
+                  <button className="text-slate-600 hover:text-white">
                     {expandedDisciplinas.has(disciplina.id) ? (
                       <ChevronDown className="w-5 h-5" />
                     ) : (
@@ -431,7 +431,7 @@ export default function AdminDisciplinasPage() {
                           type="text"
                           value={novoNome}
                           onChange={(e) => setNovoNome(e.target.value)}
-                          className="flex-1 px-2 py-1 bg-white/10 border border-white/20 rounded text-white focus:outline-none focus:border-purple-500"
+                          className="flex-1 px-2 py-1 bg-slate-100 border border-slate-300 rounded text-white focus:outline-none focus:border-purple-500"
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') salvarEdicao()
@@ -441,7 +441,7 @@ export default function AdminDisciplinasPage() {
                         <button onClick={salvarEdicao} className="text-green-400 hover:text-green-300">
                           <Save className="w-4 h-4" />
                         </button>
-                        <button onClick={() => setEditando(null)} className="text-white/60 hover:text-white">
+                        <button onClick={() => setEditando(null)} className="text-slate-600 hover:text-white">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
@@ -450,7 +450,7 @@ export default function AdminDisciplinasPage() {
                     )}
                   </div>
 
-                  <span className="text-white/40 text-sm">
+                  <span className="text-slate-500 text-sm">
                     {disciplina.assuntos_count} assuntos
                   </span>
 
@@ -463,7 +463,7 @@ export default function AdminDisciplinasPage() {
                           toggleDisciplina(disciplina.id)
                         }
                       }}
-                      className="p-2 text-white/40 hover:text-green-400 transition-colors"
+                      className="p-2 text-slate-500 hover:text-green-400 transition-colors"
                       title="Adicionar assunto"
                     >
                       <Plus className="w-4 h-4" />
@@ -473,14 +473,14 @@ export default function AdminDisciplinasPage() {
                         setEditando({ tipo: 'disciplina', id: disciplina.id })
                         setNovoNome(disciplina.nome)
                       }}
-                      className="p-2 text-white/40 hover:text-cyan-400 transition-colors"
+                      className="p-2 text-slate-500 hover:text-cyan-400 transition-colors"
                       title="Editar"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => deletar('disciplina', disciplina.id)}
-                      className="p-2 text-white/40 hover:text-red-400 transition-colors"
+                      className="p-2 text-slate-500 hover:text-red-400 transition-colors"
                       title="Excluir"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -494,10 +494,10 @@ export default function AdminDisciplinasPage() {
                     {assuntos[disciplina.id].map((assunto) => (
                       <div key={assunto.id}>
                         <div
-                          className="flex items-center gap-3 p-3 pl-6 hover:bg-white/5 transition-colors cursor-pointer"
+                          className="flex items-center gap-3 p-3 pl-6 hover:bg-slate-100 transition-colors cursor-pointer"
                           onClick={() => toggleAssunto(assunto.id)}
                         >
-                          <button className="text-white/60 hover:text-white">
+                          <button className="text-slate-600 hover:text-white">
                             {(assunto.subassuntos_count || 0) > 0 && (
                               expandedAssuntos.has(assunto.id) ? (
                                 <ChevronDown className="w-4 h-4" />
@@ -521,7 +521,7 @@ export default function AdminDisciplinasPage() {
                                   type="text"
                                   value={novoNome}
                                   onChange={(e) => setNovoNome(e.target.value)}
-                                  className="flex-1 px-2 py-1 bg-white/10 border border-white/20 rounded text-white focus:outline-none focus:border-blue-500 text-sm"
+                                  className="flex-1 px-2 py-1 bg-slate-100 border border-slate-300 rounded text-white focus:outline-none focus:border-blue-500 text-sm"
                                   autoFocus
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') salvarEdicao()
@@ -531,17 +531,17 @@ export default function AdminDisciplinasPage() {
                                 <button onClick={salvarEdicao} className="text-green-400 hover:text-green-300">
                                   <Save className="w-4 h-4" />
                                 </button>
-                                <button onClick={() => setEditando(null)} className="text-white/60 hover:text-white">
+                                <button onClick={() => setEditando(null)} className="text-slate-600 hover:text-white">
                                   <X className="w-4 h-4" />
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-white/80 text-sm">{assunto.nome}</span>
+                              <span className="text-slate-700 text-sm">{assunto.nome}</span>
                             )}
                           </div>
 
                           {(assunto.subassuntos_count || 0) > 0 && (
-                            <span className="text-white/30 text-xs">
+                            <span className="text-slate-400 text-xs">
                               {assunto.subassuntos_count} sub
                             </span>
                           )}
@@ -555,7 +555,7 @@ export default function AdminDisciplinasPage() {
                                   toggleAssunto(assunto.id)
                                 }
                               }}
-                              className="p-1.5 text-white/40 hover:text-green-400 transition-colors"
+                              className="p-1.5 text-slate-500 hover:text-green-400 transition-colors"
                               title="Adicionar subassunto"
                             >
                               <Plus className="w-3.5 h-3.5" />
@@ -565,14 +565,14 @@ export default function AdminDisciplinasPage() {
                                 setEditando({ tipo: 'assunto', id: assunto.id })
                                 setNovoNome(assunto.nome)
                               }}
-                              className="p-1.5 text-white/40 hover:text-cyan-400 transition-colors"
+                              className="p-1.5 text-slate-500 hover:text-cyan-400 transition-colors"
                               title="Editar"
                             >
                               <Edit className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => deletar('assunto', assunto.id)}
-                              className="p-1.5 text-white/40 hover:text-red-400 transition-colors"
+                              className="p-1.5 text-slate-500 hover:text-red-400 transition-colors"
                               title="Excluir"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -586,7 +586,7 @@ export default function AdminDisciplinasPage() {
                             {subAssuntos[assunto.id].map((sub) => (
                               <div
                                 key={sub.id}
-                                className="flex items-center gap-3 p-2.5 pl-6 hover:bg-white/5 transition-colors"
+                                className="flex items-center gap-3 p-2.5 pl-6 hover:bg-slate-100 transition-colors"
                               >
                                 <div className="w-6 h-6 rounded bg-emerald-500/20 flex items-center justify-center">
                                   <FileText className="w-3 h-3 text-emerald-400" />
@@ -599,7 +599,7 @@ export default function AdminDisciplinasPage() {
                                         type="text"
                                         value={novoNome}
                                         onChange={(e) => setNovoNome(e.target.value)}
-                                        className="flex-1 px-2 py-1 bg-white/10 border border-white/20 rounded text-white focus:outline-none focus:border-emerald-500 text-xs"
+                                        className="flex-1 px-2 py-1 bg-slate-100 border border-slate-300 rounded text-white focus:outline-none focus:border-emerald-500 text-xs"
                                         autoFocus
                                         onKeyDown={(e) => {
                                           if (e.key === 'Enter') salvarEdicao()
@@ -609,12 +609,12 @@ export default function AdminDisciplinasPage() {
                                       <button onClick={salvarEdicao} className="text-green-400 hover:text-green-300">
                                         <Save className="w-3.5 h-3.5" />
                                       </button>
-                                      <button onClick={() => setEditando(null)} className="text-white/60 hover:text-white">
+                                      <button onClick={() => setEditando(null)} className="text-slate-600 hover:text-white">
                                         <X className="w-3.5 h-3.5" />
                                       </button>
                                     </div>
                                   ) : (
-                                    <span className="text-white/60 text-xs">{sub.nome}</span>
+                                    <span className="text-slate-600 text-xs">{sub.nome}</span>
                                   )}
                                 </div>
 
@@ -624,14 +624,14 @@ export default function AdminDisciplinasPage() {
                                       setEditando({ tipo: 'subassunto', id: sub.id })
                                       setNovoNome(sub.nome)
                                     }}
-                                    className="p-1 text-white/40 hover:text-cyan-400 transition-colors"
+                                    className="p-1 text-slate-500 hover:text-cyan-400 transition-colors"
                                     title="Editar"
                                   >
                                     <Edit className="w-3 h-3" />
                                   </button>
                                   <button
                                     onClick={() => deletar('subassunto', sub.id)}
-                                    className="p-1 text-white/40 hover:text-red-400 transition-colors"
+                                    className="p-1 text-slate-500 hover:text-red-400 transition-colors"
                                     title="Excluir"
                                   >
                                     <Trash2 className="w-3 h-3" />

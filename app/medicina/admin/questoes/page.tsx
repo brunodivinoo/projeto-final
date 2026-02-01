@@ -248,7 +248,7 @@ export default function AdminQuestoesPage() {
             <FileText className="w-8 h-8 text-blue-400" />
             Gerenciar Questões
           </h1>
-          <p className="text-white/60 mt-1">
+          <p className="text-slate-600 mt-1">
             {total.toLocaleString()} questões cadastradas
           </p>
         </div>
@@ -262,16 +262,16 @@ export default function AdminQuestoesPage() {
       </div>
 
       {/* Filtros */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+      <div className="bg-slate-100 border border-slate-200 rounded-xl p-4">
         <div className="flex items-center gap-2 mb-4">
-          <Filter className="w-5 h-5 text-white/60" />
+          <Filter className="w-5 h-5 text-slate-600" />
           <span className="text-white font-medium">Filtros</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Busca */}
           <div className="lg:col-span-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
               <input
                 type="text"
                 placeholder="Buscar no enunciado..."
@@ -280,7 +280,7 @@ export default function AdminQuestoesPage() {
                   setFiltros(prev => ({ ...prev, busca: e.target.value }))
                   setPaginaAtual(1)
                 }}
-                className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-cyan-500"
+                className="w-full pl-10 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-cyan-500"
               />
             </div>
           </div>
@@ -293,14 +293,14 @@ export default function AdminQuestoesPage() {
                 setFiltros(prev => ({ ...prev, disciplina: e.target.value }))
                 setPaginaAtual(1)
               }}
-              className="w-full appearance-none px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+              className="w-full appearance-none px-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
             >
               <option value="">Todas disciplinas</option>
               {disciplinas.map(d => (
                 <option key={d.id} value={d.id}>{d.nome}</option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
           </div>
 
           {/* Gerado por IA */}
@@ -311,13 +311,13 @@ export default function AdminQuestoesPage() {
                 setFiltros(prev => ({ ...prev, geradoIA: e.target.value }))
                 setPaginaAtual(1)
               }}
-              className="w-full appearance-none px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+              className="w-full appearance-none px-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
             >
               <option value="">IA: Todos</option>
               <option value="sim">Gerado por IA</option>
               <option value="nao">Manual</option>
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
           </div>
 
           {/* Revisado */}
@@ -328,19 +328,19 @@ export default function AdminQuestoesPage() {
                 setFiltros(prev => ({ ...prev, revisado: e.target.value }))
                 setPaginaAtual(1)
               }}
-              className="w-full appearance-none px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+              className="w-full appearance-none px-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
             >
               <option value="">Revisão: Todos</option>
               <option value="sim">Revisadas</option>
               <option value="nao">Pendentes</option>
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
           </div>
         </div>
       </div>
 
       {/* Lista de Questões */}
-      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-slate-100 border border-slate-200 rounded-xl overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
@@ -348,12 +348,12 @@ export default function AdminQuestoesPage() {
         ) : questoes.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="w-12 h-12 text-white/20 mx-auto mb-4" />
-            <p className="text-white/60">Nenhuma questão encontrada</p>
+            <p className="text-slate-600">Nenhuma questão encontrada</p>
           </div>
         ) : (
           <div className="divide-y divide-white/10">
             {questoes.map((questao) => (
-              <div key={questao.id} className="hover:bg-white/5 transition-colors">
+              <div key={questao.id} className="hover:bg-slate-100 transition-colors">
                 <div
                   className="p-4 cursor-pointer"
                   onClick={() => expandQuestao(questao.id)}
@@ -396,7 +396,7 @@ export default function AdminQuestoesPage() {
                             {questao.periodo_dificuldade}º período
                           </span>
                         )}
-                        <span className="text-white/40 flex items-center gap-1">
+                        <span className="text-slate-500 flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {new Date(questao.created_at).toLocaleDateString('pt-BR')}
                         </span>
@@ -413,7 +413,7 @@ export default function AdminQuestoesPage() {
                         className={`p-2 rounded-lg transition-colors ${
                           questao.revisado
                             ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                            : 'bg-white/5 text-white/60 hover:bg-white/10'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
                         }`}
                         title={questao.revisado ? 'Marcar como pendente' : 'Marcar como revisada'}
                       >
@@ -424,12 +424,12 @@ export default function AdminQuestoesPage() {
                           e.stopPropagation()
                           deleteQuestao(questao.id)
                         }}
-                        className="p-2 rounded-lg bg-white/5 text-red-400 hover:bg-red-500/20 transition-colors"
+                        className="p-2 rounded-lg bg-slate-100 text-red-400 hover:bg-red-500/20 transition-colors"
                         title="Excluir"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                      <div className="p-2 text-white/40">
+                      <div className="p-2 text-slate-500">
                         {expandedId === questao.id ? (
                           <ChevronUp className="w-4 h-4" />
                         ) : (
@@ -442,7 +442,7 @@ export default function AdminQuestoesPage() {
 
                 {/* Detalhes expandidos */}
                 {expandedId === questao.id && (
-                  <div className="px-4 pb-4 border-t border-white/10 bg-white/5">
+                  <div className="px-4 pb-4 border-t border-slate-200 bg-slate-100">
                     {loadingDetalhe ? (
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="w-6 h-6 animate-spin text-cyan-500" />
@@ -452,7 +452,7 @@ export default function AdminQuestoesPage() {
                         {/* Alternativas */}
                         {questaoDetalhe.alternativas && questaoDetalhe.alternativas.length > 0 && (
                           <div>
-                            <h4 className="text-white/60 text-sm font-medium mb-2">Alternativas:</h4>
+                            <h4 className="text-slate-600 text-sm font-medium mb-2">Alternativas:</h4>
                             <div className="space-y-2">
                               {questaoDetalhe.alternativas.map((alt, idx) => (
                                 <div
@@ -460,13 +460,13 @@ export default function AdminQuestoesPage() {
                                   className={`p-3 rounded-lg ${
                                     alt.correta || alt.letra === questaoDetalhe.resposta_correta
                                       ? 'bg-green-500/20 border border-green-500/30'
-                                      : 'bg-white/5 border border-white/10'
+                                      : 'bg-slate-100 border border-slate-200'
                                   }`}
                                 >
                                   <span className={`font-bold ${
                                     alt.correta || alt.letra === questaoDetalhe.resposta_correta
                                       ? 'text-green-400'
-                                      : 'text-white/60'
+                                      : 'text-slate-600'
                                   }`}>
                                     {alt.letra})
                                   </span>
@@ -483,12 +483,12 @@ export default function AdminQuestoesPage() {
                         {/* Gabarito Comentado */}
                         {questaoDetalhe.gabarito_comentado && (
                           <div>
-                            <h4 className="text-white/60 text-sm font-medium mb-2 flex items-center gap-2">
+                            <h4 className="text-slate-600 text-sm font-medium mb-2 flex items-center gap-2">
                               <BookOpen className="w-4 h-4" />
                               Gabarito Comentado:
                             </h4>
-                            <div className="p-4 bg-slate-800/50 rounded-lg border border-white/10">
-                              <p className="text-white/90 whitespace-pre-wrap text-sm leading-relaxed">
+                            <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-200">
+                              <p className="text-slate-800 whitespace-pre-wrap text-sm leading-relaxed">
                                 {questaoDetalhe.gabarito_comentado}
                               </p>
                             </div>
@@ -498,7 +498,7 @@ export default function AdminQuestoesPage() {
                         {/* Referência ABNT */}
                         {questaoDetalhe.referencia_abnt && (
                           <div>
-                            <h4 className="text-white/60 text-sm font-medium mb-2">Referência (ABNT):</h4>
+                            <h4 className="text-slate-600 text-sm font-medium mb-2">Referência (ABNT):</h4>
                             <p className="text-cyan-300 text-sm italic">
                               {questaoDetalhe.referencia_abnt}
                             </p>
@@ -508,10 +508,10 @@ export default function AdminQuestoesPage() {
                         {/* Fontes Consultadas */}
                         {questaoDetalhe.fontes_consultadas && questaoDetalhe.fontes_consultadas.length > 0 && (
                           <div>
-                            <h4 className="text-white/60 text-sm font-medium mb-2">Fontes Consultadas:</h4>
+                            <h4 className="text-slate-600 text-sm font-medium mb-2">Fontes Consultadas:</h4>
                             <ul className="space-y-1">
                               {questaoDetalhe.fontes_consultadas.map((fonte, idx) => (
-                                <li key={idx} className="text-white/70 text-sm">
+                                <li key={idx} className="text-slate-600 text-sm">
                                   • {fonte.autor}. <span className="italic">{fonte.titulo}</span>
                                   {fonte.edicao && ` (${fonte.edicao})`}
                                   {fonte.capitulo && `, Cap. ${fonte.capitulo}`}
@@ -526,7 +526,7 @@ export default function AdminQuestoesPage() {
                         {questaoDetalhe.dica_estudo && (
                           <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
                             <h4 className="text-amber-400 text-sm font-medium mb-1">💡 Dica de Estudo:</h4>
-                            <p className="text-white/80 text-sm">{questaoDetalhe.dica_estudo}</p>
+                            <p className="text-slate-700 text-sm">{questaoDetalhe.dica_estudo}</p>
                           </div>
                         )}
 
@@ -534,7 +534,7 @@ export default function AdminQuestoesPage() {
                         {questaoDetalhe.palavras_chave && questaoDetalhe.palavras_chave.length > 0 && (
                           <div className="flex flex-wrap gap-2">
                             {questaoDetalhe.palavras_chave.map((pc, idx) => (
-                              <span key={idx} className="px-2 py-1 bg-white/10 text-white/60 rounded text-xs">
+                              <span key={idx} className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs">
                                 #{pc}
                               </span>
                             ))}
@@ -542,7 +542,7 @@ export default function AdminQuestoesPage() {
                         )}
                       </div>
                     ) : (
-                      <div className="py-4 text-center text-white/40">
+                      <div className="py-4 text-center text-slate-500">
                         Não foi possível carregar os detalhes
                       </div>
                     )}
@@ -555,25 +555,25 @@ export default function AdminQuestoesPage() {
 
         {/* Paginação */}
         {totalPaginas > 1 && (
-          <div className="flex items-center justify-between p-4 border-t border-white/10">
-            <p className="text-white/60 text-sm">
+          <div className="flex items-center justify-between p-4 border-t border-slate-200">
+            <p className="text-slate-600 text-sm">
               Mostrando {((paginaAtual - 1) * porPagina) + 1} a {Math.min(paginaAtual * porPagina, total)} de {total}
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPaginaAtual(prev => Math.max(1, prev - 1))}
                 disabled={paginaAtual === 1}
-                className="px-3 py-1 bg-white/5 text-white rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 bg-slate-100 text-white rounded hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Anterior
               </button>
-              <span className="text-white/60 text-sm">
+              <span className="text-slate-600 text-sm">
                 {paginaAtual} / {totalPaginas}
               </span>
               <button
                 onClick={() => setPaginaAtual(prev => Math.min(totalPaginas, prev + 1))}
                 disabled={paginaAtual === totalPaginas}
-                className="px-3 py-1 bg-white/5 text-white rounded hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 bg-slate-100 text-white rounded hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Próximo
               </button>

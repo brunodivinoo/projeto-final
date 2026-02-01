@@ -155,18 +155,18 @@ export default function ForumPage() {
       <div className="flex flex-col md:flex-row gap-4">
         {/* Search */}
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
           <input
             type="text"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar tópicos..."
-            className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
           {busca && (
             <button
               onClick={() => setBusca('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
@@ -179,7 +179,7 @@ export default function ForumPage() {
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
             temFiltrosAtivos
               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-              : 'bg-white/5 text-white/60 hover:bg-white/10'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
           }`}
         >
           <Filter className="w-5 h-5" />
@@ -190,7 +190,7 @@ export default function ForumPage() {
 
       {/* Filters Panel */}
       {showFiltros && (
-        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-4 border border-slate-200">
           <div className="flex items-center justify-between mb-4">
             <span className="text-white font-medium">Filtros</span>
             {temFiltrosAtivos && (
@@ -203,14 +203,14 @@ export default function ForumPage() {
           <div className="grid md:grid-cols-2 gap-4">
             {/* Categoria */}
             <div>
-              <label className="text-white/60 text-sm mb-2 block">Categoria</label>
+              <label className="text-slate-600 text-sm mb-2 block">Categoria</label>
               <div className="flex flex-wrap gap-2">
                 {categorias.map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => setCategoriaFiltro(categoriaFiltro === cat.id ? '' : cat.id)}
                     className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                      categoriaFiltro === cat.id ? cat.cor : 'bg-white/5 text-white/60 hover:bg-white/10'
+                      categoriaFiltro === cat.id ? cat.cor : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     {cat.label}
@@ -221,11 +221,11 @@ export default function ForumPage() {
 
             {/* Disciplina */}
             <div>
-              <label className="text-white/60 text-sm mb-2 block">Disciplina</label>
+              <label className="text-slate-600 text-sm mb-2 block">Disciplina</label>
               <select
                 value={disciplinaFiltro}
                 onChange={(e) => setDisciplinaFiltro(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="" className="bg-slate-800">Todas</option>
                 {disciplinas.map((d) => (
@@ -243,12 +243,12 @@ export default function ForumPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
         </div>
       ) : topicos.length === 0 ? (
-        <div className="bg-white/5 rounded-xl p-12 border border-white/10 text-center">
+        <div className="bg-slate-100 rounded-xl p-12 border border-slate-200 text-center">
           <MessageSquare className="w-16 h-16 text-white/20 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">
             {temFiltrosAtivos ? 'Nenhum tópico encontrado' : 'Nenhum tópico ainda'}
           </h3>
-          <p className="text-white/60 mb-6">
+          <p className="text-slate-600 mb-6">
             {temFiltrosAtivos ? 'Tente ajustar os filtros' : 'Seja o primeiro a iniciar uma discussão!'}
           </p>
           {!temFiltrosAtivos && (
@@ -270,7 +270,7 @@ export default function ForumPage() {
               <Link
                 key={topico.id}
                 href={`/medicina/dashboard/forum/${topico.id}`}
-                className="block bg-white/5 rounded-xl p-5 border border-white/10 hover:border-white/20 transition-all"
+                className="block bg-slate-100 rounded-xl p-5 border border-slate-200 hover:border-slate-300 transition-all"
               >
                 <div className="flex items-start gap-4">
                   {/* Avatar */}
@@ -296,7 +296,7 @@ export default function ForumPage() {
                         {catInfo.label}
                       </span>
                       {topico.disciplina && (
-                        <span className="text-white/40 text-xs">
+                        <span className="text-slate-500 text-xs">
                           {topico.disciplina.nome}
                         </span>
                       )}
@@ -308,12 +308,12 @@ export default function ForumPage() {
                     </h3>
 
                     {/* Preview */}
-                    <p className="text-white/60 text-sm line-clamp-2 mb-3">
+                    <p className="text-slate-600 text-sm line-clamp-2 mb-3">
                       {topico.conteudo}
                     </p>
 
                     {/* Footer */}
-                    <div className="flex items-center gap-4 text-xs text-white/40">
+                    <div className="flex items-center gap-4 text-xs text-slate-500">
                       <span className="flex items-center gap-1">
                         {topico.autor?.plano === 'residencia' && <Crown className="w-3 h-3 text-amber-400" />}
                         {topico.autor?.nome || 'Anônimo'}

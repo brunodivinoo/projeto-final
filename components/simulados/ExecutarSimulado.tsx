@@ -600,7 +600,7 @@ export function ExecutarSimulado({ simuladoId, onFinalizar, onVoltar }: Props) {
 
               {/* Enunciado */}
               <div className="p-6">
-                <div className="prose dark:prose-invert max-w-none mb-8">
+                <div className="prose dark:prose-slate max-w-none mb-8">
                   <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap text-lg leading-relaxed">
                     {questaoInfo.enunciado}
                   </p>

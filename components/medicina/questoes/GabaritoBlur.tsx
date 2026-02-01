@@ -24,15 +24,15 @@ export function GabaritoBlur({ children, mostrarBlur, tipo, textoPreview }: Gaba
     <div className="relative">
       {/* Preview/Teaser - Mostra uma parte do conteúdo */}
       {tipo === 'explicacao' && preview && (
-        <div className="mb-4 p-4 bg-white/5 rounded-lg border border-white/10">
+        <div className="mb-4 p-4 bg-slate-100 rounded-lg border border-slate-200">
           <div className="flex items-center gap-2 mb-2">
             <Eye className="w-4 h-4 text-emerald-400" />
             <span className="text-emerald-400 text-sm font-medium">Prévia da Explicação</span>
           </div>
-          <p className="text-white/70 text-sm leading-relaxed">
+          <p className="text-slate-600 text-sm leading-relaxed">
             {preview}
           </p>
-          <div className="flex items-center gap-1 mt-2 text-white/40 text-xs">
+          <div className="flex items-center gap-1 mt-2 text-slate-500 text-xs">
             <ChevronDown className="w-3 h-3" />
             <span>Continue lendo abaixo...</span>
           </div>
@@ -59,7 +59,7 @@ export function GabaritoBlur({ children, mostrarBlur, tipo, textoPreview }: Gaba
           {tipo === 'gabarito' ? 'Gabarito Completo Bloqueado' : 'Explicação Completa Bloqueada'}
         </h4>
 
-        <p className="text-white/70 text-sm mb-4 max-w-sm">
+        <p className="text-slate-600 text-sm mb-4 max-w-sm">
           {tipo === 'gabarito'
             ? 'Faça upgrade para ver o gabarito e conferir sua resposta!'
             : 'Desbloqueie para entender a lógica completa da questão e acelerar seu aprendizado!'
@@ -74,7 +74,7 @@ export function GabaritoBlur({ children, mostrarBlur, tipo, textoPreview }: Gaba
           <span>Desbloquear Agora</span>
         </Link>
 
-        <p className="text-white/50 text-xs mt-3">
+        <p className="text-slate-500 text-xs mt-3">
           A partir de R$59,90/mês • 7 dias de garantia
         </p>
       </div>

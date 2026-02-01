@@ -21,8 +21,8 @@ import dynamic from 'next/dynamic'
 const QuestionArtifactCard = dynamic(() => import('./QuestionArtifactCard'), {
   ssr: false,
   loading: () => (
-    <div className="bg-[#1A2332] border border-white/10 rounded-xl p-6">
-      <div className="flex items-center gap-2 text-white/40">
+    <div className="bg-[#1A2332] border border-slate-200 rounded-xl p-6">
+      <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full" />
         <span>Carregando questão...</span>
       </div>
@@ -116,20 +116,20 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
   // Tela inicial
   if (!started) {
     return (
-      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-200 rounded-xl overflow-hidden">
         <div className="p-6 text-center">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl">📋</span>
           </div>
           <h2 className="text-xl font-bold text-white mb-2">{simulado.titulo}</h2>
-          <p className="text-white/60 text-sm mb-4">{simulado.disciplina}</p>
+          <p className="text-slate-600 text-sm mb-4">{simulado.disciplina}</p>
 
           <div className="flex items-center justify-center gap-6 mb-6 text-sm">
-            <div className="flex items-center gap-2 text-white/60">
+            <div className="flex items-center gap-2 text-slate-600">
               <span className="text-lg">📝</span>
               <span>{simulado.total_questoes} questões</span>
             </div>
-            <div className="flex items-center gap-2 text-white/60">
+            <div className="flex items-center gap-2 text-slate-600">
               <Clock className="w-4 h-4" />
               <span>{simulado.tempo_estimado}</span>
             </div>
@@ -150,23 +150,23 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
   // Tela de pausa
   if (paused) {
     return (
-      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-200 rounded-xl overflow-hidden">
         <div className="p-6">
           <div className="text-center mb-6">
             <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-4">
               <Pause className="w-8 h-8 text-amber-400" />
             </div>
             <h2 className="text-xl font-bold text-white mb-1">Simulado Pausado</h2>
-            <p className="text-white/60 text-sm">{simulado.titulo}</p>
+            <p className="text-slate-600 text-sm">{simulado.titulo}</p>
           </div>
 
           {/* Progresso atual */}
-          <div className="bg-white/5 rounded-xl p-4 mb-4">
+          <div className="bg-slate-100 rounded-xl p-4 mb-4">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-white/60 text-sm">Progresso</span>
+              <span className="text-slate-600 text-sm">Progresso</span>
               <span className="text-white font-medium">{stats.respondidas}/{simulado.questoes.length}</span>
             </div>
-            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all"
                 style={{ width: `${(stats.respondidas / simulado.questoes.length) * 100}%` }}
@@ -175,7 +175,7 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
             <div className="flex justify-between mt-2 text-xs">
               <span className="text-emerald-400">{stats.corretas} acertos</span>
               <span className="text-red-400">{stats.erradas} erros</span>
-              <span className="text-white/40">{stats.pendentes} pendentes</span>
+              <span className="text-slate-500">{stats.pendentes} pendentes</span>
             </div>
           </div>
 
@@ -190,14 +190,14 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
             </button>
             <button
               onClick={handleReset}
-              className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-white rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-4 h-4" />
               Reiniciar do Zero
             </button>
             <button
               onClick={() => { setPaused(false); setStarted(false) }}
-              className="w-full py-2 text-white/60 hover:text-white transition-colors flex items-center justify-center gap-2 text-sm"
+              className="w-full py-2 text-slate-600 hover:text-white transition-colors flex items-center justify-center gap-2 text-sm"
             >
               <X className="w-4 h-4" />
               Fechar Simulado
@@ -211,38 +211,38 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
   // Tela de resultado
   if (finished) {
     return (
-      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-200 rounded-xl overflow-hidden">
         <div className="p-6">
           <div className="text-center mb-6">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-600/20 flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl">{stats.percentual >= 70 ? '🎉' : stats.percentual >= 50 ? '👍' : '📚'}</span>
             </div>
             <h2 className="text-2xl font-bold text-white mb-1">Simulado Concluído!</h2>
-            <p className="text-white/60">{simulado.titulo}</p>
+            <p className="text-slate-600">{simulado.titulo}</p>
           </div>
 
           {/* Estatísticas */}
           <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="bg-white/5 rounded-xl p-4 text-center">
+            <div className="bg-slate-100 rounded-xl p-4 text-center">
               <div className="text-3xl font-bold text-emerald-400">{stats.corretas}</div>
-              <div className="text-xs text-white/40">Acertos</div>
+              <div className="text-xs text-slate-500">Acertos</div>
             </div>
-            <div className="bg-white/5 rounded-xl p-4 text-center">
+            <div className="bg-slate-100 rounded-xl p-4 text-center">
               <div className="text-3xl font-bold text-red-400">{stats.erradas}</div>
-              <div className="text-xs text-white/40">Erros</div>
+              <div className="text-xs text-slate-500">Erros</div>
             </div>
-            <div className="bg-white/5 rounded-xl p-4 text-center">
+            <div className="bg-slate-100 rounded-xl p-4 text-center">
               <div className="text-3xl font-bold text-white">{stats.respondidas}</div>
-              <div className="text-xs text-white/40">Total</div>
+              <div className="text-xs text-slate-500">Total</div>
             </div>
-            <div className="bg-white/5 rounded-xl p-4 text-center">
+            <div className="bg-slate-100 rounded-xl p-4 text-center">
               <div className="text-3xl font-bold text-emerald-400">{stats.percentual}%</div>
-              <div className="text-xs text-white/40">Aproveitamento</div>
+              <div className="text-xs text-slate-500">Aproveitamento</div>
             </div>
           </div>
 
           {/* Barra de progresso visual */}
-          <div className="h-3 bg-white/10 rounded-full overflow-hidden mb-6">
+          <div className="h-3 bg-slate-100 rounded-full overflow-hidden mb-6">
             <div
               className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all"
               style={{ width: `${stats.percentual}%` }}
@@ -253,7 +253,7 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
           <div className="flex gap-3">
             <button
               onClick={handleReset}
-              className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-white rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-4 h-4" />
               Refazer Simulado
@@ -276,35 +276,35 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
   const respostaAtual = respostas[questaoAtual.numero]
 
   return (
-    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-white/10 rounded-xl overflow-hidden">
+    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-200 rounded-xl overflow-hidden">
       {/* Header com progresso */}
-      <div className="px-4 py-3 bg-white/5 border-b border-white/10">
+      <div className="px-4 py-3 bg-slate-100 border-b border-slate-200">
         <div className="flex items-center justify-between mb-2">
           <span className="text-white font-medium text-sm truncate max-w-[60%]">{simulado.titulo}</span>
           <div className="flex items-center gap-2">
-            <span className="text-white/60 text-sm">
+            <span className="text-slate-600 text-sm">
               {stats.respondidas}/{simulado.questoes.length}
             </span>
             {/* Botões de controle */}
             <button
               onClick={() => setShowStats(!showStats)}
-              className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
               title="Ver estatísticas"
             >
-              <PieChart className="w-4 h-4 text-white/60" />
+              <PieChart className="w-4 h-4 text-slate-600" />
             </button>
             <button
               onClick={handlePause}
-              className="p-1.5 bg-white/10 hover:bg-amber-500/30 rounded-lg transition-colors"
+              className="p-1.5 bg-slate-100 hover:bg-amber-500/30 rounded-lg transition-colors"
               title="Pausar simulado"
             >
-              <Pause className="w-4 h-4 text-white/60" />
+              <Pause className="w-4 h-4 text-slate-600" />
             </button>
           </div>
         </div>
 
         {/* Barra de progresso */}
-        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all"
             style={{ width: `${(stats.respondidas / simulado.questoes.length) * 100}%` }}
@@ -319,31 +319,31 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
           <span className="flex items-center gap-1 text-red-400">
             <XCircle className="w-3 h-3" /> {stats.erradas}
           </span>
-          <span className="flex items-center gap-1 text-white/40">
+          <span className="flex items-center gap-1 text-slate-500">
             <Clock className="w-3 h-3" /> {simulado.tempo_estimado}
           </span>
         </div>
 
         {/* Painel de estatísticas expandido */}
         {showStats && (
-          <div className="mt-3 pt-3 border-t border-white/10">
+          <div className="mt-3 pt-3 border-t border-slate-200">
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="bg-emerald-500/10 rounded-lg p-2">
                 <div className="text-lg font-bold text-emerald-400">{stats.corretas}</div>
-                <div className="text-[10px] text-white/40">Corretas</div>
+                <div className="text-[10px] text-slate-500">Corretas</div>
               </div>
               <div className="bg-red-500/10 rounded-lg p-2">
                 <div className="text-lg font-bold text-red-400">{stats.erradas}</div>
-                <div className="text-[10px] text-white/40">Erradas</div>
+                <div className="text-[10px] text-slate-500">Erradas</div>
               </div>
-              <div className="bg-white/5 rounded-lg p-2">
-                <div className="text-lg font-bold text-white/60">{stats.pendentes}</div>
-                <div className="text-[10px] text-white/40">Pendentes</div>
+              <div className="bg-slate-100 rounded-lg p-2">
+                <div className="text-lg font-bold text-slate-600">{stats.pendentes}</div>
+                <div className="text-[10px] text-slate-500">Pendentes</div>
               </div>
             </div>
             {stats.respondidas > 0 && (
               <div className="mt-2 text-center">
-                <span className="text-xs text-white/40">Aproveitamento: </span>
+                <span className="text-xs text-slate-500">Aproveitamento: </span>
                 <span className={`text-sm font-bold ${stats.percentual >= 70 ? 'text-emerald-400' : stats.percentual >= 50 ? 'text-amber-400' : 'text-red-400'}`}>
                   {stats.percentual}%
                 </span>
@@ -354,7 +354,7 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
       </div>
 
       {/* Navegação por números */}
-      <div className="px-4 py-2 border-b border-white/10 overflow-x-auto">
+      <div className="px-4 py-2 border-b border-slate-200 overflow-x-auto">
         <div className="flex gap-1">
           {simulado.questoes.map((q, idx) => {
             const resp = respostas[q.numero]
@@ -369,7 +369,7 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
                       ? resp.acertou
                         ? 'bg-emerald-500/30 text-emerald-400'
                         : 'bg-red-500/30 text-red-400'
-                      : 'bg-white/10 text-white/60 hover:bg-white/20'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {idx + 1}
@@ -410,17 +410,17 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
       </div>
 
       {/* Navegação */}
-      <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between">
+      <div className="px-4 py-3 border-t border-slate-200 flex items-center justify-between">
         <button
           onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
           disabled={currentQuestion === 0}
-          className="flex items-center gap-1 px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-white/80 text-sm transition-colors"
+          className="flex items-center gap-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-slate-700 text-sm transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
           Anterior
         </button>
 
-        <span className="text-white/40 text-sm">
+        <span className="text-slate-500 text-sm">
           {currentQuestion + 1} de {simulado.questoes.length}
         </span>
 

@@ -293,7 +293,7 @@ export default function AdminDashboardPage() {
             <Database className="w-8 h-8 text-cyan-400" />
             Painel Admin
           </h1>
-          <p className="text-white/60 mt-1">
+          <p className="text-slate-600 mt-1">
             Gerencie questões, disciplinas e conteúdo da plataforma
           </p>
         </div>
@@ -308,42 +308,42 @@ export default function AdminDashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div className="bg-slate-100 border border-slate-200 rounded-xl p-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
               <FileText className="w-5 h-5 text-blue-400" />
             </div>
-            <span className="text-white/60 text-sm">Total Questões</span>
+            <span className="text-slate-600 text-sm">Total Questões</span>
           </div>
           <p className="text-2xl font-bold text-white">{stats?.totalQuestoes.toLocaleString()}</p>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div className="bg-slate-100 border border-slate-200 rounded-xl p-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
               <Zap className="w-5 h-5 text-emerald-400" />
             </div>
-            <span className="text-white/60 text-sm">Geradas por IA</span>
+            <span className="text-slate-600 text-sm">Geradas por IA</span>
           </div>
           <p className="text-2xl font-bold text-white">{stats?.questoesIA.toLocaleString()}</p>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div className="bg-slate-100 border border-slate-200 rounded-xl p-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-green-400" />
             </div>
-            <span className="text-white/60 text-sm">Revisadas</span>
+            <span className="text-slate-600 text-sm">Revisadas</span>
           </div>
           <p className="text-2xl font-bold text-white">{stats?.questoesRevisadas.toLocaleString()}</p>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div className="bg-slate-100 border border-slate-200 rounded-xl p-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <AlertCircle className="w-5 h-5 text-amber-400" />
             </div>
-            <span className="text-white/60 text-sm">Pendentes Revisão</span>
+            <span className="text-slate-600 text-sm">Pendentes Revisão</span>
           </div>
           <p className="text-2xl font-bold text-white">{stats?.questoesPendentes.toLocaleString()}</p>
         </div>
@@ -361,7 +361,7 @@ export default function AdminDashboardPage() {
                 group relative overflow-hidden rounded-xl p-5 border transition-all
                 ${action.highlight
                   ? 'bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-emerald-500/30 hover:border-emerald-400/50'
-                  : 'bg-white/5 border-white/10 hover:border-white/20'
+                  : 'bg-slate-100 border-slate-200 hover:border-slate-300'
                 }
               `}
             >
@@ -369,8 +369,8 @@ export default function AdminDashboardPage() {
                 <action.icon className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-white font-semibold mb-1">{action.label}</h3>
-              <p className="text-white/60 text-sm">{action.description}</p>
-              <ArrowRight className="absolute top-5 right-5 w-5 h-5 text-white/30 group-hover:text-white/60 transition-colors" />
+              <p className="text-slate-600 text-sm">{action.description}</p>
+              <ArrowRight className="absolute top-5 right-5 w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
             </Link>
           ))}
         </div>
@@ -379,25 +379,25 @@ export default function AdminDashboardPage() {
       {/* Stats secundários */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Conteúdo */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+        <div className="bg-slate-100 border border-slate-200 rounded-xl p-5">
           <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-purple-400" />
             Conteúdo
           </h3>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white/5 rounded-lg p-4">
-              <p className="text-white/60 text-sm mb-1">Disciplinas</p>
+            <div className="bg-slate-100 rounded-lg p-4">
+              <p className="text-slate-600 text-sm mb-1">Disciplinas</p>
               <p className="text-xl font-bold text-white">{stats?.totalDisciplinas}</p>
             </div>
-            <div className="bg-white/5 rounded-lg p-4">
-              <p className="text-white/60 text-sm mb-1">Assuntos</p>
+            <div className="bg-slate-100 rounded-lg p-4">
+              <p className="text-slate-600 text-sm mb-1">Assuntos</p>
               <p className="text-xl font-bold text-white">{stats?.totalAssuntos}</p>
             </div>
           </div>
         </div>
 
         {/* Últimas Gerações */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+        <div className="bg-slate-100 border border-slate-200 rounded-xl p-5">
           <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
             <History className="w-5 h-5 text-amber-400" />
             Últimas Gerações
@@ -405,7 +405,7 @@ export default function AdminDashboardPage() {
           {stats?.ultimasGeracoes && stats.ultimasGeracoes.length > 0 ? (
             <div className="space-y-3">
               {stats.ultimasGeracoes.map((geracao) => (
-                <div key={geracao.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                <div key={geracao.id} className="flex items-center justify-between py-2 border-b border-slate-200 last:border-0">
                   <div className="flex items-center gap-3">
                     <div className={`w-2 h-2 rounded-full ${
                       geracao.status === 'concluido' ? 'bg-green-400' :
@@ -416,19 +416,19 @@ export default function AdminDashboardPage() {
                       <p className="text-white text-sm">
                         {geracao.disciplina_nome || 'Disciplina'}
                       </p>
-                      <p className="text-white/40 text-xs">
+                      <p className="text-slate-500 text-xs">
                         {new Date(geracao.created_at).toLocaleDateString('pt-BR')}
                       </p>
                     </div>
                   </div>
-                  <span className="text-white/60 text-sm">
+                  <span className="text-slate-600 text-sm">
                     {geracao.quantidade} questões
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-white/40 text-sm text-center py-4">
+            <p className="text-slate-500 text-sm text-center py-4">
               Nenhuma geração registrada ainda
             </p>
           )}
@@ -436,11 +436,11 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Seção de Monitoramento */}
-      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-slate-100 border border-slate-200 rounded-xl overflow-hidden">
         {/* Header do Monitoramento */}
         <button
           onClick={() => setShowMonitoramento(!showMonitoramento)}
-          className="w-full p-5 flex items-center justify-between hover:bg-white/5 transition-colors"
+          className="w-full p-5 flex items-center justify-between hover:bg-slate-100 transition-colors"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
@@ -448,29 +448,29 @@ export default function AdminDashboardPage() {
             </div>
             <div className="text-left">
               <h3 className="text-white font-semibold">Monitoramento</h3>
-              <p className="text-white/60 text-sm">
+              <p className="text-slate-600 text-sm">
                 {stats?.feedbacksPendentes || 0} feedbacks pendentes • {stats?.errosHoje || 0} erros hoje
               </p>
             </div>
           </div>
           {showMonitoramento ? (
-            <ChevronUp className="w-5 h-5 text-white/60" />
+            <ChevronUp className="w-5 h-5 text-slate-600" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-white/60" />
+            <ChevronDown className="w-5 h-5 text-slate-600" />
           )}
         </button>
 
         {/* Conteúdo expandido */}
         {showMonitoramento && (
-          <div className="border-t border-white/10">
+          <div className="border-t border-slate-200">
             {/* Abas */}
-            <div className="flex border-b border-white/10">
+            <div className="flex border-b border-slate-200">
               <button
                 onClick={() => setAbaMonitoramento('feedbacks')}
                 className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
                   abaMonitoramento === 'feedbacks'
                     ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                    : 'text-slate-600 hover:text-white hover:bg-slate-100'
                 }`}
               >
                 <MessageSquare className="w-4 h-4" />
@@ -481,7 +481,7 @@ export default function AdminDashboardPage() {
                 className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
                   abaMonitoramento === 'erros'
                     ? 'text-red-400 border-b-2 border-red-400 bg-red-500/10'
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                    : 'text-slate-600 hover:text-white hover:bg-slate-100'
                 }`}
               >
                 <Bug className="w-4 h-4" />
@@ -495,12 +495,12 @@ export default function AdminDashboardPage() {
                 {feedbacks.length === 0 ? (
                   <div className="p-8 text-center">
                     <MessageSquare className="w-12 h-12 text-white/20 mx-auto mb-3" />
-                    <p className="text-white/60">Nenhum feedback recebido</p>
+                    <p className="text-slate-600">Nenhum feedback recebido</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-white/10">
                     {feedbacks.map((fb) => (
-                      <div key={fb.id} className="p-4 hover:bg-white/5">
+                      <div key={fb.id} className="p-4 hover:bg-slate-100">
                         <div
                           className="cursor-pointer"
                           onClick={() => setExpandedFeedback(expandedFeedback === fb.id ? null : fb.id)}
@@ -512,35 +512,35 @@ export default function AdminDashboardPage() {
                                   fb.tipo === 'bug' ? 'bg-red-500/20 text-red-400' :
                                   fb.tipo === 'sugestao' ? 'bg-blue-500/20 text-blue-400' :
                                   fb.tipo === 'duvida' ? 'bg-amber-500/20 text-amber-400' :
-                                  'bg-white/20 text-white/60'
+                                  'bg-slate-200 text-slate-600'
                                 }`}>
                                   {fb.tipo}
                                 </span>
                                 <span className={`px-2 py-0.5 rounded text-xs ${
                                   fb.status === 'pendente' ? 'bg-amber-500/20 text-amber-400' :
                                   fb.status === 'resolvido' ? 'bg-green-500/20 text-green-400' :
-                                  'bg-white/20 text-white/60'
+                                  'bg-slate-200 text-slate-600'
                                 }`}>
                                   {fb.status}
                                 </span>
                               </div>
                               <h4 className="text-white font-medium text-sm truncate">{fb.titulo}</h4>
-                              <p className="text-white/40 text-xs mt-1">
+                              <p className="text-slate-500 text-xs mt-1">
                                 {fb.usuario?.nome || fb.usuario?.email || 'Anônimo'} • {new Date(fb.created_at).toLocaleDateString('pt-BR')}
                               </p>
                             </div>
                             {expandedFeedback === fb.id ? (
-                              <ChevronUp className="w-4 h-4 text-white/40 flex-shrink-0" />
+                              <ChevronUp className="w-4 h-4 text-slate-500 flex-shrink-0" />
                             ) : (
-                              <ChevronDown className="w-4 h-4 text-white/40 flex-shrink-0" />
+                              <ChevronDown className="w-4 h-4 text-slate-500 flex-shrink-0" />
                             )}
                           </div>
                         </div>
 
                         {/* Detalhes expandidos */}
                         {expandedFeedback === fb.id && (
-                          <div className="mt-3 pt-3 border-t border-white/10">
-                            <p className="text-white/80 text-sm whitespace-pre-wrap mb-3">{fb.descricao}</p>
+                          <div className="mt-3 pt-3 border-t border-slate-200">
+                            <p className="text-slate-700 text-sm whitespace-pre-wrap mb-3">{fb.descricao}</p>
                             <div className="flex gap-2">
                               {fb.status === 'pendente' && (
                                 <button
@@ -574,12 +574,12 @@ export default function AdminDashboardPage() {
                 {erros.length === 0 ? (
                   <div className="p-8 text-center">
                     <Bug className="w-12 h-12 text-white/20 mx-auto mb-3" />
-                    <p className="text-white/60">Nenhum erro registrado</p>
+                    <p className="text-slate-600">Nenhum erro registrado</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-white/10">
                     {erros.map((erro) => (
-                      <div key={erro.id} className="p-4 hover:bg-white/5">
+                      <div key={erro.id} className="p-4 hover:bg-slate-100">
                         <div className="flex items-start gap-3">
                           <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                           <div className="flex-1 min-w-0">
@@ -587,12 +587,12 @@ export default function AdminDashboardPage() {
                               <span className="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-xs font-medium">
                                 {erro.error_type}
                               </span>
-                              <span className="text-white/40 text-xs">
+                              <span className="text-slate-500 text-xs">
                                 {erro.pagina}
                               </span>
                             </div>
-                            <p className="text-white/80 text-sm break-all">{erro.error_message}</p>
-                            <p className="text-white/40 text-xs mt-1">
+                            <p className="text-slate-700 text-sm break-all">{erro.error_message}</p>
+                            <p className="text-slate-500 text-xs mt-1">
                               {new Date(erro.created_at).toLocaleString('pt-BR')}
                             </p>
                           </div>

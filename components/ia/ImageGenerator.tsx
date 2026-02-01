@@ -94,14 +94,14 @@ export default function ImageGenerator({ prompt, onGenerate }: ImageGeneratorPro
       <div className="p-4">
         {/* Prompt */}
         <div className="mb-4">
-          <label className="text-white/60 text-xs font-medium mb-1 block">Solicitação:</label>
-          <p className="text-white/80 text-sm bg-slate-800/50 rounded-lg p-3">{prompt}</p>
+          <label className="text-slate-600 text-xs font-medium mb-1 block">Solicitação:</label>
+          <p className="text-slate-700 text-sm bg-slate-800/50 rounded-lg p-3">{prompt}</p>
         </div>
 
         {/* Seletor de estilo */}
         {!imageData && (
           <div className="mb-4">
-            <label className="text-white/60 text-xs font-medium mb-2 block">Estilo da ilustração:</label>
+            <label className="text-slate-600 text-xs font-medium mb-2 block">Estilo da ilustração:</label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {ESTILOS.map((e) => (
                 <button
@@ -110,11 +110,11 @@ export default function ImageGenerator({ prompt, onGenerate }: ImageGeneratorPro
                   className={`p-2 rounded-lg text-left transition-colors ${
                     estilo === e.value
                       ? 'bg-purple-500/30 border-purple-500/50'
-                      : 'bg-slate-800/50 border-white/5 hover:bg-slate-700/50'
+                      : 'bg-slate-800/50 border-slate-200 hover:bg-slate-700/50'
                   } border`}
                 >
                   <span className="text-white text-sm font-medium">{e.label}</span>
-                  <span className="text-white/40 text-xs block">{e.desc}</span>
+                  <span className="text-slate-500 text-xs block">{e.desc}</span>
                 </button>
               ))}
             </div>
@@ -179,7 +179,7 @@ export default function ImageGenerator({ prompt, onGenerate }: ImageGeneratorPro
                   setImageData(null)
                   setError(null)
                 }}
-                className="flex items-center justify-center gap-2 py-3 px-4 bg-slate-700/50 text-white/70 rounded-lg hover:bg-slate-600/50 transition-colors"
+                className="flex items-center justify-center gap-2 py-3 px-4 bg-slate-700/50 text-slate-600 rounded-lg hover:bg-slate-600/50 transition-colors"
               >
                 <RefreshCw className="w-5 h-5" />
                 <span>Nova</span>
@@ -189,7 +189,7 @@ export default function ImageGenerator({ prompt, onGenerate }: ImageGeneratorPro
         </div>
 
         {/* Info */}
-        <p className="text-white/40 text-xs mt-3 text-center">
+        <p className="text-slate-500 text-xs mt-3 text-center">
           Imagens geradas com DALL-E 3 para fins educacionais
         </p>
       </div>

@@ -82,7 +82,7 @@ function MobileChatMessageComponent({
         animate={{ opacity: 1, y: 0 }}
         className="flex justify-center px-4 py-2"
       >
-        <span className="px-3 py-1.5 bg-white/5 text-white/40 text-xs rounded-full text-center">
+        <span className="px-3 py-1.5 bg-slate-100 text-slate-500 text-xs rounded-full text-center">
           {conteudo}
         </span>
       </motion.div>
@@ -176,7 +176,7 @@ function MobileChatMessageComponent({
             "rounded-2xl px-4 py-3 max-w-[85%]",
             isUser
               ? "bg-indigo-500 text-white ml-auto rounded-br-md"
-              : "bg-white/5 text-white/90 mr-auto rounded-bl-md"
+              : "bg-slate-100 text-slate-800 mr-auto rounded-bl-md"
           )}
         >
           {/* Loading indicator */}
@@ -214,7 +214,7 @@ function MobileChatMessageComponent({
         >
           {/* Timestamp */}
           {timestamp && (
-            <span className="text-[10px] text-white/30">
+            <span className="text-[10px] text-slate-400">
               {formatTime(timestamp)}
             </span>
           )}
@@ -223,7 +223,7 @@ function MobileChatMessageComponent({
           {!isUser && !isLoading && conteudo && (
             <button
               onClick={handleCopy}
-              className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
             >
               {copied ? (
                 <Check className="w-4 h-4 text-emerald-400" />
@@ -256,7 +256,7 @@ export function MobileTypingIndicator() {
       </div>
 
       {/* Indicador */}
-      <div className="bg-white/5 rounded-2xl rounded-bl-md px-4 py-3">
+      <div className="bg-slate-100 rounded-2xl rounded-bl-md px-4 py-3">
         <div className="flex gap-1.5">
           <motion.span
             animate={{ scale: [1, 1.2, 1] }}

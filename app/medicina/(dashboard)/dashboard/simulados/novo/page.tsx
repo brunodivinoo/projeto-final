@@ -167,12 +167,12 @@ export default function NovoSimuladoPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/medicina/dashboard/simulados"
-          className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-slate-600 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           Voltar
         </Link>
-        <div className="text-white/60 text-sm">
+        <div className="text-slate-600 text-sm">
           {simuladosRestantes} simulados restantes este mês
         </div>
       </div>
@@ -187,7 +187,7 @@ export default function NovoSimuladoPage() {
       </div>
 
       {/* Templates Rápidos */}
-      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+      <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
         <div className="flex items-center gap-2 mb-4">
           <Zap className="w-5 h-5 text-amber-400" />
           <span className="font-semibold text-white">Modelos Rápidos</span>
@@ -204,11 +204,11 @@ export default function NovoSimuladoPage() {
               className={`p-3 rounded-lg border text-center transition-colors ${
                 totalQuestoes === template.questoes && tempoLimite === template.tempo
                   ? 'border-emerald-500 bg-emerald-500/10'
-                  : 'border-white/10 hover:border-white/20 hover:bg-white/5'
+                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-100'
               }`}
             >
               <div className="text-white font-medium text-sm">{template.nome}</div>
-              <div className="text-white/40 text-xs mt-1">{template.tempo} min</div>
+              <div className="text-slate-500 text-xs mt-1">{template.tempo} min</div>
             </button>
           ))}
         </div>
@@ -216,19 +216,19 @@ export default function NovoSimuladoPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Nome */}
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <label className="block text-white font-medium mb-3">Nome do Simulado</label>
           <input
             type="text"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 px-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             placeholder="Ex: Simulado de Clínica Médica"
           />
         </div>
 
         {/* Número de Questões */}
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <div className="flex items-center gap-3 mb-4">
             <ClipboardList className="w-5 h-5 text-emerald-400" />
             <label className="text-white font-medium">Número de Questões</label>
@@ -250,14 +250,14 @@ export default function NovoSimuladoPage() {
                 max="100"
                 value={totalQuestoes}
                 onChange={(e) => setTotalQuestoes(Math.min(100, Math.max(5, parseInt(e.target.value) || 5)))}
-                className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
           </div>
         </div>
 
         {/* Tempo */}
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <Clock className="w-5 h-5 text-teal-400" />
@@ -268,9 +268,9 @@ export default function NovoSimuladoPage() {
                 type="checkbox"
                 checked={tempoHabilitado}
                 onChange={(e) => setTempoHabilitado(e.target.checked)}
-                className="w-4 h-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500"
+                className="w-4 h-4 rounded border-slate-300 bg-slate-100 text-emerald-500 focus:ring-emerald-500"
               />
-              <span className="text-white/60 text-sm">Habilitar</span>
+              <span className="text-slate-600 text-sm">Habilitar</span>
             </label>
           </div>
           {tempoHabilitado && (
@@ -291,20 +291,20 @@ export default function NovoSimuladoPage() {
                   max="300"
                   value={tempoLimite || 60}
                   onChange={(e) => setTempoLimite(parseInt(e.target.value) || 60)}
-                  className="w-20 bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-20 bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
-                <span className="text-white/60">min</span>
+                <span className="text-slate-600">min</span>
               </div>
             </div>
           )}
         </div>
 
         {/* Disciplinas */}
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <div className="flex items-center gap-3 mb-4">
             <Target className="w-5 h-5 text-purple-400" />
             <label className="text-white font-medium">Disciplinas</label>
-            <span className="text-white/40 text-sm">(deixe vazio para todas)</span>
+            <span className="text-slate-500 text-sm">(deixe vazio para todas)</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {disciplinas.map((disc) => (
@@ -315,7 +315,7 @@ export default function NovoSimuladoPage() {
                 className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                   disciplinasSelecionadas.includes(disc.id)
                     ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                    : 'bg-white/5 text-white/60 hover:bg-white/10'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 {disc.nome}
@@ -325,24 +325,24 @@ export default function NovoSimuladoPage() {
         </div>
 
         {/* Filtros Avançados */}
-        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
           <button
             type="button"
             onClick={() => setShowFiltrosAvancados(!showFiltrosAvancados)}
-            className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+            className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-100 transition-colors"
           >
             <div className="flex items-center gap-3">
               <Filter className="w-5 h-5 text-cyan-400" />
               <span className="font-medium text-white">Filtros Avançados</span>
             </div>
-            <ChevronDown className={`w-5 h-5 text-white/40 transition-transform ${showFiltrosAvancados ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform ${showFiltrosAvancados ? 'rotate-180' : ''}`} />
           </button>
 
           {showFiltrosAvancados && (
-            <div className="p-6 border-t border-white/10 space-y-6">
+            <div className="p-6 border-t border-slate-200 space-y-6">
               {/* Período */}
               <div>
-                <label className="text-white/80 text-sm mb-3 block">
+                <label className="text-slate-700 text-sm mb-3 block">
                   Período do Curso: <span className={periodosInfo[periodoMin]?.cor}>{periodosInfo[periodoMin]?.label}</span> até <span className={periodosInfo[periodoMax]?.cor}>{periodosInfo[periodoMax]?.label}</span>
                 </label>
                 <div className="flex items-center gap-4">
@@ -353,13 +353,13 @@ export default function NovoSimuladoPage() {
                       setPeriodoMin(val)
                       if (val > periodoMax) setPeriodoMax(val)
                     }}
-                    className="bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
                       <option key={n} value={n} className="bg-slate-800">{periodosInfo[n]?.label} ({periodosInfo[n]?.ciclo})</option>
                     ))}
                   </select>
-                  <span className="text-white/40">até</span>
+                  <span className="text-slate-500">até</span>
                   <select
                     value={periodoMax}
                     onChange={(e) => {
@@ -367,21 +367,21 @@ export default function NovoSimuladoPage() {
                       setPeriodoMax(val)
                       if (val < periodoMin) setPeriodoMin(val)
                     }}
-                    className="bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
                       <option key={n} value={n} className="bg-slate-800">{periodosInfo[n]?.label} ({periodosInfo[n]?.ciclo})</option>
                     ))}
                   </select>
                 </div>
-                <p className="text-white/40 text-xs mt-2">
+                <p className="text-slate-500 text-xs mt-2">
                   Ciclo Básico: 1º-4º | Ciclo Clínico: 5º-8º | Internato: 9º-12º
                 </p>
               </div>
 
               {/* Bancas */}
               <div>
-                <label className="text-white/80 text-sm mb-3 block">Bancas</label>
+                <label className="text-slate-700 text-sm mb-3 block">Bancas</label>
                 <div className="flex flex-wrap gap-2">
                   {bancas.map((banca) => (
                     <button
@@ -391,7 +391,7 @@ export default function NovoSimuladoPage() {
                       className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                         bancasSelecionadas.includes(banca)
                           ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                          : 'bg-white/5 text-white/60 hover:bg-white/10'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
                       }`}
                     >
                       {banca}

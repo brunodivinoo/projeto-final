@@ -189,14 +189,14 @@ export default function EstatisticasPage() {
           <select
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value as '7d' | '30d' | '90d' | 'all')}
-            className="appearance-none bg-white/5 border border-white/10 rounded-lg py-2 pl-4 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="appearance-none bg-slate-100 border border-slate-200 rounded-lg py-2 pl-4 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
             <option value="7d" className="bg-slate-800">Últimos 7 dias</option>
             <option value="30d" className="bg-slate-800">Últimos 30 dias</option>
             <option value="90d" className="bg-slate-800">Últimos 90 dias</option>
             <option value="all" className="bg-slate-800">Todo período</option>
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40 pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none" />
         </div>
       </div>
 
@@ -208,7 +208,7 @@ export default function EstatisticasPage() {
         <>
           {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="bg-white/5 rounded-xl p-5 border border-white/10">
+            <div className="bg-slate-100 rounded-xl p-5 border border-slate-200">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
                   <FileText className="w-5 h-5 text-emerald-400" />
@@ -217,10 +217,10 @@ export default function EstatisticasPage() {
               <div className="text-3xl font-bold text-white">
                 {estatisticasGerais?.totalQuestoes || 0}
               </div>
-              <div className="text-white/60 text-sm">Questões Resolvidas</div>
+              <div className="text-slate-600 text-sm">Questões Resolvidas</div>
             </div>
 
-            <div className="bg-white/5 rounded-xl p-5 border border-white/10">
+            <div className="bg-slate-100 rounded-xl p-5 border border-slate-200">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-lg bg-teal-500/20 flex items-center justify-center">
                   <Target className="w-5 h-5 text-teal-400" />
@@ -229,10 +229,10 @@ export default function EstatisticasPage() {
               <div className="text-3xl font-bold text-white">
                 {taxaGeral}%
               </div>
-              <div className="text-white/60 text-sm">Taxa de Acerto</div>
+              <div className="text-slate-600 text-sm">Taxa de Acerto</div>
             </div>
 
-            <div className="bg-white/5 rounded-xl p-5 border border-white/10">
+            <div className="bg-slate-100 rounded-xl p-5 border border-slate-200">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
                   <Clock className="w-5 h-5 text-cyan-400" />
@@ -241,10 +241,10 @@ export default function EstatisticasPage() {
               <div className="text-3xl font-bold text-white">
                 {tempoFormatado}
               </div>
-              <div className="text-white/60 text-sm">Tempo de Estudo</div>
+              <div className="text-slate-600 text-sm">Tempo de Estudo</div>
             </div>
 
-            <div className="bg-white/5 rounded-xl p-5 border border-white/10">
+            <div className="bg-slate-100 rounded-xl p-5 border border-slate-200">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
                   <BarChart3 className="w-5 h-5 text-purple-400" />
@@ -253,10 +253,10 @@ export default function EstatisticasPage() {
               <div className="text-3xl font-bold text-white">
                 {estatisticasGerais?.simuladosFeitos || 0}
               </div>
-              <div className="text-white/60 text-sm">Simulados</div>
+              <div className="text-slate-600 text-sm">Simulados</div>
             </div>
 
-            <div className="bg-white/5 rounded-xl p-5 border border-white/10">
+            <div className="bg-slate-100 rounded-xl p-5 border border-slate-200">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
                   <BookOpen className="w-5 h-5 text-amber-400" />
@@ -265,12 +265,12 @@ export default function EstatisticasPage() {
               <div className="text-3xl font-bold text-white">
                 {estatisticasGerais?.teoriasLidas || 0}
               </div>
-              <div className="text-white/60 text-sm">Teorias Lidas</div>
+              <div className="text-slate-600 text-sm">Teorias Lidas</div>
             </div>
           </div>
 
           {/* Activity Chart */}
-          <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+          <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
             <h2 className="text-lg font-bold text-white mb-6">Atividade Diária</h2>
 
             {estatisticasDia.length > 0 ? (
@@ -307,27 +307,27 @@ export default function EstatisticasPage() {
                 <div className="flex items-center justify-center gap-6 text-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded bg-emerald-500" />
-                    <span className="text-white/60">70%+ acerto</span>
+                    <span className="text-slate-600">70%+ acerto</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded bg-amber-500" />
-                    <span className="text-white/60">50-69% acerto</span>
+                    <span className="text-slate-600">50-69% acerto</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded bg-red-500" />
-                    <span className="text-white/60">&lt;50% acerto</span>
+                    <span className="text-slate-600">&lt;50% acerto</span>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="h-48 flex items-center justify-center text-white/40">
+              <div className="h-48 flex items-center justify-center text-slate-500">
                 Nenhuma atividade registrada neste período
               </div>
             )}
           </div>
 
           {/* Disciplinas Performance */}
-          <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+          <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
             <h2 className="text-lg font-bold text-white mb-6">Desempenho por Disciplina</h2>
 
             {estatisticasDisciplina.length > 0 ? (
@@ -335,9 +335,9 @@ export default function EstatisticasPage() {
                 {estatisticasDisciplina.slice(0, 10).map((disc) => (
                   <div key={disc.id}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-white/80">{disc.nome}</span>
+                      <span className="text-slate-700">{disc.nome}</span>
                       <div className="flex items-center gap-4 text-sm">
-                        <span className="text-white/40">{disc.questoes} questões</span>
+                        <span className="text-slate-500">{disc.questoes} questões</span>
                         <span className={`font-medium ${
                           disc.porcentagem >= 70 ? 'text-emerald-400' :
                           disc.porcentagem >= 50 ? 'text-amber-400' :
@@ -347,7 +347,7 @@ export default function EstatisticasPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${
                           disc.porcentagem >= 70 ? 'bg-emerald-500' :
@@ -361,7 +361,7 @@ export default function EstatisticasPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-white/40">
+              <div className="text-center py-8 text-slate-500">
                 Resolva questões para ver seu desempenho por disciplina
               </div>
             )}
@@ -370,7 +370,7 @@ export default function EstatisticasPage() {
           {/* Performance Summary */}
           <div className="grid md:grid-cols-2 gap-6">
             {/* Points to Improve */}
-            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+            <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
                   <TrendingUp className="w-5 h-5 text-red-400" />
@@ -385,21 +385,21 @@ export default function EstatisticasPage() {
                     .slice(0, 5)
                     .map((disc) => (
                       <li key={disc.id} className="flex items-center justify-between">
-                        <span className="text-white/80">{disc.nome}</span>
+                        <span className="text-slate-700">{disc.nome}</span>
                         <span className="text-red-400 text-sm">{disc.porcentagem}%</span>
                       </li>
                     ))
                   }
                 </ul>
               ) : (
-                <p className="text-white/40 text-center py-4">
+                <p className="text-slate-500 text-center py-4">
                   Excelente! Nenhuma disciplina abaixo de 60%
                 </p>
               )}
             </div>
 
             {/* Strong Points */}
-            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+            <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
                   <Award className="w-5 h-5 text-emerald-400" />
@@ -415,14 +415,14 @@ export default function EstatisticasPage() {
                     .slice(0, 5)
                     .map((disc) => (
                       <li key={disc.id} className="flex items-center justify-between">
-                        <span className="text-white/80">{disc.nome}</span>
+                        <span className="text-slate-700">{disc.nome}</span>
                         <span className="text-emerald-400 text-sm">{disc.porcentagem}%</span>
                       </li>
                     ))
                   }
                 </ul>
               ) : (
-                <p className="text-white/40 text-center py-4">
+                <p className="text-slate-500 text-center py-4">
                   Continue estudando para identificar seus pontos fortes
                 </p>
               )}

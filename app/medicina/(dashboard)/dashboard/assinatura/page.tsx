@@ -43,7 +43,7 @@ const planos = [
     destaque: false,
     cor: 'slate',
     badge: 'BÁSICO',
-    badgeCor: 'bg-white/10 text-white/60',
+    badgeCor: 'bg-slate-100 text-slate-600',
     descricao: 'Para conhecer a plataforma',
     economia: null,
     recursos: [
@@ -273,7 +273,7 @@ export default function AssinaturaPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <button className="px-5 py-2.5 bg-white/10 text-white hover:bg-white/20 rounded-xl transition-all text-sm font-medium">
+              <button className="px-5 py-2.5 bg-slate-100 text-white hover:bg-slate-200 rounded-xl transition-all text-sm font-medium">
                 Ver histórico
               </button>
               <button className="px-5 py-2.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 rounded-xl transition-all text-sm font-medium">
@@ -321,7 +321,7 @@ export default function AssinaturaPage() {
                   ? 'bg-gradient-to-b from-emerald-500/30 via-emerald-500/20 to-teal-500/10 border-2 border-emerald-400 md:scale-105 md:-translate-y-4 shadow-2xl shadow-emerald-500/20'
                   : plano.id === 'residencia'
                   ? 'bg-gradient-to-b from-amber-500/20 to-orange-500/10 border border-amber-500/30 hover:border-amber-500/50'
-                  : 'bg-white/5 border border-white/10 hover:border-white/20'
+                  : 'bg-slate-100 border border-slate-200 hover:border-slate-300'
               }`}
             >
               {/* Badge principal */}
@@ -363,44 +363,44 @@ export default function AssinaturaPage() {
                 <div className={`w-16 h-16 mx-auto rounded-2xl mb-4 flex items-center justify-center ${
                   plano.id === 'residencia' ? 'bg-amber-500/20' :
                   plano.id === 'premium' ? 'bg-emerald-500/20' :
-                  'bg-white/10'
+                  'bg-slate-100'
                 }`}>
                   {plano.id === 'residencia' ? (
                     <Crown className="w-8 h-8 text-amber-400" />
                   ) : plano.id === 'premium' ? (
                     <Rocket className="w-8 h-8 text-emerald-400" />
                   ) : (
-                    <Zap className="w-8 h-8 text-white/60" />
+                    <Zap className="w-8 h-8 text-slate-600" />
                   )}
                 </div>
 
                 <h3 className="text-2xl font-bold text-white">{plano.nome}</h3>
-                <p className="text-white/50 text-sm mt-1">{plano.descricao}</p>
+                <p className="text-slate-500 text-sm mt-1">{plano.descricao}</p>
               </div>
 
               {/* Price */}
               <div className="text-center mb-6">
                 {plano.precoOriginal > plano.preco && (
                   <div className="mb-1">
-                    <span className="text-white/40 line-through text-lg">
+                    <span className="text-slate-500 line-through text-lg">
                       R${plano.precoOriginal.toFixed(2).replace('.', ',')}
                     </span>
                   </div>
                 )}
                 <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-white/60 text-xl">R$</span>
+                  <span className="text-slate-600 text-xl">R$</span>
                   <span className="text-5xl font-black text-white">
                     {plano.preco === 0 ? '0' : Math.floor(plano.preco)}
                   </span>
                   {plano.preco > 0 && (
-                    <span className="text-white/60 text-xl">
+                    <span className="text-slate-600 text-xl">
                       ,{(plano.preco % 1).toFixed(2).slice(2)}
                     </span>
                   )}
                   <span className={`text-sm ${
                     plano.id === 'residencia' ? 'text-amber-300' :
                     plano.id === 'premium' ? 'text-emerald-300' :
-                    'text-white/50'
+                    'text-slate-500'
                   }`}>{plano.periodo}</span>
                 </div>
                 {plano.economia && (
@@ -429,8 +429,8 @@ export default function AssinaturaPage() {
                       recurso.disponivel
                         ? recurso.destaque
                           ? 'text-white font-medium'
-                          : 'text-white/70'
-                        : 'text-white/30'
+                          : 'text-slate-600'
+                        : 'text-slate-400'
                     }`}>
                       {recurso.texto}
                     </span>
@@ -444,12 +444,12 @@ export default function AssinaturaPage() {
                 disabled={isCurrentPlan || isLoading || plano.id === 'gratuito'}
                 className={`w-full py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-base ${
                   isCurrentPlan || plano.id === 'gratuito'
-                    ? 'bg-white/10 text-white/40 cursor-not-allowed'
+                    ? 'bg-slate-100 text-slate-500 cursor-not-allowed'
                     : plano.destaque
                     ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/30'
                     : plano.id === 'residencia'
                     ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/30'
-                    : 'bg-white/10 text-white hover:bg-white/20'
+                    : 'bg-slate-100 text-white hover:bg-slate-200'
                 }`}
               >
                 {isLoading ? (
@@ -477,12 +477,12 @@ export default function AssinaturaPage() {
                 <div className={`mt-4 pt-4 border-t text-center ${
                   plano.id === 'residencia' ? 'border-amber-500/20' :
                   plano.id === 'premium' ? 'border-emerald-500/20' :
-                  'border-white/10'
+                  'border-slate-200'
                 }`}>
                   <p className={`text-xs flex items-center justify-center gap-1 ${
                     plano.id === 'residencia' ? 'text-amber-300/70' :
                     plano.id === 'premium' ? 'text-emerald-300/70' :
-                    'text-white/40'
+                    'text-slate-500'
                   }`}>
                     <Shield className="w-4 h-4" />
                     7 dias de garantia ou dinheiro de volta
@@ -495,16 +495,16 @@ export default function AssinaturaPage() {
       </div>
 
       {/* Comparison Table */}
-      <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+      <div className="bg-slate-100 rounded-2xl p-6 border border-slate-200">
         <h3 className="text-xl font-bold text-white mb-6 text-center">
           Comparação Completa
         </h3>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left text-white/60 py-4 px-4 font-medium">Recurso</th>
-                <th className="text-center text-white/60 py-4 px-4 font-medium">Gratuito</th>
+              <tr className="border-b border-slate-200">
+                <th className="text-left text-slate-600 py-4 px-4 font-medium">Recurso</th>
+                <th className="text-center text-slate-600 py-4 px-4 font-medium">Gratuito</th>
                 <th className="text-center text-emerald-400 py-4 px-4 font-medium">Premium</th>
                 <th className="text-center text-amber-400 py-4 px-4 font-medium">Residência</th>
               </tr>
@@ -520,9 +520,9 @@ export default function AssinaturaPage() {
                 { recurso: 'Nível de teoria', gratuito: 'Básico', premium: 'Avançado', residencia: 'Expert' },
                 { recurso: 'Suporte', gratuito: '—', premium: 'E-mail', residencia: 'Prioritário 24h' },
               ].map((row, i) => (
-                <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="text-white/80 py-4 px-4 font-medium">{row.recurso}</td>
-                  <td className="text-center text-white/50 py-4 px-4">{row.gratuito}</td>
+                <tr key={i} className="border-b border-slate-200 hover:bg-slate-100 transition-colors">
+                  <td className="text-slate-700 py-4 px-4 font-medium">{row.recurso}</td>
+                  <td className="text-center text-slate-500 py-4 px-4">{row.gratuito}</td>
                   <td className="text-center text-emerald-400 py-4 px-4 font-medium">{row.premium}</td>
                   <td className="text-center text-amber-400 py-4 px-4 font-medium">{row.residencia}</td>
                 </tr>
@@ -539,20 +539,20 @@ export default function AssinaturaPage() {
           { nome: 'Dr. Pedro L.', texto: 'Melhor investimento que fiz. As questões comentadas são excelentes.', nota: 5 },
           { nome: 'Dra. Ana C.', texto: 'Os simulados me prepararam perfeitamente para a prova real.', nota: 5 },
         ].map((depo, i) => (
-          <div key={i} className="bg-white/5 rounded-xl p-5 border border-white/10">
+          <div key={i} className="bg-slate-100 rounded-xl p-5 border border-slate-200">
             <div className="flex gap-1 mb-3">
               {Array(depo.nota).fill(0).map((_, j) => (
                 <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
               ))}
             </div>
-            <p className="text-white/70 text-sm mb-3 italic">&quot;{depo.texto}&quot;</p>
+            <p className="text-slate-600 text-sm mb-3 italic">&quot;{depo.texto}&quot;</p>
             <p className="text-emerald-400 text-sm font-medium">{depo.nome}</p>
           </div>
         ))}
       </div>
 
       {/* FAQ */}
-      <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+      <div className="bg-slate-100 rounded-2xl p-6 border border-slate-200">
         <h3 className="text-xl font-bold text-white mb-6">Perguntas Frequentes</h3>
         <div className="grid md:grid-cols-2 gap-6">
           {[
@@ -563,14 +563,14 @@ export default function AssinaturaPage() {
           ].map((faq, i) => (
             <div key={i}>
               <h4 className="text-white font-medium mb-2">{faq.p}</h4>
-              <p className="text-white/50 text-sm">{faq.r}</p>
+              <p className="text-slate-500 text-sm">{faq.r}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Trust badges */}
-      <div className="flex flex-wrap items-center justify-center gap-6 text-white/40 text-sm pb-8">
+      <div className="flex flex-wrap items-center justify-center gap-6 text-slate-500 text-sm pb-8">
         <div className="flex items-center gap-2">
           <Shield className="w-5 h-5 text-emerald-400" />
           Pagamento 100% seguro

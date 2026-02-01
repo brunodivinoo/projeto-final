@@ -157,13 +157,13 @@ export default function UpgradePrompt({ tipo, planoAtual, compact = false }: Upg
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
-              <span className="text-white/80 text-sm">{beneficio}</span>
+              <span className="text-slate-700 text-sm">{beneficio}</span>
             </div>
           ))}
         </div>
 
         {/* Urgencia / Social proof */}
-        <div className="bg-white/5 rounded-lg px-4 py-3 mb-6 inline-block">
+        <div className="bg-slate-100 rounded-lg px-4 py-3 mb-6 inline-block">
           <p className="text-amber-300 text-sm font-medium flex items-center gap-2">
             <Gift className="w-4 h-4" />
             {config.urgencia}
@@ -176,7 +176,7 @@ export default function UpgradePrompt({ tipo, planoAtual, compact = false }: Upg
             <span className="inline-block px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-full mb-2">
               {proximo.destaque}
             </span>
-            <p className="text-white/60 text-sm">
+            <p className="text-slate-600 text-sm">
               Plano <span className="text-white font-semibold">{proximo.nome}</span> por apenas{' '}
               <span className="text-amber-400 font-bold">{proximo.preco}</span>
             </p>
@@ -193,7 +193,7 @@ export default function UpgradePrompt({ tipo, planoAtual, compact = false }: Upg
         </Link>
 
         {/* Garantia */}
-        <p className="text-white/40 text-xs mt-4">
+        <p className="text-slate-500 text-xs mt-4">
           Garantia de 7 dias ou seu dinheiro de volta
         </p>
       </div>

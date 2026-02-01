@@ -170,7 +170,7 @@ export function SimuladosAvancadoPRO({ onSimuladoCriado, onClose }: Props) {
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-slate-200 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
@@ -181,7 +181,7 @@ export function SimuladosAvancadoPRO({ onSimuladoCriado, onClose }: Props) {
             </div>
           </div>
           {onClose && (
-            <button onClick={onClose} className="text-white/80 hover:text-white">
+            <button onClick={onClose} className="text-slate-700 hover:text-white">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>

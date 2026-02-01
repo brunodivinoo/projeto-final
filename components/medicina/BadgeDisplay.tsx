@@ -29,7 +29,7 @@ export function BadgeDisplay() {
         <span className="text-3xl">{planoBadge}</span>
         <div>
           <p className="font-semibold text-white">{planoNome}</p>
-          <p className="text-white/50 text-xs">Seu plano atual</p>
+          <p className="text-slate-500 text-xs">Seu plano atual</p>
         </div>
       </div>
 
@@ -42,11 +42,11 @@ export function BadgeDisplay() {
             </div>
             <div className="flex-1">
               <p className="font-bold text-white">{ranking.sequencia_atual} dias</p>
-              <p className="text-xs text-white/50">Sequência atual</p>
+              <p className="text-xs text-slate-500">Sequência atual</p>
             </div>
             {ranking.maior_sequencia > ranking.sequencia_atual && (
               <div className="text-right">
-                <p className="text-white/70 text-sm">Recorde: {ranking.maior_sequencia}</p>
+                <p className="text-slate-600 text-sm">Recorde: {ranking.maior_sequencia}</p>
               </div>
             )}
           </div>
@@ -58,21 +58,21 @@ export function BadgeDisplay() {
         <div className="grid grid-cols-3 gap-2 mb-4">
           <div className="p-2 bg-slate-700/50 rounded-lg text-center">
             <p className="text-lg font-bold text-white">{ranking.questoes_total}</p>
-            <p className="text-[10px] text-white/50">Questões</p>
+            <p className="text-[10px] text-slate-500">Questões</p>
           </div>
           <div className="p-2 bg-slate-700/50 rounded-lg text-center">
             <p className="text-lg font-bold text-purple-400">{ranking.pontos_total}</p>
-            <p className="text-[10px] text-white/50">Pontos</p>
+            <p className="text-[10px] text-slate-500">Pontos</p>
           </div>
           <div className="p-2 bg-slate-700/50 rounded-lg text-center">
             <p className="text-lg font-bold text-emerald-400">{meusBadges.length}</p>
-            <p className="text-[10px] text-white/50">Badges</p>
+            <p className="text-[10px] text-slate-500">Badges</p>
           </div>
         </div>
       )}
 
       {/* Badges conquistados */}
-      <h3 className="text-sm text-white/50 mb-2 font-medium">Conquistas</h3>
+      <h3 className="text-sm text-slate-500 mb-2 font-medium">Conquistas</h3>
       <div className="flex flex-wrap gap-2">
         {meusBadges.map((badge) => (
           <div
@@ -146,7 +146,7 @@ export function RankingDisplay({ tipo = 'semana', limite = 10 }: RankingDisplayP
               className={`px-2 py-1 text-xs rounded-lg transition-colors ${
                 tipoAtivo === t
                   ? 'bg-amber-500/20 text-amber-400'
-                  : 'text-white/50 hover:text-white hover:bg-white/5'
+                  : 'text-slate-500 hover:text-white hover:bg-slate-100'
               }`}
             >
               {tiposLabel[t]}
@@ -180,7 +180,7 @@ export function RankingDisplay({ tipo = 'semana', limite = 10 }: RankingDisplayP
                   {medalha ? (
                     <span className="text-lg">{medalha}</span>
                   ) : (
-                    <span className="text-white/50 text-sm">#{item.posicao}</span>
+                    <span className="text-slate-500 text-sm">#{item.posicao}</span>
                   )}
                 </div>
 
@@ -190,10 +190,10 @@ export function RankingDisplay({ tipo = 'semana', limite = 10 }: RankingDisplayP
                     {item.avatar_url ? (
                       <img src={item.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
                     ) : (
-                      <span className="text-white/50">{item.nome.charAt(0).toUpperCase()}</span>
+                      <span className="text-slate-500">{item.nome.charAt(0).toUpperCase()}</span>
                     )}
                   </div>
-                  <span className={`truncate ${isMe ? 'text-white font-medium' : 'text-white/80'}`}>
+                  <span className={`truncate ${isMe ? 'text-white font-medium' : 'text-slate-700'}`}>
                     {isMe ? 'Você' : item.nome}
                   </span>
                 </div>
@@ -203,14 +203,14 @@ export function RankingDisplay({ tipo = 'semana', limite = 10 }: RankingDisplayP
                   <span className={`font-bold ${isMe ? 'text-purple-400' : 'text-amber-400'}`}>
                     {item.pontos}
                   </span>
-                  <span className="text-white/40 text-xs ml-1">pts</span>
+                  <span className="text-slate-500 text-xs ml-1">pts</span>
                 </div>
               </div>
             )
           })}
 
           {rankingGeral.length === 0 && (
-            <p className="text-center text-white/50 py-4">Nenhum dado disponível</p>
+            <p className="text-center text-slate-500 py-4">Nenhum dado disponível</p>
           )}
         </div>
       )}
@@ -235,24 +235,24 @@ export function BadgeNotification({ badge, onClose }: BadgeNotificationProps) {
       <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl p-4 shadow-2xl max-w-sm">
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 text-white/70 hover:text-white"
+          className="absolute top-2 right-2 text-slate-600 hover:text-white"
         >
           <X className="w-4 h-4" />
         </button>
 
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-xl bg-slate-200 flex items-center justify-center">
             <span className="text-3xl">{badge.icone}</span>
           </div>
           <div className="flex-1">
-            <p className="text-white/70 text-xs">Nova conquista!</p>
+            <p className="text-slate-600 text-xs">Nova conquista!</p>
             <p className="text-white font-bold">{badge.nome}</p>
-            <p className="text-white/80 text-sm">{badge.descricao}</p>
+            <p className="text-slate-700 text-sm">{badge.descricao}</p>
           </div>
         </div>
 
-        <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between">
-          <span className="text-white/70 text-sm">+{badge.pontos} pontos</span>
+        <div className="mt-3 pt-3 border-t border-slate-300 flex items-center justify-between">
+          <span className="text-slate-600 text-sm">+{badge.pontos} pontos</span>
           <button
             onClick={onClose}
             className="flex items-center gap-1 text-white text-sm font-medium hover:underline"

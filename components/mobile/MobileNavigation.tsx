@@ -79,13 +79,13 @@ export function MobileModeSelector({ isOpen, onClose, onSelectMode, currentMode 
           className="fixed inset-0 z-[100] bg-slate-900/98 backdrop-blur-xl flex flex-col"
         >
           {/* Header - Compacto */}
-          <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-3 border-b border-white/10">
+          <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-3 border-b border-slate-200">
             <h2 className="text-base font-semibold text-white">Modo de Chat</h2>
             <button
               onClick={onClose}
-              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 active:bg-white/10 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-100 active:bg-slate-100 transition-colors"
             >
-              <X className="w-4 h-4 text-white/60" />
+              <X className="w-4 h-4 text-slate-600" />
             </button>
           </div>
 
@@ -110,7 +110,7 @@ export function MobileModeSelector({ isOpen, onClose, onSelectMode, currentMode 
                       "border",
                       isActive
                         ? "border-emerald-500/50 bg-emerald-500/10"
-                        : "border-white/10 bg-white/5 active:bg-white/10"
+                        : "border-slate-200 bg-slate-100 active:bg-slate-100"
                     )}
                   >
                     <div className="flex items-center gap-3">
@@ -134,7 +134,7 @@ export function MobileModeSelector({ isOpen, onClose, onSelectMode, currentMode 
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-white/50 mt-0.5">
+                        <p className="text-xs text-slate-500 mt-0.5">
                           {config.description}
                         </p>
                       </div>
@@ -176,7 +176,7 @@ export function MobileBottomNav({
       <nav
         className={cn(
           "fixed bottom-0 left-0 right-0 z-50 lg:hidden",
-          "bg-slate-900/95 backdrop-blur-xl border-t border-white/10",
+          "bg-slate-900/95 backdrop-blur-xl border-t border-slate-200",
           "pb-[env(safe-area-inset-bottom,8px)]",
           className
         )}
@@ -187,11 +187,11 @@ export function MobileBottomNav({
             onClick={onOpenConversas}
             className={cn(
               "flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl min-w-[72px]",
-              "active:bg-white/10 transition-colors"
+              "active:bg-slate-100 transition-colors"
             )}
           >
-            <History className="w-6 h-6 text-white/60" />
-            <span className="text-[10px] text-white/50 font-medium">Histórico</span>
+            <History className="w-6 h-6 text-slate-600" />
+            <span className="text-[10px] text-slate-500 font-medium">Histórico</span>
           </button>
 
           {/* Seletor de Modo (central, destacado) */}
@@ -199,13 +199,13 @@ export function MobileBottomNav({
             onClick={() => setShowModeSelector(true)}
             className={cn(
               "flex flex-col items-center justify-center gap-1 py-2 px-5 rounded-xl min-w-[80px]",
-              "bg-white/5 active:bg-white/10 transition-all",
-              "border border-white/10"
+              "bg-slate-100 active:bg-slate-100 transition-all",
+              "border border-slate-200"
             )}
           >
             <div className="flex items-center gap-1.5">
               <ModeIcon className={cn("w-5 h-5", config.color)} />
-              <ChevronUp className="w-3.5 h-3.5 text-white/40" />
+              <ChevronUp className="w-3.5 h-3.5 text-slate-500" />
             </div>
             <span className={cn("text-[10px] font-medium", config.color)}>
               {config.icon} {currentMode === 'caso_clinico' ? 'Caso' : currentMode === 'questoes' ? 'Quest.' : currentMode.charAt(0).toUpperCase() + currentMode.slice(1)}
@@ -229,11 +229,11 @@ export function MobileBottomNav({
             onClick={onOpenSettings}
             className={cn(
               "flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl min-w-[72px]",
-              "active:bg-white/10 transition-colors"
+              "active:bg-slate-100 transition-colors"
             )}
           >
-            <Settings className="w-6 h-6 text-white/60" />
-            <span className="text-[10px] text-white/50 font-medium">Config</span>
+            <Settings className="w-6 h-6 text-slate-600" />
+            <span className="text-[10px] text-slate-500 font-medium">Config</span>
           </button>
         </div>
       </nav>
@@ -272,7 +272,7 @@ export function MobileHeader({
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-40 lg:hidden",
-        "bg-slate-900/95 backdrop-blur-xl border-b border-white/10",
+        "bg-slate-900/95 backdrop-blur-xl border-b border-slate-200",
         "pt-[env(safe-area-inset-top,0px)]",
         className
       )}
@@ -282,9 +282,9 @@ export function MobileHeader({
         {onMenuClick && (
           <button
             onClick={onMenuClick}
-            className="w-11 h-11 flex items-center justify-center rounded-xl active:bg-white/10 transition-colors -ml-2"
+            className="w-11 h-11 flex items-center justify-center rounded-xl active:bg-slate-100 transition-colors -ml-2"
           >
-            <Menu className="w-6 h-6 text-white/70" />
+            <Menu className="w-6 h-6 text-slate-600" />
           </button>
         )}
 
@@ -292,7 +292,7 @@ export function MobileHeader({
         <div className="flex-1 text-center">
           <h1 className="text-base font-bold text-white tracking-tight">{title}</h1>
           {subtitle && (
-            <p className="text-xs text-white/40">{subtitle}</p>
+            <p className="text-xs text-slate-500">{subtitle}</p>
           )}
         </div>
 
@@ -352,20 +352,20 @@ export function MobileConversasDrawer({ isOpen, onClose, children }: MobileConve
             className={cn(
               "fixed top-0 left-0 h-full z-[95] lg:hidden",
               "w-[85%] max-w-[320px]",
-              "bg-slate-900 border-r border-white/10",
+              "bg-slate-900 border-r border-slate-200",
               "flex flex-col",
               "pt-[env(safe-area-inset-top,0px)]",
               "pb-[env(safe-area-inset-bottom,0px)]"
             )}
           >
             {/* Header do Drawer */}
-            <div className="flex items-center justify-between px-4 h-14 border-b border-white/10 flex-shrink-0">
+            <div className="flex items-center justify-between px-4 h-14 border-b border-slate-200 flex-shrink-0">
               <h2 className="text-base font-semibold text-white">Conversas</h2>
               <button
                 onClick={onClose}
-                className="w-10 h-10 flex items-center justify-center rounded-xl active:bg-white/10"
+                className="w-10 h-10 flex items-center justify-center rounded-xl active:bg-slate-100"
               >
-                <X className="w-5 h-5 text-white/60" />
+                <X className="w-5 h-5 text-slate-600" />
               </button>
             </div>
 

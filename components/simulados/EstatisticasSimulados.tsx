@@ -71,7 +71,7 @@ export function EstatisticasSimulados({ onCreateSimulado }: Props) {
             {uso_mensal.simulados_realizados}/{uso_mensal.limite} simulados
           </span>
         </div>
-        <div className="w-full bg-white/20 rounded-full h-3 mb-2">
+        <div className="w-full bg-slate-200 rounded-full h-3 mb-2">
           <div
             className="bg-white h-3 rounded-full transition-all duration-500"
             style={{ width: `${Math.min(100, (uso_mensal.simulados_realizados / uso_mensal.limite) * 100)}%` }}

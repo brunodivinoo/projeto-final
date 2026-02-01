@@ -39,7 +39,7 @@ export default function EsqueciSenhaPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-900 via-teal-900 to-cyan-900 flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+          <div className="bg-slate-100 backdrop-blur-lg rounded-2xl p-8 border border-slate-300">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/20 mb-6">
               <CheckCircle2 className="w-8 h-8 text-emerald-400" />
             </div>
@@ -88,7 +88,7 @@ export default function EsqueciSenhaPage() {
           </div>
 
           {/* Card */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+          <div className="bg-slate-100 backdrop-blur-lg rounded-2xl p-8 border border-slate-300">
             <h2 className="text-xl font-semibold text-white mb-2 text-center">
               Esqueceu sua senha?
             </h2>
@@ -118,7 +118,7 @@ export default function EsqueciSenhaPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="seu@email.com"
                     required
-                    className="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-100 border border-slate-300 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   />
                 </div>
               </div>

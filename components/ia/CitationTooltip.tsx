@@ -130,7 +130,7 @@ export function CitationTooltip({ number, references }: CitationTooltipProps) {
         <div
           ref={tooltipRef}
           className={`
-            absolute z-50 w-72 md:w-80 p-3 bg-slate-800 border border-white/20 rounded-lg shadow-xl
+            absolute z-50 w-72 md:w-80 p-3 bg-slate-800 border border-slate-300 rounded-lg shadow-xl
             ${position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'}
             left-1/2 -translate-x-1/2
             animate-in fade-in-0 zoom-in-95 duration-150
@@ -140,7 +140,7 @@ export function CitationTooltip({ number, references }: CitationTooltipProps) {
           {/* Seta do tooltip */}
           <div
             className={`
-              absolute left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 border-white/20 rotate-45
+              absolute left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 border-slate-300 rotate-45
               ${position === 'top' ? 'bottom-0 translate-y-1/2 border-r border-b' : 'top-0 -translate-y-1/2 border-l border-t'}
             `}
           />
@@ -148,7 +148,7 @@ export function CitationTooltip({ number, references }: CitationTooltipProps) {
           {/* Conteúdo */}
           <div className="relative">
             {/* Header */}
-            <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
+            <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-200">
               <div className="flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-emerald-400" />
                 <span className="text-emerald-400 text-xs font-semibold">
@@ -157,14 +157,14 @@ export function CitationTooltip({ number, references }: CitationTooltipProps) {
               </div>
               <button
                 onClick={(e) => { e.stopPropagation(); setIsOpen(false) }}
-                className="p-1 hover:bg-white/10 rounded text-white/40 hover:text-white transition-colors"
+                className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-white transition-colors"
               >
                 <X className="w-3 h-3" />
               </button>
             </div>
 
             {/* Texto da referência */}
-            <p className="text-white/90 text-xs leading-relaxed">
+            <p className="text-slate-800 text-xs leading-relaxed">
               {reference.text}
             </p>
 

@@ -410,12 +410,12 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
   // Loading state
   if (loading) {
     return (
-      <div className="my-4 p-4 bg-slate-800/30 rounded-xl border border-white/10">
-        <div className="flex items-center gap-3 text-white/60">
+      <div className="my-4 p-4 bg-slate-800/30 rounded-xl border border-slate-200">
+        <div className="flex items-center gap-3 text-slate-600">
           <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
           <span className="text-sm">Buscando imagens médicas reais...</span>
         </div>
-        <p className="text-white/40 text-xs mt-2">
+        <p className="text-slate-500 text-xs mt-2">
           Traduzindo termos e pesquisando em bancos médicos...
         </p>
       </div>
@@ -432,7 +432,7 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
           </div>
           <div>
             <h4 className="text-white font-medium text-sm">Imagens Médicas Reais</h4>
-            <p className="text-white/60 text-xs mt-1">
+            <p className="text-slate-600 text-xs mt-1">
               Acesse imagens de atlas médicos como PubMed e Radiopaedia com os planos Premium ou Residência.
             </p>
             <a
@@ -465,27 +465,27 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
             <Search className="w-4 h-4 text-amber-400" />
           </div>
           <div className="flex-1">
-            <h4 className="text-white/80 font-medium text-sm">
+            <h4 className="text-slate-700 font-medium text-sm">
               Imagem não encontrada
             </h4>
-            <p className="text-white/50 text-xs mt-1">
+            <p className="text-slate-500 text-xs mt-1">
               Não encontramos imagens médicas para os termos buscados.
             </p>
 
             {/* Mostrar o que foi buscado */}
             {searchInfo.queryUsed && (
-              <p className="text-white/40 text-xs mt-2">
-                Termo buscado: <span className="text-white/60">{searchInfo.queryUsed}</span>
+              <p className="text-slate-500 text-xs mt-2">
+                Termo buscado: <span className="text-slate-600">{searchInfo.queryUsed}</span>
               </p>
             )}
 
             {/* Sugestões */}
             {searchInfo.suggestions && searchInfo.suggestions.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-white/5">
+              <div className="mt-3 pt-3 border-t border-slate-200">
                 <p className="text-amber-400/80 text-xs font-medium mb-1">Sugestões:</p>
                 <ul className="space-y-1">
                   {searchInfo.suggestions.map((suggestion, i) => (
-                    <li key={i} className="text-white/50 text-xs flex items-center gap-1">
+                    <li key={i} className="text-slate-500 text-xs flex items-center gap-1">
                       <AlertCircle className="w-3 h-3 text-amber-400/60" />
                       {suggestion}
                     </li>
@@ -495,8 +495,8 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
             )}
 
             {/* Dicas gerais */}
-            <div className="mt-3 pt-3 border-t border-white/5">
-              <p className="text-white/40 text-xs">
+            <div className="mt-3 pt-3 border-t border-slate-200">
+              <p className="text-slate-500 text-xs">
                 Dica: Use termos em inglês como &quot;chest xray pneumonia&quot; ou &quot;ct scan liver&quot; para melhores resultados.
               </p>
             </div>
@@ -517,7 +517,7 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
       <div className="my-4 p-4 bg-amber-500/5 rounded-xl border border-amber-500/20">
         <div className="flex items-center gap-3">
           <ImageOff className="w-5 h-5 text-amber-400" />
-          <p className="text-white/60 text-sm">
+          <p className="text-slate-600 text-sm">
             As imagens não puderam ser carregadas. Tente novamente mais tarde.
           </p>
           <button
@@ -534,15 +534,15 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
 
   return (
     <>
-      <div className="my-4 p-4 bg-slate-800/30 rounded-xl border border-white/10">
+      <div className="my-4 p-4 bg-slate-800/30 rounded-xl border border-slate-200">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Info className="w-4 h-4 text-blue-400" />
-            <span className="text-white/80 text-sm font-medium">
+            <span className="text-slate-700 text-sm font-medium">
               Imagens de Referência
             </span>
-            <span className="text-white/40 text-xs">
+            <span className="text-slate-500 text-xs">
               ({validImages.length} {validImages.length === 1 ? 'imagem' : 'imagens'})
             </span>
           </div>
@@ -551,7 +551,7 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
         {/* Mostrar termo que encontrou resultados (se diferente do original) */}
         {searchInfo.queryUsed && searchInfo.originalQuery &&
          searchInfo.queryUsed.toLowerCase() !== searchInfo.originalQuery.toLowerCase() && (
-          <p className="text-white/40 text-xs mb-3">
+          <p className="text-slate-500 text-xs mb-3">
             Buscado como: <span className="text-emerald-400/80">{searchInfo.queryUsed}</span>
           </p>
         )}
@@ -586,7 +586,7 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
         </div>
 
         {/* Footer - mostra fonte BRASILEIRA */}
-        <p className="text-white/40 text-xs mt-2">
+        <p className="text-slate-500 text-xs mt-2">
           Clique para ampliar • Fonte: {
             validImages[0]?.siglaInstituicao ? `🇧🇷 ${validImages[0]?.siglaInstituicao}` :
             validImages[0]?.fonte ? `🏛️ ${validImages[0]?.fonte}` :
@@ -596,7 +596,7 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
         </p>
         {/* Referência ABNT se disponível */}
         {validImages[0]?.referenciaABNT && (
-          <p className="text-white/30 text-[10px] mt-1 italic line-clamp-2">
+          <p className="text-slate-400 text-[10px] mt-1 italic line-clamp-2">
             Ref: {validImages[0].referenciaABNT.substring(0, 100)}...
           </p>
         )}

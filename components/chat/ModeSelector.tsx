@@ -146,7 +146,7 @@ export function ModeSelector({
             {variant === 'compact' ? modoAtual.labelCurto : modoAtual.label}
           </span>
           {variant !== 'compact' && (
-            <span className="text-[11px] text-white/50 leading-tight">
+            <span className="text-[11px] text-slate-500 leading-tight">
               {modoAtual.description}
             </span>
           )}
@@ -176,13 +176,13 @@ export function ModeSelector({
           }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 flex-shrink-0">
             <h2 className="text-base font-semibold text-white">Modo de Chat</h2>
             <button
               onClick={() => setShowModeDropdown(false)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 active:bg-white/10"
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-100 active:bg-slate-100"
             >
-              <X className="w-4 h-4 text-white/60" />
+              <X className="w-4 h-4 text-slate-600" />
             </button>
           </div>
 
@@ -204,7 +204,7 @@ export function ModeSelector({
                       "border",
                       isAtivo
                         ? "border-emerald-500/50 bg-emerald-500/10"
-                        : "border-white/10 bg-white/5 active:bg-white/10",
+                        : "border-slate-200 bg-slate-100 active:bg-slate-100",
                       !podeusar && "opacity-50"
                     )}
                   >
@@ -226,10 +226,10 @@ export function ModeSelector({
                             </span>
                           )}
                           {!podeusar && (
-                            <Lock className="w-4 h-4 text-white/40" />
+                            <Lock className="w-4 h-4 text-slate-500" />
                           )}
                         </div>
-                        <p className="text-sm text-white/50 mt-1">
+                        <p className="text-sm text-slate-500 mt-1">
                           {modo.descriptionLonga}
                         </p>
                       </div>
@@ -259,23 +259,23 @@ export function ModeSelector({
               // Posicionamento responsivo
               "left-0 md:left-auto md:right-0",
               "bg-slate-800/95 backdrop-blur-xl",
-              "border border-white/10 rounded-2xl",
+              "border border-slate-200 rounded-2xl",
               "shadow-2xl shadow-black/50",
               "overflow-hidden"
             )}
           >
             {/* Header do Dropdown */}
-            <div className="p-3 border-b border-white/10 bg-white/5">
+            <div className="p-3 border-b border-slate-200 bg-slate-100">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-white">Selecionar Modo</span>
                 <button 
                   onClick={() => setShowModeDropdown(false)}
-                  className="p-1 rounded-lg hover:bg-white/10 transition-colors md:hidden"
+                  className="p-1 rounded-lg hover:bg-slate-100 transition-colors md:hidden"
                 >
-                  <X className="w-4 h-4 text-white/50" />
+                  <X className="w-4 h-4 text-slate-500" />
                 </button>
               </div>
-              <p className="text-[10px] text-white/40 mt-1">
+              <p className="text-[10px] text-slate-500 mt-1">
                 Trocar o modo altera como a IA responde
               </p>
             </div>
@@ -299,8 +299,8 @@ export function ModeSelector({
                       className={cn(
                         "w-full flex items-start gap-3 p-3 rounded-xl transition-all duration-200",
                         "text-left",
-                        isAtivo && "bg-white/10 ring-1 ring-white/20",
-                        podeusar && !isAtivo && "hover:bg-white/5",
+                        isAtivo && "bg-slate-100 ring-1 ring-white/20",
+                        podeusar && !isAtivo && "hover:bg-slate-100",
                         !podeusar && "opacity-50 cursor-not-allowed"
                       )}
                     >
@@ -325,7 +325,7 @@ export function ModeSelector({
                               "text-[9px] px-1.5 py-0.5 rounded-full font-medium",
                               podeusar 
                                 ? "bg-amber-500/20 text-amber-400"
-                                : "bg-white/10 text-white/40"
+                                : "bg-slate-100 text-slate-500"
                             )}>
                               {podeusar ? '✨ PRO' : '🔒 PRO'}
                             </span>
@@ -338,13 +338,13 @@ export function ModeSelector({
                         </div>
                         
                         {/* Descrição */}
-                        <p className="text-xs text-white/50 mt-0.5 line-clamp-2">
+                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
                           {modo.descriptionLonga}
                         </p>
                         
                         {/* Estatísticas do modo (se houver) */}
                         {stats && stats.total_sessoes > 0 && (
-                          <div className="flex items-center gap-3 mt-2 text-[10px] text-white/40">
+                          <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-500">
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               {stats.total_sessoes} {stats.total_sessoes === 1 ? 'sessão' : 'sessões'}
@@ -367,7 +367,7 @@ export function ModeSelector({
                       
                       {/* Lock se não pode usar */}
                       {!podeusar && (
-                        <Lock className="w-4 h-4 text-white/30 flex-shrink-0" />
+                        <Lock className="w-4 h-4 text-slate-400 flex-shrink-0" />
                       )}
                     </button>
                     
@@ -380,8 +380,8 @@ export function ModeSelector({
                           exit={{ opacity: 0, height: 0 }}
                           className="overflow-hidden"
                         >
-                          <div className="px-3 py-2 mx-3 mb-2 rounded-lg bg-white/5 border border-white/5">
-                            <p className="text-[10px] text-white/50 mb-2">Recursos:</p>
+                          <div className="px-3 py-2 mx-3 mb-2 rounded-lg bg-slate-100 border border-slate-200">
+                            <p className="text-[10px] text-slate-500 mb-2">Recursos:</p>
                             <div className="flex flex-wrap gap-1">
                               {modo.features.map((feature, i) => (
                                 <span
@@ -406,10 +406,10 @@ export function ModeSelector({
             </div>
             
             {/* Footer com dica */}
-            <div className="p-3 border-t border-white/10 bg-white/5">
+            <div className="p-3 border-t border-slate-200 bg-slate-100">
               <div className="flex items-start gap-2">
-                <Info className="w-3 h-3 text-white/30 flex-shrink-0 mt-0.5" />
-                <p className="text-[10px] text-white/40 leading-relaxed">
+                <Info className="w-3 h-3 text-slate-400 flex-shrink-0 mt-0.5" />
+                <p className="text-[10px] text-slate-500 leading-relaxed">
                   O histórico da conversa é mantido ao trocar de modo. 
                   Cada modo cria uma sessão para acompanhar seu progresso.
                 </p>
@@ -462,7 +462,7 @@ export function ModeSessionCard({ sessao, onClick, isActive }: ModeSessionCardPr
         "border",
         isActive 
           ? cn("bg-gradient-to-r", config.gradientFrom, config.gradientTo, config.borderColor)
-          : "bg-white/5 border-white/10 hover:bg-white/10"
+          : "bg-slate-100 border-slate-200 hover:bg-slate-100"
       )}
     >
       <div className="flex items-start gap-3">
@@ -487,7 +487,7 @@ export function ModeSessionCard({ sessao, onClick, isActive }: ModeSessionCardPr
             )}
           </div>
           
-          <div className="flex items-center gap-2 mt-1 text-[10px] text-white/40">
+          <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500">
             <span>{formatTime(inicio)}</span>
             {fim && (
               <>
@@ -504,7 +504,7 @@ export function ModeSessionCard({ sessao, onClick, isActive }: ModeSessionCardPr
           {/* Métricas específicas */}
           {sessao.metricas?.score !== undefined && (
             <div className="mt-2 flex items-center gap-2">
-              <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                 <div 
                   className={cn("h-full rounded-full", config.bgColor)}
                   style={{ width: `${sessao.metricas.score}%` }}
@@ -517,7 +517,7 @@ export function ModeSessionCard({ sessao, onClick, isActive }: ModeSessionCardPr
           )}
           
           {sessao.metricas?.questoes_total && (
-            <div className="mt-1 text-[10px] text-white/40">
+            <div className="mt-1 text-[10px] text-slate-500">
               {sessao.metricas.questoes_acertos}/{sessao.metricas.questoes_total} questões certas
             </div>
           )}
@@ -559,7 +559,7 @@ export function ModeChangeMarker({ modo, timestamp }: ModeChangeMarkerProps) {
         <span className={cn("text-sm font-medium", config.color)}>
           Modo: {config.label}
         </span>
-        <span className="text-xs text-white/40">
+        <span className="text-xs text-slate-500">
           {time}
         </span>
       </div>

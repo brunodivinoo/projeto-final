@@ -158,7 +158,7 @@ function CadastroForm() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-900 via-teal-900 to-cyan-900 flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+          <div className="bg-slate-100 backdrop-blur-lg rounded-2xl p-8 border border-slate-300">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/20 mb-6">
               <CheckCircle2 className="w-8 h-8 text-emerald-400" />
             </div>
@@ -207,13 +207,13 @@ function CadastroForm() {
           {/* Progress Steps */}
           <div className="flex items-center justify-center gap-3 mb-8">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-              step >= 1 ? 'bg-emerald-500 text-white' : 'bg-white/10 text-emerald-300'
+              step >= 1 ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-emerald-300'
             }`}>
               1
             </div>
-            <div className={`w-16 h-1 rounded ${step >= 2 ? 'bg-emerald-500' : 'bg-white/20'}`} />
+            <div className={`w-16 h-1 rounded ${step >= 2 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-              step >= 2 ? 'bg-emerald-500 text-white' : 'bg-white/10 text-emerald-300'
+              step >= 2 ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-emerald-300'
             }`}>
               2
             </div>
@@ -235,7 +235,7 @@ function CadastroForm() {
           )}
 
           {/* Card de Cadastro */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+          <div className="bg-slate-100 backdrop-blur-lg rounded-2xl p-8 border border-slate-300">
             {/* Erro */}
             {erro && (
               <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
@@ -263,7 +263,7 @@ function CadastroForm() {
                       onChange={(e) => setNome(e.target.value)}
                       placeholder="Seu nome"
                       required
-                      className="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      className="w-full pl-11 pr-4 py-3 bg-slate-100 border border-slate-300 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                     />
                   </div>
                 </div>
@@ -281,7 +281,7 @@ function CadastroForm() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="seu@email.com"
                       required
-                      className="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      className="w-full pl-11 pr-4 py-3 bg-slate-100 border border-slate-300 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                     />
                   </div>
                 </div>
@@ -299,7 +299,7 @@ function CadastroForm() {
                       onChange={(e) => setSenha(e.target.value)}
                       placeholder="Mínimo 6 caracteres"
                       required
-                      className="w-full pl-11 pr-12 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      className="w-full pl-11 pr-12 py-3 bg-slate-100 border border-slate-300 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                     />
                     <button
                       type="button"
@@ -324,7 +324,7 @@ function CadastroForm() {
                       onChange={(e) => setConfirmarSenha(e.target.value)}
                       placeholder="Repita a senha"
                       required
-                      className="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      className="w-full pl-11 pr-4 py-3 bg-slate-100 border border-slate-300 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                     />
                   </div>
                 </div>
@@ -361,7 +361,7 @@ function CadastroForm() {
                       value={faculdade}
                       onChange={(e) => setFaculdade(e.target.value)}
                       placeholder="Ex: USP, UNIFESP, UFMG..."
-                      className="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      className="w-full pl-11 pr-4 py-3 bg-slate-100 border border-slate-300 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                     />
                   </div>
                 </div>
@@ -374,7 +374,7 @@ function CadastroForm() {
                   <select
                     value={anoCurso}
                     onChange={(e) => setAnoCurso(e.target.value ? parseInt(e.target.value) : '')}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none"
+                    className="w-full px-4 py-3 bg-slate-100 border border-slate-300 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none"
                   >
                     <option value="" className="bg-gray-900">Selecione...</option>
                     {ANOS_CURSO.map((ano) => (
@@ -394,7 +394,7 @@ function CadastroForm() {
                     <select
                       value={estado}
                       onChange={(e) => setEstado(e.target.value)}
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none"
+                      className="w-full px-4 py-3 bg-slate-100 border border-slate-300 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none"
                     >
                       <option value="" className="bg-gray-900">UF</option>
                       {ESTADOS_BRASIL.map((uf) => (
@@ -415,7 +415,7 @@ function CadastroForm() {
                         value={cidade}
                         onChange={(e) => setCidade(e.target.value)}
                         placeholder="Cidade"
-                        className="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                        className="w-full pl-11 pr-4 py-3 bg-slate-100 border border-slate-300 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                       />
                     </div>
                   </div>
@@ -426,7 +426,7 @@ function CadastroForm() {
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="flex-1 py-3 bg-white/10 border border-white/20 text-white font-medium rounded-lg hover:bg-white/20 focus:outline-none transition-all"
+                    className="flex-1 py-3 bg-slate-100 border border-slate-300 text-white font-medium rounded-lg hover:bg-slate-200 focus:outline-none transition-all"
                   >
                     Voltar
                   </button>

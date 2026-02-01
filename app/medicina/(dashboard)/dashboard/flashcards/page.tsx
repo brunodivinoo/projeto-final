@@ -12,9 +12,9 @@ export default function FlashcardsPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/medicina/dashboard"
-            className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-white/60" />
+            <ArrowLeft className="w-5 h-5 text-slate-600" />
           </Link>
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
@@ -22,7 +22,7 @@ export default function FlashcardsPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">Flashcards</h1>
-              <p className="text-white/60 text-sm">Estude com repetição espaçada</p>
+              <p className="text-slate-600 text-sm">Estude com repetição espaçada</p>
             </div>
           </div>
         </div>

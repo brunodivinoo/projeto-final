@@ -104,7 +104,7 @@ export default function NovoTopicoPage() {
       <div className="flex items-center gap-4">
         <Link
           href="/medicina/dashboard/forum"
-          className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-slate-600 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           Voltar
@@ -122,7 +122,7 @@ export default function NovoTopicoPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Categoria */}
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <label className="block text-white font-medium mb-4">Categoria</label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {categorias.map((cat) => (
@@ -133,25 +133,25 @@ export default function NovoTopicoPage() {
                 className={`p-4 rounded-lg border text-left transition-colors ${
                   categoria === cat.id
                     ? 'border-emerald-500 bg-emerald-500/10'
-                    : 'border-white/10 hover:border-white/20'
+                    : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
                 <div className="text-white font-medium">{cat.label}</div>
-                <div className="text-white/40 text-xs mt-1">{cat.descricao}</div>
+                <div className="text-slate-500 text-xs mt-1">{cat.descricao}</div>
               </button>
             ))}
           </div>
         </div>
 
         {/* Disciplina */}
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <label className="block text-white font-medium mb-3">
-            Disciplina <span className="text-white/40 font-normal">(opcional)</span>
+            Disciplina <span className="text-slate-500 font-normal">(opcional)</span>
           </label>
           <select
             value={disciplinaId}
             onChange={(e) => setDisciplinaId(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
             <option value="" className="bg-slate-800">Selecione uma disciplina</option>
             {disciplinas.map((d) => (
@@ -161,23 +161,23 @@ export default function NovoTopicoPage() {
         </div>
 
         {/* Título */}
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <label className="block text-white font-medium mb-3">Título</label>
           <input
             type="text"
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
             placeholder="Escreva um título claro e objetivo..."
-            className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 px-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             maxLength={200}
           />
-          <div className="text-white/40 text-xs mt-2 text-right">
+          <div className="text-slate-500 text-xs mt-2 text-right">
             {titulo.length}/200
           </div>
         </div>
 
         {/* Conteúdo */}
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
           <label className="block text-white font-medium mb-3">Conteúdo</label>
           <textarea
             value={conteudo}
@@ -188,9 +188,9 @@ Dicas:
 • Seja específico e claro
 • Inclua contexto relevante
 • Se for sobre uma questão, cite o enunciado"
-            className="w-full min-h-[200px] bg-white/5 border border-white/10 rounded-lg py-3 px-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+            className="w-full min-h-[200px] bg-slate-100 border border-slate-200 rounded-lg py-3 px-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
           />
-          <div className="text-white/40 text-xs mt-2 text-right">
+          <div className="text-slate-500 text-xs mt-2 text-right">
             {conteudo.length} caracteres (mínimo 20)
           </div>
         </div>
@@ -207,7 +207,7 @@ Dicas:
         <div className="flex items-center justify-end gap-4">
           <Link
             href="/medicina/dashboard/forum"
-            className="px-6 py-3 text-white/60 hover:text-white transition-colors"
+            className="px-6 py-3 text-slate-600 hover:text-white transition-colors"
           >
             Cancelar
           </Link>

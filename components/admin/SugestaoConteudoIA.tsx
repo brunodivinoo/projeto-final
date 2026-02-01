@@ -194,7 +194,7 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
       {/* Header colapsável */}
       <button
         onClick={() => setAberto(!aberto)}
-        className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+        className="w-full flex items-center justify-between p-4 hover:bg-slate-100 transition-colors"
       >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
@@ -202,13 +202,13 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
           </div>
           <div className="text-left">
             <h3 className="text-white font-semibold">Sugestões com IA (Opus 4.5)</h3>
-            <p className="text-white/60 text-sm">Gere disciplinas e assuntos automaticamente</p>
+            <p className="text-slate-600 text-sm">Gere disciplinas e assuntos automaticamente</p>
           </div>
         </div>
         {aberto ? (
-          <ChevronUp className="w-5 h-5 text-white/60" />
+          <ChevronUp className="w-5 h-5 text-slate-600" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-white/60" />
+          <ChevronDown className="w-5 h-5 text-slate-600" />
         )}
       </button>
 
@@ -221,7 +221,7 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
               onClick={() => setModo('disciplinas')}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${modo === 'disciplinas'
                   ? 'bg-purple-500 text-white'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
                 }`}
             >
               Novas Disciplinas
@@ -231,7 +231,7 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
               disabled={!disciplinaSelecionada}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${modo === 'assuntos'
                   ? 'bg-purple-500 text-white'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-100'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               Novos Assuntos
@@ -241,7 +241,7 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
 
           {/* Input de contexto */}
           <div>
-            <label className="block text-white/70 text-sm mb-2">
+            <label className="block text-slate-600 text-sm mb-2">
               Contexto adicional (opcional)
             </label>
             <input
@@ -252,7 +252,7 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
                 ? "Ex: Foque em disciplinas do ciclo clínico..."
                 : "Ex: Assuntos mais cobrados em residência..."
               }
-              className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white placeholder-white/40 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
+              className="w-full bg-slate-100 border border-slate-200 rounded-lg p-3 text-white placeholder-white/40 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
             />
           </div>
 
@@ -290,7 +290,7 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
                 <h4 className="text-white font-medium">
                   {sugestoesDisciplinas.filter(d => d.selecionado).length} disciplinas selecionadas
                 </h4>
-                <span className="text-white/40 text-xs">{tokensUsados} tokens</span>
+                <span className="text-slate-500 text-xs">{tokensUsados} tokens</span>
               </div>
 
               <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -298,8 +298,8 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
                   <div
                     key={di}
                     className={`border rounded-lg overflow-hidden transition-all ${disciplina.selecionado
-                        ? 'bg-white/5 border-purple-500/30'
-                        : 'bg-white/5 border-white/10 opacity-60'
+                        ? 'bg-slate-100 border-purple-500/30'
+                        : 'bg-slate-100 border-slate-200 opacity-60'
                       }`}
                   >
                     <div className="flex items-center gap-3 p-3">
@@ -307,7 +307,7 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
                         onClick={() => toggleDisciplina(di)}
                         className={`w-6 h-6 rounded flex items-center justify-center transition-colors ${disciplina.selecionado
                             ? 'bg-purple-500 text-white'
-                            : 'bg-white/10 text-white/40'
+                            : 'bg-slate-100 text-slate-500'
                           }`}
                       >
                         {disciplina.selecionado && <Check className="w-4 h-4" />}
@@ -315,12 +315,12 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
 
                       <div className="flex-1">
                         <p className="text-white font-medium">{disciplina.nome}</p>
-                        <p className="text-white/50 text-xs">{disciplina.descricao}</p>
+                        <p className="text-slate-500 text-xs">{disciplina.descricao}</p>
                       </div>
 
                       <button
                         onClick={() => toggleExpandirDisciplina(di)}
-                        className="p-2 text-white/40 hover:text-white/60"
+                        className="p-2 text-slate-500 hover:text-slate-600"
                       >
                         {disciplina.expandido ? (
                           <ChevronUp className="w-4 h-4" />
@@ -332,26 +332,26 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
 
                     {disciplina.expandido && disciplina.selecionado && (
                       <div className="px-3 pb-3 pl-12 space-y-2">
-                        <p className="text-white/40 text-xs uppercase tracking-wide">Assuntos:</p>
+                        <p className="text-slate-500 text-xs uppercase tracking-wide">Assuntos:</p>
                         {disciplina.assuntos.map((assunto, ai) => (
                           <div
                             key={ai}
-                            className={`flex items-start gap-2 p-2 rounded ${assunto.selecionado ? 'bg-white/5' : 'opacity-50'
+                            className={`flex items-start gap-2 p-2 rounded ${assunto.selecionado ? 'bg-slate-100' : 'opacity-50'
                               }`}
                           >
                             <button
                               onClick={() => toggleAssunto(di, ai)}
                               className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5 ${assunto.selecionado
                                   ? 'bg-cyan-500 text-white'
-                                  : 'bg-white/10 text-white/40'
+                                  : 'bg-slate-100 text-slate-500'
                                 }`}
                             >
                               {assunto.selecionado && <Check className="w-3 h-3" />}
                             </button>
                             <div>
-                              <p className="text-white/80 text-sm">{assunto.nome}</p>
+                              <p className="text-slate-700 text-sm">{assunto.nome}</p>
                               {assunto.subassuntos.length > 0 && (
-                                <p className="text-white/40 text-xs mt-1">
+                                <p className="text-slate-500 text-xs mt-1">
                                   Subassuntos: {assunto.subassuntos.join(', ')}
                                 </p>
                               )}
@@ -391,7 +391,7 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
                 <h4 className="text-white font-medium">
                   {sugestoesAssuntos.filter(a => a.selecionado).length} assuntos selecionados
                 </h4>
-                <span className="text-white/40 text-xs">{tokensUsados} tokens</span>
+                <span className="text-slate-500 text-xs">{tokensUsados} tokens</span>
               </div>
 
               <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -399,15 +399,15 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
                   <div
                     key={ai}
                     className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${assunto.selecionado
-                        ? 'bg-white/5 border-cyan-500/30'
-                        : 'bg-white/5 border-white/10 opacity-60'
+                        ? 'bg-slate-100 border-cyan-500/30'
+                        : 'bg-slate-100 border-slate-200 opacity-60'
                       }`}
                   >
                     <button
                       onClick={() => toggleAssuntoSimples(ai)}
                       className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${assunto.selecionado
                           ? 'bg-cyan-500 text-white'
-                          : 'bg-white/10 text-white/40'
+                          : 'bg-slate-100 text-slate-500'
                         }`}
                     >
                       {assunto.selecionado && <Check className="w-4 h-4" />}
@@ -415,9 +415,9 @@ export function SugestaoConteudoIA({ disciplinas, disciplinaSelecionada, onConte
 
                     <div>
                       <p className="text-white font-medium">{assunto.nome}</p>
-                      <p className="text-white/50 text-xs">{assunto.descricao}</p>
+                      <p className="text-slate-500 text-xs">{assunto.descricao}</p>
                       {assunto.subassuntos.length > 0 && (
-                        <p className="text-white/40 text-xs mt-1">
+                        <p className="text-slate-500 text-xs mt-1">
                           Subassuntos: {assunto.subassuntos.join(', ')}
                         </p>
                       )}

@@ -103,7 +103,7 @@ export function TrialBanner({
               </div>
             </div>
             {onClose && (
-              <button onClick={handleClose} className="text-white/60 hover:text-white">
+              <button onClick={handleClose} className="text-slate-600 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             )}
@@ -116,7 +116,7 @@ export function TrialBanner({
               { icon: '🃏', text: 'Flashcards' },
               { icon: '📚', text: 'Biblioteca' }
             ].map((item, i) => (
-              <div key={i} className="bg-white/10 rounded-lg px-3 py-2 text-center">
+              <div key={i} className="bg-slate-100 rounded-lg px-3 py-2 text-center">
                 <span className="text-xl">{item.icon}</span>
                 <p className="text-white text-xs mt-1">{item.text}</p>
               </div>
@@ -165,7 +165,7 @@ export function TrialBanner({
           {showUpgradeButton && (
             <Link
               href="/medicina/dashboard/assinatura"
-              className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-xs font-bold transition-colors"
+              className="bg-slate-200 hover:bg-white/30 px-3 py-1 rounded-full text-xs font-bold transition-colors"
             >
               Assinar
             </Link>
@@ -177,7 +177,7 @@ export function TrialBanner({
     if (variant === 'floating') {
       return (
         <div className={`fixed bottom-4 right-4 z-50 ${mostrarUrgencia ? 'animate-bounce' : ''}`}>
-          <div className={`${mostrarUrgencia ? 'bg-red-600' : 'bg-slate-800'} border ${mostrarUrgencia ? 'border-red-500' : 'border-white/10'} rounded-xl p-3 shadow-lg`}>
+          <div className={`${mostrarUrgencia ? 'bg-red-600' : 'bg-slate-800'} border ${mostrarUrgencia ? 'border-red-500' : 'border-slate-200'} rounded-xl p-3 shadow-lg`}>
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-lg ${mostrarUrgencia ? 'bg-red-500' : 'bg-emerald-500'} flex items-center justify-center`}>
                 <Clock className="w-5 h-5 text-white" />
@@ -198,7 +198,7 @@ export function TrialBanner({
               )}
             </div>
             {/* Barra de progresso */}
-            <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div className="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div
                 className={`h-full ${corBarra} transition-all duration-1000`}
                 style={{ width: `${percentualRestante}%` }}
@@ -278,7 +278,7 @@ export function TrialBanner({
         </div>
 
         {/* Barra de progresso */}
-        <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
+        <div className="mt-3 h-2 bg-slate-100 rounded-full overflow-hidden">
           <div
             className={`h-full ${corBarra} transition-all duration-1000`}
             style={{ width: `${percentualRestante}%` }}
@@ -310,7 +310,7 @@ export function TrialBanner({
     }
 
     return (
-      <div className="bg-gradient-to-r from-slate-800 to-slate-700 border border-white/10 rounded-xl p-4 md:p-6">
+      <div className="bg-gradient-to-r from-slate-800 to-slate-700 border border-slate-200 rounded-xl p-4 md:p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-slate-600 flex items-center justify-center">
@@ -324,7 +324,7 @@ export function TrialBanner({
             </div>
           </div>
           {onClose && (
-            <button onClick={handleClose} className="text-white/60 hover:text-white">
+            <button onClick={handleClose} className="text-slate-600 hover:text-white">
               <X className="w-5 h-5" />
             </button>
           )}
@@ -344,7 +344,7 @@ export function TrialBanner({
             </Link>
             <Link
               href="/medicina/dashboard"
-              className="flex-1 bg-white/10 hover:bg-white/20 text-white py-2 rounded-lg font-medium transition-all flex items-center justify-center"
+              className="flex-1 bg-slate-100 hover:bg-slate-200 text-white py-2 rounded-lg font-medium transition-all flex items-center justify-center"
             >
               Continuar Grátis
             </Link>
@@ -365,9 +365,9 @@ export function TrialTimer() {
 
   return (
     <div className="flex items-center gap-2">
-      <Clock className="w-4 h-4 text-white/60" />
+      <Clock className="w-4 h-4 text-slate-600" />
       <span className="text-white font-medium text-sm">{tempoRestanteFormatado}</span>
-      <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+      <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
         <div
           className={`h-full ${corBarra}`}
           style={{ width: `${percentualRestante}%` }}

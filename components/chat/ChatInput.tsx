@@ -2,11 +2,13 @@
 
 /**
  * Input de Chat Centralizado - Versão 2.0
+ * TEMA CLARO - Cores padronizadas para fundo claro
+ *
  * Melhorias:
  * - Textarea expansível (não corta texto longo)
  * - Auto-resize conforme digitação
  * - Sugestões de autocomplete inteligentes
- * - Melhor UX no mobile
+ * - Cores com alto contraste para legibilidade
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react'
@@ -55,7 +57,7 @@ export function ChatInput({
 
     // Reset height para calcular corretamente
     textarea.style.height = 'auto'
-    
+
     // Calcular nova altura baseada no scrollHeight
     const newHeight = Math.min(Math.max(textarea.scrollHeight, 52), 200)
     textarea.style.height = `${newHeight}px`
@@ -98,7 +100,7 @@ export function ChatInput({
       onSubmit(message.trim())
       setMessage('')
       setShowAutoComplete(false)
-      
+
       // Reset altura do textarea
       if (textareaRef.current) {
         textareaRef.current.style.height = '52px'
@@ -132,25 +134,25 @@ export function ChatInput({
     <div className={`relative ${className}`}>
       {/* Autocomplete suggestion */}
       {showAutoComplete && matchingSuggestion && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 p-3 rounded-xl bg-slate-800/95 border border-white/10 backdrop-blur-sm z-10">
+        <div className="absolute bottom-full left-0 right-0 mb-2 p-3 rounded-xl bg-white border border-slate-200 shadow-lg z-10">
           <button
             onClick={() => applySuggestion(matchingSuggestion)}
-            className="w-full text-left flex items-center gap-2 text-white/80 hover:text-white transition"
+            className="w-full text-left flex items-center gap-2 text-slate-600 hover:text-slate-800 transition"
           >
-            <Sparkles className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <Sparkles className="w-4 h-4 text-emerald-500 flex-shrink-0" />
             <span className="flex-1 min-w-0">
-              <span className="text-emerald-400">{matchingSuggestion.prefix}</span>
-              <span className="text-white/40"> → {matchingSuggestion.full}</span>
+              <span className="text-emerald-600 font-medium">{matchingSuggestion.prefix}</span>
+              <span className="text-slate-400"> → {matchingSuggestion.full}</span>
             </span>
-            <span className="text-xs text-white/30 bg-white/10 px-2 py-0.5 rounded flex-shrink-0">TAB</span>
+            <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded flex-shrink-0">TAB</span>
           </button>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="relative">
-        <div className="relative flex items-end gap-2 p-3 rounded-2xl bg-white/[0.03] border border-white/10
-                        focus-within:border-emerald-500/50 focus-within:bg-white/[0.05] transition-all
-                        shadow-lg shadow-black/10">
+        <div className="relative flex items-end gap-2 p-3 rounded-2xl bg-white border border-slate-200
+                        focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-100 transition-all
+                        shadow-sm">
           {/* Textarea expansível */}
           <textarea
             ref={textareaRef}
@@ -160,7 +162,7 @@ export function ChatInput({
             placeholder={placeholder}
             disabled={disabled}
             rows={1}
-            className="chat-textarea-expandable flex-1 bg-transparent text-white placeholder-white/40 
+            className="chat-textarea-expandable flex-1 bg-transparent text-slate-800 placeholder-slate-400
                        resize-none focus:outline-none text-sm md:text-base leading-relaxed
                        scrollbar-thin pr-2"
             style={{
@@ -173,18 +175,18 @@ export function ChatInput({
           <div className="flex items-center gap-1.5 pb-0.5">
             {/* Indicador de caracteres quando mensagem é longa */}
             {message.length > 500 && (
-              <span className="text-[10px] text-white/30 tabular-nums">
+              <span className="text-[10px] text-slate-400 tabular-nums">
                 {message.length}
               </span>
             )}
-            
+
             {/* Botão de enviar */}
             <button
               type="submit"
               disabled={!message.trim() || disabled}
               className="p-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-30
                          disabled:cursor-not-allowed text-white transition-all
-                         active:scale-95 flex-shrink-0"
+                         active:scale-95 flex-shrink-0 shadow-sm"
               title="Enviar (Enter)"
             >
               <Send className="w-5 h-5" />
@@ -193,13 +195,13 @@ export function ChatInput({
         </div>
 
         {/* Dica de uso - escondida no mobile para economizar espaço */}
-        <div className="hidden md:flex items-center justify-center gap-4 mt-2 text-xs text-white/30">
+        <div className="hidden md:flex items-center justify-center gap-4 mt-2 text-xs text-slate-400">
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[10px]">Enter</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 font-mono text-[10px]">Enter</kbd>
             enviar
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[10px]">Shift+Enter</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 font-mono text-[10px]">Shift+Enter</kbd>
             nova linha
           </span>
         </div>

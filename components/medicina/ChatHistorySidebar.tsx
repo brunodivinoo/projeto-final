@@ -184,7 +184,7 @@ export function ChatHistorySidebar({
       <div className="flex flex-col items-center gap-2 py-2">
         <button
           onClick={onNewChat}
-          className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
+          className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-100 flex items-center justify-center text-slate-600 hover:text-white transition-all"
           title="Nova conversa"
         >
           <Plus className="w-5 h-5" />
@@ -192,7 +192,7 @@ export function ChatHistorySidebar({
         {conversas.length > 0 && (
           <button
             onClick={() => setShowSearch(!showSearch)}
-            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
+            className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-100 flex items-center justify-center text-slate-600 hover:text-white transition-all"
             title="Buscar conversas"
           >
             <Search className="w-5 h-5" />
@@ -208,7 +208,7 @@ export function ChatHistorySidebar({
       <div className="p-3 space-y-2">
         <button
           onClick={onNewChat}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-white/80 hover:text-white transition-all group"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-100 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-slate-700 hover:text-white transition-all group"
         >
           <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
           <span className="text-sm font-medium">Nova conversa</span>
@@ -217,21 +217,21 @@ export function ChatHistorySidebar({
         {/* Barra de busca */}
         {conversas.length > 3 && (
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar conversas..."
-              className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all"
+              className="w-full pl-9 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:bg-slate-100 transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded"
               >
-                <X className="w-3 h-3 text-white/40" />
+                <X className="w-3 h-3 text-slate-500" />
               </button>
             )}
           </div>
@@ -247,14 +247,14 @@ export function ChatHistorySidebar({
               animate={{ opacity: 1 }}
               className="px-3 py-8 text-center"
             >
-              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
                 <MessageSquare className="w-6 h-6 text-white/20" />
               </div>
-              <p className="text-white/40 text-sm">
+              <p className="text-slate-500 text-sm">
                 {searchQuery ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa ainda'}
               </p>
               {!searchQuery && (
-                <p className="text-white/30 text-xs mt-1">
+                <p className="text-slate-400 text-xs mt-1">
                   Comece uma nova conversa!
                 </p>
               )}
@@ -265,7 +265,7 @@ export function ChatHistorySidebar({
                 {/* Header do grupo */}
                 <button
                   onClick={() => toggleGroup(group.label)}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-white/40 hover:text-white/60 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-500 hover:text-slate-600 transition-colors"
                 >
                   <ChevronDown
                     className={`w-3 h-3 transition-transform ${
@@ -309,7 +309,7 @@ export function ChatHistorySidebar({
                                     if (e.key === 'Enter') saveEdit()
                                     if (e.key === 'Escape') cancelEdit()
                                   }}
-                                  className="flex-1 min-w-0 bg-white/10 border border-emerald-500/50 rounded px-2 py-1 text-sm text-white focus:outline-none"
+                                  className="flex-1 min-w-0 bg-slate-100 border border-emerald-500/50 rounded px-2 py-1 text-sm text-white focus:outline-none"
                                   autoFocus
                                 />
                                 <button
@@ -320,7 +320,7 @@ export function ChatHistorySidebar({
                                 </button>
                                 <button
                                   onClick={cancelEdit}
-                                  className="p-1 hover:bg-white/10 rounded text-white/40"
+                                  className="p-1 hover:bg-slate-100 rounded text-slate-500"
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
@@ -332,7 +332,7 @@ export function ChatHistorySidebar({
                                   w-full flex items-center gap-2 px-3 py-2 mx-1 rounded-lg text-left transition-all
                                   ${isActive
                                     ? 'bg-emerald-500/20 text-white'
-                                    : 'text-white/60 hover:bg-white/5 hover:text-white/80'
+                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-700'
                                   }
                                 `}
                               >
@@ -345,7 +345,7 @@ export function ChatHistorySidebar({
                                 <div
                                   onClick={(e) => handleMenuOpen(e, conversa.id)}
                                   className={`
-                                    p-1 rounded hover:bg-white/10 transition-opacity
+                                    p-1 rounded hover:bg-slate-100 transition-opacity
                                     ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
                                   `}
                                 >
@@ -367,7 +367,7 @@ export function ChatHistorySidebar({
 
       {/* Footer com ação de deletar todas */}
       {conversas.length > 0 && (
-        <div className="p-3 border-t border-white/5">
+        <div className="p-3 border-t border-slate-200">
           <button
             onClick={handleDeleteAll}
             disabled={isDeleting}
@@ -397,7 +397,7 @@ export function ChatHistorySidebar({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.1 }}
-            className="fixed z-[100] bg-slate-800 border border-white/10 rounded-lg shadow-2xl py-1 min-w-[140px]"
+            className="fixed z-[100] bg-slate-800 border border-slate-200 rounded-lg shadow-2xl py-1 min-w-[140px]"
             style={{
               top: menuPosition.top,
               left: Math.min(menuPosition.left, window.innerWidth - 160)
@@ -408,7 +408,7 @@ export function ChatHistorySidebar({
                 const conversa = conversas.find(c => c.id === menuOpenId)
                 if (conversa) startEditing(conversa)
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 hover:text-white transition-colors"
             >
               <Pencil className="w-4 h-4" />
               Renomear

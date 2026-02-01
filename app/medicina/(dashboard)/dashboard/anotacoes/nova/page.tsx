@@ -100,7 +100,7 @@ export default function NovaAnotacaoPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/medicina/dashboard/anotacoes"
-          className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-slate-600 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           Voltar
@@ -111,7 +111,7 @@ export default function NovaAnotacaoPage() {
           className={`p-2 rounded-lg transition-colors ${
             favorito
               ? 'bg-amber-500/20 text-amber-400'
-              : 'text-white/40 hover:text-white hover:bg-white/5'
+              : 'text-slate-500 hover:text-white hover:bg-slate-100'
           }`}
         >
           <Star className={`w-5 h-5 ${favorito ? 'fill-amber-400' : ''}`} />
@@ -132,7 +132,7 @@ export default function NovaAnotacaoPage() {
 
         {/* Pasta */}
         <div className="flex items-center gap-3">
-          <Folder className="w-5 h-5 text-white/40" />
+          <Folder className="w-5 h-5 text-slate-500" />
           {showNovaPasta ? (
             <div className="flex items-center gap-2 flex-1">
               <input
@@ -140,12 +140,12 @@ export default function NovaAnotacaoPage() {
                 value={novaPasta}
                 onChange={(e) => setNovaPasta(e.target.value)}
                 placeholder="Nome da nova pasta..."
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="flex-1 bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
               <button
                 type="button"
                 onClick={() => setShowNovaPasta(false)}
-                className="text-white/40 hover:text-white"
+                className="text-slate-500 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -155,7 +155,7 @@ export default function NovaAnotacaoPage() {
               <select
                 value={pasta}
                 onChange={(e) => setPasta(e.target.value)}
-                className="bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="" className="bg-slate-800">Sem pasta</option>
                 <option value="Anatomia" className="bg-slate-800">Anatomia</option>
@@ -169,7 +169,7 @@ export default function NovaAnotacaoPage() {
               <button
                 type="button"
                 onClick={() => setShowNovaPasta(true)}
-                className="p-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                className="p-2 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
               >
                 <Plus className="w-5 h-5" />
               </button>
@@ -180,8 +180,8 @@ export default function NovaAnotacaoPage() {
         {/* Tags */}
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <Tag className="w-5 h-5 text-white/40" />
-            <span className="text-white/60 text-sm">Tags</span>
+            <Tag className="w-5 h-5 text-slate-500" />
+            <span className="text-slate-600 text-sm">Tags</span>
           </div>
           <div className="flex flex-wrap gap-2 mb-2">
             {tags.map((tag) => (
@@ -207,12 +207,12 @@ export default function NovaAnotacaoPage() {
               onChange={(e) => setNovaTag(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
               placeholder="Adicionar tag..."
-              className="flex-1 bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="flex-1 bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             <button
               type="button"
               onClick={handleAddTag}
-              className="px-4 py-2 bg-white/5 text-white/60 rounded-lg hover:bg-white/10 transition-colors"
+              className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
             >
               Adicionar
             </button>
@@ -220,7 +220,7 @@ export default function NovaAnotacaoPage() {
         </div>
 
         {/* Conteúdo */}
-        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
           <textarea
             value={conteudo}
             onChange={(e) => setConteudo(e.target.value)}
@@ -247,7 +247,7 @@ Dicas:
         <div className="flex items-center justify-end gap-4">
           <Link
             href="/medicina/dashboard/anotacoes"
-            className="px-6 py-3 text-white/60 hover:text-white transition-colors"
+            className="px-6 py-3 text-slate-600 hover:text-white transition-colors"
           >
             Cancelar
           </Link>

@@ -83,7 +83,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
       <div className="min-h-screen bg-[#0A0F1C] flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-cyan-500 mx-auto mb-4" />
-          <p className="text-white/60">Verificando permissões...</p>
+          <p className="text-slate-600">Verificando permissões...</p>
         </div>
       </div>
     )
@@ -95,7 +95,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
       <div className="min-h-screen bg-[#0A0F1C] flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-cyan-500 mx-auto mb-4" />
-          <p className="text-white/60">Redirecionando para login...</p>
+          <p className="text-slate-600">Redirecionando para login...</p>
         </div>
       </div>
     )
@@ -110,17 +110,17 @@ export function AdminGuard({ children }: AdminGuardProps) {
         </div>
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-2">Acesso Negado</h1>
-          <p className="text-white/60 max-w-md">
+          <p className="text-slate-600 max-w-md">
             Você não tem permissão para acessar esta área.
             Esta seção é restrita a administradores.
           </p>
           {user && (
-            <p className="text-white/40 text-xs mt-2">
+            <p className="text-slate-500 text-xs mt-2">
               Logado como: {user.email}
             </p>
           )}
         </div>
-        <p className="text-white/40 text-sm">
+        <p className="text-slate-500 text-sm">
           Redirecionando em alguns segundos...
         </p>
       </div>

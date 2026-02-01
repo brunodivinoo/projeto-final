@@ -136,9 +136,9 @@ export default function QuestionArtifactCard({
     question.alternativas.find(a => a.correta)?.letra
 
   return (
-    <div className="bg-[#1A2332] border border-white/10 rounded-lg overflow-hidden">
+    <div className="bg-[#1A2332] border border-slate-200 rounded-lg overflow-hidden">
       {/* Header - mais compacto */}
-      <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 bg-[#151D2B] border-b border-white/10">
+      <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 bg-[#151D2B] border-b border-slate-200">
         {/* Número da questão */}
         <span className="bg-emerald-500/20 text-emerald-400 font-bold text-xs px-2 py-0.5 rounded">
           Q{question.numero}
@@ -146,11 +146,11 @@ export default function QuestionArtifactCard({
 
         {/* Disciplina e Assunto */}
         <div className="flex items-center gap-1 text-xs">
-          <span className="text-white/80 font-medium">{question.disciplina}</span>
+          <span className="text-slate-700 font-medium">{question.disciplina}</span>
           {question.assunto && (
             <>
-              <span className="text-white/30">›</span>
-              <span className="text-white/50">{question.assunto}</span>
+              <span className="text-slate-400">›</span>
+              <span className="text-slate-500">{question.assunto}</span>
             </>
           )}
         </div>
@@ -161,13 +161,13 @@ export default function QuestionArtifactCard({
         <div className="flex items-center gap-1.5 flex-wrap">
           {/* Banca */}
           {question.banca_estilo && (
-            <span className="text-white/40 text-[10px] font-medium uppercase">
+            <span className="text-slate-500 text-[10px] font-medium uppercase">
               {question.banca_estilo}
             </span>
           )}
 
           {/* Tipo */}
-          <span className="px-1.5 py-0.5 rounded bg-white/5 text-white/50 text-[10px]">
+          <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px]">
             {isCertoErrado ? 'C/E' : 'Múltipla'}
           </span>
 
@@ -197,7 +197,7 @@ export default function QuestionArtifactCard({
               </svg>
               <span className="text-blue-400 text-[10px] font-semibold uppercase tracking-wider">Caso Clínico</span>
             </div>
-            <p className="text-white/70 text-xs leading-relaxed whitespace-pre-wrap">
+            <p className="text-slate-600 text-xs leading-relaxed whitespace-pre-wrap">
               {question.caso_clinico}
             </p>
           </div>
@@ -205,7 +205,7 @@ export default function QuestionArtifactCard({
 
         {/* Instrução para C/E */}
         {isCertoErrado && (
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-2">
+          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-2">
             JULGUE O ITEM A SEGUIR
           </p>
         )}
@@ -221,7 +221,7 @@ export default function QuestionArtifactCard({
             <img
               src={question.imagem_url}
               alt="Imagem da questão"
-              className="max-w-full h-auto rounded border border-white/10"
+              className="max-w-full h-auto rounded border border-slate-200"
             />
           </div>
         )}
@@ -235,8 +235,8 @@ export default function QuestionArtifactCard({
             const showResultStyles = showFeedback
             const isEliminated = eliminatedAlternatives.has(alt.letra)
 
-            let containerClasses = 'border-white/10 hover:border-white/20 hover:bg-white/5'
-            let circleClasses = 'border-white/30 text-white/50'
+            let containerClasses = 'border-slate-200 hover:border-slate-300 hover:bg-slate-100'
+            let circleClasses = 'border-white/30 text-slate-500'
 
             if (showResultStyles) {
               if (isCorrectAlt) {
@@ -248,8 +248,8 @@ export default function QuestionArtifactCard({
               }
             } else if (isEliminated) {
               // Estilo para alternativa eliminada (cortada)
-              containerClasses = 'border-white/5 bg-white/5 opacity-50'
-              circleClasses = 'border-white/20 text-white/30 line-through'
+              containerClasses = 'border-slate-200 bg-slate-100 opacity-50'
+              circleClasses = 'border-slate-300 text-slate-400 line-through'
             } else if (isSelected) {
               containerClasses = 'border-emerald-500/50 bg-emerald-500/10'
               circleClasses = 'bg-emerald-500 text-white border-emerald-500'
@@ -275,7 +275,7 @@ export default function QuestionArtifactCard({
                       alt.letra
                     )}
                   </div>
-                  <span className={`flex-1 text-xs pt-0.5 ${isEliminated ? 'line-through text-white/40' : isSelected || (showResultStyles && isCorrectAlt) ? 'text-white font-medium' : 'text-white/70'}`}>
+                  <span className={`flex-1 text-xs pt-0.5 ${isEliminated ? 'line-through text-slate-500' : isSelected || (showResultStyles && isCorrectAlt) ? 'text-white font-medium' : 'text-slate-600'}`}>
                     {alt.texto}
                   </span>
                 </button>
@@ -287,7 +287,7 @@ export default function QuestionArtifactCard({
                     className={`absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded transition-all ${
                       isEliminated
                         ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'
-                        : 'bg-white/5 text-white/30 hover:bg-white/10 hover:text-white/60 opacity-0 group-hover:opacity-100'
+                        : 'bg-slate-100 text-slate-400 hover:bg-slate-100 hover:text-slate-600 opacity-0 group-hover:opacity-100'
                     }`}
                     title={isEliminated ? 'Restaurar alternativa' : 'Eliminar alternativa'}
                   >
@@ -301,7 +301,7 @@ export default function QuestionArtifactCard({
       </div>
 
       {/* Ações e Resultado - mais compacto */}
-      <div className="flex items-center gap-2 px-3 py-2.5 border-t border-white/10">
+      <div className="flex items-center gap-2 px-3 py-2.5 border-t border-slate-200">
         {!showFeedback ? (
           <button
             onClick={handleSubmitAnswer}
@@ -309,7 +309,7 @@ export default function QuestionArtifactCard({
             className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
               selectedAnswer
                 ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                : 'bg-white/10 text-white/40 cursor-not-allowed'
+                : 'bg-slate-100 text-slate-500 cursor-not-allowed'
             }`}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,14 +343,14 @@ export default function QuestionArtifactCard({
       </div>
 
       {/* Seções expansíveis - Gabarito Comentado */}
-      <div className="border-t border-white/10">
+      <div className="border-t border-slate-200">
         {/* Tab de Gabarito */}
         <button
           onClick={() => toggleSection('gabarito')}
           className={`w-full flex items-center justify-between px-3 py-2 transition-colors ${
             expandedSection === 'gabarito'
               ? 'bg-emerald-500/10 text-emerald-400'
-              : 'text-white/60 hover:text-white/80 hover:bg-white/5'
+              : 'text-slate-600 hover:text-slate-700 hover:bg-slate-100'
           }`}
         >
           <div className="flex items-center gap-1.5">
@@ -371,7 +371,7 @@ export default function QuestionArtifactCard({
 
         {/* Conteúdo do Gabarito - VERSÃO COMPLETA - com verificações null */}
         {expandedSection === 'gabarito' && question.gabarito_comentado && (
-          <div className="p-4 bg-emerald-500/5 border-t border-white/5 space-y-4 relative">
+          <div className="p-4 bg-emerald-500/5 border-t border-slate-200 space-y-4 relative">
             {/* Resposta correta em destaque - SEMPRE VISÍVEL */}
             <div className="flex items-center gap-2">
               <span className="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 text-sm font-bold">
@@ -391,8 +391,8 @@ export default function QuestionArtifactCard({
               <div className={`space-y-4 ${deveBlurGabarito ? 'blur-[6px] pointer-events-none' : ''}`}>
                 {/* Explicação geral */}
                 {(question.gabarito_comentado.explicacao_geral || question.gabarito_comentado.explicacao) && (
-                  <div className="p-3 bg-white/5 rounded-lg">
-                    <p className="text-white/80 text-sm leading-relaxed">
+                  <div className="p-3 bg-slate-100 rounded-lg">
+                    <p className="text-slate-700 text-sm leading-relaxed">
                       {question.gabarito_comentado.explicacao_geral || question.gabarito_comentado.explicacao}
                     </p>
                   </div>
@@ -404,7 +404,7 @@ export default function QuestionArtifactCard({
                   <div className="space-y-2">
                     <button
                       onClick={() => !deveBlurGabarito && setShowAlternativasAnalise(prev => !prev)}
-                      className="w-full flex items-center justify-between text-white/60 hover:text-white/80 text-xs"
+                      className="w-full flex items-center justify-between text-slate-600 hover:text-slate-700 text-xs"
                     >
                       <span className="flex items-center gap-1.5 font-semibold uppercase tracking-wider">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -449,7 +449,7 @@ export default function QuestionArtifactCard({
                                   }`}>
                                     {isCorreta ? '✓ CORRETA' : '✗ INCORRETA'}
                                   </p>
-                                  <p className="text-white/70 text-sm leading-relaxed">
+                                  <p className="text-slate-600 text-sm leading-relaxed">
                                     {analise.analise}
                                   </p>
                                 </div>
@@ -469,7 +469,7 @@ export default function QuestionArtifactCard({
                       <span className="text-yellow-400 text-lg">🎯</span>
                       <span className="text-yellow-400 text-xs font-semibold uppercase">Ponto-Chave</span>
                     </div>
-                    <p className="text-white/80 text-sm">{question.gabarito_comentado.ponto_chave}</p>
+                    <p className="text-slate-700 text-sm">{question.gabarito_comentado.ponto_chave}</p>
                   </div>
                 )}
 
@@ -480,7 +480,7 @@ export default function QuestionArtifactCard({
                       <span className="text-purple-400 text-lg">💡</span>
                       <span className="text-purple-400 text-xs font-semibold uppercase">Dica de Memorização</span>
                     </div>
-                    <p className="text-white/80 text-sm">{question.gabarito_comentado.dica_memorizacao}</p>
+                    <p className="text-slate-700 text-sm">{question.gabarito_comentado.dica_memorizacao}</p>
                   </div>
                 )}
 
@@ -491,21 +491,21 @@ export default function QuestionArtifactCard({
                       <span className="text-red-400 text-lg">⚠️</span>
                       <span className="text-red-400 text-xs font-semibold uppercase">Pegadinha</span>
                     </div>
-                    <p className="text-white/80 text-sm">{question.gabarito_comentado.pegadinha}</p>
+                    <p className="text-slate-700 text-sm">{question.gabarito_comentado.pegadinha}</p>
                   </div>
                 )}
 
                 {/* Referências - só mostrar se existir e tiver itens */}
                 {question.gabarito_comentado.referencias &&
                  question.gabarito_comentado.referencias.length > 0 && (
-                  <div className="pt-3 border-t border-white/10">
+                  <div className="pt-3 border-t border-slate-200">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-white/40 text-lg">📚</span>
-                      <span className="text-white/40 text-xs font-semibold uppercase">Referências</span>
+                      <span className="text-slate-500 text-lg">📚</span>
+                      <span className="text-slate-500 text-xs font-semibold uppercase">Referências</span>
                     </div>
                     <ul className="space-y-1">
                       {question.gabarito_comentado.referencias.map((ref, i) => (
-                        <li key={i} className="text-white/50 text-xs pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-white/30">
+                        <li key={i} className="text-slate-500 text-xs pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-slate-400">
                           {ref}
                         </li>
                       ))}
@@ -535,7 +535,7 @@ export default function QuestionArtifactCard({
                     <h3 className="text-white font-bold text-lg mb-2">
                       Gabarito Comentado Premium
                     </h3>
-                    <p className="text-white/60 text-sm mb-4">
+                    <p className="text-slate-600 text-sm mb-4">
                       Tenha acesso a explicações detalhadas, análise de cada alternativa, dicas de memorização e muito mais!
                     </p>
                     <button
@@ -544,7 +544,7 @@ export default function QuestionArtifactCard({
                     >
                       Desbloquear Agora
                     </button>
-                    <p className="text-white/40 text-xs mt-3">
+                    <p className="text-slate-500 text-xs mt-3">
                       Ou ative seu trial de 4h grátis
                     </p>
                   </div>

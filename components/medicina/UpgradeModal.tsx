@@ -109,17 +109,17 @@ export function UpgradeModal({ tipo, feature, conquista, onClose }: UpgradeModal
         <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl max-w-sm w-full p-6 relative shadow-2xl animate-scaleIn">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-white/70 hover:text-white"
+            className="absolute top-4 right-4 text-slate-600 hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>
 
           <div className="text-center">
             <div className="text-6xl mb-4 animate-bounce">{conquista.icone}</div>
-            <p className="text-white/70 text-sm mb-1">Nova conquista!</p>
+            <p className="text-slate-600 text-sm mb-1">Nova conquista!</p>
             <h2 className="text-2xl font-bold text-white mb-2">{conquista.nome}</h2>
-            <p className="text-white/80 mb-4">{conquista.descricao}</p>
-            <div className="inline-block px-4 py-2 bg-white/20 rounded-full">
+            <p className="text-slate-700 mb-4">{conquista.descricao}</p>
+            <div className="inline-block px-4 py-2 bg-slate-200 rounded-full">
               <span className="text-white font-bold">+{conquista.pontos} pontos</span>
             </div>
           </div>
@@ -134,7 +134,7 @@ export function UpgradeModal({ tipo, feature, conquista, onClose }: UpgradeModal
         {/* Botão fechar */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -148,7 +148,7 @@ export function UpgradeModal({ tipo, feature, conquista, onClose }: UpgradeModal
         <h2 className="text-xl font-bold text-white text-center mb-2">
           {content.titulo}
         </h2>
-        <p className="text-white/60 text-center mb-6">
+        <p className="text-slate-600 text-center mb-6">
           {content.subtitulo}
           {feature && (
             <span className="block mt-1 text-blue-400 font-medium">{feature}</span>
@@ -162,7 +162,7 @@ export function UpgradeModal({ tipo, feature, conquista, onClose }: UpgradeModal
               <Sparkles className="w-5 h-5 text-violet-400" />
               <span className="font-medium text-white">Experimente grátis!</span>
             </div>
-            <p className="text-white/60 text-sm mb-3">
+            <p className="text-slate-600 text-sm mb-3">
               Teste todas as funcionalidades premium por 4 horas, sem compromisso.
             </p>
             <button
@@ -177,44 +177,44 @@ export function UpgradeModal({ tipo, feature, conquista, onClose }: UpgradeModal
 
         {/* Benefícios do plano */}
         <div className="bg-slate-700/50 rounded-xl p-4 mb-6">
-          <p className="text-sm text-white/70 mb-3">
+          <p className="text-sm text-slate-600 mb-3">
             Com o plano <span className="font-bold text-white">{planoSugeridoNome}</span> você tem:
           </p>
           <ul className="space-y-2 text-sm">
             {plano === 'gratuito' ? (
               <>
-                <li className="flex items-center gap-2 text-white/90">
+                <li className="flex items-center gap-2 text-slate-800">
                   <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                   Questões ilimitadas
                 </li>
-                <li className="flex items-center gap-2 text-white/90">
+                <li className="flex items-center gap-2 text-slate-800">
                   <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                   {limitesSugeridos.perguntas_ia_mes} mensagens de IA por mês
                 </li>
-                <li className="flex items-center gap-2 text-white/90">
+                <li className="flex items-center gap-2 text-slate-800">
                   <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                   5 simulados e 50 flashcards
                 </li>
-                <li className="flex items-center gap-2 text-white/90">
+                <li className="flex items-center gap-2 text-slate-800">
                   <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                   Gabarito comentado completo
                 </li>
               </>
             ) : (
               <>
-                <li className="flex items-center gap-2 text-white/90">
+                <li className="flex items-center gap-2 text-slate-800">
                   <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                   Questões e chat ILIMITADOS
                 </li>
-                <li className="flex items-center gap-2 text-white/90">
+                <li className="flex items-center gap-2 text-slate-800">
                   <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                   Casos clínicos por voz
                 </li>
-                <li className="flex items-center gap-2 text-white/90">
+                <li className="flex items-center gap-2 text-slate-800">
                   <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                   Análise de exames com IA
                 </li>
-                <li className="flex items-center gap-2 text-white/90">
+                <li className="flex items-center gap-2 text-slate-800">
                   <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                   Claude Opus (IA mais avançada)
                 </li>
@@ -241,7 +241,7 @@ export function UpgradeModal({ tipo, feature, conquista, onClose }: UpgradeModal
         </div>
 
         {/* Preço */}
-        <p className="text-center text-white/40 text-xs mt-4">
+        <p className="text-center text-slate-500 text-xs mt-4">
           {planoSugeridoNome} a partir de R${precoSugerido}/mês
         </p>
       </div>

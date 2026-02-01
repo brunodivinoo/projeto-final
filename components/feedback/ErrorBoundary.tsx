@@ -58,13 +58,13 @@ export class ErrorBoundary extends Component<Props, State> {
               <AlertTriangle className="w-8 h-8 text-red-400" />
             </div>
             <h2 className="text-xl font-bold text-white mb-2">Ops! Algo deu errado</h2>
-            <p className="text-white/60 mb-6">
+            <p className="text-slate-600 mb-6">
               Encontramos um problema inesperado. O erro já foi registrado e nossa equipe será notificada.
             </p>
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={() => window.location.reload()}
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-white rounded-lg transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
                 Recarregar

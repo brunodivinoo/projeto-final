@@ -12,7 +12,7 @@ export default function GerarQuestoesPage() {
         <div>
           <Link
             href="/medicina/admin"
-            className="flex items-center gap-2 text-white/60 hover:text-white mb-2 text-sm transition-colors"
+            className="flex items-center gap-2 text-slate-600 hover:text-white mb-2 text-sm transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Voltar ao Dashboard
@@ -23,7 +23,7 @@ export default function GerarQuestoesPage() {
             </div>
             Gerar Questões com IA
           </h1>
-          <p className="text-white/60 mt-1">
+          <p className="text-slate-600 mt-1">
             Configure e gere questões em lote usando inteligência artificial
           </p>
         </div>
@@ -32,7 +32,7 @@ export default function GerarQuestoesPage() {
       {/* Info box */}
       <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-4">
         <h3 className="text-cyan-400 font-medium mb-2">Como funciona</h3>
-        <ul className="text-white/60 text-sm space-y-1">
+        <ul className="text-slate-600 text-sm space-y-1">
           <li>1. Selecione a disciplina e os assuntos para gerar questões</li>
           <li>2. Escolha os períodos (níveis de dificuldade) - do 1º ao 12º período</li>
           <li>3. Defina a quantidade de questões por assunto/período</li>

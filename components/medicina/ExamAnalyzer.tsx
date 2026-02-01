@@ -114,7 +114,7 @@ export function ExamAnalyzer({ onAnalysis, onClose, className = '' }: ExamAnalyz
           <AlertTriangle className="w-8 h-8 text-amber-400" />
         </div>
         <h3 className="text-lg font-semibold text-white mb-2">Recurso Exclusivo</h3>
-        <p className="text-white/60 text-sm mb-4">
+        <p className="text-slate-600 text-sm mb-4">
           A análise de exames com IA está disponível apenas no plano Residência.
         </p>
         <button
@@ -136,7 +136,7 @@ export function ExamAnalyzer({ onAnalysis, onClose, className = '' }: ExamAnalyz
           Análise de Exames
         </h3>
         {onClose && (
-          <button onClick={onClose} className="text-white/40 hover:text-white">
+          <button onClick={onClose} className="text-slate-500 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         )}
@@ -162,7 +162,7 @@ export function ExamAnalyzer({ onAnalysis, onClose, className = '' }: ExamAnalyz
 
           {/* Resultado da análise */}
           <div className="p-4 bg-slate-700/50 rounded-lg max-h-96 overflow-y-auto">
-            <p className="text-white/90 text-sm whitespace-pre-wrap leading-relaxed">
+            <p className="text-slate-800 text-sm whitespace-pre-wrap leading-relaxed">
               {analysis}
             </p>
           </div>
@@ -196,7 +196,7 @@ export function ExamAnalyzer({ onAnalysis, onClose, className = '' }: ExamAnalyz
                 className={`px-3 py-2 rounded-lg text-sm transition-all ${
                   selectedType === type.id
                     ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 text-white/70 hover:bg-slate-600 hover:text-white'
+                    : 'bg-slate-700 text-slate-600 hover:bg-slate-600 hover:text-white'
                 }`}
                 title={type.desc}
               >
@@ -212,8 +212,8 @@ export function ExamAnalyzer({ onAnalysis, onClose, className = '' }: ExamAnalyz
               className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center cursor-pointer hover:border-blue-500 transition-colors"
             >
               <Upload className="w-12 h-12 mx-auto mb-3 text-slate-500" />
-              <p className="text-white/70">Clique para enviar imagem do exame</p>
-              <p className="text-white/40 text-sm mt-1">PNG, JPG, WebP até 10MB</p>
+              <p className="text-slate-600">Clique para enviar imagem do exame</p>
+              <p className="text-slate-500 text-sm mt-1">PNG, JPG, WebP até 10MB</p>
               <input
                 ref={inputRef}
                 type="file"

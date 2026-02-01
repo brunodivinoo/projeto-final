@@ -67,12 +67,12 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
     <div className="flex min-h-screen bg-[#0A0F1C]">
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full bg-[#0D1321] border-r border-white/10 transition-all duration-300 z-40 ${
+        className={`fixed left-0 top-0 h-full bg-[#0D1321] border-r border-slate-200 transition-all duration-300 z-40 ${
           collapsed ? 'w-16' : 'w-64'
         }`}
       >
         {/* Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
           {!collapsed && (
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
@@ -83,7 +83,7 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/60 hover:text-white"
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600 hover:text-white"
           >
             {collapsed ? (
               <ChevronRight className="w-5 h-5" />
@@ -115,7 +115,7 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
                     ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 border border-cyan-500/30'
                     : item.highlight
                     ? 'text-amber-400 hover:bg-amber-500/10'
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                    : 'text-slate-600 hover:text-white hover:bg-slate-100'
                 }`}
                 title={collapsed ? item.label : undefined}
               >
@@ -136,10 +136,10 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-2 border-t border-white/10">
+        <div className="absolute bottom-0 left-0 right-0 p-2 border-t border-slate-200">
           <Link
             href="/medicina/dashboard"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-all"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:text-white hover:bg-slate-100 transition-all"
             title={collapsed ? 'Voltar ao Dashboard' : undefined}
           >
             <Home className="w-5 h-5" />
@@ -155,12 +155,12 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
         }`}
       >
         {/* Top Bar */}
-        <header className="h-16 bg-[#0D1321]/80 backdrop-blur-sm border-b border-white/10 flex items-center justify-between px-6 sticky top-0 z-30">
+        <header className="h-16 bg-[#0D1321]/80 backdrop-blur-sm border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-30">
           <h1 className="text-lg font-semibold text-white">
             Painel Administrativo - PREPARAMED
           </h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-white/40">
+            <span className="text-sm text-slate-500">
               {new Date().toLocaleDateString('pt-BR', {
                 weekday: 'long',
                 day: 'numeric',

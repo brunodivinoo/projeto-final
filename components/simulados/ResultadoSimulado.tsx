@@ -282,15 +282,15 @@ Tempo: ${formatarTempo(tempoGasto)}
 
               {/* Stats rápidos */}
               <div className="grid grid-cols-3 gap-3 sm:gap-4">
-                <div className="text-center p-2 sm:p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                <div className="text-center p-2 sm:p-3 bg-slate-1000 dark:bg-gray-800/50 rounded-lg">
                   <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{acertos}</p>
                   <p className="text-xs text-gray-500">Corretas</p>
                 </div>
-                <div className="text-center p-2 sm:p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                <div className="text-center p-2 sm:p-3 bg-slate-1000 dark:bg-gray-800/50 rounded-lg">
                   <p className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{erros}</p>
                   <p className="text-xs text-gray-500">Incorretas</p>
                 </div>
-                <div className="text-center p-2 sm:p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                <div className="text-center p-2 sm:p-3 bg-slate-1000 dark:bg-gray-800/50 rounded-lg">
                   <p className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{formatarTempo(tempoGasto)}</p>
                   <p className="text-xs text-gray-500">Tempo Total</p>
                 </div>
