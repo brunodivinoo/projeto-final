@@ -381,18 +381,18 @@ export default function BibliotecaPage() {
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header com Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="md:col-span-2 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl p-6 border border-emerald-500/20">
+        <div className="md:col-span-2 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl p-6 border border-emerald-500/30">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">
                 Biblioteca de Teoria
               </h1>
-              <p className="text-emerald-200/70">
+              <p className="text-slate-500">
                 Conteúdo organizado para sua preparação
               </p>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg">
-              <GraduationCap className="w-4 h-4 text-emerald-400" />
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg">
+              <GraduationCap className="w-4 h-4 text-emerald-600" />
               <span className="text-slate-700 text-sm capitalize">{nivelTeoria}</span>
             </div>
           </div>
@@ -401,9 +401,9 @@ export default function BibliotecaPage() {
           <div className="mt-4">
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="text-slate-600">Progresso Geral</span>
-              <span className="text-emerald-400 font-medium">{stats.percentLido}%</span>
+              <span className="text-emerald-600 font-medium">{stats.percentLido}%</span>
             </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-2 bg-white/50 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
                 style={{ width: `${stats.percentLido}%` }}
@@ -413,35 +413,35 @@ export default function BibliotecaPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="bg-slate-100 rounded-xl p-4 border border-slate-200">
+        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-blue-400" />
+            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">{stats.total}</p>
-              <p className="text-slate-600 text-sm">Teorias</p>
+              <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
+              <p className="text-slate-500 text-sm">Teorias</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span className="text-emerald-400">{stats.lidas} lidas</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <span className="text-emerald-600">{stats.lidas} lidas</span>
           </div>
         </div>
 
-        <div className="bg-slate-100 rounded-xl p-4 border border-slate-200">
+        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-amber-400" />
+            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">{Math.round(stats.tempoTotal / 60)}h</p>
-              <p className="text-slate-600 text-sm">Conteúdo</p>
+              <p className="text-2xl font-bold text-amber-600">{Math.round(stats.tempoTotal / 60)}h</p>
+              <p className="text-slate-500 text-sm">Conteúdo</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-            <span className="text-amber-400">{stats.favoritas} favoritas</span>
+            <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+            <span className="text-amber-600">{stats.favoritas} favoritas</span>
           </div>
         </div>
       </div>

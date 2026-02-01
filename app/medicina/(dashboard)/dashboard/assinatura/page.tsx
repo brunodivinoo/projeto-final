@@ -209,14 +209,14 @@ export default function AssinaturaPage() {
           </div>
         )}
 
-        <h1 className="text-2xl md:text-4xl font-bold text-white mb-3">
+        <h1 className="text-2xl md:text-4xl font-bold text-slate-800 mb-3">
           {planoAtual === 'gratuito' ? (
-            <>Desbloqueie todo o <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">potencial</span></>
+            <>Desbloqueie todo o <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">potencial</span></>
           ) : (
-            <>Seu Plano <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">{planoAtualData?.nome}</span></>
+            <>Seu Plano <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">{planoAtualData?.nome}</span></>
           )}
         </h1>
-        <p className="text-emerald-200/70 max-w-xl mx-auto">
+        <p className="text-slate-500 max-w-xl mx-auto">
           {planoAtual === 'gratuito'
             ? 'Junte-se a milhares de estudantes que já estão acelerando seus estudos'
             : 'Gerencie sua assinatura e aproveite todos os recursos'
@@ -228,14 +228,14 @@ export default function AssinaturaPage() {
           <div className="flex items-center justify-center gap-3 mt-4">
             <div className="flex -space-x-2">
               {[1,2,3,4,5].map((i) => (
-                <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 border-2 border-emerald-950 flex items-center justify-center">
+                <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 border-2 border-white flex items-center justify-center">
                   <Star className="w-4 h-4 text-white" />
                 </div>
               ))}
             </div>
             <div className="text-left">
-              <p className="text-white text-sm font-medium">+2.847 novos assinantes</p>
-              <p className="text-emerald-400/60 text-xs">nos últimos 7 dias</p>
+              <p className="text-slate-800 text-sm font-medium">+2.847 novos assinantes</p>
+              <p className="text-slate-500 text-xs">nos últimos 7 dias</p>
             </div>
           </div>
         )}
@@ -361,20 +361,20 @@ export default function AssinaturaPage() {
                 )}
 
                 <div className={`w-16 h-16 mx-auto rounded-2xl mb-4 flex items-center justify-center ${
-                  plano.id === 'residencia' ? 'bg-amber-500/20' :
-                  plano.id === 'premium' ? 'bg-emerald-500/20' :
+                  plano.id === 'residencia' ? 'bg-amber-100' :
+                  plano.id === 'premium' ? 'bg-emerald-100' :
                   'bg-slate-100'
                 }`}>
                   {plano.id === 'residencia' ? (
-                    <Crown className="w-8 h-8 text-amber-400" />
+                    <Crown className="w-8 h-8 text-amber-600" />
                   ) : plano.id === 'premium' ? (
-                    <Rocket className="w-8 h-8 text-emerald-400" />
+                    <Rocket className="w-8 h-8 text-emerald-600" />
                   ) : (
                     <Zap className="w-8 h-8 text-slate-600" />
                   )}
                 </div>
 
-                <h3 className="text-2xl font-bold text-white">{plano.nome}</h3>
+                <h3 className="text-2xl font-bold text-slate-800">{plano.nome}</h3>
                 <p className="text-slate-500 text-sm mt-1">{plano.descricao}</p>
               </div>
 
@@ -382,30 +382,30 @@ export default function AssinaturaPage() {
               <div className="text-center mb-6">
                 {plano.precoOriginal > plano.preco && (
                   <div className="mb-1">
-                    <span className="text-slate-500 line-through text-lg">
+                    <span className="text-slate-400 line-through text-lg">
                       R${plano.precoOriginal.toFixed(2).replace('.', ',')}
                     </span>
                   </div>
                 )}
                 <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-slate-600 text-xl">R$</span>
-                  <span className="text-5xl font-black text-white">
+                  <span className="text-slate-500 text-xl">R$</span>
+                  <span className="text-5xl font-black text-slate-800">
                     {plano.preco === 0 ? '0' : Math.floor(plano.preco)}
                   </span>
                   {plano.preco > 0 && (
-                    <span className="text-slate-600 text-xl">
+                    <span className="text-slate-500 text-xl">
                       ,{(plano.preco % 1).toFixed(2).slice(2)}
                     </span>
                   )}
                   <span className={`text-sm ${
-                    plano.id === 'residencia' ? 'text-amber-300' :
-                    plano.id === 'premium' ? 'text-emerald-300' :
+                    plano.id === 'residencia' ? 'text-amber-600' :
+                    plano.id === 'premium' ? 'text-emerald-600' :
                     'text-slate-500'
                   }`}>{plano.periodo}</span>
                 </div>
                 {plano.economia && (
                   <p className={`text-sm mt-2 font-medium ${
-                    plano.id === 'residencia' ? 'text-amber-300' : 'text-emerald-300'
+                    plano.id === 'residencia' ? 'text-amber-600' : 'text-emerald-600'
                   }`}>
                     💰 Economia de {plano.economia}
                   </p>
@@ -495,8 +495,8 @@ export default function AssinaturaPage() {
       </div>
 
       {/* Comparison Table */}
-      <div className="bg-slate-100 rounded-2xl p-6 border border-slate-200">
-        <h3 className="text-xl font-bold text-white mb-6 text-center">
+      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+        <h3 className="text-xl font-bold text-slate-800 mb-6 text-center">
           Comparação Completa
         </h3>
         <div className="overflow-x-auto">
@@ -539,21 +539,21 @@ export default function AssinaturaPage() {
           { nome: 'Dr. Pedro L.', texto: 'Melhor investimento que fiz. As questões comentadas são excelentes.', nota: 5 },
           { nome: 'Dra. Ana C.', texto: 'Os simulados me prepararam perfeitamente para a prova real.', nota: 5 },
         ].map((depo, i) => (
-          <div key={i} className="bg-slate-100 rounded-xl p-5 border border-slate-200">
+          <div key={i} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
             <div className="flex gap-1 mb-3">
               {Array(depo.nota).fill(0).map((_, j) => (
                 <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
               ))}
             </div>
             <p className="text-slate-600 text-sm mb-3 italic">&quot;{depo.texto}&quot;</p>
-            <p className="text-emerald-400 text-sm font-medium">{depo.nome}</p>
+            <p className="text-emerald-600 text-sm font-medium">{depo.nome}</p>
           </div>
         ))}
       </div>
 
       {/* FAQ */}
-      <div className="bg-slate-100 rounded-2xl p-6 border border-slate-200">
-        <h3 className="text-xl font-bold text-white mb-6">Perguntas Frequentes</h3>
+      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+        <h3 className="text-xl font-bold text-slate-800 mb-6">Perguntas Frequentes</h3>
         <div className="grid md:grid-cols-2 gap-6">
           {[
             { p: 'Como funciona o pagamento?', r: 'Pagamento seguro via cartão de crédito com cobrança recorrente mensal. Você pode cancelar a qualquer momento.' },
@@ -562,7 +562,7 @@ export default function AssinaturaPage() {
             { p: 'Como faço upgrade de plano?', r: 'Basta escolher o novo plano. O upgrade é imediato e você paga apenas a diferença proporcional.' },
           ].map((faq, i) => (
             <div key={i}>
-              <h4 className="text-white font-medium mb-2">{faq.p}</h4>
+              <h4 className="text-slate-800 font-medium mb-2">{faq.p}</h4>
               <p className="text-slate-500 text-sm">{faq.r}</p>
             </div>
           ))}

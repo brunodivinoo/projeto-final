@@ -145,16 +145,16 @@ export default function PerfilPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-white">
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
           Meu Perfil
         </h1>
-        <p className="text-emerald-200/70 mt-1">
+        <p className="text-slate-500 mt-1">
           Gerencie suas informações pessoais
         </p>
       </div>
 
       {/* Avatar Card */}
-      <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
+      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
         <div className="flex items-center gap-6">
           <div className="relative">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
@@ -167,12 +167,12 @@ export default function PerfilPage() {
             </button>
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">{form.nome || 'Estudante'}</h2>
-            <p className="text-slate-600">{form.email}</p>
+            <h2 className="text-xl font-bold text-slate-800">{form.nome || 'Estudante'}</h2>
+            <p className="text-slate-500">{form.email}</p>
             <div className="mt-2 flex items-center gap-2">
               <span className={`text-xs px-3 py-1 rounded-full ${
-                plano === 'residencia' ? 'bg-amber-500/20 text-amber-400' :
-                plano === 'premium' ? 'bg-emerald-500/20 text-emerald-400' :
+                plano === 'residencia' ? 'bg-amber-100 text-amber-700' :
+                plano === 'premium' ? 'bg-emerald-100 text-emerald-700' :
                 'bg-slate-100 text-slate-600'
               }`}>
                 {plano === 'residencia' ? '👑 Residência' :
@@ -185,8 +185,8 @@ export default function PerfilPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
-          <h3 className="text-lg font-semibold text-white mb-6">Informações Pessoais</h3>
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-800 mb-6">Informações Pessoais</h3>
 
           <div className="grid gap-6">
             <div>
@@ -199,7 +199,7 @@ export default function PerfilPage() {
                   type="text"
                   value={form.nome}
                   onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                  className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 pl-12 pr-4 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white"
                   placeholder="Seu nome"
                 />
               </div>
@@ -217,7 +217,7 @@ export default function PerfilPage() {
                       type="email"
                       value={novoEmail}
                       onChange={(e) => setNovoEmail(e.target.value)}
-                      className="w-full bg-slate-100 border border-emerald-500/50 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      className="w-full bg-white border border-emerald-500 rounded-lg py-3 pl-12 pr-4 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                       placeholder="novo@email.com"
                     />
                   </div>
@@ -280,8 +280,8 @@ export default function PerfilPage() {
           </div>
         </div>
 
-        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
-          <h3 className="text-lg font-semibold text-white mb-6">Informações Acadêmicas</h3>
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-800 mb-6">Informações Acadêmicas</h3>
 
           <div className="grid gap-6">
             <div>
@@ -294,7 +294,7 @@ export default function PerfilPage() {
                   type="text"
                   value={form.faculdade}
                   onChange={(e) => setForm({ ...form, faculdade: e.target.value })}
-                  className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 pl-12 pr-4 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white"
                   placeholder="Nome da sua faculdade"
                 />
               </div>
@@ -307,10 +307,10 @@ export default function PerfilPage() {
               <select
                 value={form.periodo_curso}
                 onChange={(e) => setForm({ ...form, periodo_curso: parseInt(e.target.value) })}
-                className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 px-4 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white"
               >
                 {periodosCurso.map((periodo) => (
-                  <option key={periodo.value} value={periodo.value} className="bg-slate-800">
+                  <option key={periodo.value} value={periodo.value} className="bg-white">
                     {periodo.label}
                   </option>
                 ))}
@@ -325,11 +325,11 @@ export default function PerfilPage() {
                 <select
                   value={form.estado}
                   onChange={(e) => setForm({ ...form, estado: e.target.value })}
-                  className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 px-4 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white"
                 >
-                  <option value="" className="bg-slate-800">Selecione</option>
+                  <option value="" className="bg-white">Selecione</option>
                   {estados.map((uf) => (
-                    <option key={uf} value={uf} className="bg-slate-800">
+                    <option key={uf} value={uf} className="bg-white">
                       {uf}
                     </option>
                   ))}
@@ -345,7 +345,7 @@ export default function PerfilPage() {
                     type="text"
                     value={form.cidade}
                     onChange={(e) => setForm({ ...form, cidade: e.target.value })}
-                    className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 pl-12 pr-4 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white"
                     placeholder="Sua cidade"
                   />
                 </div>
@@ -390,8 +390,8 @@ export default function PerfilPage() {
       </form>
 
       {/* Statistics Card */}
-      <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
-        <h3 className="text-lg font-semibold text-white mb-6">Estatísticas Gerais</h3>
+      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-slate-800 mb-6">Estatísticas Gerais</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
             <div className="text-3xl font-bold text-emerald-400">

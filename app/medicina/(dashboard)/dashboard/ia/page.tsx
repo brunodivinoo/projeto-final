@@ -1804,8 +1804,8 @@ export default function IAPage() {
           {/* Loading ao abrir conversa */}
           {carregandoConversa && mensagens.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4">
-              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-3 md:mb-4">
-                <Loader2 className="w-7 h-7 md:w-8 md:h-8 text-emerald-500 animate-spin" />
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-emerald-200 to-teal-200 flex items-center justify-center mb-3 md:mb-4">
+                <Loader2 className="w-7 h-7 md:w-8 md:h-8 text-emerald-600 animate-spin" />
               </div>
               <h2 className="text-lg md:text-xl font-bold text-slate-800 mb-1.5">Carregando conversa...</h2>
               <p className="text-slate-500 text-xs md:text-sm">Aguarde um momento</p>
@@ -1833,7 +1833,7 @@ export default function IAPage() {
                 <ChatModeIntro modo={chatMode} onStart={iniciarModo} />
               ) : !showSimulacaoConfig ? (
                 <>
-                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-3 md:mb-4 shadow-sm">
+                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-emerald-200 to-teal-200 flex items-center justify-center mb-3 md:mb-4 shadow-sm">
                     <Brain className="w-7 h-7 md:w-8 md:h-8 text-emerald-600" />
                   </div>
                   <h2 className="text-lg md:text-xl font-bold text-slate-800 mb-1.5">Como posso ajudar?</h2>
@@ -1854,7 +1854,7 @@ export default function IAPage() {
                           <button
                             key={`topic-${i}`}
                             onClick={() => setInput(sugestao.fullPrompt)}
-                            className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors text-left border border-emerald-200 hover:border-emerald-300 shadow-sm"
+                            className="flex items-center gap-2 p-3 bg-white rounded-xl hover:bg-emerald-50 transition-colors text-left border border-emerald-300 hover:border-emerald-400 shadow-sm"
                           >
                             <span className="text-lg flex-shrink-0">{sugestao.icon}</span>
                             <span className="text-slate-700 text-xs md:text-sm line-clamp-2">{sugestao.text}</span>
@@ -1890,7 +1890,7 @@ export default function IAPage() {
                     <div className="w-full max-w-xl mb-4">
                       <button
                         onClick={() => setShowSimulacaoConfig(true)}
-                        className="w-full flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl hover:from-emerald-100 hover:to-teal-100 transition-all text-left border border-emerald-200 hover:border-emerald-300 group shadow-sm"
+                        className="w-full flex items-center justify-center gap-3 p-4 bg-white rounded-xl hover:bg-emerald-50 transition-all text-left border border-emerald-300 hover:border-emerald-400 group shadow-sm"
                       >
                         <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Stethoscope className="w-5 h-5 text-emerald-600" />

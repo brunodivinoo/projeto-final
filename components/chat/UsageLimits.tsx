@@ -123,13 +123,12 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 sm:left-1/2 sm:-translate-x-1/2 bottom-full mb-3 w-[280px] max-w-[calc(100vw-2rem)] p-4 rounded-xl border border-slate-700
-                       shadow-xl shadow-black/50 z-[100]"
-            style={{ backgroundColor: '#0f172a' }}
+            className="absolute right-0 sm:left-1/2 sm:-translate-x-1/2 bottom-full mb-3 w-[280px] max-w-[calc(100vw-2rem)] p-4 rounded-xl border border-slate-200 bg-white
+                       shadow-xl z-[100]"
           >
             <div className="flex items-center gap-2 mb-4">
               {getPlanIcon()}
-              <h4 className="text-white font-semibold">
+              <h4 className="text-slate-800 font-semibold">
                 Plano {getPlanLabel()}
               </h4>
             </div>
@@ -192,8 +191,8 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
             )}
 
             {plan === 'residencia' && (
-              <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <p className="text-xs text-amber-200/80 text-center">
+              <div className="mt-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                <p className="text-xs text-emerald-700 text-center">
                   ✨ Você tem acesso ilimitado a todos os recursos!
                 </p>
               </div>
@@ -208,8 +207,7 @@ export function UsageLimits({ usage, limits, plan, className = '' }: UsageLimits
             )}
 
             {/* Setinha apontando para baixo (onde está o botão) */}
-            <div className="absolute -bottom-2 right-6 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto w-4 h-4 rotate-45 border-r border-b border-slate-700"
-                 style={{ backgroundColor: '#0f172a' }} />
+            <div className="absolute -bottom-2 right-6 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto w-4 h-4 rotate-45 border-r border-b border-slate-200 bg-white" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -233,20 +231,20 @@ function UsageBar({ icon, label, current, max, unlimited }: UsageBarProps) {
   return (
     <div>
       <div className="flex items-center justify-between text-xs mb-1.5">
-        <div className="flex items-center gap-2 text-slate-400">
+        <div className="flex items-center gap-2 text-slate-500">
           {icon}
           <span>{label}</span>
         </div>
         <span className={`font-medium ${
-          unlimited ? 'text-emerald-400' :
-          isFull ? 'text-red-400' :
-          isHigh ? 'text-amber-400' : 'text-slate-300'
+          unlimited ? 'text-emerald-600' :
+          isFull ? 'text-red-600' :
+          isHigh ? 'text-amber-600' : 'text-slate-700'
         }`}>
           {unlimited ? '∞ ilimitado' : `${current}/${max}`}
         </span>
       </div>
       {!unlimited && (
-        <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
           <div
             className={`h-full transition-all rounded-full ${
               isFull ? 'bg-red-500' :

@@ -176,10 +176,10 @@ export default function EstatisticasPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
             Estatísticas
           </h1>
-          <p className="text-emerald-200/70 mt-1">
+          <p className="text-slate-500 mt-1">
             Acompanhe seu progresso e identifique pontos de melhoria
           </p>
         </div>
@@ -189,14 +189,14 @@ export default function EstatisticasPage() {
           <select
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value as '7d' | '30d' | '90d' | 'all')}
-            className="appearance-none bg-slate-100 border border-slate-200 rounded-lg py-2 pl-4 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="appearance-none bg-emerald-500 border border-emerald-600 rounded-lg py-2 pl-4 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
-            <option value="7d" className="bg-slate-800">Últimos 7 dias</option>
-            <option value="30d" className="bg-slate-800">Últimos 30 dias</option>
-            <option value="90d" className="bg-slate-800">Últimos 90 dias</option>
-            <option value="all" className="bg-slate-800">Todo período</option>
+            <option value="7d" className="bg-emerald-600">Últimos 7 dias</option>
+            <option value="30d" className="bg-emerald-600">Últimos 30 dias</option>
+            <option value="90d" className="bg-emerald-600">Últimos 90 dias</option>
+            <option value="all" className="bg-emerald-600">Todo período</option>
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white pointer-events-none" />
         </div>
       </div>
 
@@ -208,70 +208,70 @@ export default function EstatisticasPage() {
         <>
           {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="bg-slate-100 rounded-xl p-5 border border-slate-200">
+            <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-emerald-400" />
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-emerald-600" />
                 </div>
               </div>
-              <div className="text-3xl font-bold text-white">
+              <div className="text-3xl font-bold text-emerald-600">
                 {estatisticasGerais?.totalQuestoes || 0}
               </div>
-              <div className="text-slate-600 text-sm">Questões Resolvidas</div>
+              <div className="text-slate-500 text-sm">Questões Resolvidas</div>
             </div>
 
-            <div className="bg-slate-100 rounded-xl p-5 border border-slate-200">
+            <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-teal-500/20 flex items-center justify-center">
-                  <Target className="w-5 h-5 text-teal-400" />
+                <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center">
+                  <Target className="w-5 h-5 text-teal-600" />
                 </div>
               </div>
-              <div className="text-3xl font-bold text-white">
+              <div className="text-3xl font-bold text-teal-600">
                 {taxaGeral}%
               </div>
-              <div className="text-slate-600 text-sm">Taxa de Acerto</div>
+              <div className="text-slate-500 text-sm">Taxa de Acerto</div>
             </div>
 
-            <div className="bg-slate-100 rounded-xl p-5 border border-slate-200">
+            <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-cyan-400" />
+                <div className="w-10 h-10 rounded-lg bg-cyan-100 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-cyan-600" />
                 </div>
               </div>
-              <div className="text-3xl font-bold text-white">
+              <div className="text-3xl font-bold text-cyan-600">
                 {tempoFormatado}
               </div>
-              <div className="text-slate-600 text-sm">Tempo de Estudo</div>
+              <div className="text-slate-500 text-sm">Tempo de Estudo</div>
             </div>
 
-            <div className="bg-slate-100 rounded-xl p-5 border border-slate-200">
+            <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5 text-purple-400" />
+                <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5 text-purple-600" />
                 </div>
               </div>
-              <div className="text-3xl font-bold text-white">
+              <div className="text-3xl font-bold text-purple-600">
                 {estatisticasGerais?.simuladosFeitos || 0}
               </div>
-              <div className="text-slate-600 text-sm">Simulados</div>
+              <div className="text-slate-500 text-sm">Simulados</div>
             </div>
 
-            <div className="bg-slate-100 rounded-xl p-5 border border-slate-200">
+            <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                  <BookOpen className="w-5 h-5 text-amber-400" />
+                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-amber-600" />
                 </div>
               </div>
-              <div className="text-3xl font-bold text-white">
+              <div className="text-3xl font-bold text-amber-600">
                 {estatisticasGerais?.teoriasLidas || 0}
               </div>
-              <div className="text-slate-600 text-sm">Teorias Lidas</div>
+              <div className="text-slate-500 text-sm">Teorias Lidas</div>
             </div>
           </div>
 
           {/* Activity Chart */}
-          <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
-            <h2 className="text-lg font-bold text-white mb-6">Atividade Diária</h2>
+          <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-800 mb-6">Atividade Diária</h2>
 
             {estatisticasDia.length > 0 ? (
               <div className="space-y-4">
@@ -327,8 +327,8 @@ export default function EstatisticasPage() {
           </div>
 
           {/* Disciplinas Performance */}
-          <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
-            <h2 className="text-lg font-bold text-white mb-6">Desempenho por Disciplina</h2>
+          <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-800 mb-6">Desempenho por Disciplina</h2>
 
             {estatisticasDisciplina.length > 0 ? (
               <div className="space-y-4">
@@ -370,12 +370,12 @@ export default function EstatisticasPage() {
           {/* Performance Summary */}
           <div className="grid md:grid-cols-2 gap-6">
             {/* Points to Improve */}
-            <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
+            <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-red-400" />
+                <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-red-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-white">Pontos a Melhorar</h3>
+                <h3 className="text-lg font-semibold text-slate-800">Pontos a Melhorar</h3>
               </div>
 
               {estatisticasDisciplina.filter(d => d.porcentagem < 60).length > 0 ? (
@@ -386,7 +386,7 @@ export default function EstatisticasPage() {
                     .map((disc) => (
                       <li key={disc.id} className="flex items-center justify-between">
                         <span className="text-slate-700">{disc.nome}</span>
-                        <span className="text-red-400 text-sm">{disc.porcentagem}%</span>
+                        <span className="text-red-600 text-sm font-medium">{disc.porcentagem}%</span>
                       </li>
                     ))
                   }
@@ -399,12 +399,12 @@ export default function EstatisticasPage() {
             </div>
 
             {/* Strong Points */}
-            <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
+            <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                  <Award className="w-5 h-5 text-emerald-400" />
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                  <Award className="w-5 h-5 text-emerald-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-white">Seus Pontos Fortes</h3>
+                <h3 className="text-lg font-semibold text-slate-800">Seus Pontos Fortes</h3>
               </div>
 
               {estatisticasDisciplina.filter(d => d.porcentagem >= 70).length > 0 ? (
@@ -416,7 +416,7 @@ export default function EstatisticasPage() {
                     .map((disc) => (
                       <li key={disc.id} className="flex items-center justify-between">
                         <span className="text-slate-700">{disc.nome}</span>
-                        <span className="text-emerald-400 text-sm">{disc.porcentagem}%</span>
+                        <span className="text-emerald-600 text-sm font-medium">{disc.porcentagem}%</span>
                       </li>
                     ))
                   }

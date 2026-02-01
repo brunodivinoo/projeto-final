@@ -164,42 +164,42 @@ export default function IndicacoesPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
-          <Gift className="w-8 h-8 text-purple-400" />
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-3">
+          <Gift className="w-8 h-8 text-purple-500" />
           Programa de Indicação
         </h1>
-        <p className="text-emerald-200/70 mt-1">
+        <p className="text-slate-500 mt-1">
           Convide amigos e ganhe benefícios exclusivos!
         </p>
       </div>
 
       {/* Banner de Benefícios */}
-      <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 border border-purple-500/30 rounded-xl p-6">
-        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-yellow-400" />
+      <div className="bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 rounded-xl p-6">
+        <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-amber-500" />
           Ganhe recompensas por cada indicação!
         </h2>
         <div className="grid md:grid-cols-3 gap-4">
-          <div className="bg-slate-100 rounded-lg p-4 text-center">
-            <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Users className="w-6 h-6 text-emerald-400" />
+          <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Users className="w-6 h-6 text-emerald-600" />
             </div>
-            <p className="text-white font-semibold">Amigo se cadastra</p>
-            <p className="text-emerald-400 text-sm mt-1">+5 questões/dia para você</p>
+            <p className="text-slate-800 font-semibold">Amigo se cadastra</p>
+            <p className="text-emerald-600 text-sm mt-1">+5 questões/dia para você</p>
           </div>
-          <div className="bg-slate-100 rounded-lg p-4 text-center">
-            <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Crown className="w-6 h-6 text-purple-400" />
+          <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Crown className="w-6 h-6 text-purple-600" />
             </div>
-            <p className="text-white font-semibold">Amigo assina Premium</p>
-            <p className="text-purple-400 text-sm mt-1">+7 dias grátis de Premium</p>
+            <p className="text-slate-800 font-semibold">Amigo assina Premium</p>
+            <p className="text-purple-600 text-sm mt-1">+7 dias grátis de Premium</p>
           </div>
-          <div className="bg-slate-100 rounded-lg p-4 text-center">
-            <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Gift className="w-6 h-6 text-amber-400" />
+          <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+            <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Gift className="w-6 h-6 text-amber-600" />
             </div>
-            <p className="text-white font-semibold">Seu amigo também ganha</p>
-            <p className="text-amber-400 text-sm mt-1">+3 questões/dia de bônus</p>
+            <p className="text-slate-800 font-semibold">Seu amigo também ganha</p>
+            <p className="text-amber-600 text-sm mt-1">+3 questões/dia de bônus</p>
           </div>
         </div>
       </div>
@@ -227,11 +227,11 @@ export default function IndicacoesPage() {
       )}
 
       {/* Link de Indicação */}
-      <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
-        <h3 className="text-lg font-semibold text-white mb-4">Seu link de indicação</h3>
+      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">Seu link de indicação</h3>
 
         <div className="flex gap-2 mb-4">
-          <div className="flex-1 bg-slate-100 border border-slate-200 rounded-lg px-4 py-3 text-slate-600 text-sm truncate">
+          <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-slate-700 text-sm truncate">
             {linkIndicacao}
           </div>
           <button
@@ -268,9 +268,9 @@ export default function IndicacoesPage() {
       </div>
 
       {/* Convidar por Email */}
-      <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Mail className="w-5 h-5 text-emerald-400" />
+      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <Mail className="w-5 h-5 text-emerald-600" />
           Convidar por email
         </h3>
 
@@ -293,7 +293,7 @@ export default function IndicacoesPage() {
             value={emailConvite}
             onChange={(e) => setEmailConvite(e.target.value)}
             placeholder="email@amigo.com"
-            className="flex-1 bg-slate-100 border border-slate-200 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white"
           />
           <button
             onClick={enviarConvite}
@@ -314,41 +314,41 @@ export default function IndicacoesPage() {
 
       {/* Estatísticas */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-slate-100 rounded-xl p-4 text-center border border-slate-200">
-          <div className="text-3xl font-bold text-white">{indicacoes.length}</div>
-          <div className="text-slate-600 text-sm">Convites enviados</div>
+        <div className="bg-white rounded-xl p-4 text-center border border-slate-200 shadow-sm">
+          <div className="text-3xl font-bold text-slate-700">{indicacoes.length}</div>
+          <div className="text-slate-500 text-sm">Convites enviados</div>
         </div>
-        <div className="bg-slate-100 rounded-xl p-4 text-center border border-slate-200">
-          <div className="text-3xl font-bold text-emerald-400">{indicacoesCadastradas}</div>
-          <div className="text-slate-600 text-sm">Cadastros</div>
+        <div className="bg-white rounded-xl p-4 text-center border border-slate-200 shadow-sm">
+          <div className="text-3xl font-bold text-emerald-600">{indicacoesCadastradas}</div>
+          <div className="text-slate-500 text-sm">Cadastros</div>
         </div>
-        <div className="bg-slate-100 rounded-xl p-4 text-center border border-slate-200">
-          <div className="text-3xl font-bold text-purple-400">{indicacoesConvertidas}</div>
-          <div className="text-slate-600 text-sm">Assinantes</div>
+        <div className="bg-white rounded-xl p-4 text-center border border-slate-200 shadow-sm">
+          <div className="text-3xl font-bold text-purple-600">{indicacoesConvertidas}</div>
+          <div className="text-slate-500 text-sm">Assinantes</div>
         </div>
       </div>
 
       {/* Histórico de Indicações */}
       {indicacoes.length > 0 && (
-        <div className="bg-slate-100 rounded-xl p-6 border border-slate-200">
-          <h3 className="text-lg font-semibold text-white mb-4">Histórico de indicações</h3>
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-800 mb-4">Histórico de indicações</h3>
           <div className="space-y-3">
             {indicacoes.map((indicacao) => (
               <div
                 key={indicacao.id}
-                className="flex items-center justify-between p-3 bg-slate-100 rounded-lg"
+                className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
               >
                 <div>
-                  <p className="text-white font-medium">{indicacao.indicado_email}</p>
+                  <p className="text-slate-800 font-medium">{indicacao.indicado_email}</p>
                   <p className="text-slate-500 text-xs">
                     {new Date(indicacao.created_at).toLocaleDateString('pt-BR')}
                   </p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                   indicacao.status === 'convertido'
-                    ? 'bg-purple-500/20 text-purple-400'
+                    ? 'bg-purple-100 text-purple-700'
                     : indicacao.status === 'cadastrado'
-                    ? 'bg-emerald-500/20 text-emerald-400'
+                    ? 'bg-emerald-100 text-emerald-700'
                     : 'bg-slate-100 text-slate-600'
                 }`}>
                   {indicacao.status === 'convertido'
