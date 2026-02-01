@@ -162,85 +162,88 @@ export function ModeSelector({
       </button>
 
       {/* Modal Fullscreen para Mobile */}
-      <AnimatePresence>
-        {showModeDropdown && isMobile && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-slate-900 flex flex-col"
-            style={{ paddingTop: 'env(safe-area-inset-top, 12px)' }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-              <h2 className="text-base font-semibold text-white">Modo de Chat</h2>
-              <button
-                onClick={() => setShowModeDropdown(false)}
-                className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 active:bg-white/10"
-              >
-                <X className="w-4 h-4 text-white/60" />
-              </button>
-            </div>
+      {showModeDropdown && isMobile && (
+        <div
+          className="fixed inset-0 flex flex-col bg-slate-900"
+          style={{
+            zIndex: 99999,
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            paddingTop: 'env(safe-area-inset-top, 12px)'
+          }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
+            <h2 className="text-base font-semibold text-white">Modo de Chat</h2>
+            <button
+              onClick={() => setShowModeDropdown(false)}
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 active:bg-white/10"
+            >
+              <X className="w-4 h-4 text-white/60" />
+            </button>
+          </div>
 
-            {/* Lista de Modos */}
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-              <div className="space-y-2 max-w-md mx-auto">
-                {MODE_LIST.map((modo) => {
-                  const Icon = ICONS[modo.icon]
-                  const isAtivo = currentMode === modo.id
-                  const podeusar = podeUsarModo(modo.id)
+          {/* Lista de Modos */}
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div className="space-y-3">
+              {MODE_LIST.map((modo) => {
+                const Icon = ICONS[modo.icon]
+                const isAtivo = currentMode === modo.id
+                const podeusar = podeUsarModo(modo.id)
 
-                  return (
-                    <button
-                      key={modo.id}
-                      onClick={() => handleModeChange(modo.id)}
-                      disabled={!podeusar || disabled}
-                      className={cn(
-                        "w-full p-3 rounded-xl text-left transition-all",
-                        "border",
-                        isAtivo
-                          ? "border-emerald-500/50 bg-emerald-500/10"
-                          : "border-white/10 bg-white/5 active:bg-white/10",
-                        !podeusar && "opacity-50"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
-                          modo.bgColor
-                        )}>
-                          <Icon className={cn("w-5 h-5", modo.color)} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-medium text-white">
-                              {modo.label}
-                            </h3>
-                            {isAtivo && (
-                              <span className="px-1.5 py-0.5 bg-emerald-500 text-white text-[10px] rounded">
-                                Ativo
-                              </span>
-                            )}
-                            {!podeusar && (
-                              <Lock className="w-3 h-3 text-white/40" />
-                            )}
-                          </div>
-                          <p className="text-xs text-white/50 mt-0.5">
-                            {modo.description}
-                          </p>
-                        </div>
+                return (
+                  <button
+                    key={modo.id}
+                    onClick={() => handleModeChange(modo.id)}
+                    disabled={!podeusar || disabled}
+                    className={cn(
+                      "w-full p-4 rounded-xl text-left transition-all",
+                      "border",
+                      isAtivo
+                        ? "border-emerald-500/50 bg-emerald-500/10"
+                        : "border-white/10 bg-white/5 active:bg-white/10",
+                      !podeusar && "opacity-50"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+                        modo.bgColor
+                      )}>
+                        <Icon className={cn("w-6 h-6", modo.color)} />
                       </div>
-                    </button>
-                  )
-                })}
-              </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-medium text-white">
+                            {modo.label}
+                          </h3>
+                          {isAtivo && (
+                            <span className="px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-medium rounded">
+                              Ativo
+                            </span>
+                          )}
+                          {!podeusar && (
+                            <Lock className="w-4 h-4 text-white/40" />
+                          )}
+                        </div>
+                        <p className="text-sm text-white/50 mt-1">
+                          {modo.descriptionLonga}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
+          </div>
 
-            {/* Safe Area Bottom */}
-            <div style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+          {/* Safe Area Bottom */}
+          <div style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }} className="flex-shrink-0" />
+        </div>
+      )}
 
       {/* Dropdown para Desktop */}
       <AnimatePresence>
