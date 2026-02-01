@@ -218,9 +218,7 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
     }
 
     set((state) => ({
-      artifacts: [...state.artifacts, newArtifact],
-      // Abrir sidebar automaticamente quando há artefato
-      isSidebarOpen: true
+      artifacts: [...state.artifacts, newArtifact]
     }))
 
     return id
@@ -245,8 +243,7 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
     }
 
     set((state) => ({
-      artifacts: [...state.artifacts, newArtifact],
-      isSidebarOpen: true
+      artifacts: [...state.artifacts, newArtifact]
     }))
 
     return id
@@ -270,8 +267,7 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
     }
 
     set((state) => ({
-      artifacts: [...state.artifacts, newArtifact],
-      isSidebarOpen: true
+      artifacts: [...state.artifacts, newArtifact]
     }))
 
     return id
@@ -324,10 +320,6 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
   // Selecionar artefato
   selectArtifact: (id) => {
     set({ selectedArtifactId: id })
-    if (id) {
-      // Se selecionou um artefato, garantir que sidebar está aberta
-      set({ isSidebarOpen: true })
-    }
   },
 
   // Toggle sidebar
