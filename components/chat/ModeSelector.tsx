@@ -164,7 +164,7 @@ export function ModeSelector({
       {/* Modal Fullscreen para Mobile */}
       {showModeDropdown && isMobile && (
         <div
-          className="fixed inset-0 flex flex-col bg-slate-900"
+          className="fixed inset-0 flex flex-col bg-white"
           style={{
             zIndex: 99999,
             position: 'fixed',
@@ -177,7 +177,7 @@ export function ModeSelector({
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 flex-shrink-0">
-            <h2 className="text-base font-semibold text-white">Modo de Chat</h2>
+            <h2 className="text-base font-semibold text-slate-800">Modo de Chat</h2>
             <button
               onClick={() => setShowModeDropdown(false)}
               className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-100 active:bg-slate-100"
@@ -217,7 +217,7 @@ export function ModeSelector({
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-base font-medium text-white">
+                          <h3 className="text-base font-medium text-slate-800">
                             {modo.label}
                           </h3>
                           {isAtivo && (
@@ -258,16 +258,16 @@ export function ModeSelector({
               "w-80 max-w-[calc(100vw-2rem)]",
               // Posicionamento responsivo
               "left-0 md:left-auto md:right-0",
-              "bg-slate-800/95 backdrop-blur-xl",
+              "bg-white backdrop-blur-xl",
               "border border-slate-200 rounded-2xl",
-              "shadow-2xl shadow-black/50",
+              "shadow-2xl shadow-black/10",
               "overflow-hidden"
             )}
           >
             {/* Header do Dropdown */}
-            <div className="p-3 border-b border-slate-200 bg-slate-100">
+            <div className="p-3 border-b border-slate-200 bg-slate-50">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-white">Selecionar Modo</span>
+                <span className="text-sm font-medium text-slate-800">Selecionar Modo</span>
                 <button 
                   onClick={() => setShowModeDropdown(false)}
                   className="p-1 rounded-lg hover:bg-slate-100 transition-colors md:hidden"
@@ -317,7 +317,7 @@ export function ModeSelector({
                       {/* Conteúdo */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-white">{modo.label}</span>
+                          <span className="font-medium text-slate-800">{modo.label}</span>
                           
                           {/* Badge Premium */}
                           {modo.premium && (
@@ -406,11 +406,11 @@ export function ModeSelector({
             </div>
             
             {/* Footer com dica */}
-            <div className="p-3 border-t border-slate-200 bg-slate-100">
+            <div className="p-3 border-t border-slate-200 bg-slate-50">
               <div className="flex items-start gap-2">
                 <Info className="w-3 h-3 text-slate-400 flex-shrink-0 mt-0.5" />
                 <p className="text-[10px] text-slate-500 leading-relaxed">
-                  O histórico da conversa é mantido ao trocar de modo. 
+                  O histórico da conversa é mantido ao trocar de modo.
                   Cada modo cria uma sessão para acompanhar seu progresso.
                 </p>
               </div>
@@ -477,7 +477,7 @@ export function ModeSessionCard({ sessao, onClick, isActive }: ModeSessionCardPr
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <span className={cn("text-sm font-medium", isActive ? config.color : "text-white")}>
+            <span className={cn("text-sm font-medium", isActive ? config.color : "text-slate-800")}>
               {config.label}
             </span>
             {!fim && (

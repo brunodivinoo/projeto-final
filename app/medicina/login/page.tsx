@@ -147,7 +147,7 @@ export default function MedicinaLoginPage() {
           </div>
 
           {/* Card de Login */}
-          <div className="bg-slate-100 backdrop-blur-lg rounded-2xl p-8 border border-slate-300">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
             <h2 className="text-xl font-semibold text-white mb-6 text-center">
               Entrar na sua conta
             </h2>
@@ -174,7 +174,7 @@ export default function MedicinaLoginPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="seu@email.com"
                     required
-                    className="w-full pl-11 pr-4 py-3 bg-slate-100 border border-slate-300 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    className="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
@@ -192,7 +192,7 @@ export default function MedicinaLoginPage() {
                     onChange={(e) => setSenha(e.target.value)}
                     placeholder="Sua senha"
                     required
-                    className="w-full pl-11 pr-12 py-3 bg-slate-100 border border-slate-300 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    className="w-full pl-11 pr-12 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-emerald-300/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   />
                   <button
                     type="button"
@@ -258,7 +258,7 @@ export default function MedicinaLoginPage() {
             {/* Divisor */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-300"></div>
+                <div className="w-full border-t border-white/20"></div>
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-4 bg-transparent text-emerald-300">ou continue com</span>
@@ -269,7 +269,7 @@ export default function MedicinaLoginPage() {
             <button
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full py-3 bg-slate-100 border border-slate-300 text-white font-medium rounded-lg hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3"
+              className="w-full py-3 bg-white/10 border border-white/20 text-white font-medium rounded-lg hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path

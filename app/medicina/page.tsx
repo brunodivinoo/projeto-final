@@ -19,7 +19,7 @@ export default function MedicinaLandingPage() {
             <a className="text-emerald-200 text-sm font-medium hover:text-white transition-colors" href="#depoimentos">Depoimentos</a>
           </div>
           <div className="flex gap-3">
-            <Link href="/medicina/login" className="flex items-center justify-center h-10 px-5 bg-slate-100 text-white hover:bg-slate-200 transition-colors rounded-lg text-sm font-semibold">
+            <Link href="/medicina/login" className="flex items-center justify-center h-10 px-5 bg-white/10 text-white hover:bg-white/20 transition-colors rounded-lg text-sm font-semibold">
               Entrar
             </Link>
             <Link href="/medicina/cadastro" className="flex items-center justify-center h-10 px-5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 transition-colors rounded-lg text-sm font-semibold shadow-lg shadow-emerald-500/20">
@@ -63,7 +63,7 @@ export default function MedicinaLandingPage() {
               </Link>
               <a
                 href="#recursos"
-                className="flex items-center justify-center gap-2 h-14 px-8 bg-slate-100 text-white font-semibold text-lg rounded-xl hover:bg-slate-200 transition-colors border border-slate-300"
+                className="flex items-center justify-center gap-2 h-14 px-8 bg-white/10 text-white font-semibold text-lg rounded-xl hover:bg-white/20 transition-colors border border-white/20"
               >
                 Ver Recursos
               </a>
@@ -77,7 +77,7 @@ export default function MedicinaLandingPage() {
                 { value: '24/7', label: 'IA Tutora', icon: Brain },
                 { value: '10.000+', label: 'Estudantes', icon: Users }
               ].map((stat, i) => (
-                <div key={i} className="bg-slate-100 rounded-2xl p-6 border border-slate-200">
+                <div key={i} className="bg-white/10 rounded-2xl p-6 border border-white/20">
                   <stat.icon className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
                   <div className="text-3xl font-black text-white">{stat.value}</div>
                   <div className="text-emerald-300 text-sm">{stat.label}</div>
@@ -140,7 +140,7 @@ export default function MedicinaLandingPage() {
               ].map((feature, i) => (
                 <div
                   key={i}
-                  className="group bg-slate-100 rounded-2xl p-8 border border-slate-200 hover:border-emerald-500/50 hover:bg-slate-100 transition-all"
+                  className="group bg-white/10 rounded-2xl p-8 border border-white/20 hover:border-emerald-500/50 hover:bg-white/15 transition-all"
                 >
                   <div className={`w-14 h-14 rounded-xl bg-${feature.color}-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
                     <feature.icon className={`w-7 h-7 text-${feature.color}-400`} />
@@ -183,9 +183,9 @@ export default function MedicinaLandingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {/* Gratuito */}
-              <div className="bg-slate-100 rounded-2xl p-8 border border-slate-200 hover:border-slate-300 transition-all">
+              <div className="bg-white/10 rounded-2xl p-8 border border-white/20 hover:border-white/30 transition-all">
                 <div className="text-center mb-6">
-                  <span className="inline-block px-3 py-1 bg-slate-100 rounded-full text-slate-600 text-xs font-medium mb-4">
+                  <span className="inline-block px-3 py-1 bg-white/10 rounded-full text-slate-300 text-xs font-medium mb-4">
                     BÁSICO
                   </span>
                   <h3 className="text-2xl font-bold text-white mb-2">Gratuito</h3>
@@ -196,7 +196,7 @@ export default function MedicinaLandingPage() {
                 </div>
                 <Link
                   href="/medicina/cadastro"
-                  className="block w-full py-3.5 text-center bg-slate-100 text-white font-semibold rounded-xl hover:bg-slate-200 transition-all mb-6"
+                  className="block w-full py-3.5 text-center bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-all mb-6"
                 >
                   Começar Grátis
                 </Link>
@@ -396,7 +396,7 @@ export default function MedicinaLandingPage() {
                   quote: 'Os simulados me ajudaram muito a entender o ritmo da prova. Consegui gabaritar várias questões!'
                 }
               ].map((testimonial, i) => (
-                <div key={i} className="bg-slate-100 rounded-2xl p-8 border border-slate-200">
+                <div key={i} className="bg-white/10 rounded-2xl p-8 border border-white/20">
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                       <Award className="w-7 h-7 text-white" />
@@ -432,7 +432,7 @@ export default function MedicinaLandingPage() {
               </Link>
               <Link
                 href="/medicina/login"
-                className="flex items-center justify-center gap-2 h-14 px-8 bg-slate-100 text-white font-semibold text-lg rounded-xl hover:bg-slate-200 transition-colors border border-slate-300"
+                className="flex items-center justify-center gap-2 h-14 px-8 bg-white/10 text-white font-semibold text-lg rounded-xl hover:bg-white/20 transition-colors border border-white/20"
               >
                 Já tenho conta
               </Link>
@@ -441,7 +441,7 @@ export default function MedicinaLandingPage() {
         </section>
 
         {/* Footer */}
-        <footer className="w-full bg-black/30 border-t border-slate-200 py-12 px-4 md:px-10">
+        <footer className="w-full bg-black/30 border-t border-white/10 py-12 px-4 md:px-10">
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
               {/* Brand */}
@@ -475,7 +475,7 @@ export default function MedicinaLandingPage() {
                 <a className="text-emerald-200/60 hover:text-white transition-colors text-sm" href="#">Privacidade</a>
               </div>
             </div>
-            <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
               <p className="text-emerald-200/40 text-sm">
                 © 2026 PREPARAMED. Todos os direitos reservados.
               </p>
