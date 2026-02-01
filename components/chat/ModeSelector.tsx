@@ -119,13 +119,13 @@ export function ModeSelector({
           <IconAtual className={cn("w-4 h-4", modoAtual.color)} />
         </div>
         
-        {/* Texto */}
-        <div className="flex flex-col items-start">
-          <span className={cn("text-sm font-medium", modoAtual.color)}>
+        {/* Texto - melhor legibilidade */}
+        <div className="flex flex-col items-start min-w-0">
+          <span className={cn("text-sm font-semibold tracking-tight", modoAtual.color)}>
             {variant === 'compact' ? modoAtual.labelCurto : modoAtual.label}
           </span>
           {variant !== 'compact' && (
-            <span className="text-[10px] text-white/40">
+            <span className="text-[11px] text-white/50 leading-tight">
               {modoAtual.description}
             </span>
           )}
