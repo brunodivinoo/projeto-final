@@ -208,7 +208,7 @@ export function ChatHistorySidebar({
       <div className="p-3 space-y-2">
         <button
           onClick={onNewChat}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-100 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-slate-700 hover:text-white transition-all group"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 border border-emerald-600 rounded-xl text-white transition-all group"
         >
           <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
           <span className="text-sm font-medium">Nova conversa</span>
@@ -224,7 +224,7 @@ export function ChatHistorySidebar({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar conversas..."
-              className="w-full pl-9 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:bg-slate-100 transition-all"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
             />
             {searchQuery && (
               <button
@@ -309,7 +309,7 @@ export function ChatHistorySidebar({
                                     if (e.key === 'Enter') saveEdit()
                                     if (e.key === 'Escape') cancelEdit()
                                   }}
-                                  className="flex-1 min-w-0 bg-slate-100 border border-emerald-500/50 rounded px-2 py-1 text-sm text-white focus:outline-none"
+                                  className="flex-1 min-w-0 bg-white border border-emerald-500 rounded px-2 py-1 text-sm text-slate-700 focus:outline-none"
                                   autoFocus
                                 />
                                 <button
@@ -397,7 +397,7 @@ export function ChatHistorySidebar({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.1 }}
-            className="fixed z-[100] bg-slate-800 border border-slate-200 rounded-lg shadow-2xl py-1 min-w-[140px]"
+            className="fixed z-[100] bg-white border border-slate-200 rounded-lg shadow-xl py-1 min-w-[140px]"
             style={{
               top: menuPosition.top,
               left: Math.min(menuPosition.left, window.innerWidth - 160)
@@ -408,7 +408,7 @@ export function ChatHistorySidebar({
                 const conversa = conversas.find(c => c.id === menuOpenId)
                 if (conversa) startEditing(conversa)
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 hover:text-white transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
             >
               <Pencil className="w-4 h-4" />
               Renomear
@@ -420,7 +420,7 @@ export function ChatHistorySidebar({
                   setMenuOpenId(null)
                 }
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
               Excluir
