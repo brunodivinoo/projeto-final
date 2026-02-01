@@ -1,25 +1,25 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #137fec;
-  --color-primary-hover: #0f6ac6;
-  --color-background-light: #f6f7f8;
-  --color-background-dark: #101922;
-  --color-bg-dark: #101922;
-  --color-card-dark: #192633;
-  --color-input-border: #324d67;
-  --color-text-secondary: #92adc9;
+  --color-primary: #0284c7;
+  --color-primary-hover: #0369a1;
+  --color-health: #059669;
+  --color-accent: #0d9488;
+  --color-background-light: #f8fafc;
+  --color-background-dark: #0f172a;
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
   --font-family-display: "Lexend", sans-serif;
 }
 
 :root {
-  --background: #f6f7f8;
-  --foreground: #111418;
-}
-
-.dark {
-  --background: #101922;
-  --foreground: #ffffff;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --border: #e2e8f0;
 }
 
 body {
@@ -28,10 +28,13 @@ body {
 }
 
 /* ================================================
-   📱 PWA MOBILE CRITICAL FIXES - OVERFLOW HORIZONTAL
+   TEMA CLARO - MEDICINA/SAUDE
    ================================================ */
 
-/* CORREÇÃO CRÍTICA: Prevenir scroll horizontal em TODA a aplicação */
+/* ================================================
+   PWA MOBILE CRITICAL FIXES
+   ================================================ */
+
 html {
   overflow-x: hidden !important;
   max-width: 100vw !important;
@@ -45,10 +48,9 @@ body {
   width: 100% !important;
   position: relative !important;
   min-height: 100vh;
-  min-height: 100dvh; /* Dynamic viewport height para mobile */
+  min-height: 100dvh;
 }
 
-/* Todos os containers filhos não podem criar overflow */
 #__next,
 main,
 .main-content,
@@ -62,59 +64,46 @@ main,
   box-sizing: border-box !important;
 }
 
-/* Forçar todos os elementos a respeitar limites */
 * {
   box-sizing: border-box !important;
 }
 
 /* ================================================
-   SELECT/DROPDOWN - Tema escuro
+   SELECT/DROPDOWN - Tema claro
    ================================================ */
 select option {
-  background-color: #1e293b;
-  color: #ffffff;
+  background-color: #ffffff;
+  color: #0f172a;
   padding: 8px 12px;
 }
 
 select option:hover,
 select option:focus,
 select option:checked {
-  background-color: #334155;
-  color: #ffffff;
+  background-color: #f1f5f9;
+  color: #0f172a;
 }
 
-@-moz-document url-prefix() {
-  select option {
-    background-color: #1e293b;
-    color: #ffffff;
-  }
-}
-
-select:focus option {
-  background-color: #1e293b;
-  color: #ffffff;
-}
-
-/* Scrollbar customizada */
+/* Scrollbar customizada - Clean */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #192633;
+  background: #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #324d67;
-  border-radius: 4px;
+  background: #cbd5e1;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3d5a73;
+  background: #94a3b8;
 }
 
-/* Scrollbar fina para histórico de conversas */
+/* Scrollbar fina para sidebar */
 .scrollbar-thin::-webkit-scrollbar {
   width: 4px;
 }
@@ -124,20 +113,20 @@ select:focus option {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 2px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
 }
 
-/* Animações rápidas */
+/* Animações */
 .fade-in {
   animation: fadeIn 0.2s ease-out;
 }
@@ -157,7 +146,7 @@ select:focus option {
 }
 
 /* ================================================
-   MERMAID DIAGRAMS - Melhor legibilidade
+   MERMAID DIAGRAMS - Tema claro
    ================================================ */
 .mermaid-container svg {
   max-width: 100%;
@@ -178,186 +167,63 @@ select:focus option {
 .mermaid-container .edgeLabel,
 .mermaid-container text,
 .mermaid-container tspan {
-  fill: #ffffff !important;
-  color: #ffffff !important;
-}
-
-.mermaid-container .node .label,
-.mermaid-container .node .nodeLabel {
-  color: #ffffff !important;
-}
-
-/* Texto escuro em fundos claros */
-.mermaid-container g.node[style*="fill: rgb(144"] .nodeLabel,
-.mermaid-container g.node[style*="fill: rgb(152"] .nodeLabel,
-.mermaid-container g.node[style*="fill:#90"] .nodeLabel,
-.mermaid-container g.node[style*="fill: #90"] .nodeLabel,
-.mermaid-container g[style*="fill: rgb(144"] text,
-.mermaid-container g[style*="fill:#90"] text,
-.mermaid-container g.node[style*="fill: rgb(255, 255"] .nodeLabel,
-.mermaid-container g.node[style*="fill:#ff"] .nodeLabel,
-.mermaid-container g.node[style*="fill: #ff"] .nodeLabel,
-.mermaid-container g[style*="fill: rgb(255, 255"] text,
-.mermaid-container g[style*="fill:#ff"] text,
-.mermaid-container g.node[style*="fill: rgb(255, 182"] .nodeLabel,
-.mermaid-container g.node[style*="fill: rgb(255, 192"] .nodeLabel,
-.mermaid-container g.node[style*="fill:#ffb"] .nodeLabel,
-.mermaid-container g[style*="fill: rgb(255, 182"] text,
-.mermaid-container g[style*="fill:#ffb"] text,
-.mermaid-container g.node[style*="fill: rgb(255, 200"] .nodeLabel,
-.mermaid-container g.node[style*="fill: rgb(255, 220"] .nodeLabel,
-.mermaid-container g.node[style*="fill: rgb(173, 216"] .nodeLabel,
-.mermaid-container g.node[style*="fill: rgb(135, 206"] .nodeLabel,
-.mermaid-container g.node[style*="fill: rgb(240"] .nodeLabel,
-.mermaid-container g.node[style*="fill: rgb(245"] .nodeLabel,
-.mermaid-container g.node[style*="fill: rgb(250"] .nodeLabel,
-.mermaid-container g.node[style*="fill: rgb(255, 250"] .nodeLabel,
-.mermaid-container g.node[style*="fill: white"] .nodeLabel,
-.mermaid-container g.node[style*="fill:#fff"] .nodeLabel {
-  color: #1e293b !important;
-  fill: #1e293b !important;
-}
-
-.mermaid-container rect[style*="fill: rgb(144"] + foreignObject span,
-.mermaid-container rect[style*="fill: rgb(255, 255"] + foreignObject span,
-.mermaid-container rect[style*="fill: rgb(255, 182"] + foreignObject span,
-.mermaid-container rect[style*="fill:#90"] + foreignObject span,
-.mermaid-container rect[style*="fill:#ff"] + foreignObject span {
-  color: #1e293b !important;
+  fill: #0f172a !important;
+  color: #0f172a !important;
 }
 
 .mermaid-container .cluster rect {
-  fill: #1e293b !important;
-  stroke: #475569 !important;
+  fill: #f1f5f9 !important;
+  stroke: #cbd5e1 !important;
 }
 
 .mermaid-container .cluster text {
-  fill: #ffffff !important;
+  fill: #0f172a !important;
 }
 
 .mermaid-container .edgeLabel {
-  background-color: #1e293b !important;
+  background-color: #ffffff !important;
 }
 
 .mermaid-container .edgeLabel rect {
-  fill: #1e293b !important;
+  fill: #ffffff !important;
   opacity: 1 !important;
 }
 
 .mermaid-container .edgeLabel span,
 .mermaid-container .edgeLabel p {
-  color: #ffffff !important;
+  color: #0f172a !important;
   background: transparent !important;
 }
 
 .mermaid-container .flowchart-link,
 .mermaid-container path.flowchart-link {
-  stroke: #94a3b8 !important;
+  stroke: #64748b !important;
   stroke-width: 2px !important;
 }
 
 .mermaid-container marker path {
-  fill: #94a3b8 !important;
-}
-
-.mermaid-container .node {
-  z-index: 10;
-}
-
-.mermaid-container .edgeLabel {
-  z-index: 5;
-}
-
-.mermaid-container .nodeLabel,
-.mermaid-container .label {
-  max-width: 200px;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  white-space: pre-wrap !important;
-  text-overflow: ellipsis;
-}
-
-.mermaid-container foreignObject {
-  overflow: visible;
-}
-
-.mermaid-container foreignObject div {
-  max-width: 200px;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
-.mermaid-container .mindmap-node rect,
-.mermaid-container .mindmap-node circle {
-  fill: #1e3a5f !important;
-  stroke: #10b981 !important;
-}
-
-.mermaid-container .mindmap-node text {
-  fill: #ffffff !important;
-}
-
-.mermaid-container .mindmap-edge {
-  stroke: #94a3b8 !important;
-  stroke-width: 2px !important;
-}
-
-.mermaid-container .section-0,
-.mermaid-container .section-1,
-.mermaid-container .section-2,
-.mermaid-container .section-3 {
-  fill: #1e3a5f !important;
-}
-
-.mermaid-container .actor {
-  fill: #1e3a5f !important;
-  stroke: #10b981 !important;
-}
-
-.mermaid-container .actor-line {
-  stroke: #475569 !important;
-}
-
-.mermaid-container .messageLine0,
-.mermaid-container .messageLine1 {
-  stroke: #94a3b8 !important;
-}
-
-.mermaid-container .node rect,
-.mermaid-container .node polygon,
-.mermaid-container .node circle {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-.mermaid-container g.node > rect:not([style*="fill"]),
-.mermaid-container g.node > polygon:not([style*="fill"]),
-.mermaid-container g.node > circle:not([style*="fill"]) {
-  fill: #1e3a5f !important;
+  fill: #64748b !important;
 }
 
 /* ================================================
-   📱 CORREÇÕES MOBILE PWA - CRÍTICAS
+   MOBILE FIXES
    ================================================ */
 
-/* Prevenir zoom em inputs no iOS - Font size mínimo 16px */
 @media screen and (max-width: 768px) {
   input, textarea, select {
     font-size: 16px !important;
   }
-  
-  /* Touch action - apenas scroll vertical/horizontal sem zoom */
+
   * {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Imagens nunca devem exceder o viewport */
   img {
     max-width: 100% !important;
     height: auto !important;
   }
 
-  /* Código com scroll interno, não externo */
   pre, code {
     max-width: calc(100vw - 32px) !important;
     overflow-x: auto !important;
@@ -366,75 +232,44 @@ select:focus option {
     word-break: break-word !important;
   }
 
-  /* 🔴 ESCONDER BOTÃO VERDE FLUTUANTE NO MOBILE */
-  .scroll-to-bottom-btn,
-  .floating-action-btn,
-  .btn-scroll-bottom,
-  button[aria-label="Voltar ao topo"],
-  button[title="Voltar ao topo"],
-  .back-to-top-button,
-  /* Seletor mais específico para o botão de scroll */
-  main + button.fixed.bottom-6.right-6,
-  .lg\\:hidden.fixed.bottom-6.right-6 {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-
-  /* 🔴 ESCONDER SIDEBAR DUPLICADA */
-  .mobile-sidebar-toggle + .mobile-sidebar-toggle,
-  .duplicate-sidebar {
-    display: none !important;
-  }
-
-  /* Cards responsivos */
   .artifact-card {
     max-width: 100% !important;
     overflow: hidden !important;
   }
 
-  /* Tabelas com scroll interno */
   table {
     display: block;
     overflow-x: auto;
     max-width: 100%;
   }
 
-  /* Mensagens não devem causar overflow */
   .message-content,
-  .prose,
-  .prose-invert {
+  .prose {
     max-width: 100% !important;
     overflow-wrap: break-word !important;
     word-break: break-word !important;
   }
 
-  /* Header mobile - padding correto */
   header.fixed {
     padding-left: env(safe-area-inset-left, 0);
     padding-right: env(safe-area-inset-right, 0);
   }
 
-  /* Main content - padding correto no mobile */
   main {
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
 
-  /* Sidebar mobile sheet */
   aside.fixed {
     width: 280px !important;
     max-width: 85vw !important;
   }
 
-  /* Forçar containers a não ultrapassarem o viewport */
   .flex,
   .grid {
     max-width: 100vw !important;
   }
 
-  /* Input de chat mobile - padding lateral consistente */
   .chat-input-container {
     padding-left: 12px !important;
     padding-right: 12px !important;
@@ -442,10 +277,9 @@ select:focus option {
 }
 
 /* ================================================
-   📱 PWA ESPECÍFICO - Safe Areas e Viewport
+   PWA Safe Areas
    ================================================ */
 
-/* Viewport dinâmico para mobile (resolve problema do teclado) */
 @supports (height: 100dvh) {
   .full-height,
   .min-h-screen {
@@ -453,7 +287,6 @@ select:focus option {
   }
 }
 
-/* Safe areas para iOS (notch, home indicator) */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
@@ -463,39 +296,26 @@ select:focus option {
     padding-top: env(safe-area-inset-top);
   }
 
-  .safe-left {
-    padding-left: env(safe-area-inset-left);
-  }
-
-  .safe-right {
-    padding-right: env(safe-area-inset-right);
-  }
-
-  /* Input de chat - sempre acima do home indicator */
   .chat-input-wrapper {
     padding-bottom: calc(12px + env(safe-area-inset-bottom));
   }
 }
 
-/* Standalone PWA mode */
 @media (display-mode: standalone) {
-  /* Header extra padding para status bar */
   header.fixed {
     padding-top: env(safe-area-inset-top, 0);
   }
 
-  /* Bottom navigation - espaço para home indicator */
   nav.fixed.bottom-0 {
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
-  /* Esconder elementos de browser */
   .browser-only {
     display: none !important;
   }
 }
 
-/* Animação suave para sidebar mobile */
+/* Sidebar animations */
 .sidebar-mobile-enter {
   transform: translateX(-100%);
 }
@@ -515,12 +335,13 @@ select:focus option {
 }
 
 .sidebar-backdrop {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
 }
 
+/* Skeleton loading - tema claro */
 .skeleton {
-  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s infinite;
 }
@@ -531,34 +352,31 @@ select:focus option {
 }
 
 /* ================================================
-   FLASHCARD AURORA STYLE
+   CARDS E COMPONENTES - Clean
    ================================================ */
 
-.aurora-gradient {
-  background: linear-gradient(
-    135deg,
-    hsl(280 80% 60%) 0%,
-    hsl(200 90% 55%) 50%,
-    hsl(150 80% 50%) 100%
-  );
+.card-clean {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
 }
 
-.aurora-gradient-animated {
-  background: linear-gradient(
-    135deg,
-    hsl(280 80% 60%),
-    hsl(200 90% 55%),
-    hsl(150 80% 50%),
-    hsl(280 80% 60%)
-  );
-  background-size: 300% 300%;
-  animation: aurora-shift 8s ease infinite;
+.card-clean:hover {
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
 }
 
-@keyframes aurora-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+.card-elevated {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 30px -5px rgba(0, 0, 0, 0.04);
 }
+
+/* ================================================
+   FLASHCARD STYLES
+   ================================================ */
 
 .perspective-1000 {
   perspective: 1000px;
@@ -581,29 +399,13 @@ select:focus option {
 }
 
 .glass-effect {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.neon-glow {
-  box-shadow:
-    0 0 5px hsl(280 100% 65%),
-    0 0 20px hsl(280 100% 65% / 0.5),
-    0 0 40px hsl(280 100% 65% / 0.3);
-}
-
-.artifact-card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.artifact-card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 40px -10px rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 /* ================================================
-   STREAMING OPTIMIZATION - Anti-Flickering
+   STREAMING TEXT
    ================================================ */
 
 .streaming-text {
@@ -624,7 +426,7 @@ select:focus option {
   width: 2px;
   height: 1.2em;
   margin-left: 2px;
-  background-color: currentColor;
+  background-color: #0284c7;
   border-radius: 1px;
   animation: blink 0.8s ease-in-out infinite;
 }
@@ -649,7 +451,7 @@ select:focus option {
 }
 
 /* ================================================
-   SIDEBAR IMPROVEMENTS
+   SIDEBAR STYLES
    ================================================ */
 
 .group-expand-enter {
@@ -672,11 +474,11 @@ select:focus option {
 }
 
 .conversation-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .conversation-item.active {
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(2, 132, 199, 0.1);
 }
 
 .search-input-focus {
@@ -684,9 +486,48 @@ select:focus option {
 }
 
 .search-input-focus:focus {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(16, 185, 129, 0.5);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  background: #ffffff;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+}
+
+/* ================================================
+   BUTTONS
+   ================================================ */
+
+.btn-primary {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px -2px rgba(2, 132, 199, 0.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(2, 132, 199, 0.5);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
 }
 
 /* ================================================
@@ -720,7 +561,7 @@ select:focus option {
 }
 
 /* ================================================
-   DROPDOWN MENU IMPROVEMENTS
+   DROPDOWN MENU
    ================================================ */
 
 .menu-portal-enter {
@@ -743,7 +584,7 @@ select:focus option {
 }
 
 /* ================================================
-   PERFORMANCE UTILITIES
+   PERFORMANCE
    ================================================ */
 
 .gpu-accelerated {
@@ -766,14 +607,14 @@ select:focus option {
   .message-container {
     border: 2px solid currentColor;
   }
-  
+
   .conversation-item.active {
-    outline: 2px solid #10b981;
+    outline: 2px solid #0284c7;
   }
 }
 
 /* ================================================
-   🆕 TEXTAREA EXPANSÍVEL - PÁGINA INICIAL
+   TEXTAREA EXPANSIVEL
    ================================================ */
 
 .chat-textarea-expandable {
@@ -789,12 +630,12 @@ select:focus option {
 }
 
 .chat-textarea-expandable::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 2px;
 }
 
 /* ================================================
-   🆕 QUICK ACTIONS - MELHORIAS
+   QUICK ACTIONS
    ================================================ */
 
 .quick-action-card {
@@ -806,7 +647,7 @@ select:focus option {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), transparent);
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.05), transparent);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -816,10 +657,9 @@ select:focus option {
 }
 
 /* ================================================
-   🆕 CHAT PAGE - MENOS ESPAÇOS VAZIOS
+   CHAT PAGE
    ================================================ */
 
-/* Área de mensagens ocupa todo espaço disponível */
 .chat-messages-area {
   flex: 1;
   overflow-y: auto;
@@ -827,7 +667,6 @@ select:focus option {
   min-height: 0;
 }
 
-/* Reduzir padding em desktop */
 @media (min-width: 1024px) {
   .chat-page-container {
     padding: 0 !important;
@@ -840,7 +679,6 @@ select:focus option {
   }
 }
 
-/* Mobile - padding mínimo */
 @media (max-width: 768px) {
   .chat-page-container {
     padding: 0 !important;
@@ -850,4 +688,47 @@ select:focus option {
     padding-left: 8px !important;
     padding-right: 8px !important;
   }
+}
+
+/* ================================================
+   INPUT FOCUS STYLES - Clean
+   ================================================ */
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+}
+
+/* ================================================
+   BADGES E TAGS
+   ================================================ */
+
+.badge-primary {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  color: #0369a1;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-health {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #047857;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-accent {
+  background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%);
+  color: #0f766e;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
 }

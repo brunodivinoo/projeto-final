@@ -43,14 +43,17 @@ import {
   Check,
   ChevronDown,
   Search,
-  Settings
+  Settings,
+  Home,
+  Library,
+  TrendingUp
 } from 'lucide-react'
 
-// Menu simplificado
+// Menu simplificado com ícones modernos
 const menuItems = [
-  { href: '/medicina/dashboard', label: 'Chat IA', icon: Brain, primary: true },
-  { href: '/medicina/dashboard/biblioteca', label: 'Biblioteca', icon: BookOpen },
-  { href: '/medicina/dashboard/estatisticas', label: 'Estatísticas', icon: BarChart3 },
+  { href: '/medicina/dashboard', label: 'Chat IA', icon: MessageSquare, primary: true },
+  { href: '/medicina/dashboard/biblioteca', label: 'Biblioteca', icon: Library },
+  { href: '/medicina/dashboard/estatisticas', label: 'Estatísticas', icon: TrendingUp },
 ]
 
 // Função para agrupar conversas por data
@@ -108,7 +111,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [novoTitulo, setNovoTitulo] = useState('')
   const [excluindoTodas, setExcluindoTodas] = useState(false)
   const [perfilMenuAberto, setPerfilMenuAberto] = useState(false)
-  
+
   const menuRef = useRef<HTMLDivElement>(null)
   const perfilMenuRef = useRef<HTMLDivElement>(null)
 
@@ -252,8 +255,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-teal-950 to-cyan-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+      <div className="min-h-screen bg-surface-100 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center animate-pulse">
+            <Stethoscope className="w-6 h-6 text-white" />
+          </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-200 border-t-primary-600"></div>
+        </div>
       </div>
     )
   }
@@ -266,20 +274,28 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 overflow-x-hidden" data-main-container>
-      {/* Mobile Header - Com espaçamento adequado para notch/ilha dinâmica */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-white/10 px-5 pt-[env(safe-area-inset-top,12px)] pb-3">
+    <div className="min-h-screen bg-surface-100 overflow-x-hidden" data-main-container>
+      {/* Mobile Header - Clean e Profissional */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-surface-300 px-4 pt-[env(safe-area-inset-top,8px)] pb-3">
         <div className="flex items-center justify-between max-w-full mt-1">
-          <button onClick={() => setSidebarOpen(true)} className="text-white p-2.5 rounded-xl hover:bg-white/10 transition-colors">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2.5 rounded-xl text-content-secondary hover:text-content-primary hover:bg-surface-200 transition-all"
+          >
             <Menu className="w-6 h-6" />
           </button>
-          <Link href="/medicina/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+
+          <Link href="/medicina/dashboard" className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-soft">
               <Stethoscope className="w-5 h-5 text-white" />
             </div>
-            <span className="text-white font-bold">PREPARAMED</span>
+            <span className="text-content-primary font-bold text-lg tracking-tight">PREPARA MED</span>
           </Link>
-          <Link href="/medicina/dashboard/perfil" className="text-white p-2.5 rounded-xl hover:bg-white/10 transition-colors">
+
+          <Link
+            href="/medicina/dashboard/perfil"
+            className="p-2.5 rounded-xl text-content-secondary hover:text-content-primary hover:bg-surface-200 transition-all"
+          >
             <User className="w-6 h-6" />
           </Link>
         </div>
@@ -292,34 +308,37 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="lg:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-50"
             onClick={() => setSidebarOpen(false)}
           />
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
+      {/* Sidebar - Clean Design */}
       <aside className={`
-        fixed top-0 left-0 z-50 h-full bg-slate-900/95 backdrop-blur-xl border-r border-white/10
-        transform transition-all duration-300 ease-out
-        lg:translate-x-0
+        fixed top-0 left-0 z-50 h-full bg-white border-r border-surface-300
+        transform transition-all duration-300 ease-out shadow-elevated
+        lg:translate-x-0 lg:shadow-none
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         ${sidebarCollapsed ? 'lg:w-[72px]' : 'w-[280px] max-w-[85vw]'}
       `}>
         <div className="flex flex-col h-full overflow-hidden">
           {/* Logo */}
-          <div className="p-4 border-b border-white/10 flex-shrink-0">
+          <div className="p-4 border-b border-surface-200 flex-shrink-0">
             <div className="flex items-center justify-between">
               <Link href="/medicina/dashboard" className="flex items-center gap-3" onClick={() => setSidebarOpen(false)}>
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/20">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center flex-shrink-0 shadow-soft">
                   <Stethoscope className="w-6 h-6 text-white" />
                 </div>
                 {!sidebarCollapsed && (
-                  <span className="text-white text-lg font-bold tracking-tight">PREPARAMED</span>
+                  <div className="flex flex-col">
+                    <span className="text-content-primary text-lg font-bold tracking-tight">PREPARA MED</span>
+                    <span className="text-content-tertiary text-xs">Sua jornada médica</span>
+                  </div>
                 )}
               </Link>
-              <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white/60 hover:text-white p-1">
-                <X className="w-6 h-6" />
+              <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-content-tertiary hover:text-content-primary p-1.5 rounded-lg hover:bg-surface-200 transition-all">
+                <X className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -340,16 +359,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                         flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
                         ${sidebarCollapsed ? 'justify-center' : ''}
                         ${isActive
-                          ? 'bg-emerald-500/20 text-emerald-400 shadow-lg shadow-emerald-500/10'
-                          : item.primary
-                          ? 'text-white hover:bg-white/5'
-                          : 'text-white/60 hover:bg-white/5 hover:text-white'
+                          ? 'bg-primary-50 text-primary-600 shadow-sm border border-primary-100'
+                          : 'text-content-secondary hover:bg-surface-200 hover:text-content-primary'
                         }
                       `}
                     >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary-600' : ''}`} />
                       {!sidebarCollapsed && (
-                        <span className={`font-medium ${item.primary ? 'text-sm' : 'text-sm'}`}>{item.label}</span>
+                        <span className="font-medium text-sm">{item.label}</span>
                       )}
                     </Link>
                   </li>
@@ -357,33 +374,33 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               })}
             </ul>
 
-            {/* Histórico de Conversas - Estilo ChatGPT */}
+            {/* Histórico de Conversas */}
             {!sidebarCollapsed && (
-              <div className="mt-6 pt-4 border-t border-white/10">
+              <div className="mt-6 pt-4 border-t border-surface-200">
                 {/* Nova Conversa */}
                 <Link
                   href="/medicina/dashboard"
                   onClick={() => { setSidebarOpen(false); setConversaSelecionada(null) }}
-                  className="flex items-center justify-center gap-2 mx-1 mb-3 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-white/80 hover:text-white transition-all group"
+                  className="flex items-center justify-center gap-2 mx-1 mb-3 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-xl text-white transition-all group shadow-soft"
                 >
                   <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
-                  <span className="text-sm font-medium">Nova conversa</span>
+                  <span className="text-sm font-semibold">Nova conversa</span>
                 </Link>
 
                 {/* Busca */}
                 {conversas.length > 5 && (
                   <div className="relative mx-1 mb-3">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-content-tertiary" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Buscar conversas..."
-                      className="w-full pl-9 pr-8 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition-all"
+                      className="w-full pl-9 pr-8 py-2.5 bg-surface-200 border border-transparent rounded-xl text-sm text-content-primary placeholder-content-tertiary focus:outline-none focus:border-primary-300 focus:bg-white transition-all"
                     />
                     {searchQuery && (
-                      <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded">
-                        <X className="w-3 h-3 text-white/40" />
+                      <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-surface-300 rounded">
+                        <X className="w-3 h-3 text-content-tertiary" />
                       </button>
                     )}
                   </div>
@@ -393,8 +410,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 <div className="space-y-1 max-h-[calc(100vh-450px)] overflow-y-auto overflow-x-hidden scrollbar-thin pr-1">
                   {groupedConversas.length === 0 ? (
                     <div className="px-3 py-6 text-center">
-                      <MessageSquare className="w-8 h-8 text-white/10 mx-auto mb-2" />
-                      <p className="text-white/30 text-xs">
+                      <MessageSquare className="w-8 h-8 text-surface-400 mx-auto mb-2" />
+                      <p className="text-content-tertiary text-xs">
                         {searchQuery ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa ainda'}
                       </p>
                     </div>
@@ -404,11 +421,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                         {/* Header do Grupo */}
                         <button
                           onClick={() => toggleGroup(group.label)}
-                          className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-white/40 hover:text-white/60 transition-colors"
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-content-tertiary hover:text-content-secondary transition-colors"
                         >
                           <ChevronDown className={`w-3 h-3 transition-transform ${expandedGroups.has(group.label) ? '' : '-rotate-90'}`} />
                           <span className="font-semibold uppercase tracking-wider">{group.label}</span>
-                          <span className="text-white/20 ml-auto">{group.conversas.length}</span>
+                          <span className="text-surface-500 ml-auto text-[10px] bg-surface-200 px-1.5 py-0.5 rounded-full">{group.conversas.length}</span>
                         </button>
 
                         {/* Conversas */}
@@ -437,34 +454,31 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                             if (e.key === 'Enter') salvarTitulo(conversa.id)
                                             if (e.key === 'Escape') setEditandoConversa(null)
                                           }}
-                                          className="flex-1 min-w-0 bg-white/10 border border-emerald-500/50 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none"
+                                          className="flex-1 min-w-0 bg-white border border-primary-300 rounded-lg px-2 py-1.5 text-sm text-content-primary focus:outline-none focus:ring-2 focus:ring-primary-200"
                                           autoFocus
                                         />
-                                        <button onClick={() => salvarTitulo(conversa.id)} className="p-1.5 hover:bg-emerald-500/20 rounded-lg text-emerald-400">
+                                        <button onClick={() => salvarTitulo(conversa.id)} className="p-1.5 hover:bg-health-50 rounded-lg text-health-600">
                                           <Check className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => setEditandoConversa(null)} className="p-1.5 hover:bg-white/10 rounded-lg text-white/40">
+                                        <button onClick={() => setEditandoConversa(null)} className="p-1.5 hover:bg-surface-200 rounded-lg text-content-tertiary">
                                           <X className="w-4 h-4" />
                                         </button>
                                       </div>
                                     ) : (
-                                      <div className={`flex items-center rounded-lg transition-all ${isActive ? 'bg-emerald-500/15' : 'hover:bg-white/5'}`}>
+                                      <div className={`flex items-center rounded-xl transition-all ${isActive ? 'bg-primary-50 border border-primary-100' : 'hover:bg-surface-200'}`}>
                                         <button
                                           onClick={async () => {
                                             setSidebarOpen(false)
-                                            // CORREÇÃO: Usar navegação real se não está na página do chat
                                             const isOnChatPage = pathname?.includes('/dashboard/ia')
                                             if (isOnChatPage) {
-                                              // Já está na página do chat - usar pushState (mais rápido)
                                               await useConversaStore.getState().trocarConversa(conversa.id)
                                             } else {
-                                              // Não está na página do chat - precisa navegar
                                               router.push(`/medicina/dashboard/ia?c=${conversa.id}`)
                                             }
                                           }}
-                                          className={`flex-1 flex items-center gap-2 px-2.5 py-2 text-left min-w-0 ${isActive ? 'text-emerald-300' : 'text-white/60 hover:text-white/80'}`}
+                                          className={`flex-1 flex items-center gap-2 px-2.5 py-2 text-left min-w-0 ${isActive ? 'text-primary-700' : 'text-content-secondary hover:text-content-primary'}`}
                                         >
-                                          <MessageSquare className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-emerald-400' : 'opacity-40'}`} />
+                                          <MessageSquare className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-primary-500' : 'text-content-tertiary'}`} />
                                           <span className="truncate text-sm" title={conversa.titulo || 'Nova conversa'}>
                                             {conversa.titulo || 'Nova conversa'}
                                           </span>
@@ -481,9 +495,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                               setMenuAberto(conversa.id)
                                             }
                                           }}
-                                          className={`p-1.5 rounded-lg transition-all mr-1 ${isActive || menuAberto === conversa.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} hover:bg-white/10`}
+                                          className={`p-1.5 rounded-lg transition-all mr-1 ${isActive || menuAberto === conversa.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} hover:bg-surface-300`}
                                         >
-                                          <MoreHorizontal className="w-4 h-4 text-white/50" />
+                                          <MoreHorizontal className="w-4 h-4 text-content-tertiary" />
                                         </button>
                                       </div>
                                     )}
@@ -503,11 +517,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   <button
                     onClick={excluirTodasConversas}
                     disabled={excluindoTodas}
-                    className="w-full flex items-center justify-center gap-2 mt-3 mx-1 py-2 text-xs text-red-400/50 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 mt-3 mx-1 py-2 text-xs text-red-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
                   >
                     {excluindoTodas ? (
                       <>
-                        <div className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                        <div className="w-3 h-3 border-2 border-red-200 border-t-red-500 rounded-full animate-spin" />
                         Excluindo...
                       </>
                     ) : (
@@ -523,16 +537,16 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
             {/* Ícones quando collapsed */}
             {sidebarCollapsed && (
-              <div className="mt-4 pt-4 border-t border-white/10 flex flex-col items-center gap-2">
+              <div className="mt-4 pt-4 border-t border-surface-200 flex flex-col items-center gap-2">
                 <Link
                   href="/medicina/dashboard"
                   title="Nova conversa"
-                  className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
+                  className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 flex items-center justify-center text-white transition-all shadow-soft"
                 >
                   <Plus className="w-5 h-5" />
                 </Link>
                 {conversas.length > 0 && (
-                  <div title={`${conversas.length} conversas`} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40">
+                  <div title={`${conversas.length} conversas`} className="w-10 h-10 rounded-xl bg-surface-200 flex items-center justify-center text-content-tertiary">
                     <History className="w-5 h-5" />
                   </div>
                 )}
@@ -542,16 +556,18 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
           {/* Upgrade Banner */}
           {plano === 'gratuito' && !sidebarCollapsed && (
-            <div className="mx-3 mb-4 p-4 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-xl border border-emerald-500/20 flex-shrink-0">
+            <div className="mx-3 mb-4 p-4 bg-gradient-to-br from-primary-50 to-accent-50 rounded-2xl border border-primary-100 flex-shrink-0">
               <div className="flex items-center gap-2 mb-2">
-                <Crown className="w-5 h-5 text-amber-400" />
-                <span className="text-white font-semibold text-sm">Upgrade</span>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                  <Crown className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-content-primary font-semibold text-sm">Upgrade Pro</span>
               </div>
-              <p className="text-emerald-200/60 text-xs mb-3">Desbloqueie recursos avançados</p>
+              <p className="text-content-secondary text-xs mb-3">Desbloqueie todos os recursos</p>
               <Link
                 href="/medicina/dashboard/assinatura"
                 onClick={() => setSidebarOpen(false)}
-                className="block w-full py-2 text-center bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-colors"
+                className="block w-full py-2.5 text-center bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-semibold rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all shadow-soft"
               >
                 Ver planos
               </Link>
@@ -560,47 +576,47 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
           {plano === 'gratuito' && sidebarCollapsed && (
             <div className="mx-3 mb-3 flex justify-center flex-shrink-0">
-              <Link href="/medicina/dashboard/assinatura" title="Ver planos" className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 flex items-center justify-center">
-                <Crown className="w-5 h-5 text-amber-400" />
+              <Link href="/medicina/dashboard/assinatura" title="Ver planos" className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 border border-amber-200 flex items-center justify-center hover:from-amber-200 hover:to-orange-200 transition-all">
+                <Crown className="w-5 h-5 text-amber-600" />
               </Link>
             </div>
           )}
 
           {/* Badges */}
           {!sidebarCollapsed && (
-            <div className="mx-3 mb-3 p-3 bg-white/5 rounded-xl border border-white/10 flex-shrink-0">
+            <div className="mx-3 mb-3 p-3 bg-surface-100 rounded-xl border border-surface-200 flex-shrink-0">
               <BadgeMiniWidget />
             </div>
           )}
 
           {/* User Profile */}
-          <div className="border-t border-white/10 p-4 flex-shrink-0">
+          <div className="border-t border-surface-200 p-4 flex-shrink-0 bg-surface-50">
             {sidebarCollapsed ? (
               <div className="flex flex-col items-center gap-3">
-                <Link href="/medicina/dashboard/perfil" title={profile?.nome || 'Perfil'} className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center hover:ring-2 hover:ring-emerald-500/50 transition-all">
-                  <span className="text-white font-bold">{profile?.nome?.[0]?.toUpperCase() || 'U'}</span>
+                <Link href="/medicina/dashboard/perfil" title={profile?.nome || 'Perfil'} className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center hover:ring-2 hover:ring-primary-200 transition-all shadow-soft">
+                  <span className="text-white font-bold text-sm">{profile?.nome?.[0]?.toUpperCase() || 'U'}</span>
                 </Link>
-                <button onClick={handleSignOut} title="Sair" className="w-10 h-10 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center justify-center">
+                <button onClick={handleSignOut} title="Sair" className="w-10 h-10 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center">
                   <LogOut className="w-5 h-5" />
                 </button>
               </div>
             ) : (
               <div className="relative" ref={perfilMenuRef}>
-                <button onClick={() => setPerfilMenuAberto(!perfilMenuAberto)} className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold">{profile?.nome?.[0]?.toUpperCase() || 'U'}</span>
+                <button onClick={() => setPerfilMenuAberto(!perfilMenuAberto)} className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-surface-200 transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center flex-shrink-0 shadow-soft">
+                    <span className="text-white font-bold text-sm">{profile?.nome?.[0]?.toUpperCase() || 'U'}</span>
                   </div>
                   <div className="flex-1 min-w-0 text-left">
-                    <p className="text-white font-medium truncate text-sm">{profile?.nome || 'Estudante'}</p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full inline-block ${
-                      plano === 'residencia' ? 'bg-amber-500/20 text-amber-400' :
-                      plano === 'premium' ? 'bg-emerald-500/20 text-emerald-400' :
-                      'bg-white/10 text-white/60'
+                    <p className="text-content-primary font-medium truncate text-sm">{profile?.nome || 'Estudante'}</p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full inline-block font-medium ${
+                      plano === 'residencia' ? 'bg-amber-100 text-amber-700' :
+                      plano === 'premium' ? 'bg-health-100 text-health-700' :
+                      'bg-surface-200 text-content-tertiary'
                     }`}>
                       {plano === 'residencia' ? 'Residência' : plano === 'premium' ? 'Premium' : 'Gratuito'}
                     </span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-white/40 transition-transform ${perfilMenuAberto ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 text-content-tertiary transition-transform ${perfilMenuAberto ? 'rotate-180' : ''}`} />
                 </button>
 
                 <AnimatePresence>
@@ -610,22 +626,22 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+                      className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-surface-200 rounded-xl shadow-elevated overflow-hidden"
                     >
-                      <Link href="/medicina/dashboard/perfil" onClick={() => { setPerfilMenuAberto(false); setSidebarOpen(false) }} className="flex items-center gap-2 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                      <Link href="/medicina/dashboard/perfil" onClick={() => { setPerfilMenuAberto(false); setSidebarOpen(false) }} className="flex items-center gap-2 px-3 py-2.5 text-sm text-content-secondary hover:text-content-primary hover:bg-surface-100 transition-colors">
                         <User className="w-4 h-4" />
                         Meu Perfil
                       </Link>
-                      <Link href="/medicina/dashboard/assinatura" onClick={() => { setPerfilMenuAberto(false); setSidebarOpen(false) }} className="flex items-center gap-2 px-3 py-2.5 text-sm text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors">
+                      <Link href="/medicina/dashboard/assinatura" onClick={() => { setPerfilMenuAberto(false); setSidebarOpen(false) }} className="flex items-center gap-2 px-3 py-2.5 text-sm text-amber-600 hover:text-amber-700 hover:bg-amber-50 transition-colors">
                         <Crown className="w-4 h-4" />
                         Meu Plano
                       </Link>
-                      <Link href="/medicina/dashboard/indicacoes" onClick={() => { setPerfilMenuAberto(false); setSidebarOpen(false) }} className="flex items-center gap-2 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                      <Link href="/medicina/dashboard/indicacoes" onClick={() => { setPerfilMenuAberto(false); setSidebarOpen(false) }} className="flex items-center gap-2 px-3 py-2.5 text-sm text-content-secondary hover:text-content-primary hover:bg-surface-100 transition-colors">
                         <Gift className="w-4 h-4" />
                         Indicações
                       </Link>
-                      <div className="border-t border-white/10">
-                        <button onClick={() => { setPerfilMenuAberto(false); handleSignOut() }} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+                      <div className="border-t border-surface-200">
+                        <button onClick={() => { setPerfilMenuAberto(false); handleSignOut() }} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors">
                           <LogOut className="w-4 h-4" />
                           Sair da conta
                         </button>
@@ -640,7 +656,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           {/* Toggle Sidebar */}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-slate-800 border border-white/10 rounded-full items-center justify-center text-white/60 hover:text-white hover:bg-slate-700 transition-colors shadow-lg"
+            className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-white border border-surface-300 rounded-full items-center justify-center text-content-tertiary hover:text-content-primary hover:bg-surface-100 transition-colors shadow-card"
             title={sidebarCollapsed ? 'Expandir' : 'Recolher'}
           >
             {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -648,19 +664,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Main Content - Otimizado para ocupar mais espaço */}
-      {/* Main Content - Mobile usa pt-[72px] para header fixo */}
+      {/* Main Content */}
       <main
-        className={`pt-[72px] lg:pt-0 min-h-screen transition-all duration-300 overflow-x-hidden ${sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-72'}`}
+        className={`pt-[72px] lg:pt-0 min-h-screen transition-all duration-300 overflow-x-hidden bg-surface-100 ${sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-72'}`}
         data-main-container
       >
         <div className="p-3 md:p-4 lg:p-6 max-w-full overflow-x-hidden">
           {children}
         </div>
       </main>
-
-      {/* 🔴 REMOVIDO: Botão flutuante de scroll no mobile */}
-      {/* O botão foi removido pois atrapalhava a UX no mobile */}
 
       {/* Trial Banner */}
       {trialStatus.ativo && <TrialBanner />}
@@ -677,7 +689,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="fixed bg-slate-800 border border-white/10 rounded-xl shadow-2xl py-1 min-w-[140px] z-[9999]"
+          className="fixed bg-white border border-surface-200 rounded-xl shadow-elevated py-1 min-w-[140px] z-[9999]"
           style={{ top: menuPosition.top, left: Math.min(menuPosition.left, window.innerWidth - 160) }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -691,14 +703,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 setMenuPosition(null)
               }
             }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-content-secondary hover:bg-surface-100 hover:text-content-primary transition-colors"
           >
             <Pencil className="w-4 h-4" />
             Renomear
           </button>
           <button
             onClick={() => menuAberto && deletarConversa(menuAberto)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
           >
             <Trash2 className="w-4 h-4" />
             Excluir
@@ -717,4 +729,3 @@ export default function MedicinaDashboardLayout({ children }: { children: React.
     </MedAuthProvider>
   )
 }
-
