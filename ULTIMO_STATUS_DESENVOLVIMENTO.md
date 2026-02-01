@@ -1,63 +1,69 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 01/02/2026 - Sessao de Repaginacao Mobile
+## Atualizado em: 01/02/2026 - Sessao de Simplificacao UI e OCR
 
 ---
 
 ## O QUE FOI FEITO NESTA SESSAO (01/02/2026)
 
-### 1. REPAGINACAO COMPLETA DA UI MOBILE
+### 1. REMOCAO DOS SELETORES DE MODO
 
-**Objetivo:** Deixar a interface mobile limpa como um app de IA moderno (ref: StudyAI)
+**Objetivo:** Simplificar a UI - a IA detecta automaticamente o contexto
 
 **Mudancas Realizadas:**
+- Removido botao "Caso" (seletor de modo) do header mobile
+- Removido dropdown de modos do header desktop
+- Removido seletor de modo da area de input
+- A IA agora detecta automaticamente se o usuario quer questoes, caso clinico, explicacao, etc.
 
-#### Interface Limpa
-- Removido bottom nav pesado (Historico, Modo, Novo, Config)
-- Removido icones superiores (Crown, Settings) da mobile mode bar
-- Removido drawer de conversas duplicado (redundante com sidebar)
-- Interface agora e mais limpa e focada na conversa
+### 2. MELHORIA NA VISAO DE IMAGENS COM OCR
 
-#### Modal de Selecao de Modo (CORRIGIDO)
-- No mobile agora abre FULLSCREEN com fundo OPACO (bg-slate-900)
-- Nao e mais transparente sobre o conteudo
-- Desktop continua usando dropdown normal
-- Detecta mobile via window.innerWidth < 1024
-- Bloqueia scroll quando modal esta aberto
+**Objetivo:** Permitir que a IA "leia" textos em imagens com perfeicao
 
-#### Artefatos Fullscreen
-- Criado `MobileArtifactsScreen.tsx` (~280 linhas)
-- Tela fullscreen para visualizar artefatos
-- Busca e filtros por tipo
-- Design similar ao app de referencia
+**Mudancas Realizadas:**
+- Criado novo modulo `lib/huggingface/image-vision.ts`
+- Integrado OCR do Hugging Face na rota de chat
+- Modelos utilizados:
+  - TrOCR (microsoft/trocr-large-printed) - OCR para textos
+  - BLIP (Salesforce/blip-image-captioning-large) - Caption de imagens
+- Quando usuario envia imagem, sistema extrai texto automaticamente
+- Texto extraido e adicionado ao contexto enviado para a IA
 
-#### Botao de Artefatos Integrado
-- Botao de artefatos agora aparece integrado no header
-- Badge com contador de artefatos
-- Abre tela fullscreen ao clicar
+### 3. CORRECOES DE UI MOBILE
 
-#### Busca Web Nativa
-- Busca web agora habilitada por padrao
-- Removido botao de Config do mobile
-- IA usa busca web automaticamente
-
-### 2. ARQUIVOS MODIFICADOS
-
-| Arquivo | Mudanca |
-|---------|---------|
-| `components/mobile/MobileArtifactsScreen.tsx` | NOVO - Tela fullscreen de artefatos |
-| `components/mobile/MobileNavigation.tsx` | Modal de modos corrigido e compacto |
-| `components/mobile/index.ts` | Export do MobileArtifactsScreen |
-| `components/chat/ModeSelector.tsx` | Modal fullscreen no mobile com fundo opaco |
-| `app/medicina/(dashboard)/dashboard/ia/page.tsx` | Removido bottom nav, adicionado botao artefatos |
-| `app/medicina/(dashboard)/layout.tsx` | Removido pb-20 (nao tem mais bottom nav) |
+**Mudancas Realizadas:**
+- Header mobile agora mostra apenas titulo do chat + botao de artefatos
+- Botao roxo flutuante de artefatos escondido no mobile
+- Interface mais limpa e focada
 
 ---
 
 ## COMMITS REALIZADOS NESTA SESSAO
 
-- `e01b655` - feat(mobile): repaginar UI mobile - interface limpa estilo app de IA
-- `1f33c53` - docs: atualizar status apos repaginacao mobile
-- `6b2220d` - fix(mobile): modal de selecao de modo fullscreen com fundo opaco
+- `2769ede` - fix(mobile): corrigir UI duplicada e modal de modos
+- `b48d8e7` - fix(mobile): reorganizar UI - seletor de modo na area de input
+- `559a131` - feat(ux): remover seletores de modo - IA detecta contexto automaticamente
+- `5402384` - feat(vision): integrar OCR do Hugging Face para melhor visao de imagens
+
+---
+
+## PRs MERGEADOS
+
+- **PR #4** - fix(mobile): reorganizar UI mobile
+- **PR #5** - feat(ux): remover seletores de modo
+- **PR #6** - feat(vision): integrar OCR do Hugging Face
+
+---
+
+## ARQUIVOS CRIADOS/MODIFICADOS
+
+| Arquivo | Mudanca |
+|---------|---------|
+| `lib/huggingface/image-vision.ts` | NOVO - Modulo de OCR e visao de imagem |
+| `lib/huggingface/index.ts` | Exportar funcoes de OCR |
+| `app/api/medicina/ia/chat/route.ts` | Integrar OCR quando usuario envia imagem |
+| `app/medicina/(dashboard)/dashboard/ia/page.tsx` | Remover seletores de modo, simplificar header |
+| `components/ia/ArtifactsSidebar.tsx` | Esconder botao roxo no mobile |
+| `components/chat/ModeSelector.tsx` | Ajustes no modal fullscreen |
 
 ---
 
@@ -68,21 +74,20 @@
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
 | Build Vercel | SUCESSO |
 | TypeScript | 0 erros |
-| UI Mobile | REPAGINADA - Interface limpa |
-| Bottom Nav | REMOVIDO |
-| Modal de Modos | FULLSCREEN com fundo opaco |
-| Artefatos Mobile | Fullscreen implementado |
-| Busca Web | Habilitada por padrao |
+| UI Mobile | SIMPLIFICADA - Sem seletores de modo |
+| Seletores de Modo | REMOVIDOS |
+| OCR de Imagens | IMPLEMENTADO via Hugging Face |
+| Deteccao de Contexto | AUTOMATICA pela IA |
 
 ---
 
-## PROXIMOS PASSOS
+## PROXIMOS PASSOS SUGERIDOS
 
-1. **Testar no mobile real** - Verificar responsividade no iPhone/Android
-2. **Ajustar detalhes visuais** - Cores, espacamentos, etc
-3. **Implementar simulacao de atendimento** - Salvar progresso
-4. **Modo Tutor** - Implementar logica socratica
-5. **Estatisticas de simulacoes** - Dashboard de desempenho
+1. **Testar OCR em producao** - Enviar imagens com texto e verificar se IA "le" corretamente
+2. **Ajustar modelos de OCR** - Testar outros modelos se necessario (GOT-OCR2.0, Nemotron)
+3. **Implementar cache de OCR** - Para imagens repetidas
+4. **Estatisticas de uso** - Dashboard de desempenho do usuario
+5. **Melhorar prompt da IA** - Ajustar deteccao automatica de contexto
 
 ---
 
