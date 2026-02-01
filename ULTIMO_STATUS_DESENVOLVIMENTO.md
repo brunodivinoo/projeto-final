@@ -1,69 +1,82 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 01/02/2026 - Sessao de Simplificacao UI e OCR
+## Atualizado em: 01/02/2026 - Sessao de Padronizacao de Cores (Tema Claro)
 
 ---
 
 ## O QUE FOI FEITO NESTA SESSAO (01/02/2026)
 
-### 1. REMOCAO DOS SELETORES DE MODO
+### 1. AUDITORIA COMPLETA DE CORES
 
-**Objetivo:** Simplificar a UI - a IA detecta automaticamente o contexto
+**Problema identificado:**
+- Textos praticamente invisiveis em todo o app
+- Codigo usava cores de tema escuro (`text-white/40`, `bg-white/5`, etc) em fundo claro
+- 132+ arquivos afetados com mais de 3.300 ocorrencias
 
-**Mudancas Realizadas:**
-- Removido botao "Caso" (seletor de modo) do header mobile
-- Removido dropdown de modos do header desktop
-- Removido seletor de modo da area de input
-- A IA agora detecta automaticamente se o usuario quer questoes, caso clinico, explicacao, etc.
+**Analise realizada:**
+- Identificados TOP 20 arquivos com mais ocorrencias
+- Principal arquivo: `ArtifactsSidebar.tsx` (174 ocorrencias)
+- Criado script de substituicao em lote
 
-### 2. MELHORIA NA VISAO DE IMAGENS COM OCR
+### 2. CORRECAO DE CORES EM LOTE
 
-**Objetivo:** Permitir que a IA "leia" textos em imagens com perfeicao
+**Substituicoes realizadas:**
+| De | Para |
+|----|------|
+| `text-white/30` | `text-slate-400` |
+| `text-white/40` | `text-slate-500` |
+| `text-white/50` | `text-slate-500` |
+| `text-white/60` | `text-slate-600` |
+| `text-white/70` | `text-slate-600` |
+| `text-white/80` | `text-slate-700` |
+| `text-white/90` | `text-slate-800` |
+| `bg-white/5` | `bg-slate-100` |
+| `bg-white/10` | `bg-slate-100` |
+| `bg-white/20` | `bg-slate-200` |
+| `border-white/10` | `border-slate-200` |
+| `prose-invert` | `prose-slate` |
 
-**Mudancas Realizadas:**
-- Criado novo modulo `lib/huggingface/image-vision.ts`
-- Integrado OCR do Hugging Face na rota de chat
-- Modelos utilizados:
-  - TrOCR (microsoft/trocr-large-printed) - OCR para textos
-  - BLIP (Salesforce/blip-image-captioning-large) - Caption de imagens
-- Quando usuario envia imagem, sistema extrai texto automaticamente
-- Texto extraido e adicionado ao contexto enviado para a IA
+### 3. CORRECOES MANUAIS ESPECIFICAS
 
-### 3. CORRECOES DE UI MOBILE
+- Pagina de Chat IA - cores de mensagens, sugestoes, loading
+- Componentes de chat (ChatInput, QuickActions, ChatHistory)
+- Headers e botoes com gradientes mantidos corretos
 
-**Mudancas Realizadas:**
-- Header mobile agora mostra apenas titulo do chat + botao de artefatos
-- Botao roxo flutuante de artefatos escondido no mobile
-- Interface mais limpa e focada
+### 4. CONFIGURACAO DE FONTE
+
+- Removida dependencia do Google Fonts (evita falhas de build offline)
+- Usando fontes do sistema como fallback
 
 ---
 
 ## COMMITS REALIZADOS NESTA SESSAO
 
-- `2769ede` - fix(mobile): corrigir UI duplicada e modal de modos
-- `b48d8e7` - fix(mobile): reorganizar UI - seletor de modo na area de input
-- `559a131` - feat(ux): remover seletores de modo - IA detecta contexto automaticamente
-- `5402384` - feat(vision): integrar OCR do Hugging Face para melhor visao de imagens
+| Hash | Descricao |
+|------|-----------|
+| `8eb7aa6` | fix: padronizar cores para tema claro em todo o app |
 
 ---
 
-## PRs MERGEADOS
+## PRs CRIADOS
 
-- **PR #4** - fix(mobile): reorganizar UI mobile
-- **PR #5** - feat(ux): remover seletores de modo
-- **PR #6** - feat(vision): integrar OCR do Hugging Face
+| PR | Titulo | Status |
+|----|--------|--------|
+| [#10](https://github.com/brunodivinoo/projeto-final/pull/10) | fix: padronizar cores para tema claro em todo o app | Aberto |
 
 ---
 
-## ARQUIVOS CRIADOS/MODIFICADOS
+## ARQUIVOS MODIFICADOS
 
-| Arquivo | Mudanca |
-|---------|---------|
-| `lib/huggingface/image-vision.ts` | NOVO - Modulo de OCR e visao de imagem |
-| `lib/huggingface/index.ts` | Exportar funcoes de OCR |
-| `app/api/medicina/ia/chat/route.ts` | Integrar OCR quando usuario envia imagem |
-| `app/medicina/(dashboard)/dashboard/ia/page.tsx` | Remover seletores de modo, simplificar header |
-| `components/ia/ArtifactsSidebar.tsx` | Esconder botao roxo no mobile |
-| `components/chat/ModeSelector.tsx` | Ajustes no modal fullscreen |
+**Total:** 92 arquivos modificados
+**Adicoes:** 1.827 linhas
+**Remocoes:** 1.827 linhas
+
+### Principais arquivos:
+- Todas as paginas do dashboard (`app/medicina/(dashboard)/`)
+- Componentes de chat (`components/chat/`)
+- Componentes de IA (`components/ia/`)
+- Componentes mobile (`components/mobile/`)
+- Paginas admin (`app/medicina/admin/`)
+- Modais e sidebars
 
 ---
 
@@ -74,20 +87,33 @@
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
 | Build Vercel | SUCESSO |
 | TypeScript | 0 erros |
-| UI Mobile | SIMPLIFICADA - Sem seletores de modo |
-| Seletores de Modo | REMOVIDOS |
-| OCR de Imagens | IMPLEMENTADO via Hugging Face |
-| Deteccao de Contexto | AUTOMATICA pela IA |
+| Tema Claro | CORRIGIDO - Cores padronizadas |
+| Contraste | CORRIGIDO - Textos visiveis |
+| PR #10 | ABERTO - Aguardando merge |
 
 ---
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Testar OCR em producao** - Enviar imagens com texto e verificar se IA "le" corretamente
-2. **Ajustar modelos de OCR** - Testar outros modelos se necessario (GOT-OCR2.0, Nemotron)
-3. **Implementar cache de OCR** - Para imagens repetidas
-4. **Estatisticas de uso** - Dashboard de desempenho do usuario
-5. **Melhorar prompt da IA** - Ajustar deteccao automatica de contexto
+1. **Merge do PR #10** - Aprovar e fazer merge
+2. **Testar em producao** - Verificar legibilidade em todos os dispositivos
+3. **Ajustes finos** - Corrigir textos que ainda estejam com contraste ruim
+4. **Elementos isolados** - Revisar `text-white` em botoes coloridos
+
+---
+
+## PALETA DE CORES DO TEMA CLARO
+
+| Uso | Classe | Cor |
+|-----|--------|-----|
+| Texto principal | `text-slate-800` | #1e293b |
+| Texto secundario | `text-slate-600` | #475569 |
+| Texto terciario | `text-slate-500` | #64748b |
+| Texto desabilitado | `text-slate-400` | #94a3b8 |
+| Fundo primario | `bg-slate-50` | #f8fafc |
+| Fundo secundario | `bg-slate-100` | #f1f5f9 |
+| Bordas | `border-slate-200` | #e2e8f0 |
+| Accent | `emerald-500` | #10b981 |
 
 ---
 
@@ -98,3 +124,4 @@
 - Supabase: https://supabase.com/dashboard/project/zkcstkbpgwdoiihvfspp
 - Vercel: https://vercel.com/brunos-projects-5f2d50e2/projeto-final
 - GitHub: https://github.com/brunodivinoo/projeto-final
+- PR #10: https://github.com/brunodivinoo/projeto-final/pull/10
