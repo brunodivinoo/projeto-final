@@ -1607,10 +1607,11 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
       )}
 
       {/* Botão toggle discreto - estilo Claude */}
+      {/* Botão flutuante - apenas desktop (mobile usa botão integrado no header) */}
       {!isSidebarOpen && artifacts.length > 0 && (
         <button
           onClick={toggleSidebar}
-          className="fixed right-3 top-20 z-40 p-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white rounded-md transition-all"
+          className="hidden lg:flex fixed right-3 top-20 z-40 p-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white rounded-md transition-all"
           title="Abrir artefatos"
         >
           <Layers className="w-4 h-4" />
