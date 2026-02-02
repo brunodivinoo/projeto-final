@@ -2231,8 +2231,8 @@ const MemoizedImage = memo(function MemoizedImage({ src, alt, onClickImage }: Me
 
   return (
     <div
-      className="my-2 max-w-md group"
-      style={{ contain: 'layout', minHeight: isLoaded ? 'auto' : '200px', marginLeft: 0, marginRight: 'auto' }}
+      className="my-1.5 max-w-xs lg:max-w-sm group"
+      style={{ contain: 'layout', minHeight: isLoaded ? 'auto' : '150px', marginLeft: 0, marginRight: 'auto' }}
     >
       <button
         onClick={handleClick}
@@ -2259,7 +2259,7 @@ const MemoizedImage = memo(function MemoizedImage({ src, alt, onClickImage }: Me
           alt={alt || 'Imagem médica'}
           loading="eager"
           decoding="sync"
-          className={`relative z-10 w-full h-auto max-h-[280px] object-contain rounded-lg transition-opacity duration-200 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`relative z-10 w-full h-auto max-h-[180px] lg:max-h-[200px] object-contain rounded-lg transition-opacity duration-200 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
           style={{ minHeight: isLoaded ? 'auto' : '150px', backgroundColor: 'white' }}
           onLoad={handleLoad}
           onError={handleError}
@@ -2487,7 +2487,7 @@ function ArtifactRendererComponent({
   }, [storeArtifacts, messageId, selectArtifact, setSidebarOpen, setMobileDrawerOpen])
 
   return (
-    <div className="artifact-renderer">
+    <div className="artifact-renderer lg:text-[0.9em] xl:text-[0.85em]">
       {parts.map((part, index) => {
         // Ignorar partes undefined ou vazias
         if (part === undefined || part === null) return null
@@ -2537,22 +2537,22 @@ function ArtifactRendererComponent({
               components={{
                 // Headings - menores e mais compactos
                 h1: ({ children }) => (
-                  <h1 className="text-lg md:text-xl font-bold text-white mt-4 mb-2 pb-1 border-b border-slate-200">
+                  <h1 className="text-base lg:text-base font-bold text-white mt-3 mb-1.5 pb-1 border-b border-slate-200">
                     {children}
                   </h1>
                 ),
                 h2: ({ children }) => (
-                  <h2 className="text-base md:text-lg font-semibold text-white mt-3 mb-2">
+                  <h2 className="text-sm lg:text-sm font-semibold text-white mt-2.5 mb-1.5">
                     {children}
                   </h2>
                 ),
                 h3: ({ children }) => (
-                  <h3 className="text-sm md:text-base font-semibold text-emerald-400 mt-3 mb-1.5">
+                  <h3 className="text-sm font-semibold text-emerald-400 mt-2 mb-1">
                     {children}
                   </h3>
                 ),
                 h4: ({ children }) => (
-                  <h4 className="text-sm font-semibold text-slate-800 mt-2 mb-1">
+                  <h4 className="text-xs font-semibold text-slate-800 mt-1.5 mb-1">
                     {children}
                   </h4>
                 ),
@@ -2571,7 +2571,7 @@ function ArtifactRendererComponent({
                       : children
 
                   return (
-                    <p className="text-slate-700 leading-relaxed mb-2 text-sm">
+                    <p className="text-slate-700 leading-relaxed mb-1.5 text-xs lg:text-xs">
                       {processedChildren}
                     </p>
                   )
@@ -2579,12 +2579,12 @@ function ArtifactRendererComponent({
 
                 // Lists - espaçamento reduzido
                 ul: ({ children }) => (
-                  <ul className="list-disc list-inside space-y-0.5 mb-2 text-slate-700 ml-2 text-sm">
+                  <ul className="list-disc list-inside space-y-0.5 mb-1.5 text-slate-700 ml-2 text-xs lg:text-xs">
                     {children}
                   </ul>
                 ),
                 ol: ({ children }) => (
-                  <ol className="list-decimal list-inside space-y-0.5 mb-2 text-slate-700 ml-2 text-sm">
+                  <ol className="list-decimal list-inside space-y-0.5 mb-1.5 text-slate-700 ml-2 text-xs lg:text-xs">
                     {children}
                   </ol>
                 ),
@@ -2601,7 +2601,7 @@ function ArtifactRendererComponent({
                       : children
 
                   return (
-                    <li className="text-slate-700 text-sm">
+                    <li className="text-slate-700 text-xs lg:text-xs">
                       {processedChildren}
                     </li>
                   )

@@ -1182,7 +1182,7 @@ function ArtifactCard({
             ? 'border-purple-500/50 shadow-lg shadow-purple-500/10 ring-2 ring-purple-500/30'
             : 'border-slate-200 hover:border-slate-300'
         }`}
-        onClick={onSelect}
+        onClick={onFullscreen}
       >
         {/* Gradiente de fundo baseado na categoria */}
         <div className={`absolute inset-0 bg-gradient-to-br ${categoryColor} opacity-10`} />
@@ -1242,10 +1242,10 @@ function ArtifactCard({
       {/* Indicador de categoria (barra lateral) */}
       <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${categoryColor}`} />
 
-      {/* Header do card */}
+      {/* Header do card - clique abre em tela cheia */}
       <div
         className="flex items-center gap-3 p-3 pl-4 cursor-pointer"
-        onClick={onSelect}
+        onClick={onFullscreen}
       >
         {/* Ícone do tipo */}
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all ${
