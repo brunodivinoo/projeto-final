@@ -1443,22 +1443,26 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
 
   // Função auxiliar para remover headers/títulos redundantes antes de artefatos
   // Remove linhas que começam com ## ou ### e contêm palavras como SIMULADO, FLASHCARD, etc.
-  const cleanTextBeforeArtifact = (text: string, artifactType: string): string => {
+  const cleanTextBeforeArtifact = (text: string, _artifactType: string): string => {
     if (!text) return text
     // Padrões de títulos a remover (aparecem logo antes do artefato)
     const headerPatterns = [
-      /\n?#{1,4}\s*.*?(SIMULADO|FLASHCARD|QUESTÕES?|QUIZ|TESTE).*?\n?$/i,
-      /\n?#{1,4}\s*📋.*?\n?$/i,
-      /\n?#{1,4}\s*🧠.*?\n?$/i,
-      /\n?\*{2}.*?(SIMULADO|FLASHCARD|QUESTÕES?).*?\*{2}\n?$/i,
-      /\n---+\n?$/,
+      /\n?#{1,4}\s*.*?(SIMULADO|FLASHCARD|QUESTÕES?|QUIZ|TESTE|FIXAÇÃO|QUESTÃO).*?\n?$/gi,
+      /\n?#{1,4}\s*📋.*?\n?$/gi,
+      /\n?#{1,4}\s*🧠.*?\n?$/gi,
+      /\n?#{1,4}\s*🎯.*?\n?$/gi,
+      /\n?#{1,4}\s*❓.*?\n?$/gi,
+      /\n?\*{2}.*?(SIMULADO|FLASHCARD|QUESTÕES?|QUESTÃO|FIXAÇÃO).*?\*{2}\n?$/gi,
+      /\n---+\n?$/g,
+      // Remover blocos de código vazios ou com apenas markdown headers
+      /```[a-z]*\n?#{1,4}[^\n]*\n?```/gi,
     ]
     let cleaned = text
     for (const pattern of headerPatterns) {
       cleaned = cleaned.replace(pattern, '\n')
     }
     // Remover espaços/quebras extras no final
-    return cleaned.replace(/\n{3,}$/, '\n\n')
+    return cleaned.replace(/\n{3,}$/, '\n\n').trim()
   }
 
   // Processar matches
@@ -1470,8 +1474,8 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
     // Adicionar texto antes do artefato
     if (startIndex > lastIndex) {
       let textBefore = processedContent.substring(lastIndex, startIndex)
-      // Limpar headers redundantes antes de simulados e flashcards
-      if (type === 'simulado' || type === 'flashcards') {
+      // Limpar headers redundantes antes de simulados, flashcards e questões
+      if (type === 'simulado' || type === 'flashcards' || type === 'question') {
         textBefore = cleanTextBeforeArtifact(textBefore, type)
       }
       if (textBefore.trim()) {

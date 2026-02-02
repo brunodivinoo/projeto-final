@@ -89,11 +89,13 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
         const cards = flashcardData.cards || flashcardData
         if (Array.isArray(cards) && cards.length > 0) {
           return (
-            <div className="p-4">
-              <FlashcardDeck
-                titulo={flashcardData.titulo || artifact.title}
-                cards={cards}
-              />
+            <div className="p-3 overflow-x-hidden">
+              <div className="max-w-full overflow-hidden rounded-xl">
+                <FlashcardDeck
+                  titulo={flashcardData.titulo || artifact.title}
+                  cards={cards}
+                />
+              </div>
             </div>
           )
         }
@@ -111,8 +113,10 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
         const simuladoData = artifact.metadata?.simulado || JSON.parse(artifact.content)
         if (simuladoData) {
           return (
-            <div className="p-4">
-              <SimuladoCard simulado={simuladoData} />
+            <div className="p-3 overflow-x-hidden">
+              <div className="max-w-full overflow-hidden rounded-xl bg-white">
+                <SimuladoCard simulado={simuladoData} />
+              </div>
             </div>
           )
         }
@@ -130,8 +134,10 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
         const questionData = artifact.metadata?.question
         if (questionData) {
           return (
-            <div className="p-4">
-              <QuestionArtifactCard question={questionData} />
+            <div className="p-3 overflow-x-hidden">
+              <div className="max-w-full overflow-hidden rounded-xl shadow-lg">
+                <QuestionArtifactCard question={questionData} />
+              </div>
             </div>
           )
         }
