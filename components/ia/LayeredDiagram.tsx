@@ -93,10 +93,10 @@ const COLOR_PALETTES: Record<string, Record<string, { bg: string; border: string
 function getLayerColors(color: string, theme: string = 'histology') {
   const palette = COLOR_PALETTES[theme] || COLOR_PALETTES.histology
   return palette[color.toLowerCase()] || palette.gray || {
-    bg: 'bg-slate-500/30',
-    border: 'border-slate-400',
-    text: 'text-slate-200',
-    gradient: 'from-slate-500/40 to-slate-600/20'
+    bg: 'bg-slate-100',
+    border: 'border-slate-300',
+    text: 'text-slate-700',
+    gradient: 'from-slate-50 to-slate-100'
   }
 }
 
@@ -441,11 +441,11 @@ function TimelineView({
                   {layer.staging && (
                     <span className={`
                       px-2 py-1 rounded text-xs font-bold
-                      ${layer.staging.toLowerCase().includes('tis') ? 'bg-emerald-500/30 text-emerald-300' :
-                        layer.staging.toLowerCase().includes('t1') ? 'bg-yellow-500/30 text-yellow-300' :
-                        layer.staging.toLowerCase().includes('t2') ? 'bg-orange-500/30 text-orange-300' :
-                        layer.staging.toLowerCase().includes('t3') ? 'bg-red-500/30 text-red-300' :
-                        'bg-red-700/30 text-red-300'}
+                      ${layer.staging.toLowerCase().includes('tis') ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' :
+                        layer.staging.toLowerCase().includes('t1') ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' :
+                        layer.staging.toLowerCase().includes('t2') ? 'bg-orange-100 text-orange-700 border border-orange-300' :
+                        layer.staging.toLowerCase().includes('t3') ? 'bg-red-100 text-red-700 border border-red-300' :
+                        'bg-red-200 text-red-800 border border-red-400'}
                     `}>
                       {layer.staging}
                     </span>
@@ -725,7 +725,7 @@ export default function LayeredDiagram({
                       }}
                       className={`
                         p-1.5 rounded-md transition-all duration-200 relative group
-                        ${viewMode === mode.id ? 'bg-purple-500/30 text-purple-300' : 'text-slate-500 hover:text-slate-600 hover:bg-slate-100'}
+                        ${viewMode === mode.id ? 'bg-purple-100 text-purple-700' : 'text-slate-500 hover:text-slate-600 hover:bg-slate-200'}
                       `}
                       title={mode.label}
                     >

@@ -96,7 +96,7 @@ export async function chatComClaudeStream(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const streamParams: any = {
     model: MODELOS.claude.opus,
-    max_tokens: useExtendedThinking ? 16000 : 4096,
+    max_tokens: useExtendedThinking ? 16000 : 8192,
     system: systemConfig,
     messages: claudeMessages,
     stream: true
@@ -159,7 +159,7 @@ export async function chatComClaude(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const params: any = {
     model: MODELOS.claude.opus,
-    max_tokens: useExtendedThinking ? 16000 : 4096,
+    max_tokens: useExtendedThinking ? 16000 : 8192,
     system: SYSTEM_PROMPT_RESIDENCIA,
     messages: claudeMessages
   }
@@ -218,7 +218,7 @@ export async function analisarImagemComClaude(
 ): Promise<ChatResponse> {
   const response = await anthropic.messages.create({
     model: MODELOS.claude.opus,
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: SYSTEM_PROMPT_RESIDENCIA,
     messages: [{
       role: 'user',
