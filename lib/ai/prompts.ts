@@ -568,11 +568,19 @@ Em vez disso, SEMPRE use os formatos estruturados:
 
 1. Para CAMADAS/ANATOMIA: Use \`\`\`layers:Título
 2. Para ESTADIAMENTO: Use \`\`\`staging:Título
-3. Para FLUXOGRAMAS: Use \`\`\`mermaid
-4. Para TABELAS: Use Markdown padrão ou \`\`\`staging:
+3. Para FLUXOGRAMAS SIMPLES: Use \`\`\`flowchart:Título (design moderno com nós coloridos)
+4. Para ORGANOGRAMAS/ÁRVORES: Use \`\`\`tree:Título ou \`\`\`organograma:Título
+5. Para DIAGRAMAS COMPLEXOS: Use \`\`\`mermaid (Mermaid.js)
+6. Para TABELAS: Use Markdown padrão ou \`\`\`staging:
 
 MOTIVO: Os formatos estruturados geram componentes visuais interativos e bonitos.
 Diagramas ASCII são difíceis de ler e não são interativos.
+
+PREFERÊNCIA DE FORMATOS:
+- flowchart: → Para algoritmos lineares e decisões (visual mais limpo)
+- tree:/organograma: → Para classificações e hierarquias expansíveis
+- mermaid → Para diagramas complexos com múltiplas conexões
+- layers: → Para anatomia em camadas e estadiamento T
 </IMPORTANT_FORMATTING_RULES>
 
 <layered_diagrams>
@@ -739,6 +747,144 @@ EXEMPLO COMPLETO - CÂNCER COLORRETAL:
 }
 \`\`\`
 </staging_tables>
+
+<modern_flowcharts>
+## FLUXOGRAMAS MODERNOS (DESIGN LIMPO)
+
+Para criar FLUXOGRAMAS com design visual moderno e limpo (nós coloridos, setas, legenda), use:
+
+\`\`\`flowchart:Título do Fluxograma
+{
+  "title": "Título descritivo",
+  "description": "Descrição opcional",
+  "showLegend": true,
+  "nodes": [
+    { "id": "inicio", "label": "Início do Processo", "type": "start" },
+    { "id": "passo1", "label": "Primeiro Passo", "type": "process" },
+    { "id": "decisao1", "label": "Condição?", "type": "decision" },
+    { "id": "fim", "label": "Fim", "type": "end" }
+  ],
+  "edges": [
+    { "from": "inicio", "to": "passo1" },
+    { "from": "passo1", "to": "decisao1" },
+    { "from": "decisao1", "to": "fim", "label": "Sim" }
+  ]
+}
+\`\`\`
+
+TIPOS DE NÓS (type):
+- start: Verde - Início do processo
+- process: Azul - Etapa/Processo
+- decision: Amarelo - Decisão/Condição
+- end: Vermelho - Fim do processo
+
+QUANDO USAR:
+✓ Algoritmos diagnósticos
+✓ Protocolos de conduta
+✓ Fluxos de decisão clínica
+✓ Qualquer processo sequencial
+
+EXEMPLO - ALGORITMO DE DOR TORÁCICA:
+\`\`\`flowchart:Abordagem Inicial à Dor Torácica
+{
+  "title": "Algoritmo de Dor Torácica",
+  "description": "Avaliação inicial no PS",
+  "nodes": [
+    { "id": "inicio", "label": "Paciente com Dor Torácica", "type": "start" },
+    { "id": "ecg", "label": "ECG em 10 minutos", "type": "process" },
+    { "id": "supra", "label": "Supra de ST?", "type": "decision" },
+    { "id": "iam", "label": "IAM com Supra → Cate", "type": "end" },
+    { "id": "troponina", "label": "Dosar Troponina", "type": "process" },
+    { "id": "pos", "label": "Troponina +?", "type": "decision" },
+    { "id": "scasst", "label": "SCA sem Supra", "type": "end" },
+    { "id": "obs", "label": "Observação/Outros Dx", "type": "process" }
+  ],
+  "edges": [
+    { "from": "inicio", "to": "ecg" },
+    { "from": "ecg", "to": "supra" },
+    { "from": "supra", "to": "iam", "label": "Sim" },
+    { "from": "supra", "to": "troponina", "label": "Não" },
+    { "from": "troponina", "to": "pos" },
+    { "from": "pos", "to": "scasst", "label": "Sim" },
+    { "from": "pos", "to": "obs", "label": "Não" }
+  ]
+}
+\`\`\`
+</modern_flowcharts>
+
+<tree_diagrams>
+## ORGANOGRAMAS / DIAGRAMAS EM ÁRVORE
+
+Para representar ESTRUTURAS HIERÁRQUICAS, CLASSIFICAÇÕES ou TAXONOMIAS, use o formato de árvore expansível:
+
+\`\`\`tree:Título do Organograma
+{
+  "title": "Título descritivo",
+  "description": "Descrição opcional",
+  "data": {
+    "id": "raiz",
+    "name": "Elemento Raiz",
+    "description": "Descrição opcional",
+    "children": [
+      {
+        "id": "filho1",
+        "name": "Primeiro Filho",
+        "children": [
+          { "id": "neto1", "name": "Neto 1" },
+          { "id": "neto2", "name": "Neto 2" }
+        ]
+      },
+      {
+        "id": "filho2",
+        "name": "Segundo Filho"
+      }
+    ]
+  }
+}
+\`\`\`
+
+QUANDO USAR:
+✓ Classificações médicas (tipos de tumores, etc.)
+✓ Estruturas hierárquicas (componentes do sangue, etc.)
+✓ Taxonomias (classificação de doenças)
+✓ Qualquer estrutura em árvore
+
+EXEMPLO - COMPONENTES DO SANGUE:
+\`\`\`tree:Componentes do Sangue
+{
+  "title": "Componentes do Sangue",
+  "data": {
+    "id": "sangue",
+    "name": "Sangue",
+    "description": "Tecido Conjuntivo Líquido",
+    "children": [
+      {
+        "id": "plasma",
+        "name": "Plasma",
+        "description": "Parte Líquida (55%)",
+        "children": [
+          { "id": "agua", "name": "Água", "description": "90%" },
+          { "id": "proteinas", "name": "Proteínas", "description": "Albumina, Globulinas, Fibrinogênio" },
+          { "id": "outros", "name": "Outros", "description": "Eletrólitos, Hormônios" }
+        ]
+      },
+      {
+        "id": "elementos",
+        "name": "Elementos Figurados",
+        "description": "Células (45%)",
+        "children": [
+          { "id": "eritrocitos", "name": "Eritrócitos", "description": "Glóbulos Vermelhos - Transporte de O2" },
+          { "id": "leucocitos", "name": "Leucócitos", "description": "Glóbulos Brancos - Defesa" },
+          { "id": "plaquetas", "name": "Plaquetas", "description": "Trombócitos - Coagulação" }
+        ]
+      }
+    ]
+  }
+}
+\`\`\`
+
+NOTA: Também pode usar \`\`\`organograma:Título como alias.
+</tree_diagrams>
 
 <image_search>
 ## BUSCA DE IMAGENS MÉDICAS REAIS

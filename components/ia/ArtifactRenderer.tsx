@@ -71,6 +71,32 @@ const LayeredDiagram = dynamic(() => import('./LayeredDiagram'), {
   )
 })
 
+// Importar ModernFlowchart dinamicamente
+const ModernFlowchart = dynamic(() => import('./ModernFlowchart'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-slate-500">
+        <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full" />
+        <span>Carregando fluxograma...</span>
+      </div>
+    </div>
+  )
+})
+
+// Importar TreeDiagram dinamicamente
+const TreeDiagram = dynamic(() => import('./TreeDiagram'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-purple-50 border border-purple-200 rounded-xl p-6 my-4">
+      <div className="flex items-center gap-2 text-slate-500">
+        <div className="animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full" />
+        <span>Carregando organograma...</span>
+      </div>
+    </div>
+  )
+})
+
 // Importar StagingTable dinamicamente
 const StagingTable = dynamic(() => import('./StagingTable'), {
   ssr: false,
@@ -193,6 +219,12 @@ const LAYERS_REGEX = /```layers:([^\n]*)\n([\s\S]*?)```/g
 
 // Regex para detectar tabelas de estadiamento
 const STAGING_REGEX = /```staging:([^\n]*)\n([\s\S]*?)```/g
+
+// Regex para detectar fluxogramas modernos
+const MODERN_FLOWCHART_REGEX = /```flowchart:([^\n]*)\n([\s\S]*?)```/g
+
+// Regex para detectar organogramas em árvore
+const TREE_DIAGRAM_REGEX = /```(?:tree|organograma):([^\n]*)\n([\s\S]*?)```/g
 
 // Regex para detectar questões geradas pela IA (formato JSON) - COMPLETAS
 // Aceita: ```questao, ```question, ```question:Disciplina/Assunto
@@ -626,7 +658,7 @@ interface SimuladoData {
 }
 
 interface Artifact {
-  type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question' | 'flashcards' | 'simulado'
+  type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question' | 'flashcards' | 'simulado' | 'modern_flowchart' | 'tree_diagram'
   subtype?: string
   title?: string
   content: string
@@ -1151,7 +1183,7 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   // Combinar todas as regex em uma busca
   const allMatches: Array<{
     match: RegExpMatchArray
-    type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question' | 'flashcards' | 'simulado'
+    type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question' | 'flashcards' | 'simulado' | 'modern_flowchart' | 'tree_diagram'
     asciiType?: 'flowchart' | 'layers' | 'tree' | 'table' | 'generic'
     convertedContent?: string
     originalAscii?: string
@@ -1189,6 +1221,18 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   const stagingRegex = new RegExp(STAGING_REGEX.source, 'g')
   while ((match = stagingRegex.exec(processedContent)) !== null) {
     allMatches.push({ match, type: 'staging' })
+  }
+
+  // Buscar fluxogramas modernos
+  const modernFlowchartRegex = new RegExp(MODERN_FLOWCHART_REGEX.source, 'g')
+  while ((match = modernFlowchartRegex.exec(processedContent)) !== null) {
+    allMatches.push({ match, type: 'modern_flowchart' })
+  }
+
+  // Buscar organogramas em árvore
+  const treeDiagramRegex = new RegExp(TREE_DIAGRAM_REGEX.source, 'g')
+  while ((match = treeDiagramRegex.exec(processedContent)) !== null) {
+    allMatches.push({ match, type: 'tree_diagram' })
   }
 
   // Buscar simulados gerados pela IA (formato JSON completo)
@@ -1544,6 +1588,22 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
       artifact = {
         type: 'staging',
         title: match[1].trim() || 'Estadiamento',
+        content: match[2].trim(),
+        startIndex,
+        endIndex
+      }
+    } else if (type === 'modern_flowchart') {
+      artifact = {
+        type: 'modern_flowchart',
+        title: match[1].trim() || 'Fluxograma',
+        content: match[2].trim(),
+        startIndex,
+        endIndex
+      }
+    } else if (type === 'tree_diagram') {
+      artifact = {
+        type: 'tree_diagram',
+        title: match[1].trim() || 'Organograma',
         content: match[2].trim(),
         startIndex,
         endIndex
@@ -2183,6 +2243,58 @@ function ArtifactRendererComponent({
             // Se não for JSON válido, mostrar como texto
             return (
               <div key={index} className="my-3 bg-slate-800/50 border border-slate-200 rounded-xl p-3">
+                <pre className="text-slate-700 text-xs whitespace-pre-wrap">{part.content}</pre>
+              </div>
+            )
+          }
+        }
+
+        // Renderizar fluxogramas modernos (novo design limpo)
+        if (part.type === 'modern_flowchart') {
+          try {
+            const flowchartData = JSON.parse(part.content)
+            return (
+              <div key={index} className="my-3">
+                <ModernFlowchart
+                  title={part.title || flowchartData.title || 'Fluxograma'}
+                  nodes={flowchartData.nodes || []}
+                  edges={flowchartData.edges || []}
+                  description={flowchartData.description}
+                  showLegend={flowchartData.showLegend !== false}
+                />
+              </div>
+            )
+          } catch {
+            // Se não for JSON válido, mostrar como texto
+            return (
+              <div key={index} className="my-3 bg-blue-50 border border-blue-200 rounded-xl p-3">
+                <pre className="text-slate-700 text-xs whitespace-pre-wrap">{part.content}</pre>
+              </div>
+            )
+          }
+        }
+
+        // Renderizar organogramas em árvore (novo design limpo)
+        if (part.type === 'tree_diagram') {
+          try {
+            const treeData = JSON.parse(part.content)
+            // Normalizar dados - pode vir como { data: {...} } ou direto como nó raiz
+            const rootData = treeData.data || treeData.root || treeData.tree || treeData
+            return (
+              <div key={index} className="my-3">
+                <TreeDiagram
+                  title={part.title || treeData.title || 'Organograma'}
+                  data={rootData}
+                  description={treeData.description}
+                  defaultExpanded={treeData.defaultExpanded !== false}
+                  showChildCount={treeData.showChildCount !== false}
+                />
+              </div>
+            )
+          } catch {
+            // Se não for JSON válido, mostrar como texto
+            return (
+              <div key={index} className="my-3 bg-purple-50 border border-purple-200 rounded-xl p-3">
                 <pre className="text-slate-700 text-xs whitespace-pre-wrap">{part.content}</pre>
               </div>
             )
