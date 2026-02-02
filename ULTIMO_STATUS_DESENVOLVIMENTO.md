@@ -1,39 +1,41 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 02/02/2026 - Sessao Correcao Diagramas Mobile e Gabarito
+## Atualizado em: 02/02/2026 - Sessao UI Desktop e Flashcards
 
 ---
 
 ## O QUE FOI FEITO NESTA SESSAO (02/02/2026)
 
-### 1. CORRECAO DIAGRAMAS NO MOBILE
+### 1. REDUCAO TAMANHO CHAT DESKTOP
 **Problema identificado:**
-- Fluxogramas e organogramas mostravam JSON bruto no celular
-- No desktop funcionava, mas no mobile nao
+- Conteudo do chat muito grande no desktop
+- Texto e imagens ocupavam muito espaco
 
 **Correcoes aplicadas:**
-- `MobileArtifactsScreen.tsx`: Adicionar imports de componentes
-  - ModernFlowchart, TreeDiagram, LayeredDiagram
-- Adicionar cases especificos para cada tipo:
-  - `modern_flowchart` -> ModernFlowchart
-  - `tree_diagram` -> TreeDiagram
-  - `layers`/`anatomy` -> LayeredDiagram
-- Verificar se é JSON antes de passar para MermaidDiagram
+- `ArtifactRenderer.tsx`: Escala reduzida para lg/xl (0.9em/0.85em)
+- Headings h1-h4 menores e mais compactos
+- Paragrafos e listas com text-xs no desktop
+- Imagens com max-h menor (180px/200px vs 280px anterior)
+- Container de imagem menor (max-w-xs/max-w-sm vs max-w-md)
 
-### 2. CORRECAO GABARITO NO CHAT
+### 2. ARTEFATOS ABREM EM TELA CHEIA
 **Problema identificado:**
-- "GABARITO COMENTADO - Questao X" aparecia no chat
-- "EXPLICACAO DETALHADA" vazava no texto
+- Ao clicar no artefato na sidebar, expandia na lista
+- UI ruim, usuario queria ver artefato completo
 
 **Correcoes aplicadas:**
-- Regex mais agressivo na funcao `cleanRenderedTextForChat()`
-- Remover blocos completos de GABARITO COMENTADO
-- Remover EXPLICACAO DETALHADA e todo conteudo
-- Remover citacoes orfas [1] [2]
+- `ArtifactsSidebar.tsx`: Clique no card abre tela cheia diretamente
+- Funciona tanto em modo lista quanto grid
+- Botao de expandir ainda disponivel como alternativa
 
-### 3. CORRECOES ANTERIORES (MESMA SESSAO)
-- Diagramas JSON na ArtifactsSidebar (desktop)
-- Limpeza de texto antes de artefatos
-- Timeout aumentado para 300s
+### 3. FLASHCARDS NAO APARECIAM NOS ARTEFATOS
+**Problema identificado:**
+- Flashcards apareciam no chat mas nao na sidebar
+- Conteudo estava vazio, dados apenas em metadata
+
+**Correcoes aplicadas:**
+- `ArtifactRenderer.tsx`: Serializar flashcardData no campo content
+- Mesmo ajuste para simulados
+- Sidebar agora consegue encontrar e renderizar os artefatos
 
 ---
 
@@ -41,31 +43,32 @@
 
 | Hash | Descricao |
 |------|-----------|
-| `f2d5fe2` | fix: corrigir renderizacao de diagramas JSON e limpar texto no chat |
-| `9139118` | docs: atualizar status da sessao |
-| `02b3657` | chore: atualizar package-lock.json |
-| `04feabe` | fix: corrigir renderizacao de diagramas no mobile e limpeza de gabarito |
+| `93529f5` | fix: reduzir tamanho do chat desktop e artefato abre em tela cheia |
+| `0bb233b` | fix: serializar conteudo de flashcards e simulados para persistencia |
 
 ---
 
-## PRs CRIADOS E MERGED
+## SESSAO ANTERIOR (02/02/2026)
 
-| PR | Titulo | Status |
-|----|--------|--------|
-| [#41](https://github.com/brunodivinoo/projeto-final/pull/41) | fix: corrigir renderizacao de diagramas JSON e limpar texto no chat | **MERGED** |
-| [#42](https://github.com/brunodivinoo/projeto-final/pull/42) | fix: corrigir renderizacao de diagramas no mobile e limpeza de gabarito | **MERGED** |
+### Correcoes Realizadas:
+- Diagramas JSON no Mobile (MobileArtifactsScreen)
+- Limpeza gabarito no chat (cleanRenderedTextForChat)
+- Diagramas JSON no Desktop (ArtifactsSidebar)
+- Timeout API aumentado para 300s
+
+### PRs Merged:
+- [#41](https://github.com/brunodivinoo/projeto-final/pull/41) - Diagramas JSON e limpeza texto
+- [#42](https://github.com/brunodivinoo/projeto-final/pull/42) - Diagramas mobile e gabarito
 
 ---
 
-## ARQUIVOS MODIFICADOS
+## ARQUIVOS MODIFICADOS HOJE
 
-**Total:** 4 arquivos modificados
+**Total:** 2 arquivos modificados
 
 ### Arquivos:
-- `app/api/medicina/ia/chat/route.ts` - maxDuration 300s
-- `components/ia/ArtifactRenderer.tsx` - cleanRenderedTextForChat + mapeamento tipos
-- `components/ia/ArtifactsSidebar.tsx` - Deteccao JSON em flowchart/diagram
-- `components/mobile/MobileArtifactsScreen.tsx` - Suporte para modern_flowchart, tree_diagram, layers
+- `components/ia/ArtifactRenderer.tsx` - Tamanhos reduzidos, flashcards serializados
+- `components/ia/ArtifactsSidebar.tsx` - Clique abre tela cheia
 
 ---
 
@@ -77,16 +80,18 @@
 | Diagramas JSON Desktop | **CORRIGIDO** |
 | Diagramas JSON Mobile | **CORRIGIDO** |
 | Limpeza gabarito chat | **CORRIGIDO** |
+| Tamanho chat desktop | **CORRIGIDO** |
+| Artefatos tela cheia | **CORRIGIDO** |
+| Flashcards na sidebar | **CORRIGIDO** |
 | Timeout API | **300s** |
-| Deploy | **EM ANDAMENTO** |
 
 ---
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Testar no MOBILE** - Verificar se diagramas renderizam
-2. **Testar questoes** - Confirmar que gabarito nao aparece
-3. **Monitorar Vercel** - Verificar se deploy completou
+1. **Testar flashcards** - Verificar se aparecem na sidebar agora
+2. **Testar clique artefatos** - Confirmar que abre em tela cheia
+3. **Verificar tamanhos** - Conferir se chat ficou mais compacto
 
 ---
 
@@ -95,4 +100,3 @@
 - Producao: https://projeto-final-zeta-navy.vercel.app
 - Chat IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
 - GitHub: https://github.com/brunodivinoo/projeto-final
-- PR #42: https://github.com/brunodivinoo/projeto-final/pull/42
