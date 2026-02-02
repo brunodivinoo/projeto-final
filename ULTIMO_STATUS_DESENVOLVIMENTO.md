@@ -1,41 +1,39 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 02/02/2026 - Sessao UI Desktop e Flashcards
+## Atualizado em: 02/02/2026 - Sessao Correcao Artefatos e Textos
 
 ---
 
 ## O QUE FOI FEITO NESTA SESSAO (02/02/2026)
 
-### 1. REDUCAO TAMANHO CHAT DESKTOP
+### 1. CLIQUE NOS ARTEFATOS CORRIGIDO
 **Problema identificado:**
-- Conteudo do chat muito grande no desktop
-- Texto e imagens ocupavam muito espaco
+- Ao clicar no deck de flashcards/simulado no chat, abria direto em fullscreen
+- Usuario queria que abrisse na sidebar primeiro
 
 **Correcoes aplicadas:**
-- `ArtifactRenderer.tsx`: Escala reduzida para lg/xl (0.9em/0.85em)
-- Headings h1-h4 menores e mais compactos
-- Paragrafos e listas com text-xs no desktop
-- Imagens com max-h menor (180px/200px vs 280px anterior)
-- Container de imagem menor (max-w-xs/max-w-sm vs max-w-md)
+- `ArtifactRenderer.tsx`: Clique no deck no chat abre na sidebar (openArtifactInSidebar)
+- `ArtifactsSidebar.tsx`: Clique no card da sidebar seleciona o artefato (onSelect)
+- Botao de expandir continua disponivel para abrir fullscreen
 
-### 2. ARTEFATOS ABREM EM TELA CHEIA
+### 2. TELA CHEIA ADAPTADA
 **Problema identificado:**
-- Ao clicar no artefato na sidebar, expandia na lista
-- UI ruim, usuario queria ver artefato completo
+- Fullscreen criava scroll desnecessario
+- Conteudo nao se adaptava a tela
 
 **Correcoes aplicadas:**
-- `ArtifactsSidebar.tsx`: Clique no card abre tela cheia diretamente
-- Funciona tanto em modo lista quanto grid
-- Botao de expandir ainda disponivel como alternativa
+- `ArtifactsSidebar.tsx`: FullscreenModal com flex-col e overflow-hidden
+- `FlashcardDeck.tsx`: Nova prop isFullscreenMode para adaptar ao container
+- `SimuladoCard.tsx`: Nova prop isFullscreenMode para adaptar ao container
+- containerClass mudado de max-h-[70vh] overflow-auto para h-full flex flex-col
 
-### 3. FLASHCARDS NAO APARECIAM NOS ARTEFATOS
+### 3. TEXTOS BRANCOS CORRIGIDOS
 **Problema identificado:**
-- Flashcards apareciam no chat mas nao na sidebar
-- Conteudo estava vazio, dados apenas em metadata
+- Headings h1/h2 com text-white em fundo claro (chat)
+- Textos brancos em fundos claros no SimuladoCard
 
 **Correcoes aplicadas:**
-- `ArtifactRenderer.tsx`: Serializar flashcardData no campo content
-- Mesmo ajuste para simulados
-- Sidebar agora consegue encontrar e renderizar os artefatos
+- `ArtifactRenderer.tsx`: h1/h2 mudados de text-white para text-slate-800
+- `SimuladoCard.tsx`: Titulo, botoes e textos corrigidos para cores visiveis
 
 ---
 
@@ -43,32 +41,39 @@
 
 | Hash | Descricao |
 |------|-----------|
-| `93529f5` | fix: reduzir tamanho do chat desktop e artefato abre em tela cheia |
-| `0bb233b` | fix: serializar conteudo de flashcards e simulados para persistencia |
+| `48c9428` | fix: corrigir clique nos artefatos e textos brancos |
+
+---
+
+## PR MERGEADO
+
+| PR | Titulo | Status |
+|----|--------|--------|
+| [#44](https://github.com/brunodivinoo/projeto-final/pull/44) | fix: corrigir clique nos artefatos e textos brancos | **MERGED** |
 
 ---
 
 ## SESSAO ANTERIOR (02/02/2026)
 
 ### Correcoes Realizadas:
-- Diagramas JSON no Mobile (MobileArtifactsScreen)
-- Limpeza gabarito no chat (cleanRenderedTextForChat)
-- Diagramas JSON no Desktop (ArtifactsSidebar)
-- Timeout API aumentado para 300s
+- Reducao tamanho chat desktop
+- Artefatos abrem em tela cheia
+- Flashcards na sidebar corrigidos
 
 ### PRs Merged:
-- [#41](https://github.com/brunodivinoo/projeto-final/pull/41) - Diagramas JSON e limpeza texto
-- [#42](https://github.com/brunodivinoo/projeto-final/pull/42) - Diagramas mobile e gabarito
+- [#43](https://github.com/brunodivinoo/projeto-final/pull/43) - UI Desktop e Flashcards
 
 ---
 
 ## ARQUIVOS MODIFICADOS HOJE
 
-**Total:** 2 arquivos modificados
+**Total:** 4 arquivos modificados
 
 ### Arquivos:
-- `components/ia/ArtifactRenderer.tsx` - Tamanhos reduzidos, flashcards serializados
-- `components/ia/ArtifactsSidebar.tsx` - Clique abre tela cheia
+- `components/ia/ArtifactRenderer.tsx` - h1/h2 com cores corrigidas
+- `components/ia/ArtifactsSidebar.tsx` - Clique seleciona, fullscreen adaptado
+- `components/ia/FlashcardDeck.tsx` - Suporte a isFullscreenMode
+- `components/ia/SimuladoCard.tsx` - Textos brancos corrigidos, isFullscreenMode
 
 ---
 
@@ -77,21 +82,21 @@
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
+| Clique deck no chat | **ABRE NA SIDEBAR** |
+| Clique card na sidebar | **SELECIONA ARTEFATO** |
+| Fullscreen adaptado | **SEM SCROLL** |
+| Textos brancos | **CORRIGIDO** |
 | Diagramas JSON Desktop | **CORRIGIDO** |
 | Diagramas JSON Mobile | **CORRIGIDO** |
-| Limpeza gabarito chat | **CORRIGIDO** |
-| Tamanho chat desktop | **CORRIGIDO** |
-| Artefatos tela cheia | **CORRIGIDO** |
-| Flashcards na sidebar | **CORRIGIDO** |
 | Timeout API | **300s** |
 
 ---
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Testar flashcards** - Verificar se aparecem na sidebar agora
-2. **Testar clique artefatos** - Confirmar que abre em tela cheia
-3. **Verificar tamanhos** - Conferir se chat ficou mais compacto
+1. **Testar fluxo completo** - Clicar no deck no chat -> abre sidebar -> seleciona -> expandir fullscreen
+2. **Verificar responsividade** - Testar em mobile e desktop
+3. **Verificar outras telas** - Confirmar que textos estao visiveis em todas as telas
 
 ---
 
