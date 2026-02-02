@@ -149,7 +149,7 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
       return (
         <div className="p-4 flex items-center justify-center">
           <img
-            src={artifact.metadata?.url || artifact.content}
+            src={artifact.metadata?.image?.url || artifact.content}
             alt={artifact.title}
             className="max-w-full max-h-[60vh] rounded-xl object-contain"
           />

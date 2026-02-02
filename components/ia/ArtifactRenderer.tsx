@@ -2254,8 +2254,8 @@ function ArtifactRendererComponent({
         // Questões - Card de Preview Compacto (abre na sidebar)
         if (part.type === 'question' && part.questionData) {
           const questionNum = part.questionData.numero || 1
-          const categoria = part.questionData.categoria || part.questionData.especialidade || 'Questão'
-          const assunto = part.questionData.assunto || part.questionData.tema || ''
+          const disciplina = part.questionData.disciplina || 'Questão'
+          const assunto = part.questionData.assunto || ''
 
           return (
             <button
@@ -2270,7 +2270,7 @@ function ArtifactRendererComponent({
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-slate-800 truncate text-sm">
-                  {categoria}{assunto ? ` • ${assunto}` : ''}
+                  {disciplina}{assunto ? ` • ${assunto}` : ''}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Questão de múltipla escolha • Toque para responder
