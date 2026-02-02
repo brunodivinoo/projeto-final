@@ -1030,6 +1030,61 @@ function removeImageSearchMarkers(content: string): string {
   return content.replace(IMAGE_SEARCH_REGEX, '')
 }
 
+// Função para limpar texto renderizado no chat
+// Remove gabarito, explicações e conteúdo que deveria ficar apenas na sidebar
+function cleanRenderedTextForChat(content: string): string {
+  if (!content) return content
+  let cleaned = content
+
+  // =====================================
+  // 1. REMOVER GABARITO/RESPOSTA CORRETA
+  // =====================================
+  // Padrão: "✅ Resposta correta: Alternativa X" ou variações
+  cleaned = cleaned.replace(/[✅✓☑]\s*(?:Resposta\s+)?[Cc]orreta:?\s*(?:Alternativa\s*)?[A-Ea-e](?:[^\n]*\n)?/gi, '')
+  cleaned = cleaned.replace(/(?:^|\n)\s*\*{0,2}[✅✓]\s*(?:Resposta\s+correta|Gabarito)[:\s]*\*{0,2}\s*(?:Alternativa\s*)?[A-E][^\n]*\n?/gi, '\n')
+  cleaned = cleaned.replace(/(?:^|\n)\s*Gabarito:?\s*(?:Alternativa\s*)?[A-E][^\n]*\n?/gi, '\n')
+
+  // =====================================
+  // 2. REMOVER EXPLICAÇÃO DETALHADA
+  // =====================================
+  // Padrão: "📖 EXPLICAÇÃO DETALHADA:" ou "**Explicação:**" seguido de texto
+  cleaned = cleaned.replace(/[📖📚🔍]\s*(?:EXPLICAÇÃO\s+DETALHADA|Explicação\s+Detalhada)[:\s]*[\s\S]*?(?=\n\n[A-Z📊🎯✅❌]|$)/gi, '')
+  cleaned = cleaned.replace(/(?:^|\n)\s*\*{2}(?:EXPLICAÇÃO\s+DETALHADA|Explicação)[:\*\s]*\*{0,2}[\s\S]*?(?=\n\n(?:#{1,4}|[A-Z📊🎯✅❌])|$)/gi, '\n')
+
+  // =====================================
+  // 3. REMOVER ANÁLISE DE ALTERNATIVAS
+  // =====================================
+  // Padrão: "**Alternativa A:** Texto..." ou "❌ Alternativa A: Texto..."
+  cleaned = cleaned.replace(/(?:^|\n)\s*[❌✅⚠️•●]\s*\*{0,2}Alternativa\s+[A-Ea-e][:\*\s]*\*{0,2}[^\n]*(?:\n(?![❌✅⚠️•●\n#\*])[^\n]*)*/gi, '\n')
+  cleaned = cleaned.replace(/(?:^|\n)\s*\*{0,2}Alternativa\s+[A-Ea-e][:\*\s]+[^\n]*(?:\n(?![A-Z📊🎯❌✅⚠️•●\n#\*])[^\n]*)*/gi, '\n')
+
+  // =====================================
+  // 4. REMOVER TÍTULOS REDUNDANTES DE DECKS
+  // =====================================
+  // Padrão: "- Ciclo Cardíaco e Circulação Sanguínea" ou similar em lista
+  cleaned = cleaned.replace(/(?:^|\n)\s*[-•●]\s*[A-Za-zÀ-ÿ]+\s+[A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ]+)*\s*(?:\n|$)(?=\s*(?:#{1,4}|$|\n\n))/gi, '\n')
+
+  // =====================================
+  // 5. REMOVER SEÇÕES DE REFERÊNCIAS DE QUESTÕES
+  // =====================================
+  cleaned = cleaned.replace(/(?:^|\n)\s*\*{0,2}(?:Ponto[s]?\s+(?:-\s+)?[Cc]have|Referência[s]?|Dica[s]?\s+de\s+Estudo)[:\*\s]*\*{0,2}[^\n]*(?:\n(?![#\n])[^\n]*)*/gi, '\n')
+
+  // =====================================
+  // 6. REMOVER BLOCOS DE "POR QUE ERROU"
+  // =====================================
+  cleaned = cleaned.replace(/(?:^|\n)\s*\*{0,2}(?:Por\s+que\s+(?:está\s+)?(?:errad[oa]|incorret[oa])|Por\s+que\s+a\s+alternativa)[:\*\s]*\*{0,2}[\s\S]*?(?=\n\n|$)/gi, '\n')
+
+  // =====================================
+  // 7. LIMPEZA GERAL
+  // =====================================
+  // Remover múltiplas quebras de linha consecutivas
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
+  // Remover linhas que são apenas espaços
+  cleaned = cleaned.replace(/^\s+$/gm, '')
+
+  return cleaned.trim()
+}
+
 // Interface para dados parciais extraídos de JSON incompleto
 interface PartialQuestionData {
   disciplina?: string
@@ -1879,6 +1934,10 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
       cleaned = cleaned.replace(/\*\*(?:Categoria|Tópico|Conceito)[^\n]*\*\*[^\n]*\n?/gi, '')
       // Remover linhas com contagem de cards
       cleaned = cleaned.replace(/.*\d+\s*cards?.*\n?/gi, '')
+      // NOVO: Remover títulos de deck que vazam como lista (- Título do Deck)
+      cleaned = cleaned.replace(/(?:^|\n)\s*[-•●]\s*[A-Za-zÀ-ÿ][\w\sÀ-ÿ\-]+(?:\n|$)/gi, '\n')
+      // NOVO: Remover títulos simples antes do deck
+      cleaned = cleaned.replace(/(?:^|\n)\s*[A-Za-zÀ-ÿ][\w\sÀ-ÿ\-]{5,50}\s*(?:\n|$)(?=\s*$)/gi, '\n')
     }
 
     // Para simulados, remover instruções redundantes
@@ -1897,20 +1956,30 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
     // Para fluxogramas, remover títulos redundantes
     if (artifactType === 'modern_flowchart' || artifactType === 'mermaid') {
       // Remover títulos de fluxograma com emojis
-      cleaned = cleaned.replace(/\n?#{1,4}\s*[🔀📊🔄⚡]?\s*(?:FLUXOGRAMA|FLOWCHART|DIAGRAMA).*?\n/gi, '\n')
-      cleaned = cleaned.replace(/\n?\*{2}[🔀📊🔄⚡]?\s*(?:FLUXOGRAMA|FLOWCHART|DIAGRAMA).*?\*{2}\n?/gi, '\n')
+      cleaned = cleaned.replace(/\n?#{1,4}\s*[🔀📊🔄⚡💡🫀❤️]?\s*(?:FLUXOGRAMA|FLOWCHART|DIAGRAMA|FLUXO).*?\n/gi, '\n')
+      cleaned = cleaned.replace(/\n?\*{2}[🔀📊🔄⚡💡🫀❤️]?\s*(?:FLUXOGRAMA|FLOWCHART|DIAGRAMA|FLUXO).*?\*{2}\n?/gi, '\n')
+      // NOVO: Remover títulos descritivos como "Fluxo Sanguíneo através do Coração"
+      cleaned = cleaned.replace(/(?:^|\n)\s*(?:Fluxo|Trajeto|Circulação|Caminho)[^\n]{5,60}(?:\n|$)/gi, '\n')
+      // NOVO: Remover linhas com apenas o título do diagrama
+      cleaned = cleaned.replace(/(?:^|\n)\s*[A-Za-zÀ-ÿ][\w\sÀ-ÿ\-]{10,60}\s*(?:\n|$)(?=\s*$)/gi, '\n')
     }
 
     // Para organogramas, remover títulos redundantes
     if (artifactType === 'tree_diagram') {
       // Remover títulos de organograma com emojis
-      cleaned = cleaned.replace(/\n?#{1,4}\s*[🌳👥📊🏢]?\s*(?:ORGANOGRAMA|ORGANIZAÇÃO|HIERARQUIA|ESTRUTURA).*?\n/gi, '\n')
-      cleaned = cleaned.replace(/\n?\*{2}[🌳👥📊🏢]?\s*(?:ORGANOGRAMA|ORGANIZAÇÃO|HIERARQUIA|ESTRUTURA).*?\*{2}\n?/gi, '\n')
+      cleaned = cleaned.replace(/\n?#{1,4}\s*[🌳👥📊🏢🫀❤️]?\s*(?:ORGANOGRAMA|ORGANIZAÇÃO|HIERARQUIA|ESTRUTURA|SISTEMA).*?\n/gi, '\n')
+      cleaned = cleaned.replace(/\n?\*{2}[🌳👥📊🏢🫀❤️]?\s*(?:ORGANOGRAMA|ORGANIZAÇÃO|HIERARQUIA|ESTRUTURA|SISTEMA).*?\*{2}\n?/gi, '\n')
+      // NOVO: Remover títulos descritivos
+      cleaned = cleaned.replace(/(?:^|\n)\s*(?:Organização|Estrutura|Sistema|Componentes)[^\n]{5,60}(?:\n|$)/gi, '\n')
+      // NOVO: Remover linhas com apenas o título
+      cleaned = cleaned.replace(/(?:^|\n)\s*[A-Za-zÀ-ÿ][\w\sÀ-ÿ\-]{10,60}\s*(?:\n|$)(?=\s*$)/gi, '\n')
     }
 
     // Para layers/diagramas de camadas
     if (artifactType === 'layers') {
-      cleaned = cleaned.replace(/\n?#{1,4}\s*[📊🔀]?\s*(?:CAMADAS|LAYERS|DIAGRAMA).*?\n/gi, '\n')
+      cleaned = cleaned.replace(/\n?#{1,4}\s*[📊🔀🔬]?\s*(?:CAMADAS|LAYERS|DIAGRAMA|ESTRUTURA).*?\n/gi, '\n')
+      // NOVO: Remover títulos descritivos
+      cleaned = cleaned.replace(/(?:^|\n)\s*(?:Camadas|Estrutura|Diagrama)[^\n]{5,60}(?:\n|$)/gi, '\n')
     }
 
     // Padrões gerais de títulos a remover (aparecem logo antes do artefato)
@@ -2297,8 +2366,27 @@ function ArtifactRendererComponent({
         storeType = 'layers'
       } else if (artifact.type === 'staging') {
         storeType = 'staging'
+      } else if (artifact.type === 'modern_flowchart') {
+        // IMPORTANTE: Manter como modern_flowchart para usar ModernFlowchart
+        storeType = 'modern_flowchart'
+      } else if (artifact.type === 'tree_diagram') {
+        // IMPORTANTE: Manter como tree_diagram para usar TreeDiagram
+        storeType = 'tree_diagram'
       } else if (artifact.type === 'mermaid') {
-        storeType = 'flowchart'
+        // Verificar se o conteúdo é JSON de flowchart ou tree
+        try {
+          const parsed = JSON.parse(artifact.content)
+          if (parsed.nodes && Array.isArray(parsed.nodes)) {
+            storeType = 'modern_flowchart'
+          } else if (parsed.data || parsed.root || parsed.tree || parsed.children) {
+            storeType = 'tree_diagram'
+          } else {
+            storeType = 'flowchart'
+          }
+        } catch {
+          // É código Mermaid real, usar flowchart
+          storeType = 'flowchart'
+        }
       } else if (artifact.type === 'question') {
         storeType = 'question'
       } else if (artifact.type === 'flashcards') {
@@ -2306,7 +2394,23 @@ function ArtifactRendererComponent({
       } else if (artifact.type === 'simulado') {
         storeType = 'simulado'
       } else {
-        storeType = detectArtifactType(artifact.content) || 'diagram'
+        // Detectar tipo pelo conteúdo
+        const detectedType = detectArtifactType(artifact.content)
+        // Verificar se é JSON de diagram
+        try {
+          const parsed = JSON.parse(artifact.content)
+          if (parsed.nodes && Array.isArray(parsed.nodes)) {
+            storeType = 'modern_flowchart'
+          } else if (parsed.data || parsed.root || parsed.tree || parsed.children) {
+            storeType = 'tree_diagram'
+          } else if (parsed.layers && Array.isArray(parsed.layers)) {
+            storeType = 'layers'
+          } else {
+            storeType = detectedType || 'diagram'
+          }
+        } catch {
+          storeType = detectedType || 'diagram'
+        }
       }
 
       addArtifact({
@@ -2401,8 +2505,13 @@ function ArtifactRendererComponent({
             )
           }
 
-          // Remover marcadores IMAGE_SEARCH do texto antes de renderizar
-          const cleanedPart = removeImageSearchMarkers(part)
+          // Remover marcadores IMAGE_SEARCH e limpar gabarito/explicações do texto antes de renderizar
+          let cleanedPart = removeImageSearchMarkers(part)
+          // Aplicar limpeza de gabarito e conteúdo que não deve aparecer no chat
+          cleanedPart = cleanRenderedTextForChat(cleanedPart)
+
+          // Se após limpeza não sobrou nada, não renderizar
+          if (!cleanedPart.trim()) return null
 
           // Renderizar Markdown normal
           return (
