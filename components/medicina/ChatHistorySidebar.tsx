@@ -203,14 +203,23 @@ export function ChatHistorySidebar({
   }
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-slate-50 to-white">
-      {/* Header com botão de nova conversa */}
-      <div className="p-4 space-y-3 border-b border-slate-100">
+    <div className="flex flex-col h-full bg-slate-900">
+      {/* Header com logo e nova conversa */}
+      <div className="p-4 space-y-4 border-b border-slate-700/50">
+        {/* Logo */}
+        <div className="flex items-center gap-2 px-1">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-white font-bold text-lg">PREPARA MED</span>
+        </div>
+
+        {/* Botão nova conversa */}
         <button
           onClick={onNewChat}
-          className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-xl text-white font-medium shadow-lg shadow-emerald-500/25 transition-all group"
+          className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-xl text-white font-semibold shadow-lg shadow-emerald-500/30 transition-all duration-200 active:scale-[0.98]"
         >
-          <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
+          <Plus className="w-5 h-5" />
           <span>Nova conversa</span>
         </button>
 
@@ -224,12 +233,12 @@ export function ChatHistorySidebar({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar conversas..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-700 rounded-full"
               >
                 <X className="w-3.5 h-3.5 text-slate-400" />
               </button>
@@ -239,7 +248,7 @@ export function ChatHistorySidebar({
       </div>
 
       {/* Lista de conversas agrupadas */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin px-3 py-2">
+      <div className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3">
         <AnimatePresence mode="popLayout">
           {groupedConversas.length === 0 ? (
             <motion.div
@@ -247,10 +256,10 @@ export function ChatHistorySidebar({
               animate={{ opacity: 1 }}
               className="px-3 py-12 text-center"
             >
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <MessageSquare className="w-8 h-8 text-emerald-500" />
+              <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="w-8 h-8 text-emerald-400" />
               </div>
-              <p className="text-slate-600 font-medium">
+              <p className="text-white font-medium">
                 {searchQuery ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa ainda'}
               </p>
               {!searchQuery && (
@@ -261,11 +270,11 @@ export function ChatHistorySidebar({
             </motion.div>
           ) : (
             groupedConversas.map((group) => (
-              <div key={group.label} className="mb-3">
+              <div key={group.label} className="mb-4">
                 {/* Header do grupo */}
                 <button
                   onClick={() => toggleGroup(group.label)}
-                  className="w-full flex items-center gap-2 px-2 py-2 text-xs text-slate-500 hover:text-slate-700 transition-colors rounded-lg hover:bg-slate-50"
+                  className="w-full flex items-center gap-2 px-2 py-2 text-xs text-slate-400 hover:text-slate-300 transition-colors rounded-lg hover:bg-slate-800/50"
                 >
                   <ChevronDown
                     className={`w-3.5 h-3.5 transition-transform ${
@@ -273,7 +282,7 @@ export function ChatHistorySidebar({
                     }`}
                   />
                   <span className="font-semibold uppercase tracking-wider">{group.label}</span>
-                  <span className="text-slate-400 font-normal">({group.conversas.length})</span>
+                  <span className="text-slate-500 font-normal">({group.conversas.length})</span>
                 </button>
 
                 {/* Conversas do grupo */}
@@ -300,7 +309,7 @@ export function ChatHistorySidebar({
                             className="relative group"
                           >
                             {isEditing ? (
-                              <div className="flex items-center gap-2 px-2 py-2 bg-white rounded-xl border border-emerald-200 shadow-sm">
+                              <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-800 rounded-xl border border-emerald-500/50">
                                 <input
                                   type="text"
                                   value={editTitle}
@@ -309,7 +318,7 @@ export function ChatHistorySidebar({
                                     if (e.key === 'Enter') saveEdit()
                                     if (e.key === 'Escape') cancelEdit()
                                   }}
-                                  className="flex-1 min-w-0 bg-transparent text-sm text-slate-700 focus:outline-none"
+                                  className="flex-1 min-w-0 bg-transparent text-sm text-white focus:outline-none"
                                   autoFocus
                                 />
                                 <button
@@ -320,7 +329,7 @@ export function ChatHistorySidebar({
                                 </button>
                                 <button
                                   onClick={cancelEdit}
-                                  className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500"
+                                  className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400"
                                 >
                                   <X className="w-3.5 h-3.5" />
                                 </button>
@@ -329,17 +338,17 @@ export function ChatHistorySidebar({
                               <button
                                 onClick={() => onSelectChat(conversa.id)}
                                 className={`
-                                  w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all
+                                  w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200
                                   ${isActive
-                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/20'
-                                    : 'text-slate-600 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200'
+                                    ? 'bg-emerald-500 text-white'
+                                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                                   }
                                 `}
                               >
                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                                  isActive ? 'bg-white/20' : 'bg-emerald-100'
+                                  isActive ? 'bg-white/20' : 'bg-slate-800'
                                 }`}>
-                                  <MessageSquare className={`w-4 h-4 ${isActive ? 'text-white' : 'text-emerald-600'}`} />
+                                  <MessageSquare className={`w-4 h-4 ${isActive ? 'text-white' : 'text-emerald-400'}`} />
                                 </div>
                                 <span className="flex-1 truncate text-sm font-medium">
                                   {conversa.titulo || 'Nova conversa'}
@@ -352,7 +361,7 @@ export function ChatHistorySidebar({
                                     p-1.5 rounded-lg transition-all
                                     ${isActive
                                       ? 'opacity-100 hover:bg-white/20'
-                                      : 'opacity-0 group-hover:opacity-100 hover:bg-slate-100'}
+                                      : 'opacity-0 group-hover:opacity-100 hover:bg-slate-700'}
                                   `}
                                 >
                                   <MoreHorizontal className="w-4 h-4" />
@@ -373,15 +382,15 @@ export function ChatHistorySidebar({
 
       {/* Footer com ação de deletar todas */}
       {conversas.length > 0 && (
-        <div className="p-3 border-t border-slate-100 bg-slate-50/50">
+        <div className="p-3 border-t border-slate-700/50">
           <button
             onClick={handleDeleteAll}
             disabled={isDeleting}
-            className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all disabled:opacity-50 border border-transparent hover:border-red-100"
+            className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all disabled:opacity-50"
           >
             {isDeleting ? (
               <>
-                <div className="w-4 h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
                 Excluindo...
               </>
             ) : (
@@ -403,7 +412,7 @@ export function ChatHistorySidebar({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.1 }}
-            className="fixed z-[100] bg-white border border-slate-200 rounded-lg shadow-xl py-1 min-w-[140px]"
+            className="fixed z-[100] bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-1 min-w-[140px]"
             style={{
               top: menuPosition.top,
               left: Math.min(menuPosition.left, window.innerWidth - 160)
@@ -414,7 +423,7 @@ export function ChatHistorySidebar({
                 const conversa = conversas.find(c => c.id === menuOpenId)
                 if (conversa) startEditing(conversa)
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
             >
               <Pencil className="w-4 h-4" />
               Renomear
@@ -426,7 +435,7 @@ export function ChatHistorySidebar({
                   setMenuOpenId(null)
                 }
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
               Excluir
