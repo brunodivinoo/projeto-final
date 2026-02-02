@@ -241,21 +241,348 @@ const FLASHCARD_BLOCK_REGEX = /```flashcards?(?::([^\n]*))?\n([\s\S]*?)```/g
 // Regex para detectar flashcards em formato JSON direto
 const FLASHCARD_JSON_REGEX = /```(?:json)?\s*\n?\s*(\[\s*\{[^`]*"frente"[^`]*"verso"[^`]*\}\s*\])\s*```/g
 
-// Regex para detectar JSON de fluxograma em blocos de código genéricos
-// Detecta { "title": ..., "nodes": [...], "edges": [...] }
-const FLOWCHART_JSON_REGEX = /```(?:json)?\s*\n(\s*\{[\s\S]*?"nodes"\s*:\s*\[[\s\S]*?"edges"\s*:\s*\[[\s\S]*?\})\s*\n```/g
+// NOTA: As regex FLOWCHART_JSON_REGEX e TREE_JSON_REGEX foram substituídas
+// pela função extractDiagramJsons que é mais robusta e detecta JSON tanto em
+// blocos de código quanto JSON solto no texto
 
-// Regex para detectar JSON de organograma/árvore em blocos de código genéricos
-// Detecta { "title": ..., "data": { "id": ..., "name": ..., "children": [...] } }
-const TREE_JSON_REGEX = /```(?:json)?\s*\n(\s*\{[\s\S]*?"data"\s*:\s*\{[\s\S]*?"children"\s*:\s*\[[\s\S]*?\})\s*\n```/g
+// ============================================================
+// FUNÇÕES ROBUSTAS PARA EXTRAIR JSON DE DIAGRAMAS
+// ============================================================
 
-// Regex para detectar JSON de fluxograma SOLTO (sem bloco de código)
-// Captura JSON com "nodes" e "edges" que não esteja dentro de backticks
-const FLOWCHART_LOOSE_JSON_REGEX = /(?:^|\n)\s*(\{\s*"(?:title|nodes)"[\s\S]*?"nodes"\s*:\s*\[[\s\S]*?\]\s*,\s*"edges"\s*:\s*\[[\s\S]*?\]\s*\})/g
+/**
+ * Extrai um objeto JSON balanceado a partir de uma posição no texto
+ * Usa contagem de chaves para encontrar o fim correto do JSON
+ */
+function extractBalancedJson(text: string, startIndex: number): { json: string; endIndex: number } | null {
+  if (text[startIndex] !== '{') return null
 
-// Regex para detectar JSON de organograma SOLTO (sem bloco de código)
-// Captura JSON com "data" contendo "children" que não esteja dentro de backticks
-const TREE_LOOSE_JSON_REGEX = /(?:^|\n)\s*(\{\s*"(?:title|data)"[\s\S]*?"data"\s*:\s*\{[\s\S]*?"children"\s*:\s*\[[\s\S]*?\]\s*\}\s*\})/g
+  let depth = 0
+  let inString = false
+  let escapeNext = false
+
+  for (let i = startIndex; i < text.length; i++) {
+    const char = text[i]
+
+    if (escapeNext) {
+      escapeNext = false
+      continue
+    }
+
+    if (char === '\\' && inString) {
+      escapeNext = true
+      continue
+    }
+
+    if (char === '"' && !escapeNext) {
+      inString = !inString
+      continue
+    }
+
+    if (!inString) {
+      if (char === '{') depth++
+      if (char === '}') {
+        depth--
+        if (depth === 0) {
+          return {
+            json: text.substring(startIndex, i + 1),
+            endIndex: i + 1
+          }
+        }
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Interface para resultado de detecção de diagrama
+ */
+interface DiagramDetection {
+  type: 'flowchart' | 'tree'
+  json: string
+  data: unknown
+  startIndex: number
+  endIndex: number
+  title: string
+}
+
+/**
+ * Detecta e extrai todos os JSONs de diagramas (fluxograma/organograma) do texto
+ * Funciona tanto para JSON em blocos de código quanto JSON solto
+ */
+function extractDiagramJsons(content: string): DiagramDetection[] {
+  const diagrams: DiagramDetection[] = []
+  const processedRanges: Array<{ start: number; end: number }> = []
+
+  // Função para verificar se uma posição está dentro de um bloco de código já processado
+  const isInProcessedRange = (index: number): boolean => {
+    return processedRanges.some(r => index >= r.start && index < r.end)
+  }
+
+  // Função para verificar se uma posição está dentro de um bloco de código ```
+  const isInsideCodeBlock = (index: number): boolean => {
+    const beforeText = content.substring(0, index)
+    const codeBlockCount = (beforeText.match(/```/g) || []).length
+    return codeBlockCount % 2 !== 0
+  }
+
+  // 1. Primeiro, processar blocos de código ```json
+  const codeBlockRegex = /```(?:json)?\s*\n([\s\S]*?)```/g
+  let codeMatch
+  while ((codeMatch = codeBlockRegex.exec(content)) !== null) {
+    const blockContent = codeMatch[1].trim()
+    const blockStart = codeMatch.index
+    const blockEnd = blockStart + codeMatch[0].length
+
+    // Tentar parsear como JSON
+    try {
+      const data = JSON.parse(blockContent)
+
+      // Verificar se é fluxograma (tem nodes e edges)
+      if (data.nodes && Array.isArray(data.nodes) && data.edges && Array.isArray(data.edges)) {
+        diagrams.push({
+          type: 'flowchart',
+          json: blockContent,
+          data,
+          startIndex: blockStart,
+          endIndex: blockEnd,
+          title: data.title || 'Fluxograma'
+        })
+        processedRanges.push({ start: blockStart, end: blockEnd })
+        continue
+      }
+
+      // Verificar se é organograma (tem data.children)
+      if (data.data && data.data.children && Array.isArray(data.data.children)) {
+        diagrams.push({
+          type: 'tree',
+          json: blockContent,
+          data,
+          startIndex: blockStart,
+          endIndex: blockEnd,
+          title: data.title || 'Organograma'
+        })
+        processedRanges.push({ start: blockStart, end: blockEnd })
+        continue
+      }
+    } catch {
+      // Não é JSON válido, ignorar
+    }
+  }
+
+  // 2. Depois, procurar JSON solto no texto (fora de blocos de código)
+  // Procurar por padrões que indicam início de JSON de diagrama
+  const potentialStarts = [
+    ...content.matchAll(/\{\s*"title"\s*:/g),
+    ...content.matchAll(/\{\s*"nodes"\s*:/g),
+    ...content.matchAll(/\{\s*"data"\s*:\s*\{/g)
+  ]
+
+  for (const match of potentialStarts) {
+    const startIndex = match.index!
+
+    // Pular se já foi processado ou está dentro de bloco de código
+    if (isInProcessedRange(startIndex)) continue
+    if (isInsideCodeBlock(startIndex)) continue
+
+    // Extrair JSON balanceado
+    const extracted = extractBalancedJson(content, startIndex)
+    if (!extracted) continue
+
+    // Tentar parsear
+    try {
+      const data = JSON.parse(extracted.json)
+
+      // Verificar se é fluxograma
+      if (data.nodes && Array.isArray(data.nodes) && data.edges && Array.isArray(data.edges)) {
+        // Verificar se não é duplicata
+        const isDuplicate = diagrams.some(d =>
+          d.startIndex === startIndex ||
+          (d.type === 'flowchart' && d.title === (data.title || 'Fluxograma'))
+        )
+        if (!isDuplicate) {
+          diagrams.push({
+            type: 'flowchart',
+            json: extracted.json,
+            data,
+            startIndex,
+            endIndex: extracted.endIndex,
+            title: data.title || 'Fluxograma'
+          })
+          processedRanges.push({ start: startIndex, end: extracted.endIndex })
+        }
+        continue
+      }
+
+      // Verificar se é organograma
+      if (data.data && data.data.children && Array.isArray(data.data.children)) {
+        const isDuplicate = diagrams.some(d =>
+          d.startIndex === startIndex ||
+          (d.type === 'tree' && d.title === (data.title || 'Organograma'))
+        )
+        if (!isDuplicate) {
+          diagrams.push({
+            type: 'tree',
+            json: extracted.json,
+            data,
+            startIndex,
+            endIndex: extracted.endIndex,
+            title: data.title || 'Organograma'
+          })
+          processedRanges.push({ start: startIndex, end: extracted.endIndex })
+        }
+      }
+    } catch {
+      // JSON inválido, ignorar
+    }
+  }
+
+  // Ordenar por posição no texto
+  return diagrams.sort((a, b) => a.startIndex - b.startIndex)
+}
+
+// ============================================================
+// VALIDAÇÃO E CORREÇÃO DE CÓDIGO MERMAID
+// ============================================================
+
+/**
+ * Corrige erros comuns em código Mermaid
+ */
+function fixMermaidCode(code: string): string {
+  let fixed = code.trim()
+
+  // 1. Garantir que começa com declaração de tipo válida
+  const validStarts = ['graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram', 'erDiagram', 'journey', 'gantt', 'pie', 'mindmap', 'timeline', 'gitGraph']
+  const firstLine = fixed.split('\n')[0].trim().toLowerCase()
+  const hasValidStart = validStarts.some(s => firstLine.startsWith(s.toLowerCase()))
+
+  if (!hasValidStart) {
+    // Se não tem início válido, assume flowchart TB
+    fixed = 'flowchart TB\n' + fixed
+  }
+
+  // 2. Normalizar direções (TD/TB, LR, RL, BT)
+  fixed = fixed.replace(/^(graph|flowchart)\s+(?!TB|TD|LR|RL|BT)/im, '$1 TB ')
+
+  // 3. Corrigir setas mal formatadas
+  fixed = fixed.replace(/--+>/g, '-->')  // --- → -->
+  fixed = fixed.replace(/-+>/g, '-->')   // -> ou ---> → -->
+  fixed = fixed.replace(/<--+/g, '<--')  // <--- → <--
+  fixed = fixed.replace(/=+>/g, '==>')   // => ou ===> → ==>
+  fixed = fixed.replace(/\.+>/g, '-.->')  // .> ou ..> → -.->
+
+  // 4. Corrigir IDs com caracteres especiais (substituir por underscore)
+  // IDs válidos em Mermaid: letras, números, underscore, hífen
+  const lines = fixed.split('\n')
+  const fixedLines = lines.map(line => {
+    // Não modificar linhas de declaração de tipo ou subgraph
+    if (/^\s*(graph|flowchart|subgraph|end|style|classDef|class|linkStyle)/i.test(line)) {
+      return line
+    }
+
+    // Substituir caracteres problemáticos em IDs (exceto dentro de strings entre aspas ou colchetes)
+    // Padrão: ID[texto] ou ID{texto} ou ID(texto) ou ID((texto)) etc.
+    return line.replace(/^(\s*)([^\[\]{}()"\s]+)(\s*[\[\]{}(])/gm, (match, indent, id, rest) => {
+      // Limpar ID: manter apenas letras, números, underscore, hífen
+      const cleanId = id.replace(/[^a-zA-Z0-9_-]/g, '_')
+      return indent + cleanId + rest
+    })
+  })
+  fixed = fixedLines.join('\n')
+
+  // 5. Corrigir labels com caracteres especiais não escapados
+  // Labels entre aspas devem ter aspas internas escapadas
+  fixed = fixed.replace(/\["([^"]*[áàâãéèêíìîóòôõúùûçñ][^"]*)"\]/g, (match, content) => {
+    // Manter acentos, são suportados
+    return match
+  })
+
+  // 6. Remover linhas vazias múltiplas
+  fixed = fixed.replace(/\n{3,}/g, '\n\n')
+
+  // 7. Corrigir subgraphs mal formatados
+  fixed = fixed.replace(/subgraph\s+([^\["\n]+)\s*$/gm, 'subgraph $1')
+
+  // 8. Garantir que subgraphs têm 'end'
+  const subgraphCount = (fixed.match(/\bsubgraph\b/gi) || []).length
+  const endCount = (fixed.match(/^\s*end\s*$/gm) || []).length
+  if (subgraphCount > endCount) {
+    for (let i = 0; i < subgraphCount - endCount; i++) {
+      fixed += '\n    end'
+    }
+  }
+
+  // 9. Corrigir comentários (devem começar com %%)
+  fixed = fixed.replace(/^\s*\/\/(.*)$/gm, '%% $1')
+  fixed = fixed.replace(/^\s*#([^#\[].*)?$/gm, '%% $1')
+
+  // 10. Remover linhas que são apenas pontuação ou caracteres especiais
+  fixed = fixed.replace(/^\s*[.,;:!?]+\s*$/gm, '')
+
+  // 11. Corrigir definições de estilo mal formatadas
+  fixed = fixed.replace(/style\s+(\w+)\s+fill\s*[:=]\s*/gi, 'style $1 fill:')
+  fixed = fixed.replace(/style\s+(\w+)\s+stroke\s*[:=]\s*/gi, 'style $1 stroke:')
+
+  // 12. Remover BOM e caracteres invisíveis
+  fixed = fixed.replace(/^\uFEFF/, '')
+  fixed = fixed.replace(/[\u200B-\u200D\uFEFF]/g, '')
+
+  return fixed.trim()
+}
+
+/**
+ * Valida se o código Mermaid é sintaticamente correto
+ * Retorna null se válido, ou mensagem de erro se inválido
+ */
+function validateMermaidSyntax(code: string): string | null {
+  const lines = code.trim().split('\n')
+
+  if (lines.length === 0) {
+    return 'Código vazio'
+  }
+
+  // Verificar primeira linha
+  const firstLine = lines[0].trim().toLowerCase()
+  const validTypes = ['graph', 'flowchart', 'sequencediagram', 'classdiagram', 'statediagram', 'erdiagram', 'journey', 'gantt', 'pie', 'mindmap', 'timeline', 'gitgraph']
+
+  if (!validTypes.some(t => firstLine.startsWith(t))) {
+    return `Tipo de diagrama inválido. Deve começar com: ${validTypes.join(', ')}`
+  }
+
+  // Verificar balanceamento de colchetes e chaves
+  let brackets = 0
+  let braces = 0
+  let parens = 0
+  let inString = false
+
+  for (const char of code) {
+    if (char === '"' && !inString) inString = true
+    else if (char === '"' && inString) inString = false
+
+    if (!inString) {
+      if (char === '[') brackets++
+      if (char === ']') brackets--
+      if (char === '{') braces++
+      if (char === '}') braces--
+      if (char === '(') parens++
+      if (char === ')') parens--
+    }
+  }
+
+  if (brackets !== 0) return 'Colchetes não balanceados'
+  if (braces !== 0) return 'Chaves não balanceadas'
+  if (parens !== 0) return 'Parênteses não balanceados'
+
+  // Verificar subgraphs
+  const subgraphCount = (code.match(/\bsubgraph\b/gi) || []).length
+  const endCount = (code.match(/^\s*end\s*$/gm) || []).length
+  if (subgraphCount !== endCount) {
+    return `Subgraphs não fechados: ${subgraphCount} subgraph(s), ${endCount} end(s)`
+  }
+
+  return null
+}
 
 // Tipo de dificuldade para flashcards
 type FlashcardDificuldade = 'facil' | 'medio' | 'dificil'
@@ -1239,115 +1566,45 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
     allMatches.push({ match, type: 'staging' })
   }
 
-  // Buscar fluxogramas modernos
+  // Buscar fluxogramas modernos (formato ```flowchart:Titulo)
   const modernFlowchartRegex = new RegExp(MODERN_FLOWCHART_REGEX.source, 'g')
   while ((match = modernFlowchartRegex.exec(processedContent)) !== null) {
     allMatches.push({ match, type: 'modern_flowchart' })
   }
 
-  // Buscar organogramas em árvore
+  // Buscar organogramas em árvore (formato ```tree:Titulo)
   const treeDiagramRegex = new RegExp(TREE_DIAGRAM_REGEX.source, 'g')
   while ((match = treeDiagramRegex.exec(processedContent)) !== null) {
     allMatches.push({ match, type: 'tree_diagram' })
   }
 
-  // Buscar JSON de fluxograma em blocos de código genéricos (sem prefixo flowchart:)
-  const flowchartJsonRegex = new RegExp(FLOWCHART_JSON_REGEX.source, 'g')
-  while ((match = flowchartJsonRegex.exec(processedContent)) !== null) {
-    try {
-      const jsonContent = match[1].trim()
-      const flowchartData = JSON.parse(jsonContent)
+  // ============================================================
+  // NOVA ABORDAGEM ROBUSTA: Usar função extractDiagramJsons
+  // Detecta JSON de diagramas tanto em blocos de código quanto soltos
+  // ============================================================
+  const detectedDiagrams = extractDiagramJsons(processedContent)
 
-      // Validar que é um fluxograma (tem nodes e edges)
-      if (flowchartData.nodes && Array.isArray(flowchartData.nodes) && flowchartData.nodes.length >= 2) {
-        // Criar match sintético com título
-        const syntheticMatch = [match[0], flowchartData.title || 'Fluxograma', jsonContent] as RegExpMatchArray
-        syntheticMatch.index = match.index
-        syntheticMatch.input = processedContent
+  for (const diagram of detectedDiagrams) {
+    // Verificar se não foi já detectado pelos regex anteriores
+    const alreadyDetected = allMatches.some(m =>
+      m.match.index !== undefined &&
+      Math.abs(m.match.index - diagram.startIndex) < 10
+    )
 
+    if (!alreadyDetected) {
+      // Criar match sintético
+      const originalText = processedContent.substring(diagram.startIndex, diagram.endIndex)
+      const syntheticMatch = [originalText, diagram.title, diagram.json] as RegExpMatchArray
+      syntheticMatch.index = diagram.startIndex
+      syntheticMatch.input = processedContent
+
+      if (diagram.type === 'flowchart') {
         allMatches.push({ match: syntheticMatch, type: 'modern_flowchart' })
-        console.log('[ArtifactRenderer] Fluxograma JSON detectado:', flowchartData.title || 'Sem título', 'com', flowchartData.nodes.length, 'nós')
-      }
-    } catch (e) {
-      console.log('[ArtifactRenderer] Erro ao parsear JSON de fluxograma:', e)
-    }
-  }
-
-  // Buscar JSON de organograma/árvore em blocos de código genéricos (sem prefixo tree:)
-  const treeJsonRegex = new RegExp(TREE_JSON_REGEX.source, 'g')
-  while ((match = treeJsonRegex.exec(processedContent)) !== null) {
-    try {
-      const jsonContent = match[1].trim()
-      const treeData = JSON.parse(jsonContent)
-
-      // Validar que é um organograma (tem data com children)
-      if (treeData.data && treeData.data.children && Array.isArray(treeData.data.children)) {
-        // Criar match sintético com título
-        const syntheticMatch = [match[0], treeData.title || 'Organograma', jsonContent] as RegExpMatchArray
-        syntheticMatch.index = match.index
-        syntheticMatch.input = processedContent
-
+        console.log('[ArtifactRenderer] Fluxograma detectado (função robusta):', diagram.title)
+      } else if (diagram.type === 'tree') {
         allMatches.push({ match: syntheticMatch, type: 'tree_diagram' })
-        console.log('[ArtifactRenderer] Organograma JSON detectado:', treeData.title || 'Sem título')
+        console.log('[ArtifactRenderer] Organograma detectado (função robusta):', diagram.title)
       }
-    } catch (e) {
-      console.log('[ArtifactRenderer] Erro ao parsear JSON de organograma:', e)
-    }
-  }
-
-  // NOVO: Buscar JSON de fluxograma SOLTO (sem bloco de código ```json```)
-  const flowchartLooseRegex = new RegExp(FLOWCHART_LOOSE_JSON_REGEX.source, 'g')
-  while ((match = flowchartLooseRegex.exec(processedContent)) !== null) {
-    try {
-      const jsonContent = match[1].trim()
-
-      // Verificar se não está dentro de um bloco de código
-      const beforeMatch = processedContent.substring(0, match.index)
-      const codeBlocksCount = (beforeMatch.match(/```/g) || []).length
-      if (codeBlocksCount % 2 !== 0) continue // Dentro de bloco de código, ignorar
-
-      const flowchartData = JSON.parse(jsonContent)
-
-      // Validar que é um fluxograma (tem nodes e edges)
-      if (flowchartData.nodes && Array.isArray(flowchartData.nodes) && flowchartData.nodes.length >= 2) {
-        // Criar match sintético com título
-        const syntheticMatch = [match[0], flowchartData.title || 'Fluxograma', jsonContent] as RegExpMatchArray
-        syntheticMatch.index = match.index
-        syntheticMatch.input = processedContent
-
-        allMatches.push({ match: syntheticMatch, type: 'modern_flowchart' })
-        console.log('[ArtifactRenderer] Fluxograma JSON SOLTO detectado:', flowchartData.title || 'Sem título')
-      }
-    } catch (e) {
-      // JSON incompleto ou inválido, ignorar silenciosamente
-    }
-  }
-
-  // NOVO: Buscar JSON de organograma SOLTO (sem bloco de código ```json```)
-  const treeLooseRegex = new RegExp(TREE_LOOSE_JSON_REGEX.source, 'g')
-  while ((match = treeLooseRegex.exec(processedContent)) !== null) {
-    try {
-      const jsonContent = match[1].trim()
-
-      // Verificar se não está dentro de um bloco de código
-      const beforeMatch = processedContent.substring(0, match.index)
-      const codeBlocksCount = (beforeMatch.match(/```/g) || []).length
-      if (codeBlocksCount % 2 !== 0) continue // Dentro de bloco de código, ignorar
-
-      const treeData = JSON.parse(jsonContent)
-
-      // Validar que é um organograma (tem data com children)
-      if (treeData.data && treeData.data.children && Array.isArray(treeData.data.children)) {
-        // Criar match sintético com título
-        const syntheticMatch = [match[0], treeData.title || 'Organograma', jsonContent] as RegExpMatchArray
-        syntheticMatch.index = match.index
-        syntheticMatch.input = processedContent
-
-        allMatches.push({ match: syntheticMatch, type: 'tree_diagram' })
-        console.log('[ArtifactRenderer] Organograma JSON SOLTO detectado:', treeData.title || 'Sem título')
-      }
-    } catch (e) {
-      // JSON incompleto ou inválido, ignorar silenciosamente
     }
   }
 
