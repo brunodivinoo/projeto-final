@@ -1,57 +1,48 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 02/02/2026 - Sessao de Melhorias UI Mobile
+## Atualizado em: 02/02/2026 - Sessao de Correcoes UI Mobile (Continuacao)
 
 ---
 
-## O QUE FOI FEITO NESTA SESSAO (02/02/2026) - UI MOBILE
+## O QUE FOI FEITO NESTA SESSAO (02/02/2026) - CORRECOES UI MOBILE
 
-### 1. HEADER MOBILE - ICONES FLUTUANTES
+### 1. FLASHCARDS - ALTURA DINAMICA
 **Problema identificado:**
-- Barra branca do header ocupando espaco no topo
-- Icone do menu visivel quando sidebar esta aberta (sobrepondo)
+- Altura fixa causava scroll horizontal desnecessario em textos maiores
+- Cards cortavam conteudo no mobile
 
 **Correcoes aplicadas:**
-- Header transformado em icones flutuantes (menu hamburguer + artefatos)
-- Icone do menu esconde automaticamente quando sidebar abre (`!sidebarOpen &&`)
-- Posicao: `fixed top-2 left-3 z-[60]` com `env(safe-area-inset-top)`
+- Mudado de `h-[180px]` para `min-h-[250px]` (altura dinamica)
+- Texto frente: `max-h-[120px]` (antes 60px)
+- Texto verso: `max-h-[140px]` (antes 100px)
+- Card expande conforme necessario
 
-### 2. CHAT - PADDING PARA ICONES
+### 2. BIBLIOTECA E ESTATISTICAS - CORES TEMA CLARO
 **Problema identificado:**
-- Conteudo do chat ficando atras dos icones flutuantes
+- Textos brancos (`text-white`) em fundo claro (ilegivel)
+- Menu hamburguer sobrepondo conteudo
 
 **Correcoes aplicadas:**
-- Adicionado `pt-14` no mobile para criar espaco abaixo dos icones
-- Desktop mantem `lg:pt-5` normal
+- `/biblioteca`: Todos os `text-white` mudados para `text-slate-800`
+- `/estatisticas`: Cores de porcentagem de `*-400` para `*-600`
+- Adicionado `pt-14 lg:pt-0` para espaco do menu mobile
 
-### 3. MENU + (ANEXOS) - OVERFLOW CORRIGIDO
+### 3. MOBILEARTIFACTSSCREEN - PORTAL
 **Problema identificado:**
-- Menu de opcoes do botao + ficava escondido (overflow-hidden no container)
+- Menu hamburguer aparecia por cima dos artefatos
+- z-index nao resolvia devido a contextos de stacking diferentes
 
 **Correcoes aplicadas:**
-- Removido `overflow-hidden` do container do input
-- Menu agora aparece corretamente com `absolute bottom-12 left-0 z-[100]`
+- Implementado `createPortal` para renderizar diretamente no body
+- Componente agora fica acima de qualquer outro elemento
 
-### 4. FLASHCARDS - LAYOUT CORRIGIDO
+### 4. DIAGRAMAS/FLUXOGRAMAS - RENDERIZACAO
 **Problema identificado:**
-- Texto sumiu completamente (min-h + flex-1 nao funcionava com absolute)
-- Badge "Resposta" sobrepondo texto
-- Layout quebrado no mobile
+- Diagramas Mermaid apareciam como codigo texto nos artefatos mobile
+- Faltava tratamento dos tipos `diagram` e `flowchart`
 
 **Correcoes aplicadas:**
-- Altura fixa: `h-[180px]` mobile / `h-[280px]` desktop (em vez de min-h)
-- Texto com `max-h` e `overflow-y-auto` para textos longos
-- Padding adequado: `p-4` mobile / `p-8` desktop
-- Icone do livro: `w-10 h-10` com `mb-3`
-- Fonte do texto: `text-sm` mobile / `text-xl` desktop
-- Badge "Resposta": `top-2 right-2` com tamanho adequado
-- Botoes de acao maiores e mais legiveis
-
-### 5. PAGINA INICIAL - LAYOUT COMPACTO
-**Correcoes aplicadas:**
-- Padding reduzido: `py-4` mobile / `py-10` desktop
-- Logo menor: `w-12 h-12` mobile
-- Titulo: `text-lg` mobile / `text-3xl` desktop
-- Espacamentos otimizados para aproveitar tela
+- Adicionado import do MermaidDiagram com dynamic loading
+- Adicionados cases para `diagram` e `flowchart` no switch do ArtifactContent
 
 ---
 
@@ -59,8 +50,7 @@
 
 | Hash | Descricao |
 |------|-----------|
-| `1e1be36` | fix: melhorias UI mobile - header limpo, menu +, flashcards responsivos |
-| `92452ff` | fix: correcoes mobile - icone menu, padding chat, flashcards |
+| Varios commits | Flashcards altura dinamica, cores biblioteca/estatisticas, portal artefatos, renderizacao diagramas |
 
 ---
 
@@ -68,8 +58,10 @@
 
 | PR | Titulo | Status |
 |----|--------|--------|
-| [#24](https://github.com/brunodivinoo/projeto-final/pull/24) | fix: melhorias UI mobile - header limpo, menu +, flashcards responsivos | **MERGED** |
-| [#25](https://github.com/brunodivinoo/projeto-final/pull/25) | fix: correcoes mobile - icone menu, padding chat, flashcards | **MERGED** |
+| [#27](https://github.com/brunodivinoo/projeto-final/pull/27) | fix: flashcards com altura dinamica | **MERGED** |
+| [#28](https://github.com/brunodivinoo/projeto-final/pull/28) | fix: cores biblioteca/estatisticas + padding mobile | **MERGED** |
+| [#29](https://github.com/brunodivinoo/projeto-final/pull/29) | fix: portal para MobileArtifactsScreen | **MERGED** |
+| [#30](https://github.com/brunodivinoo/projeto-final/pull/30) | fix: renderizar diagramas/fluxogramas no mobile | **MERGED** |
 
 ---
 
@@ -78,10 +70,10 @@
 **Total:** 4 arquivos modificados
 
 ### Arquivos:
-- `app/medicina/(dashboard)/layout.tsx` - Header mobile como icones flutuantes
-- `app/medicina/(dashboard)/dashboard/page.tsx` - Layout compacto mobile
-- `app/medicina/(dashboard)/dashboard/ia/page.tsx` - Padding chat, menu + corrigido
-- `components/ia/FlashcardDeck.tsx` - Layout completo corrigido
+- `components/ia/FlashcardDeck.tsx` - Altura dinamica para flashcards
+- `app/medicina/(dashboard)/dashboard/biblioteca/page.tsx` - Cores tema claro + padding
+- `app/medicina/(dashboard)/dashboard/estatisticas/page.tsx` - Cores tema claro + padding
+- `components/mobile/MobileArtifactsScreen.tsx` - Portal + renderizacao diagramas
 
 ---
 
@@ -90,23 +82,45 @@
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Header Mobile | **CORRIGIDO** - Icones flutuantes |
-| Menu + (Anexos) | **CORRIGIDO** - Opcoes aparecem |
-| Flashcards Mobile | **CORRIGIDO** - Layout funcional |
-| Pagina Inicial | **CORRIGIDA** - Layout compacto |
-| Icone Menu/Sidebar | **CORRIGIDO** - Esconde ao abrir sidebar |
+| Flashcards Mobile | **CORRIGIDO** - Altura dinamica |
+| Biblioteca (cores) | **CORRIGIDO** - Tema claro |
+| Estatisticas (cores) | **CORRIGIDO** - Tema claro |
+| Artefatos Mobile | **CORRIGIDO** - Portal + diagramas |
 
 ---
 
-## PROXIMOS PASSOS SUGERIDOS
+## TAREFAS PENDENTES PARA PROXIMA SESSAO
 
-1. **Testar em producao** - Verificar todas as correcoes no mobile
-2. **Verificar outros componentes** - Buscar mais inconsistencias de UI
-3. **Implementar novas features** - Continuar desenvolvimento
+### 1. Flashcards no Chat - Esconder Tabela Resumo
+**Problema:**
+- Ao gerar flashcards, aparece uma tabela markdown com resumo do deck
+- Deveria aparecer apenas o deck interativo, sem a tabela
+
+**Sugestao:**
+- Verificar componente que renderiza a resposta da IA
+- Filtrar/esconder a tabela markdown que precede o deck
+
+### 2. Diagramas/Fluxogramas - Cores Tema Claro
+**Problema:**
+- Diagramas Mermaid usando tema escuro (fundo escuro, texto dificil de ler)
+- Deveria ter fundo claro com cores vibrantes (verde, azul, roxo)
+
+**Sugestao:**
+- Modificar `components/ia/MermaidDiagram.tsx`
+- Mudar tema de `dark` para `default` ou `forest`
+- Configurar cores claras nos nos e conexoes
 
 ---
 
 ## HISTORICO ANTERIOR
+
+### Sessao 02/02/2026 - UI Mobile (Inicio)
+- Header transformado em icones flutuantes
+- Chat padding para icones
+- Menu + (anexos) overflow corrigido
+- Flashcards layout corrigido
+- Pagina inicial layout compacto
+- PRs #24 e #25 merged
 
 ### Sessao 02/02/2026 - Redesign Sidebar Principal
 - Sidebar principal com tema escuro profissional
