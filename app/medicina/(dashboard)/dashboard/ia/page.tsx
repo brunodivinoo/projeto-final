@@ -1431,6 +1431,33 @@ export default function IAPage() {
     }
   }
 
+  // Estado para controle de exclusão em massa
+  const [isDeletingAll, setIsDeletingAll] = useState(false)
+
+  // Deletar todas as conversas
+  const deletarTodasConversas = async () => {
+    if (!user) return
+    if (!confirm('Tem certeza que deseja excluir TODAS as conversas? Esta ação não pode ser desfeita.')) return
+
+    setIsDeletingAll(true)
+    try {
+      // Deletar todas as conversas uma por uma
+      for (const conv of conversas) {
+        await fetch(`/api/medicina/ia/chat?conversa_id=${conv.id}&user_id=${user.id}`, {
+          method: 'DELETE'
+        })
+      }
+      // Limpar estado local
+      setConversas([])
+      novaConversa()
+      setShowConversas(false)
+    } catch (error) {
+      console.error('Erro ao deletar todas as conversas:', error)
+    } finally {
+      setIsDeletingAll(false)
+    }
+  }
+
   // Renomear conversa
   const renomearConversa = async (id: string, novoTitulo: string) => {
     if (!user || !novoTitulo.trim()) return
@@ -1523,9 +1550,9 @@ export default function IAPage() {
             transform transition-transform duration-300 ease-out
             ${showConversas ? 'translate-x-0' : '-translate-x-full'}
           `}>
-            <div className="h-full flex flex-col p-4">
+            <div className="h-full flex flex-col p-4 overflow-hidden">
               {/* Header do drawer */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <h3 className="text-slate-800 font-semibold">Conversas</h3>
                 <button
                   onClick={() => setShowConversas(false)}
@@ -1538,14 +1565,14 @@ export default function IAPage() {
               {/* Botão Nova Conversa */}
               <button
                 onClick={() => { novaConversa(); setShowConversas(false) }}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-colors mb-4"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-colors mb-4 flex-shrink-0"
               >
                 <Plus className="w-5 h-5" />
                 Nova Conversa
               </button>
 
               {/* Lista de conversas */}
-              <div className="flex-1 overflow-y-auto space-y-2">
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-2 -mx-1 px-1">
                 {conversas.map((conv) => (
                   <div
                     key={conv.id}
@@ -1661,9 +1688,32 @@ export default function IAPage() {
                 ))}
               </div>
 
+              {/* Botão Limpar Histórico */}
+              {conversas.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-slate-200 flex-shrink-0">
+                  <button
+                    onClick={deletarTodasConversas}
+                    disabled={isDeletingAll}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all disabled:opacity-50"
+                  >
+                    {isDeletingAll ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                        Excluindo...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        Limpar histórico
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
               {/* Estatísticas de Uso */}
               {uso && (
-                <div className="mt-4 p-3 bg-slate-100 rounded-lg border border-slate-200">
+                <div className="mt-3 p-3 bg-slate-100 rounded-lg border border-slate-200 flex-shrink-0">
                   <h4 className="text-slate-600 text-xs font-medium mb-2">Uso este mês</h4>
                   <div className="space-y-1 text-xs">
                     <div className="flex justify-between text-slate-700">
