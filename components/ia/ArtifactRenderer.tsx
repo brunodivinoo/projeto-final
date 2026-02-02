@@ -1713,7 +1713,7 @@ function ArtifactRendererComponent({
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { parts, artifacts, hasIncompleteQuestion } = useMemo(() => parseArtifacts(debouncedContent), [debouncedContent])
-  const { addArtifact, artifacts: storeArtifacts, updateQuestionAnswer } = useArtifactsStore()
+  const { addArtifact, artifacts: storeArtifacts, updateQuestionAnswer, setSidebarOpen, selectArtifact, setMobileDrawerOpen } = useArtifactsStore()
   const addedArtifactsRef = useRef<Set<string>>(new Set())
 
   // Cache de respostas anteriores para este componente
@@ -1854,6 +1854,28 @@ function ArtifactRendererComponent({
   const closeImageModal = useCallback(() => {
     setImageModalState(null)
   }, [])
+
+  // Função para abrir artefato na sidebar
+  const openArtifactInSidebar = useCallback((artifactType: string, artifactTitle?: string) => {
+    // Encontrar o artefato na store pelo tipo e messageId
+    const matchingArtifact = storeArtifacts.find(
+      a => a.type === artifactType &&
+           a.messageId === messageId &&
+           (artifactTitle ? a.title === artifactTitle : true)
+    )
+
+    if (matchingArtifact) {
+      selectArtifact(matchingArtifact.id)
+    }
+
+    // Abrir sidebar (desktop) ou drawer (mobile)
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024
+    if (isMobile) {
+      setMobileDrawerOpen(true)
+    } else {
+      setSidebarOpen(true)
+    }
+  }, [storeArtifacts, messageId, selectArtifact, setSidebarOpen, setMobileDrawerOpen])
 
   return (
     <div className="artifact-renderer">
@@ -2281,30 +2303,71 @@ function ArtifactRendererComponent({
           )
         }
 
-        // Flashcards interativos estilo Anki
+        // Flashcards - Card de Preview Compacto (abre na sidebar)
         if (part.type === 'flashcards' && part.flashcardData) {
+          const cardCount = part.flashcardData.cards.length
           return (
-            <div key={index} className="my-4">
-              <FlashcardDeck
-                titulo={part.flashcardData.titulo}
-                cards={part.flashcardData.cards}
-                userId={userId}
-                conversaId={conversaId}
-              />
-            </div>
+            <button
+              key={index}
+              onClick={() => openArtifactInSidebar('flashcards', part.flashcardData?.titulo)}
+              className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
+            >
+              {/* Ícone */}
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-slate-800 truncate text-sm">
+                  {part.flashcardData.titulo || 'Flashcards'}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {cardCount} {cardCount === 1 ? 'card' : 'cards'} • Toque para estudar
+                </p>
+              </div>
+              {/* Seta */}
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 group-hover:bg-purple-200 flex items-center justify-center transition-colors">
+                <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
           )
         }
 
-        // Simulado completo com múltiplas questões
+        // Simulado - Card de Preview Compacto (abre na sidebar)
         if (part.type === 'simulado' && part.simuladoData) {
+          const questionCount = part.simuladoData.questoes?.length || 0
           return (
-            <div key={index} className="my-4">
-              <SimuladoCard
-                simulado={part.simuladoData}
-                userId={userId}
-                conversaId={conversaId}
-              />
-            </div>
+            <button
+              key={index}
+              onClick={() => openArtifactInSidebar('simulado', part.simuladoData?.titulo)}
+              className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
+            >
+              {/* Ícone */}
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              </div>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-slate-800 truncate text-sm">
+                  {part.simuladoData.titulo || 'Simulado'}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {questionCount} {questionCount === 1 ? 'questão' : 'questões'} • Toque para iniciar
+                </p>
+              </div>
+              {/* Seta */}
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center transition-colors">
+                <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
           )
         }
 
