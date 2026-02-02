@@ -136,21 +136,21 @@ export default function QuestionArtifactCard({
     question.alternativas.find(a => a.correta)?.letra
 
   return (
-    <div className="bg-[#1A2332] border border-slate-200 rounded-lg overflow-hidden">
-      {/* Header - mais compacto */}
-      <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 bg-[#151D2B] border-b border-slate-200">
+    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      {/* Header */}
+      <div className="flex flex-wrap items-center gap-1.5 px-3 py-2.5 bg-slate-50 border-b border-slate-200">
         {/* Número da questão */}
-        <span className="bg-emerald-500/20 text-emerald-400 font-bold text-xs px-2 py-0.5 rounded">
+        <span className="bg-emerald-100 text-emerald-700 font-bold text-xs px-2 py-0.5 rounded">
           Q{question.numero}
         </span>
 
         {/* Disciplina e Assunto */}
         <div className="flex items-center gap-1 text-xs">
-          <span className="text-slate-700 font-medium">{question.disciplina}</span>
+          <span className="text-slate-800 font-medium">{question.disciplina}</span>
           {question.assunto && (
             <>
               <span className="text-slate-400">›</span>
-              <span className="text-slate-500">{question.assunto}</span>
+              <span className="text-slate-600">{question.assunto}</span>
             </>
           )}
         </div>
@@ -177,10 +177,8 @@ export default function QuestionArtifactCard({
           </span>
 
           {/* Badge IA */}
-          <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 text-[10px] font-medium flex items-center gap-0.5">
-            <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
-            </svg>
+          <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-600 text-[10px] font-medium flex items-center gap-0.5">
+            <Sparkles className="w-2.5 h-2.5" />
             IA
           </span>
         </div>
@@ -211,7 +209,7 @@ export default function QuestionArtifactCard({
         )}
 
         {/* Enunciado */}
-        <p className="text-white/85 text-sm leading-relaxed mb-3 whitespace-pre-wrap">
+        <p className="text-slate-800 text-sm leading-relaxed mb-3 whitespace-pre-wrap">
           {question.enunciado}
         </p>
 
@@ -235,8 +233,8 @@ export default function QuestionArtifactCard({
             const showResultStyles = showFeedback
             const isEliminated = eliminatedAlternatives.has(alt.letra)
 
-            let containerClasses = 'border-slate-200 hover:border-slate-300 hover:bg-slate-100'
-            let circleClasses = 'border-white/30 text-slate-500'
+            let containerClasses = 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+            let circleClasses = 'border-slate-300 text-slate-600 bg-white'
 
             if (showResultStyles) {
               if (isCorrectAlt) {
@@ -275,7 +273,7 @@ export default function QuestionArtifactCard({
                       alt.letra
                     )}
                   </div>
-                  <span className={`flex-1 text-xs pt-0.5 ${isEliminated ? 'line-through text-slate-500' : isSelected || (showResultStyles && isCorrectAlt) ? 'text-white font-medium' : 'text-slate-600'}`}>
+                  <span className={`flex-1 text-xs pt-0.5 ${isEliminated ? 'line-through text-slate-400' : isSelected && !showResultStyles ? 'text-emerald-700 font-medium' : showResultStyles && isCorrectAlt ? 'text-green-700 font-medium' : showResultStyles && isSelected && !isCorrectAlt ? 'text-red-700 font-medium' : 'text-slate-700'}`}>
                     {alt.texto}
                   </span>
                 </button>
@@ -300,8 +298,8 @@ export default function QuestionArtifactCard({
         </div>
       </div>
 
-      {/* Ações e Resultado - mais compacto */}
-      <div className="flex items-center gap-2 px-3 py-2.5 border-t border-slate-200">
+      {/* Ações e Resultado */}
+      <div className="flex items-center gap-2 px-3 py-2.5 border-t border-slate-100 bg-slate-50">
         {!showFeedback ? (
           <button
             onClick={handleSubmitAnswer}
@@ -309,7 +307,7 @@ export default function QuestionArtifactCard({
             className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
               selectedAnswer
                 ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                : 'bg-slate-100 text-slate-500 cursor-not-allowed'
+                : 'bg-slate-200 text-slate-500 cursor-not-allowed'
             }`}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,8 +318,8 @@ export default function QuestionArtifactCard({
         ) : (
           <div className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${
             isCorrect
-              ? 'bg-green-500/20 text-green-400'
-              : 'bg-red-500/20 text-red-400'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-100 text-red-700'
           }`}>
             {isCorrect ? (
               <>
