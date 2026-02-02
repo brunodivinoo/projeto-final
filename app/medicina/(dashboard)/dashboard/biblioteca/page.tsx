@@ -378,7 +378,7 @@ export default function BibliotecaPage() {
   const temFiltrosAtivos = busca || filtroLido !== 'todos' || filtroFavoritos || filtroDificuldade || filtroTempo !== 'todos'
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6 pt-14 lg:pt-0">
       {/* Header com Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="md:col-span-2 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl p-6 border border-emerald-500/30">
@@ -457,12 +457,12 @@ export default function BibliotecaPage() {
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar por título, tema ou palavra-chave..."
-              className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 pl-12 pr-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full bg-white border border-slate-200 rounded-lg py-3 pl-12 pr-4 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             {busca && (
               <button
                 onClick={() => setBusca('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -490,7 +490,7 @@ export default function BibliotecaPage() {
               <button
                 onClick={() => setVisualizacao('hierarquia')}
                 className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                  visualizacao === 'hierarquia' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-white'
+                  visualizacao === 'hierarquia' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-slate-800'
                 }`}
                 title="Hierarquia"
               >
@@ -499,7 +499,7 @@ export default function BibliotecaPage() {
               <button
                 onClick={() => setVisualizacao('lista')}
                 className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                  visualizacao === 'lista' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-white'
+                  visualizacao === 'lista' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-slate-800'
                 }`}
                 title="Lista"
               >
@@ -508,7 +508,7 @@ export default function BibliotecaPage() {
               <button
                 onClick={() => setVisualizacao('cards')}
                 className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                  visualizacao === 'cards' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-white'
+                  visualizacao === 'cards' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-slate-800'
                 }`}
                 title="Cards"
               >
@@ -517,7 +517,7 @@ export default function BibliotecaPage() {
               <button
                 onClick={() => setVisualizacao('referencias')}
                 className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                  visualizacao === 'referencias' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-white'
+                  visualizacao === 'referencias' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-slate-800'
                 }`}
                 title="Livros de Referência"
               >
@@ -526,7 +526,7 @@ export default function BibliotecaPage() {
               <button
                 onClick={() => setVisualizacao('artefatos')}
                 className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                  visualizacao === 'artefatos' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-white'
+                  visualizacao === 'artefatos' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:text-slate-800'
                 }`}
                 title="Meus Artefatos"
               >
@@ -544,7 +544,7 @@ export default function BibliotecaPage() {
               <select
                 value={filtroLido}
                 onChange={(e) => setFiltroLido(e.target.value as 'todos' | 'lidos' | 'nao_lidos')}
-                className="bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="bg-white border border-slate-200 rounded-lg py-2 px-3 text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="todos" className="bg-slate-800">Todos</option>
                 <option value="lidos" className="bg-slate-800">Lidos</option>
@@ -557,7 +557,7 @@ export default function BibliotecaPage() {
               <select
                 value={filtroDificuldade || ''}
                 onChange={(e) => setFiltroDificuldade(e.target.value ? Number(e.target.value) : null)}
-                className="bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="bg-white border border-slate-200 rounded-lg py-2 px-3 text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="" className="bg-slate-800">Todas</option>
                 <option value="1" className="bg-slate-800">⭐ Fácil</option>
@@ -573,7 +573,7 @@ export default function BibliotecaPage() {
               <select
                 value={filtroTempo}
                 onChange={(e) => setFiltroTempo(e.target.value as 'todos' | 'rapido' | 'medio' | 'longo')}
-                className="bg-slate-100 border border-slate-200 rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="bg-white border border-slate-200 rounded-lg py-2 px-3 text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="todos" className="bg-slate-800">Todos</option>
                 <option value="rapido" className="bg-slate-800">Rápido (até 10min)</option>
@@ -614,8 +614,8 @@ export default function BibliotecaPage() {
         </div>
       ) : disciplinas.filter(d => d.totalTeorias > 0).length === 0 ? (
         <div className="bg-slate-100 rounded-xl p-12 border border-slate-200 text-center">
-          <BookOpen className="w-16 h-16 text-white/20 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">Nenhuma teoria encontrada</h3>
+          <BookOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-slate-700 mb-2">Nenhuma teoria encontrada</h3>
           <p className="text-slate-600 mb-4">Tente ajustar os filtros ou a busca</p>
           {temFiltrosAtivos && (
             <button
@@ -647,7 +647,7 @@ export default function BibliotecaPage() {
                       <BookOpen className={`w-6 h-6 ${cores.text}`} />
                     </div>
                     <div className="text-left">
-                      <h3 className="text-lg font-semibold text-white">{disciplina.nome}</h3>
+                      <h3 className="text-lg font-semibold text-slate-800">{disciplina.nome}</h3>
                       <div className="flex items-center gap-3 text-sm">
                         <span className="text-slate-600">
                           {disciplina.totalTeorias} teorias
@@ -791,7 +791,7 @@ export default function BibliotecaPage() {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-3xl font-bold text-white">{statsArtefatos.total}</p>
+                <p className="text-3xl font-bold text-slate-800">{statsArtefatos.total}</p>
                 <p className="text-slate-500 text-sm">artefatos</p>
               </div>
             </div>
@@ -835,8 +835,8 @@ export default function BibliotecaPage() {
             </div>
           ) : artefatos.length === 0 ? (
             <div className="bg-slate-100 rounded-xl p-12 border border-slate-200 text-center">
-              <Brain className="w-16 h-16 text-white/20 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Nenhum artefato ainda</h3>
+              <Brain className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-700 mb-2">Nenhum artefato ainda</h3>
               <p className="text-slate-600 mb-4">
                 Use o Chat IA para criar questões, flashcards, simulados e muito mais!
               </p>
@@ -875,7 +875,7 @@ export default function BibliotecaPage() {
                       </button>
                     </div>
 
-                    <h4 className="text-white font-semibold mb-2 line-clamp-2">{artefato.titulo}</h4>
+                    <h4 className="text-slate-800 font-semibold mb-2 line-clamp-2">{artefato.titulo}</h4>
 
                     {artefato.descricao && (
                       <p className="text-slate-600 text-sm mb-3 line-clamp-2">{artefato.descricao}</p>
@@ -945,7 +945,7 @@ export default function BibliotecaPage() {
                 <Award className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Livros Essenciais</h2>
+                <h2 className="text-xl font-bold text-slate-800">Livros Essenciais</h2>
                 <p className="text-slate-600 text-sm">Referências principais para todas as disciplinas</p>
               </div>
             </div>
@@ -963,7 +963,7 @@ export default function BibliotecaPage() {
                 <BookText className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Livros Complementares</h2>
+                <h2 className="text-xl font-bold text-slate-800">Livros Complementares</h2>
                 <p className="text-slate-600 text-sm">Referências especializadas por área</p>
               </div>
             </div>
@@ -976,14 +976,14 @@ export default function BibliotecaPage() {
 
           {/* Livros por Disciplina */}
           <div className="bg-slate-100 border border-slate-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Layers className="w-5 h-5 text-purple-400" />
+            <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-purple-500" />
               Referências por Disciplina
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {Object.entries(LIVROS_POR_DISCIPLINA).map(([disciplina, abreviacoes]) => (
                 <div key={disciplina} className="bg-slate-100 rounded-lg p-4 hover:bg-slate-100 transition-colors">
-                  <h4 className="text-emerald-400 font-medium mb-2">{disciplina}</h4>
+                  <h4 className="text-emerald-600 font-medium mb-2">{disciplina}</h4>
                   <div className="flex flex-wrap gap-1">
                     {abreviacoes.map(abrev => (
                       <span key={abrev} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded">
@@ -998,8 +998,8 @@ export default function BibliotecaPage() {
 
           {/* Fontes Online */}
           <div className="bg-slate-100 border border-slate-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <ExternalLink className="w-5 h-5 text-cyan-400" />
+            <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <ExternalLink className="w-5 h-5 text-cyan-500" />
               Fontes Científicas Online
             </h3>
             <div className="flex flex-wrap gap-3">
@@ -1037,7 +1037,7 @@ function TeoriaItem({ teoria, nivel, showDisciplina }: { teoria: Teoria; nivel: 
             {teoria.progresso?.favorito && (
               <Star className="w-4 h-4 text-amber-400 fill-amber-400 flex-shrink-0" />
             )}
-            <h4 className="text-white font-medium truncate">{teoria.titulo}</h4>
+            <h4 className="text-slate-800 font-medium truncate">{teoria.titulo}</h4>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -1085,7 +1085,7 @@ function TeoriaCard({ teoria }: { teoria: Teoria }) {
         </div>
       </div>
 
-      <h3 className="text-white font-semibold mb-2 line-clamp-2 group-hover:text-emerald-400 transition-colors">
+      <h3 className="text-slate-800 font-semibold mb-2 line-clamp-2 group-hover:text-emerald-600 transition-colors">
         {teoria.titulo}
       </h3>
 
@@ -1101,7 +1101,7 @@ function TeoriaCard({ teoria }: { teoria: Teoria }) {
           </span>
           <span>{'⭐'.repeat(teoria.nivel_dificuldade)}</span>
         </div>
-        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors" />
+        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-600 transition-colors" />
       </div>
     </Link>
   )
@@ -1125,12 +1125,12 @@ function LivroCard({ livro, destaque }: { livro: LivroReferencia; destaque?: boo
     >
       <div className="flex items-start gap-4">
         <div className={`w-12 h-12 rounded-xl ${destaque ? 'bg-emerald-500/20' : 'bg-slate-100'} flex items-center justify-center flex-shrink-0`}>
-          <BookOpen className={`w-6 h-6 ${destaque ? 'text-emerald-400' : 'text-slate-600'}`} />
+          <BookOpen className={`w-6 h-6 ${destaque ? 'text-emerald-500' : 'text-slate-600'}`} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <h4 className="text-white font-semibold line-clamp-2">{livro.titulo}</h4>
-            <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${destaque ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-100 text-slate-600'}`}>
+            <h4 className="text-slate-800 font-semibold line-clamp-2">{livro.titulo}</h4>
+            <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${destaque ? 'bg-emerald-500/20 text-emerald-600' : 'bg-slate-200 text-slate-600'}`}>
               {livro.abreviacao}
             </span>
           </div>

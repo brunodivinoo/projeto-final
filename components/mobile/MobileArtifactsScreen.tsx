@@ -249,7 +249,7 @@ export function MobileArtifactsScreen({ isOpen, onClose, onViewArtifact }: Mobil
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] bg-white flex flex-col lg:hidden"
+          className="fixed inset-0 z-[999] bg-white flex flex-col lg:hidden"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-3 border-b border-slate-200 bg-white">
