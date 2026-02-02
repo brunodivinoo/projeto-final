@@ -1,39 +1,37 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 02/02/2026 - Sessao Correcao Artefatos e Textos
+## Atualizado em: 02/02/2026 - Sessao Artefatos Expandem e Fullscreen
 
 ---
 
 ## O QUE FOI FEITO NESTA SESSAO (02/02/2026)
 
-### 1. CLIQUE NOS ARTEFATOS CORRIGIDO
+### 1. ARTEFATOS EXPANDEM AUTOMATICAMENTE
 **Problema identificado:**
-- Ao clicar no deck de flashcards/simulado no chat, abria direto em fullscreen
-- Usuario queria que abrisse na sidebar primeiro
+- Ao clicar em artefato na sidebar (desktop), apenas selecionava mas nao mostrava conteudo
+- No mobile funcionava corretamente
 
 **Correcoes aplicadas:**
-- `ArtifactRenderer.tsx`: Clique no deck no chat abre na sidebar (openArtifactInSidebar)
-- `ArtifactsSidebar.tsx`: Clique no card da sidebar seleciona o artefato (onSelect)
-- Botao de expandir continua disponivel para abrir fullscreen
+- `ArtifactsSidebar.tsx`: Ao selecionar, muda previewLevel para `expanded` (nao mais `preview`)
+- Agora ao clicar em qualquer artefato, expande automaticamente mostrando conteudo completo
 
-### 2. TELA CHEIA ADAPTADA
+### 2. FULLSCREEN COM VISUAL ESCURO CORRIGIDO
 **Problema identificado:**
-- Fullscreen criava scroll desnecessario
-- Conteudo nao se adaptava a tela
+- Header e navegacao tinham cores claras em fundo escuro (baixo contraste)
 
 **Correcoes aplicadas:**
-- `ArtifactsSidebar.tsx`: FullscreenModal com flex-col e overflow-hidden
-- `FlashcardDeck.tsx`: Nova prop isFullscreenMode para adaptar ao container
-- `SimuladoCard.tsx`: Nova prop isFullscreenMode para adaptar ao container
-- containerClass mudado de max-h-[70vh] overflow-auto para h-full flex flex-col
+- Header com `bg-slate-900/80` e texto `text-emerald-400` (titulo verde)
+- Navegacao inferior com fundo escuro `bg-slate-900/80`
+- Botao Proximo com cor roxa destacada `bg-purple-600`
+- Botao Anterior com `bg-slate-700`
+- Textos ajustados para `text-slate-400`
 
-### 3. TEXTOS BRANCOS CORRIGIDOS
+### 3. SCROLL NO FULLSCREEN
 **Problema identificado:**
-- Headings h1/h2 com text-white em fundo claro (chat)
-- Textos brancos em fundos claros no SimuladoCard
+- Conteudo extenso era cortado no fullscreen
 
 **Correcoes aplicadas:**
-- `ArtifactRenderer.tsx`: h1/h2 mudados de text-white para text-slate-800
-- `SimuladoCard.tsx`: Titulo, botoes e textos corrigidos para cores visiveis
+- Container de conteudo com `overflow-y-auto` para scroll quando necessario
+- Estrutura flex corrigida para ocupar espaco disponivel
 
 ---
 
@@ -41,7 +39,7 @@
 
 | Hash | Descricao |
 |------|-----------|
-| `48c9428` | fix: corrigir clique nos artefatos e textos brancos |
+| `b4d9299` | fix: artefatos expandem automaticamente e fullscreen com scroll |
 
 ---
 
@@ -49,31 +47,29 @@
 
 | PR | Titulo | Status |
 |----|--------|--------|
-| [#44](https://github.com/brunodivinoo/projeto-final/pull/44) | fix: corrigir clique nos artefatos e textos brancos | **MERGED** |
+| [#46](https://github.com/brunodivinoo/projeto-final/pull/46) | fix: artefatos expandem automaticamente e fullscreen com scroll | **MERGED** |
 
 ---
 
 ## SESSAO ANTERIOR (02/02/2026)
 
 ### Correcoes Realizadas:
-- Reducao tamanho chat desktop
-- Artefatos abrem em tela cheia
-- Flashcards na sidebar corrigidos
+- Clique nos artefatos corrigido (abre sidebar primeiro)
+- Tela cheia adaptada sem scroll desnecessario
+- Textos brancos corrigidos
 
 ### PRs Merged:
-- [#43](https://github.com/brunodivinoo/projeto-final/pull/43) - UI Desktop e Flashcards
+- [#44](https://github.com/brunodivinoo/projeto-final/pull/44) - Correcao artefatos e textos
+- [#45](https://github.com/brunodivinoo/projeto-final/pull/45) - Atualizacao status
 
 ---
 
 ## ARQUIVOS MODIFICADOS HOJE
 
-**Total:** 4 arquivos modificados
+**Total:** 1 arquivo modificado
 
 ### Arquivos:
-- `components/ia/ArtifactRenderer.tsx` - h1/h2 com cores corrigidas
-- `components/ia/ArtifactsSidebar.tsx` - Clique seleciona, fullscreen adaptado
-- `components/ia/FlashcardDeck.tsx` - Suporte a isFullscreenMode
-- `components/ia/SimuladoCard.tsx` - Textos brancos corrigidos, isFullscreenMode
+- `components/ia/ArtifactsSidebar.tsx` - previewLevel expanded, fullscreen escuro, scroll
 
 ---
 
@@ -82,10 +78,9 @@
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Clique deck no chat | **ABRE NA SIDEBAR** |
-| Clique card na sidebar | **SELECIONA ARTEFATO** |
-| Fullscreen adaptado | **SEM SCROLL** |
-| Textos brancos | **CORRIGIDO** |
+| Clique artefato sidebar | **EXPANDE AUTOMATICAMENTE** |
+| Fullscreen visual | **CORES ESCURAS CORRETAS** |
+| Fullscreen scroll | **FUNCIONANDO** |
 | Diagramas JSON Desktop | **CORRIGIDO** |
 | Diagramas JSON Mobile | **CORRIGIDO** |
 | Timeout API | **300s** |
@@ -94,9 +89,9 @@
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Testar fluxo completo** - Clicar no deck no chat -> abre sidebar -> seleciona -> expandir fullscreen
-2. **Verificar responsividade** - Testar em mobile e desktop
-3. **Verificar outras telas** - Confirmar que textos estao visiveis em todas as telas
+1. **Testar em producao** - Verificar se todas as correcoes funcionam na Vercel
+2. **Testar diferentes tipos de artefatos** - Flashcards, simulados, organogramas, fluxogramas
+3. **Verificar responsividade** - Mobile e desktop
 
 ---
 
