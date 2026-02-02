@@ -2249,56 +2249,80 @@ function ArtifactRendererComponent({
           }
         }
 
-        // Renderizar fluxogramas modernos (novo design limpo)
+        // Fluxograma Moderno - Card de Preview Compacto (abre na sidebar)
         if (part.type === 'modern_flowchart') {
+          let nodeCount = 0
+          let flowTitle = part.title || 'Fluxograma'
           try {
             const flowchartData = JSON.parse(part.content)
-            return (
-              <div key={index} className="my-3">
-                <ModernFlowchart
-                  title={part.title || flowchartData.title || 'Fluxograma'}
-                  nodes={flowchartData.nodes || []}
-                  edges={flowchartData.edges || []}
-                  description={flowchartData.description}
-                  showLegend={flowchartData.showLegend !== false}
-                />
+            nodeCount = flowchartData.nodes?.length || 0
+            flowTitle = part.title || flowchartData.title || 'Fluxograma'
+          } catch { /* ignore */ }
+
+          return (
+            <button
+              key={index}
+              onClick={() => openArtifactInSidebar('modern_flowchart', flowTitle)}
+              className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-emerald-50 hover:from-blue-100 hover:to-emerald-100 border border-blue-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
+            >
+              {/* Ícone */}
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
               </div>
-            )
-          } catch {
-            // Se não for JSON válido, mostrar como texto
-            return (
-              <div key={index} className="my-3 bg-blue-50 border border-blue-200 rounded-xl p-3">
-                <pre className="text-slate-700 text-xs whitespace-pre-wrap">{part.content}</pre>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-slate-800 truncate text-sm">{flowTitle}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {nodeCount > 0 ? `${nodeCount} etapas` : 'Fluxograma'} • Toque para visualizar
+                </p>
               </div>
-            )
-          }
+              {/* Seta */}
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center transition-colors">
+                <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+          )
         }
 
-        // Renderizar organogramas em árvore (novo design limpo)
+        // Organograma/Árvore - Card de Preview Compacto (abre na sidebar)
         if (part.type === 'tree_diagram') {
+          let treeTitle = part.title || 'Organograma'
           try {
             const treeData = JSON.parse(part.content)
-            // Normalizar dados - pode vir como { data: {...} } ou direto como nó raiz
-            const rootData = treeData.data || treeData.root || treeData.tree || treeData
-            return (
-              <div key={index} className="my-3">
-                <TreeDiagram
-                  title={part.title || treeData.title || 'Organograma'}
-                  data={rootData}
-                  description={treeData.description}
-                  defaultExpanded={treeData.defaultExpanded !== false}
-                  showChildCount={treeData.showChildCount !== false}
-                />
+            treeTitle = part.title || treeData.title || 'Organograma'
+          } catch { /* ignore */ }
+
+          return (
+            <button
+              key={index}
+              onClick={() => openArtifactInSidebar('tree_diagram', treeTitle)}
+              className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border border-purple-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
+            >
+              {/* Ícone */}
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
               </div>
-            )
-          } catch {
-            // Se não for JSON válido, mostrar como texto
-            return (
-              <div key={index} className="my-3 bg-purple-50 border border-purple-200 rounded-xl p-3">
-                <pre className="text-slate-700 text-xs whitespace-pre-wrap">{part.content}</pre>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-slate-800 truncate text-sm">{treeTitle}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Hierarquia • Toque para explorar
+                </p>
               </div>
-            )
-          }
+              {/* Seta */}
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 group-hover:bg-purple-200 flex items-center justify-center transition-colors">
+                <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+          )
         }
 
         // Renderizar tabelas de estadiamento - responsivas

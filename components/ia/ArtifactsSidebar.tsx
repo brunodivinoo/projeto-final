@@ -430,6 +430,26 @@ const StagingTable = dynamic(() => import('./StagingTable'), {
   )
 })
 
+// Importar ModernFlowchart dinamicamente
+const ModernFlowchart = dynamic(() => import('./ModernFlowchart'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-48">
+      <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full" />
+    </div>
+  )
+})
+
+// Importar TreeDiagram dinamicamente
+const TreeDiagram = dynamic(() => import('./TreeDiagram'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-48">
+      <div className="animate-spin w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full" />
+    </div>
+  )
+})
+
 interface ArtifactsSidebarProps {
   className?: string
   userId?: string
@@ -675,6 +695,82 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
             <div className="bg-gradient-to-b from-emerald-500/10 to-cyan-500/10 rounded-lg p-4 border border-slate-200">
               <p className="text-slate-600 text-sm text-center">
                 Tabela de estadiamento disponível
+              </p>
+              <p className="text-slate-500 text-xs text-center mt-2">
+                Clique em &quot;Tela cheia&quot; para visualizar
+              </p>
+            </div>
+          </div>
+        )
+      }
+
+    case 'modern_flowchart':
+      // Renderizar fluxograma moderno
+      try {
+        const flowchartData = JSON.parse(artifact.content)
+        if (!flowchartData.nodes || !Array.isArray(flowchartData.nodes)) {
+          throw new Error('Estrutura inválida')
+        }
+        return (
+          <div className={containerClass}>
+            <ModernFlowchart
+              title={flowchartData.title || artifact.title}
+              nodes={flowchartData.nodes}
+              edges={flowchartData.edges || []}
+              description={flowchartData.description}
+              showLegend={flowchartData.showLegend !== false}
+            />
+          </div>
+        )
+      } catch {
+        return (
+          <div className={`p-4 ${containerClass}`}>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl">📊</span>
+              <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
+            </div>
+            <div className="bg-gradient-to-b from-blue-500/10 to-emerald-500/10 rounded-lg p-4 border border-slate-200">
+              <p className="text-slate-600 text-sm text-center">
+                Fluxograma disponível
+              </p>
+              <p className="text-slate-500 text-xs text-center mt-2">
+                Clique em &quot;Tela cheia&quot; para visualizar
+              </p>
+            </div>
+          </div>
+        )
+      }
+
+    case 'tree_diagram':
+    case 'organograma':
+      // Renderizar organograma em árvore
+      try {
+        const treeData = JSON.parse(artifact.content)
+        const rootData = treeData.data || treeData.root || treeData.tree || treeData
+        if (!rootData.name && !rootData.label) {
+          throw new Error('Estrutura inválida')
+        }
+        return (
+          <div className={containerClass}>
+            <TreeDiagram
+              title={treeData.title || artifact.title}
+              data={rootData}
+              description={treeData.description}
+              defaultExpanded={treeData.defaultExpanded !== false}
+              showChildCount={treeData.showChildCount !== false}
+            />
+          </div>
+        )
+      } catch {
+        return (
+          <div className={`p-4 ${containerClass}`}>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl">🌳</span>
+              <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
+            </div>
+            <div className="bg-gradient-to-b from-purple-500/10 to-blue-500/10 rounded-lg p-4 border border-slate-200">
+              <p className="text-slate-600 text-sm text-center">
+                Organograma disponível
               </p>
               <p className="text-slate-500 text-xs text-center mt-2">
                 Clique em &quot;Tela cheia&quot; para visualizar
