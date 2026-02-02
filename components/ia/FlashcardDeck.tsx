@@ -427,12 +427,12 @@ export default function FlashcardDeck({
         {/* Flashcard */}
         <div
           ref={cardRef}
-          className={`relative cursor-pointer ${isExpanded ? 'h-[300px] sm:h-[350px]' : 'h-[180px] sm:h-[280px]'}`}
+          className={`relative cursor-pointer ${isExpanded ? 'min-h-[300px] sm:min-h-[350px]' : 'min-h-[250px] sm:min-h-[280px]'}`}
           onClick={flipCard}
           style={{ perspective: '1000px' }}
         >
           <motion.div
-            className="relative w-full h-full"
+            className="relative w-full min-h-[250px] sm:min-h-[280px]"
             animate={{ rotateY: isFlipped ? 180 : 0 }}
             transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
             style={{ transformStyle: 'preserve-3d' }}
@@ -450,7 +450,7 @@ export default function FlashcardDeck({
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-3 sm:mb-6 shadow-md">
                 <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <p className="text-sm sm:text-xl font-medium text-center text-gray-800 leading-relaxed max-h-[60px] sm:max-h-[120px] overflow-y-auto">{currentCard.frente}</p>
+              <p className="text-sm sm:text-xl font-medium text-center text-gray-800 leading-relaxed max-h-[120px] sm:max-h-[160px] overflow-y-auto">{currentCard.frente}</p>
               <p className="mt-3 sm:mt-6 text-xs sm:text-sm text-purple-500 flex items-center gap-1">
                 <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" /> Toque para ver
               </p>
@@ -464,7 +464,7 @@ export default function FlashcardDeck({
               <div className="absolute top-2 right-2 sm:top-4 sm:right-4 px-2 py-0.5 sm:px-3 sm:py-1 bg-purple-500 text-white text-[10px] sm:text-xs font-medium rounded-full">
                 Resposta
               </div>
-              <p className="text-sm sm:text-lg font-medium text-center text-gray-800 leading-relaxed mt-4 sm:mt-0 max-h-[100px] sm:max-h-[180px] overflow-y-auto">{currentCard.verso}</p>
+              <p className="text-sm sm:text-lg font-medium text-center text-gray-800 leading-relaxed mt-4 sm:mt-0 max-h-[140px] sm:max-h-[200px] overflow-y-auto">{currentCard.verso}</p>
               {currentCard.referencia && (
                 <p className="text-[10px] sm:text-xs text-purple-500 text-center italic mt-2">{currentCard.referencia}</p>
               )}
