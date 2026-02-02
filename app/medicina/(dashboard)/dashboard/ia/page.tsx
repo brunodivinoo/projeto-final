@@ -741,6 +741,16 @@ export default function IAPage() {
     setChatModeFilter(chatMode as StoreChatMode)
   }, [chatMode, setCurrentChatMode, setChatModeFilter])
 
+  // Sincronizar abertura do drawer mobile de artefatos com a store
+  const isMobileDrawerOpen = useArtifactsStore(state => state.isMobileDrawerOpen)
+  const setStoreMobileDrawerOpen = useArtifactsStore(state => state.setMobileDrawerOpen)
+  useEffect(() => {
+    if (isMobileDrawerOpen) {
+      setMobileArtifactsOpen(true)
+      setStoreMobileDrawerOpen(false) // Reset store state
+    }
+  }, [isMobileDrawerOpen, setStoreMobileDrawerOpen])
+
   // Processar parâmetros da URL (m = mensagem inicial, c = conversa)
   useEffect(() => {
     if (!user) return

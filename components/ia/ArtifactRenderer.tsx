@@ -2251,55 +2251,38 @@ function ArtifactRendererComponent({
           )
         }
 
-        // Renderizar questões geradas pela IA
+        // Questões - Card de Preview Compacto (abre na sidebar)
         if (part.type === 'question' && part.questionData) {
-          // Encontrar o artefato correspondente na store para sincronização
-          // Busca melhorada: primeiro por messageId+numero, depois por enunciado
-          const matchingArtifact = storeArtifacts.find(
-            a => a.type === 'question' &&
-                 a.messageId === messageId &&
-                 a.metadata?.question?.numero === part.questionData?.numero
-          ) || storeArtifacts.find(
-            a => a.type === 'question' &&
-                 a.conversaId === conversaId &&
-                 a.metadata?.question?.enunciado === part.questionData?.enunciado
-          )
-
-          // Buscar resposta anterior do cache (pelo hash se disponível)
-          const questionHash = part.questionData.enunciado ? getQuestionHashSyncRenderer(part.questionData.enunciado) : ''
-          const respostaAnterior = questionHash ? respostasCache[questionHash] : undefined
-
-          // Se não temos hash ainda, tentar calcular em background
-          if (part.questionData.enunciado && !questionHash) {
-            getQuestionHashRenderer(part.questionData.enunciado)
-          }
+          const questionNum = part.questionData.numero || 1
+          const categoria = part.questionData.categoria || part.questionData.especialidade || 'Questão'
+          const assunto = part.questionData.assunto || part.questionData.tema || ''
 
           return (
-            <div key={index} className="my-2">
-              <QuestionArtifactCard
-                question={matchingArtifact?.metadata?.question || part.questionData}
-                userId={userId}
-                conversaId={conversaId}
-                respostaAnterior={respostaAnterior}
-                planoUsuario={planoUsuario}
-                trialAtivo={trialAtivo}
-                onUpgradeClick={onUpgradeClick}
-                onAnswerSubmit={async (questionId, answer, correct) => {
-                  // Sincronizar com a store de artefatos
-                  if (matchingArtifact) {
-                    updateQuestionAnswer(matchingArtifact.id, answer, correct)
-                  }
-                  // Atualizar cache local
-                  const hash = await getQuestionHashRenderer(part.questionData?.enunciado || '')
-                  if (hash) {
-                    setRespostasCache(prev => ({
-                      ...prev,
-                      [hash]: { resposta_usuario: answer, acertou: correct, tentativas: (prev[hash]?.tentativas || 0) + 1 }
-                    }))
-                  }
-                }}
-              />
-            </div>
+            <button
+              key={index}
+              onClick={() => openArtifactInSidebar('question')}
+              className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 border border-emerald-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
+            >
+              {/* Ícone */}
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <span className="text-white font-bold text-lg">Q{questionNum}</span>
+              </div>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-slate-800 truncate text-sm">
+                  {categoria}{assunto ? ` • ${assunto}` : ''}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Questão de múltipla escolha • Toque para responder
+                </p>
+              </div>
+              {/* Seta */}
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 group-hover:bg-emerald-200 flex items-center justify-center transition-colors">
+                <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
           )
         }
 
