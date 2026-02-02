@@ -275,15 +275,17 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-surface-100 overflow-x-hidden" data-main-container>
-      {/* Mobile Header - Apenas ícone flutuante do menu */}
-      <div className="lg:hidden fixed top-2 left-3 z-[60]" style={{ paddingTop: 'env(safe-area-inset-top, 8px)' }}>
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-lg border border-slate-200 active:scale-95 transition-all"
-        >
-          <Menu className="w-5 h-5 text-slate-600" />
-        </button>
-      </div>
+      {/* Mobile Header - Apenas ícone flutuante do menu (esconde quando sidebar aberta) */}
+      {!sidebarOpen && (
+        <div className="lg:hidden fixed top-2 left-3 z-[60]" style={{ paddingTop: 'env(safe-area-inset-top, 8px)' }}>
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-lg border border-slate-200 active:scale-95 transition-all"
+          >
+            <Menu className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
+      )}
 
       {/* Mobile Overlay */}
       <AnimatePresence>

@@ -1790,10 +1790,10 @@ export default function IAPage() {
         )}
 
         {/* Chat Area - Responsivo e Compacto com CSS contain para anti-flickering */}
-        {/* pb-24 lg:pb-0 para acomodar bottom nav no mobile */}
+        {/* pt-14 no mobile para não ficar atrás dos ícones flutuantes, pb-28 para bottom nav */}
         <div
           ref={chatRef}
-          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-2 md:p-4 lg:p-5 pb-28 lg:pb-5 space-y-2 md:space-y-3"
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-2 pt-14 md:p-4 lg:p-5 lg:pt-5 pb-28 lg:pb-5 space-y-2 md:space-y-3"
           style={{ contain: 'layout style', willChange: streaming ? 'scroll-position' : 'auto' }}
         >
           {/* Loading ao abrir conversa */}
