@@ -1,52 +1,39 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 02/02/2026 - Sessao Correcao Diagramas e Texto
+## Atualizado em: 02/02/2026 - Sessao Correcao Diagramas Mobile e Gabarito
 
 ---
 
 ## O QUE FOI FEITO NESTA SESSAO (02/02/2026)
 
-### 1. CORRECAO RENDERIZACAO DIAGRAMAS JSON
+### 1. CORRECAO DIAGRAMAS NO MOBILE
 **Problema identificado:**
-- Diagramas JSON (flowchart e tree) estavam sendo passados para MermaidDiagram
-- Erro de parsing: "flowchart TB{ 'title': 'Trajeto..."
-- JSON nao e sintaxe Mermaid valida
+- Fluxogramas e organogramas mostravam JSON bruto no celular
+- No desktop funcionava, mas no mobile nao
 
 **Correcoes aplicadas:**
-- `ArtifactRenderer.tsx`: Mapeamento correto de tipos para store
-  - `modern_flowchart` agora usa ModernFlowchart
-  - `tree_diagram` agora usa TreeDiagram
-  - Deteccao automatica de JSON vs Mermaid
-- `ArtifactsSidebar.tsx`: Verificacao de JSON antes de passar para Mermaid
-  - Se tem `nodes[]` -> ModernFlowchart
-  - Se tem `data/root/tree/children` -> TreeDiagram
-  - Se tem `layers[]` -> LayeredDiagram
-  - Se comeca com `flowchart/graph` -> MermaidDiagram
+- `MobileArtifactsScreen.tsx`: Adicionar imports de componentes
+  - ModernFlowchart, TreeDiagram, LayeredDiagram
+- Adicionar cases especificos para cada tipo:
+  - `modern_flowchart` -> ModernFlowchart
+  - `tree_diagram` -> TreeDiagram
+  - `layers`/`anatomy` -> LayeredDiagram
+- Verificar se é JSON antes de passar para MermaidDiagram
 
-### 2. LIMPEZA DE TEXTO NO CHAT
+### 2. CORRECAO GABARITO NO CHAT
 **Problema identificado:**
-- Gabarito/explicacao das questoes aparecendo no chat
-- Titulos redundantes vazando (ex: "- Ciclo Cardiaco e Circulacao Sanguinea")
+- "GABARITO COMENTADO - Questao X" aparecia no chat
+- "EXPLICACAO DETALHADA" vazava no texto
 
 **Correcoes aplicadas:**
-- Nova funcao `cleanRenderedTextForChat()` que remove:
-  - Gabarito/resposta correta
-  - Explicacao detalhada
-  - Analise de alternativas
-  - Titulos redundantes de decks
-  - Secoes de referencias de questoes
-- Funcao `cleanTextBeforeArtifact()` melhorada:
-  - Remove titulos descritivos antes de fluxogramas/organogramas
-  - Remove listas com titulos de deck
-  - Emojis medicos adicionados ao pattern
+- Regex mais agressivo na funcao `cleanRenderedTextForChat()`
+- Remover blocos completos de GABARITO COMENTADO
+- Remover EXPLICACAO DETALHADA e todo conteudo
+- Remover citacoes orfas [1] [2]
 
-### 3. TIMEOUT AUMENTADO
-**Problema identificado:**
-- Timeout de 120 segundos no Vercel
-- Respostas cortadas quando gerando muito conteudo
-
-**Correcoes aplicadas:**
-- `maxDuration` aumentado de 120s para 300s (maximo Vercel Pro)
-- Permite geracao de flashcards + questoes + diagramas sem timeout
+### 3. CORRECOES ANTERIORES (MESMA SESSAO)
+- Diagramas JSON na ArtifactsSidebar (desktop)
+- Limpeza de texto antes de artefatos
+- Timeout aumentado para 300s
 
 ---
 
@@ -55,6 +42,9 @@
 | Hash | Descricao |
 |------|-----------|
 | `f2d5fe2` | fix: corrigir renderizacao de diagramas JSON e limpar texto no chat |
+| `9139118` | docs: atualizar status da sessao |
+| `02b3657` | chore: atualizar package-lock.json |
+| `04feabe` | fix: corrigir renderizacao de diagramas no mobile e limpeza de gabarito |
 
 ---
 
@@ -63,17 +53,19 @@
 | PR | Titulo | Status |
 |----|--------|--------|
 | [#41](https://github.com/brunodivinoo/projeto-final/pull/41) | fix: corrigir renderizacao de diagramas JSON e limpar texto no chat | **MERGED** |
+| [#42](https://github.com/brunodivinoo/projeto-final/pull/42) | fix: corrigir renderizacao de diagramas no mobile e limpeza de gabarito | **MERGED** |
 
 ---
 
 ## ARQUIVOS MODIFICADOS
 
-**Total:** 3 arquivos modificados (+218, -24)
+**Total:** 4 arquivos modificados
 
 ### Arquivos:
-- `app/api/medicina/ia/chat/route.ts` - maxDuration 120s -> 300s
+- `app/api/medicina/ia/chat/route.ts` - maxDuration 300s
 - `components/ia/ArtifactRenderer.tsx` - cleanRenderedTextForChat + mapeamento tipos
 - `components/ia/ArtifactsSidebar.tsx` - Deteccao JSON em flowchart/diagram
+- `components/mobile/MobileArtifactsScreen.tsx` - Suporte para modern_flowchart, tree_diagram, layers
 
 ---
 
@@ -82,45 +74,19 @@
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Diagramas JSON | **CORRIGIDO** - Usa componente correto |
-| Limpeza texto chat | **CORRIGIDO** - Gabarito e titulos removidos |
-| Timeout API | **CORRIGIDO** - 300s (maximo Vercel Pro) |
-| Deploy | **EM ANDAMENTO** - Vercel processando |
+| Diagramas JSON Desktop | **CORRIGIDO** |
+| Diagramas JSON Mobile | **CORRIGIDO** |
+| Limpeza gabarito chat | **CORRIGIDO** |
+| Timeout API | **300s** |
+| Deploy | **EM ANDAMENTO** |
 
 ---
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Testar em producao** - Gerar flashcards, fluxogramas, organogramas
-2. **Verificar questoes** - Confirmar que gabarito nao aparece no chat
-3. **Testar timeout** - Gerar conteudo longo para verificar se nao corta
-4. **Monitorar logs** - Verificar erros no console da Vercel
-
----
-
-## HISTORICO ANTERIOR
-
-### Sessao 02/02/2026 - Visual Diagramas/Flashcards
-- Flashcards - Remocao markdown redundante
-- MermaidDiagram - Tema claro com cores vibrantes
-- LayeredDiagram - Tema claro para organogramas
-
-### Sessao 02/02/2026 - UI Mobile
-- Header mobile como icones flutuantes
-- Menu + (anexos) corrigido
-- Flashcards layout responsivo
-- Pagina inicial compacta
-
-### Sessao 02/02/2026 - Redesign Sidebar Principal
-- Sidebar principal com tema escuro profissional
-- Sidebar chat redesenhada
-- MobileArtifactsScreen corrigida
-- Chat IA verde mais escuro
-
-### Sessao 01/02/2026 - Correcao Tema Claro Dashboard
-- Todas as paginas do dashboard corrigidas para tema claro
-- Estatisticas, Biblioteca, Perfil, Indicacoes, Assinaturas
-- Modal UsageLimits, Sidebar Mobile, Chat IA Sugestoes
+1. **Testar no MOBILE** - Verificar se diagramas renderizam
+2. **Testar questoes** - Confirmar que gabarito nao aparece
+3. **Monitorar Vercel** - Verificar se deploy completou
 
 ---
 
@@ -128,6 +94,5 @@
 
 - Producao: https://projeto-final-zeta-navy.vercel.app
 - Chat IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
-- Supabase: https://supabase.com/dashboard/project/zkcstkbpgwdoiihvfspp
-- Vercel: https://vercel.com/brunos-projects-5f2d50e2/projeto-final
 - GitHub: https://github.com/brunodivinoo/projeto-final
+- PR #42: https://github.com/brunodivinoo/projeto-final/pull/42
