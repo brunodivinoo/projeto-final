@@ -195,7 +195,7 @@ const MemoizedMessage = memo(function MemoizedMessage({
 
         <div className={`rounded-lg md:rounded-xl p-2.5 md:p-3 ${
           msg.tipo === 'usuario'
-            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
+            ? 'bg-emerald-600 text-white shadow-lg'
             : 'bg-white text-slate-800 border border-slate-200 shadow-sm'
         }`}>
           {(msg.hasImage || msg.hasPdf) && msg.tipo === 'usuario' && (
