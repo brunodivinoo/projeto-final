@@ -3,9 +3,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Configuração de runtime para permitir execução mais longa
-// Imagem (25s) + Questões em lote (60s+) = precisa de pelo menos 90s
+// Imagem (25s) + Questões em lote (60s+) + Flashcards + Diagramas = precisa de pelo menos 180s
+// Vercel Pro permite até 300s para Serverless Functions
 export const dynamic = 'force-dynamic'
-export const maxDuration = 120 // 120 segundos (máximo do Vercel Pro para Serverless)
+export const maxDuration = 300 // 300 segundos (máximo do Vercel Pro para Serverless)
 import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'

@@ -470,19 +470,103 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
   // Renderização baseada no tipo
   switch (artifact.type) {
     case 'diagram':
-    case 'flowchart':
-      return (
-        <div className={`relative ${containerClass}`}>
-          <MermaidDiagram chart={artifact.content} title={artifact.title} />
-          <button
-            onClick={handleCopy}
-            className="absolute top-2 right-2 p-2 bg-black/50 rounded-lg hover:bg-black/70 transition-colors"
-            title="Copiar código"
-          >
-            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-600" />}
-          </button>
-        </div>
-      )
+    case 'flowchart': {
+      // IMPORTANTE: Verificar se o conteúdo é JSON antes de passar para Mermaid
+      // Se for JSON com estrutura de flowchart ou tree, usar o componente correto
+      try {
+        const parsed = JSON.parse(artifact.content)
+
+        // Se tem nodes e é array, é um ModernFlowchart
+        if (parsed.nodes && Array.isArray(parsed.nodes)) {
+          return (
+            <div className={containerClass}>
+              <ModernFlowchart
+                title={parsed.title || artifact.title}
+                nodes={parsed.nodes}
+                edges={parsed.edges || []}
+                description={parsed.description}
+                showLegend={parsed.showLegend !== false}
+              />
+            </div>
+          )
+        }
+
+        // Se tem data/root/tree/children, é um TreeDiagram
+        if (parsed.data || parsed.root || parsed.tree || parsed.children || (parsed.name && parsed.children)) {
+          const rootData = parsed.data || parsed.root || parsed.tree || parsed
+          return (
+            <div className={containerClass}>
+              <TreeDiagram
+                title={parsed.title || artifact.title}
+                data={rootData}
+                description={parsed.description}
+                defaultExpanded={parsed.defaultExpanded !== false}
+                showChildCount={parsed.showChildCount !== false}
+              />
+            </div>
+          )
+        }
+
+        // Se tem layers, é um LayeredDiagram
+        if (parsed.layers && Array.isArray(parsed.layers)) {
+          return (
+            <div className={containerClass}>
+              <LayeredDiagram
+                title={parsed.title || artifact.title}
+                layers={parsed.layers}
+                theme={parsed.theme || 'histology'}
+                showLegend={parsed.showLegend}
+                showStaging={parsed.showStaging}
+                interactive={parsed.interactive ?? true}
+                description={parsed.description}
+              />
+            </div>
+          )
+        }
+
+        // É JSON mas não reconhecido, mostrar como erro de parsing
+        throw new Error('JSON não reconhecido')
+      } catch {
+        // Não é JSON válido ou é JSON não reconhecido
+        // Verificar se começa com sintaxe Mermaid válida
+        const trimmedContent = artifact.content.trim()
+        const isMermaidSyntax = /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|gitGraph|mindmap|timeline|quadrantChart|sankey|xychart)/i.test(trimmedContent)
+
+        if (isMermaidSyntax) {
+          return (
+            <div className={`relative ${containerClass}`}>
+              <MermaidDiagram chart={artifact.content} title={artifact.title} />
+              <button
+                onClick={handleCopy}
+                className="absolute top-2 right-2 p-2 bg-black/50 rounded-lg hover:bg-black/70 transition-colors"
+                title="Copiar código"
+              >
+                {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-600" />}
+              </button>
+            </div>
+          )
+        }
+
+        // Não é Mermaid válido, mostrar código original com erro
+        return (
+          <div className={`p-4 ${containerClass}`}>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center gap-2 text-red-600 mb-2">
+                <span>⚠️</span>
+                <span className="font-medium">Erro ao renderizar diagrama</span>
+              </div>
+              <p className="text-red-500 text-sm">Formato não reconhecido</p>
+            </div>
+            <details className="text-xs">
+              <summary className="text-slate-500 cursor-pointer hover:text-slate-700">Ver código original</summary>
+              <pre className="mt-2 p-2 bg-slate-100 rounded text-slate-600 overflow-x-auto">
+                {artifact.content}
+              </pre>
+            </details>
+          </div>
+        )
+      }
+    }
 
     case 'ecg':
       return (
