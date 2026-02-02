@@ -288,16 +288,16 @@ export default function MedicinaDashboardPage() {
       {/* ÁREA PRINCIPAL DO CHAT */}
       {/* ============================================ */}
 
-      <div className="flex flex-col items-center py-6 md:py-10">
+      <div className="flex flex-col items-center py-4 md:py-10">
         {/* Logo e Saudação */}
-        <div className="w-14 h-14 md:w-16 md:h-16 mb-3 md:mb-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-          <Stethoscope className="w-8 h-8 md:w-9 md:h-9 text-white" />
+        <div className="w-12 h-12 md:w-16 md:h-16 mb-2 md:mb-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <Stethoscope className="w-6 h-6 md:w-9 md:h-9 text-white" />
         </div>
 
-        <h1 className="text-xl md:text-3xl font-bold text-slate-800 mb-1.5 md:mb-2 text-center">
+        <h1 className="text-lg md:text-3xl font-bold text-slate-800 mb-1 md:mb-2 text-center">
           {getGreeting()}, {profile?.nome?.split(' ')[0] || 'Estudante'}!
         </h1>
-        <p className="text-slate-500 mb-6 md:mb-8 text-center text-sm md:text-base">
+        <p className="text-slate-500 mb-4 md:mb-8 text-center text-xs md:text-base">
           Como posso ajudar nos seus estudos hoje?
         </p>
 
