@@ -37,6 +37,7 @@ interface FlashcardDeckProps {
   onSaveToArtefatos?: (cards: Flashcard[], titulo: string) => void
   userId?: string
   conversaId?: string
+  isFullscreenMode?: boolean
 }
 
 type CardStatus = 'nao_visto' | 'acertou' | 'errou' | 'revisao'
@@ -52,7 +53,8 @@ export default function FlashcardDeck({
   cards: initialCards,
   onSaveToArtefatos,
   userId,
-  conversaId
+  conversaId,
+  isFullscreenMode = false
 }: FlashcardDeckProps) {
   const [cards, setCards] = useState<Flashcard[]>(initialCards)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -319,8 +321,11 @@ export default function FlashcardDeck({
 
   const cardProgress = progress.get(currentCard.id)
 
+  // Determinar se está em modo expandido (interno ou externo via fullscreen do modal)
+  const effectiveExpanded = isExpanded || isFullscreenMode
+
   return (
-    <div className={`bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 transition-all ${isExpanded ? 'fixed inset-4 z-50 flex flex-col' : ''}`}>
+    <div className={`bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 transition-all ${isExpanded ? 'fixed inset-4 z-50 flex flex-col' : ''} ${isFullscreenMode ? 'h-full flex flex-col' : ''}`}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-4 border-b border-gray-100 bg-gray-50/50">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -406,7 +411,7 @@ export default function FlashcardDeck({
       </AnimatePresence>
 
       {/* Card Area */}
-      <div className={`p-3 sm:p-6 ${isExpanded ? 'flex-1 flex flex-col justify-center' : ''}`}>
+      <div className={`p-3 sm:p-6 ${effectiveExpanded ? 'flex-1 flex flex-col justify-center' : ''}`}>
         {/* Card Counter */}
         <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
           <span className="text-xs sm:text-sm font-medium text-gray-400">Card</span>

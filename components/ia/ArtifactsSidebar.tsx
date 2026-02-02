@@ -465,7 +465,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
     setTimeout(() => setCopied(false), 2000)
   }, [artifact.content])
 
-  const containerClass = isFullscreen ? 'max-h-[70vh] overflow-auto' : ''
+  const containerClass = isFullscreen ? 'h-full flex flex-col' : ''
 
   // Renderização baseada no tipo
   switch (artifact.type) {
@@ -922,6 +922,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
             <div className={containerClass}>
               <SimuladoCard
                 simulado={simuladoData}
+                isFullscreenMode={isFullscreen}
               />
             </div>
           )
@@ -958,6 +959,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
               <FlashcardDeck
                 titulo={flashcardData.titulo || artifact.title}
                 cards={cards}
+                isFullscreenMode={isFullscreen}
               />
             </div>
           )
@@ -1081,9 +1083,9 @@ function FullscreenModal({
       </div>
 
       {/* Conteúdo */}
-      <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-slate-800/50 rounded-xl overflow-hidden border border-slate-200">
+      <div className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
+        <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full">
+          <div className="flex-1 bg-white rounded-xl overflow-hidden border border-slate-200 flex flex-col">
             <ArtifactContent artifact={artifact} isFullscreen />
           </div>
         </div>
@@ -1182,7 +1184,7 @@ function ArtifactCard({
             ? 'border-purple-500/50 shadow-lg shadow-purple-500/10 ring-2 ring-purple-500/30'
             : 'border-slate-200 hover:border-slate-300'
         }`}
-        onClick={onFullscreen}
+        onClick={onSelect}
       >
         {/* Gradiente de fundo baseado na categoria */}
         <div className={`absolute inset-0 bg-gradient-to-br ${categoryColor} opacity-10`} />
@@ -1242,10 +1244,10 @@ function ArtifactCard({
       {/* Indicador de categoria (barra lateral) */}
       <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${categoryColor}`} />
 
-      {/* Header do card - clique abre em tela cheia */}
+      {/* Header do card - clique seleciona o artefato */}
       <div
         className="flex items-center gap-3 p-3 pl-4 cursor-pointer"
-        onClick={onFullscreen}
+        onClick={onSelect}
       >
         {/* Ícone do tipo */}
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all ${

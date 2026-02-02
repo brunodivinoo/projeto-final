@@ -57,9 +57,10 @@ interface SimuladoCardProps {
   simulado: SimuladoData
   userId?: string
   conversaId?: string
+  isFullscreenMode?: boolean
 }
 
-export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoCardProps) {
+export default function SimuladoCard({ simulado, userId, conversaId, isFullscreenMode = false }: SimuladoCardProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [started, setStarted] = useState(false)
   const [finished, setFinished] = useState(false)
@@ -164,7 +165,7 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
           <div className="bg-slate-100 rounded-xl p-4 mb-4">
             <div className="flex justify-between items-center mb-2">
               <span className="text-slate-600 text-sm">Progresso</span>
-              <span className="text-white font-medium">{stats.respondidas}/{simulado.questoes.length}</span>
+              <span className="text-slate-800 font-medium">{stats.respondidas}/{simulado.questoes.length}</span>
             </div>
             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
               <div
@@ -190,7 +191,7 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
             </button>
             <button
               onClick={handleReset}
-              className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-white rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-4 h-4" />
               Reiniciar do Zero
@@ -232,7 +233,7 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
               <div className="text-xs text-slate-500">Erros</div>
             </div>
             <div className="bg-slate-100 rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-white">{stats.respondidas}</div>
+              <div className="text-3xl font-bold text-slate-700">{stats.respondidas}</div>
               <div className="text-xs text-slate-500">Total</div>
             </div>
             <div className="bg-slate-100 rounded-xl p-4 text-center">
@@ -253,7 +254,7 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
           <div className="flex gap-3">
             <button
               onClick={handleReset}
-              className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-white rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-4 h-4" />
               Refazer Simulado
@@ -276,11 +277,11 @@ export default function SimuladoCard({ simulado, userId, conversaId }: SimuladoC
   const respostaAtual = respostas[questaoAtual.numero]
 
   return (
-    <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-200 rounded-xl overflow-hidden">
+    <div className={`bg-white border border-slate-200 rounded-xl overflow-hidden ${isFullscreenMode ? 'h-full flex flex-col' : ''}`}>
       {/* Header com progresso */}
       <div className="px-4 py-3 bg-slate-100 border-b border-slate-200">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-white font-medium text-sm truncate max-w-[60%]">{simulado.titulo}</span>
+          <span className="text-slate-800 font-medium text-sm truncate max-w-[60%]">{simulado.titulo}</span>
           <div className="flex items-center gap-2">
             <span className="text-slate-600 text-sm">
               {stats.respondidas}/{simulado.questoes.length}
