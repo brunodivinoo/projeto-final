@@ -469,7 +469,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         <div className={`p-4 bg-slate-900 rounded-lg ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-2xl">💓</span>
-            <h4 className="text-white font-medium">{artifact.title}</h4>
+            <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
           </div>
           {/* ECG Visualization */}
           <div className="relative h-32 bg-black rounded-lg overflow-hidden">
@@ -501,7 +501,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         <div className={`p-4 ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">⚖️</span>
-            <h4 className="text-white font-medium">{artifact.title}</h4>
+            <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
           </div>
           <div className="prose prose-slate prose-sm max-w-none">
             <div className="whitespace-pre-wrap text-slate-700">{artifact.content}</div>
@@ -514,7 +514,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         <div className={`p-4 ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">✅</span>
-            <h4 className="text-white font-medium">{artifact.title}</h4>
+            <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
           </div>
           <div className="space-y-2">
             {artifact.content.split('\n').map((line, i) => {
@@ -543,7 +543,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         <div className={`p-4 ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">📅</span>
-            <h4 className="text-white font-medium">{artifact.title}</h4>
+            <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
           </div>
           <div className="relative border-l-2 border-emerald-500/30 pl-4 space-y-4">
             {artifact.content.split('\n').filter(l => l.trim()).map((line, i) => (
@@ -561,7 +561,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         <div className={`p-4 overflow-x-auto ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">📋</span>
-            <h4 className="text-white font-medium">{artifact.title}</h4>
+            <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
           </div>
           <div className="prose prose-slate prose-sm max-w-none">
             <pre className="text-slate-700 text-sm whitespace-pre-wrap">{artifact.content}</pre>
@@ -631,7 +631,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
           <div className={`p-4 ${containerClass}`}>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-xl">🔬</span>
-              <h4 className="text-white font-medium">{artifact.title}</h4>
+              <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
             </div>
             <div className="bg-gradient-to-b from-pink-500/10 to-purple-500/10 rounded-lg p-4 border border-slate-200">
               <p className="text-slate-600 text-sm text-center">
@@ -670,7 +670,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
           <div className={`p-4 ${containerClass}`}>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-xl">📈</span>
-              <h4 className="text-white font-medium">{artifact.title}</h4>
+              <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
             </div>
             <div className="bg-gradient-to-b from-emerald-500/10 to-cyan-500/10 rounded-lg p-4 border border-slate-200">
               <p className="text-slate-600 text-sm text-center">
@@ -712,7 +712,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
           <div className={`p-4 ${containerClass}`}>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-xl">❓</span>
-              <h4 className="text-white font-medium">{artifact.title}</h4>
+              <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
             </div>
             <div className="bg-gradient-to-b from-emerald-500/10 to-green-500/10 rounded-lg p-4 border border-emerald-500/20">
               <p className="text-slate-600 text-sm text-center">
@@ -746,7 +746,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         <div className={`p-4 ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">📋</span>
-            <h4 className="text-white font-medium">{artifact.title}</h4>
+            <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
           </div>
           <div className="bg-gradient-to-b from-purple-500/10 to-pink-500/10 rounded-lg p-4 border border-purple-500/20">
             <p className="text-slate-600 text-sm text-center">
@@ -782,7 +782,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         <div className={`p-4 ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">🃏</span>
-            <h4 className="text-white font-medium">{artifact.title}</h4>
+            <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
           </div>
           <div className="bg-gradient-to-b from-amber-500/10 to-orange-500/10 rounded-lg p-4 border border-amber-500/20">
             <p className="text-slate-600 text-sm text-center">
@@ -800,7 +800,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         <div className={`p-4 ${containerClass}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">{ARTIFACT_ICONS[artifact.type]}</span>
-            <h4 className="text-white font-medium">{artifact.title}</h4>
+            <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
           </div>
           <div className="text-slate-700 text-sm whitespace-pre-wrap">{artifact.content}</div>
         </div>
@@ -862,7 +862,7 @@ function FullscreenModal({
         <div className="flex items-center gap-3">
           <span className="text-2xl">{ARTIFACT_ICONS[artifact.type]}</span>
           <div>
-            <h2 className="text-white font-semibold text-lg">{artifact.title}</h2>
+            <h2 className="text-slate-800 font-semibold text-lg">{artifact.title}</h2>
             <span className="text-slate-500 text-sm">{ARTIFACT_LABELS[artifact.type]}</span>
           </div>
         </div>
@@ -876,7 +876,7 @@ function FullscreenModal({
           {/* Copiar */}
           <button
             onClick={handleCopy}
-            className="p-2 text-slate-600 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 text-slate-600 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
             title="Copiar conteúdo"
           >
             {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
@@ -885,7 +885,7 @@ function FullscreenModal({
           {/* Fechar */}
           <button
             onClick={onClose}
-            className="p-2 text-slate-600 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 text-slate-600 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
             title="Fechar (ESC)"
           >
             <Minimize2 className="w-5 h-5" />
@@ -909,7 +909,7 @@ function FullscreenModal({
           disabled={!hasPrevious}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
             hasPrevious
-              ? 'bg-slate-100 text-white hover:bg-slate-200'
+              ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
               : 'bg-slate-100 text-slate-400 cursor-not-allowed'
           }`}
         >
@@ -926,7 +926,7 @@ function FullscreenModal({
           disabled={!hasNext}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
             hasNext
-              ? 'bg-slate-100 text-white hover:bg-slate-200'
+              ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
               : 'bg-slate-100 text-slate-400 cursor-not-allowed'
           }`}
         >
@@ -1011,7 +1011,7 @@ function ArtifactCard({
               className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
               title="Tela cheia"
             >
-              <Maximize2 className="w-4 h-4 text-white" />
+              <Maximize2 className="w-4 h-4 text-slate-600" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onRemove() }}
@@ -1025,7 +1025,7 @@ function ArtifactCard({
 
         {/* Info */}
         <div className="relative p-2">
-          <h4 className="text-white text-sm font-medium truncate">{artifact.title}</h4>
+          <h4 className="text-slate-800 text-sm font-medium truncate">{artifact.title}</h4>
           <div className="flex items-center gap-1 mt-0.5">
             <span className="text-slate-500 text-xs">{ARTIFACT_LABELS[artifact.type]}</span>
             {artifact.chatMode && artifact.chatMode !== 'chat' && (
@@ -1049,7 +1049,7 @@ function ArtifactCard({
       className={`group relative rounded-xl border transition-all overflow-hidden ${
         isSelected
           ? 'bg-purple-500/10 border-purple-500/50 shadow-lg shadow-purple-500/10'
-          : 'bg-slate-800/50 border-slate-200 hover:border-slate-300 hover:bg-slate-800/80'
+          : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
       }`}
     >
       {/* Indicador de categoria (barra lateral) */}
@@ -1072,7 +1072,7 @@ function ArtifactCard({
         {/* Info */}
         <div className="flex-1 min-w-0">
           <h4 className={`font-medium truncate transition-colors ${
-            isSelected ? 'text-purple-300' : 'text-white'
+            isSelected ? 'text-purple-500' : 'text-slate-800'
           }`}>
             {artifact.title}
           </h4>
@@ -1105,7 +1105,7 @@ function ArtifactCard({
           {/* Toggle preview - apenas expandir/fechar */}
           <button
             onClick={cyclePreview}
-            className="p-1.5 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
             title={previewLevel === 'collapsed' ? 'Expandir' : 'Fechar'}
           >
             {previewLevel === 'collapsed' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
@@ -1114,7 +1114,7 @@ function ArtifactCard({
           {/* Fullscreen */}
           <button
             onClick={(e) => { e.stopPropagation(); onFullscreen() }}
-            className="p-1.5 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
             title="Tela cheia"
           >
             <Maximize2 className="w-4 h-4" />
@@ -1197,7 +1197,7 @@ function CategorySection({
             <Folder className="w-4 h-4 text-slate-500" />
           )}
           <span className="text-lg">{category.icon}</span>
-          <span className="text-white font-medium text-sm">{category.label}</span>
+          <span className="text-slate-800 font-medium text-sm">{category.label}</span>
           <span className="text-slate-500 text-xs">({artifacts.length})</span>
         </div>
         {isExpanded ? (
@@ -1611,7 +1611,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
       {!isSidebarOpen && artifacts.length > 0 && (
         <button
           onClick={toggleSidebar}
-          className="hidden lg:flex fixed right-3 top-20 z-40 p-1.5 bg-slate-100 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-white rounded-md transition-all"
+          className="hidden lg:flex fixed right-3 top-20 z-40 p-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-700 rounded-md shadow-sm transition-all"
           title="Abrir artefatos"
         >
           <Layers className="w-4 h-4" />
@@ -1625,7 +1625,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
 
       {/* Sidebar Desktop */}
       <div
-        className={`fixed top-0 right-0 h-full bg-slate-900/95 backdrop-blur-sm border-l border-slate-200 transition-all duration-300 z-50 hidden md:flex flex-col ${
+        className={`fixed top-0 right-0 h-full bg-white/95 backdrop-blur-sm border-l border-slate-200 transition-all duration-300 z-50 hidden md:flex flex-col ${
           isSidebarOpen ? 'w-[420px]' : 'w-0'
         } ${className}`}
       >
@@ -1635,7 +1635,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
             <div className="flex items-center justify-between p-4 border-b border-slate-200">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-purple-400" />
-                <h3 className="text-white font-semibold">Artefatos</h3>
+                <h3 className="text-slate-800 font-semibold">Artefatos</h3>
                 <span className="text-slate-500 text-sm">({filteredArtifacts.length})</span>
               </div>
               <div className="flex items-center gap-2">
@@ -1650,7 +1650,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                 )}
                 <button
                   onClick={toggleSidebar}
-                  className="p-2 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                   title="Fechar sidebar"
                 >
                   <PanelRightClose className="w-5 h-5" />
@@ -1669,7 +1669,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                     placeholder="Buscar artefatos..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 text-sm"
+                    className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 placeholder-slate-400 focus:outline-none focus:border-purple-500 text-sm"
                   />
                 </div>
 
@@ -1680,7 +1680,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                     <button
                       onClick={() => setViewMode('questions')}
                       className={`p-1.5 rounded transition-colors relative ${
-                        viewMode === 'questions' ? 'bg-emerald-500/30 text-emerald-400' : 'text-slate-500 hover:text-white'
+                        viewMode === 'questions' ? 'bg-emerald-500/30 text-emerald-400' : 'text-slate-500 hover:text-slate-700'
                       }`}
                       title="Questões"
                     >
@@ -1693,7 +1693,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                   <button
                     onClick={() => setViewMode('list')}
                     className={`p-1.5 rounded transition-colors ${
-                      viewMode === 'list' ? 'bg-purple-500/30 text-purple-400' : 'text-slate-500 hover:text-white'
+                      viewMode === 'list' ? 'bg-purple-500/30 text-purple-400' : 'text-slate-500 hover:text-slate-700'
                     }`}
                     title="Lista"
                   >
@@ -1702,7 +1702,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`p-1.5 rounded transition-colors ${
-                      viewMode === 'grid' ? 'bg-purple-500/30 text-purple-400' : 'text-slate-500 hover:text-white'
+                      viewMode === 'grid' ? 'bg-purple-500/30 text-purple-400' : 'text-slate-500 hover:text-slate-700'
                     }`}
                     title="Grade"
                   >
@@ -1711,7 +1711,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                   <button
                     onClick={() => setViewMode('categories')}
                     className={`p-1.5 rounded transition-colors ${
-                      viewMode === 'categories' ? 'bg-purple-500/30 text-purple-400' : 'text-slate-500 hover:text-white'
+                      viewMode === 'categories' ? 'bg-purple-500/30 text-purple-400' : 'text-slate-500 hover:text-slate-700'
                     }`}
                     title="Categorias"
                   >
@@ -1726,8 +1726,8 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                   onClick={() => setChatModeFilter('all')}
                   className={`px-2 py-1 rounded text-xs transition-colors ${
                     chatModeFilter === 'all'
-                      ? 'bg-slate-200 text-white'
-                      : 'bg-slate-100 text-slate-500 hover:text-white hover:bg-slate-100'
+                      ? 'bg-slate-200 text-slate-700'
+                      : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   Todos
@@ -1743,7 +1743,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                       className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
                         chatModeFilter === mode
                           ? `${config.bgColor} ${config.color}`
-                          : 'bg-slate-100 text-slate-500 hover:text-white hover:bg-slate-100'
+                          : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                       }`}
                       title={config.description}
                     >
@@ -1760,7 +1760,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                    showFilters ? 'bg-purple-500/20 text-purple-400' : 'text-slate-600 hover:text-white hover:bg-slate-100'
+                    showFilters ? 'bg-purple-500/20 text-purple-400' : 'text-slate-600 hover:text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   <Filter className="w-4 h-4" />
@@ -1781,7 +1781,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                     className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                       activeFilter === 'all'
                         ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                        : 'bg-slate-100 text-slate-600 hover:text-white hover:bg-slate-100'
+                        : 'bg-slate-100 text-slate-600 hover:text-slate-700 hover:bg-slate-100'
                     }`}
                   >
                     Todos
@@ -1793,7 +1793,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                         activeFilter === type
                           ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                          : 'bg-slate-100 text-slate-600 hover:text-white hover:bg-slate-100'
+                          : 'bg-slate-100 text-slate-600 hover:text-slate-700 hover:bg-slate-100'
                       }`}
                     >
                       <span>{ARTIFACT_ICONS[type]}</span>
@@ -1920,7 +1920,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                               className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors ${
                                 questionStatusFilter === filter.value
                                   ? 'bg-emerald-500/20 text-emerald-400'
-                                  : 'bg-slate-100 text-slate-500 hover:text-white hover:bg-slate-100'
+                                  : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                               }`}
                               title={filter.label}
                             >
@@ -1935,7 +1935,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                           className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors ml-auto ${
                             showAdvancedFilters || questionDisciplineFilters.length > 0 || questionAssuntoFilters.length > 0 || questionBancaFilters.length > 0 || questionDifficultyFilters.length > 0
                               ? 'bg-purple-500/20 text-purple-400'
-                              : 'bg-slate-100 text-slate-500 hover:text-white hover:bg-slate-100'
+                              : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                           }`}
                         >
                           <Filter className="w-3 h-3" />
@@ -1987,7 +1987,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                                       {d}
                                       <button
                                         onClick={() => setQuestionDisciplineFilters(prev => prev.filter(x => x !== d))}
-                                        className="hover:text-white"
+                                        className="hover:text-red-500"
                                       >
                                         ×
                                       </button>
@@ -2001,7 +2001,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                                       setQuestionDisciplineFilters(prev => [...prev, e.target.value])
                                     }
                                   }}
-                                  className="w-full px-2 py-1.5 bg-slate-900 border border-slate-200 rounded text-white text-xs focus:outline-none focus:border-purple-500/50 [&>option]:bg-slate-900 [&>option]:text-white"
+                                  className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded text-slate-700 text-xs focus:outline-none focus:border-purple-500 [&>option]:bg-white [&>option]:text-slate-700"
                                 >
                                   <option value="">+ Adicionar disciplina</option>
                                   {allDisciplinas.filter(d => !questionDisciplineFilters.includes(d)).map(d => (
@@ -2027,7 +2027,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                                         {a}
                                         <button
                                           onClick={() => setQuestionAssuntoFilters(prev => prev.filter(x => x !== a))}
-                                          className="hover:text-white"
+                                          className="hover:text-red-500"
                                         >
                                           ×
                                         </button>
@@ -2041,7 +2041,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                                         setQuestionAssuntoFilters(prev => [...prev, e.target.value])
                                       }
                                     }}
-                                    className="w-full px-2 py-1.5 bg-slate-900 border border-slate-200 rounded text-white text-xs focus:outline-none focus:border-purple-500/50 [&>option]:bg-slate-900 [&>option]:text-white"
+                                    className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded text-slate-700 text-xs focus:outline-none focus:border-purple-500 [&>option]:bg-white [&>option]:text-slate-700"
                                   >
                                     <option value="">+ Adicionar assunto</option>
                                     {filteredAssuntos.filter(a => !questionAssuntoFilters.includes(a)).map(a => (
@@ -2063,7 +2063,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                                         {b}
                                         <button
                                           onClick={() => setQuestionBancaFilters(prev => prev.filter(x => x !== b))}
-                                          className="hover:text-white"
+                                          className="hover:text-red-500"
                                         >
                                           ×
                                         </button>
@@ -2077,7 +2077,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                                         setQuestionBancaFilters(prev => [...prev, e.target.value])
                                       }
                                     }}
-                                    className="w-full px-2 py-1.5 bg-slate-900 border border-slate-200 rounded text-white text-xs focus:outline-none focus:border-purple-500/50 [&>option]:bg-slate-900 [&>option]:text-white"
+                                    className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded text-slate-700 text-xs focus:outline-none focus:border-purple-500 [&>option]:bg-white [&>option]:text-slate-700"
                                   >
                                     <option value="">+ Adicionar banca</option>
                                     {allBancas.filter(b => !questionBancaFilters.includes(b)).map(b => (
@@ -2111,7 +2111,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                                             : d === 'medio' ? 'bg-yellow-500/30 text-yellow-400 ring-1 ring-yellow-500/50'
                                             : d === 'dificil' ? 'bg-orange-500/30 text-orange-400 ring-1 ring-orange-500/50'
                                             : 'bg-red-500/30 text-red-400 ring-1 ring-red-500/50'
-                                            : 'bg-slate-100 text-slate-500 hover:text-white'
+                                            : 'bg-slate-100 text-slate-500 hover:text-slate-700'
                                         }`}
                                       >
                                         {d === 'facil' ? 'Fácil' : d === 'medio' ? 'Médio' : d === 'dificil' ? 'Difícil' : 'Muito Difícil'}
@@ -2178,8 +2178,8 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                               disabled={currentQuestionIndex === 0}
                               className={`p-1.5 rounded-full transition-colors ${
                                 currentQuestionIndex === 0
-                                  ? 'text-white/20 cursor-not-allowed'
-                                  : 'text-slate-600 hover:text-white hover:bg-slate-100'
+                                  ? 'text-slate-300 cursor-not-allowed'
+                                  : 'text-slate-600 hover:text-slate-700 hover:bg-slate-100'
                               }`}
                               title="Questão anterior"
                             >
@@ -2226,8 +2226,8 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                               disabled={currentQuestionIndex >= filteredQuestions.length - 1}
                               className={`p-1.5 rounded-full transition-colors ${
                                 currentQuestionIndex >= filteredQuestions.length - 1
-                                  ? 'text-white/20 cursor-not-allowed'
-                                  : 'text-slate-600 hover:text-white hover:bg-slate-100'
+                                  ? 'text-slate-300 cursor-not-allowed'
+                                  : 'text-slate-600 hover:text-slate-700 hover:bg-slate-100'
                               }`}
                               title="Próxima questão"
                             >
@@ -2237,7 +2237,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center py-8 text-center">
-                          <HelpCircle className="w-8 h-8 text-white/20 mb-2" />
+                          <HelpCircle className="w-8 h-8 text-slate-300 mb-2" />
                           <p className="text-slate-500 text-sm">Nenhuma questão encontrada</p>
                           {(questionStatusFilter !== 'all' || questionDisciplineFilters.length > 0 || questionAssuntoFilters.length > 0 || questionBancaFilters.length > 0 || questionDifficultyFilters.length > 0) && (
                             <button
@@ -2260,7 +2260,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-40 text-center">
-                  <Search className="w-8 h-8 text-white/20 mb-2" />
+                  <Search className="w-8 h-8 text-slate-300 mb-2" />
                   <p className="text-slate-500 text-sm">
                     Nenhum artefato encontrado
                   </p>
