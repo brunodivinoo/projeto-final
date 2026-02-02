@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import {
@@ -183,6 +184,12 @@ export function MobileArtifactsScreen({ isOpen, onClose, onViewArtifact }: Mobil
   const [filterType, setFilterType] = useState<ArtifactType | 'all'>('all')
   const [showFilters, setShowFilters] = useState(false)
   const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  // Montar apenas no cliente para evitar erros de SSR com portal
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Obter artefatos do store
   const artifacts = useArtifactsStore(state => state.artifacts)
@@ -242,14 +249,17 @@ export function MobileArtifactsScreen({ isOpen, onClose, onViewArtifact }: Mobil
     setSelectedArtifact(null)
   }
 
-  return (
+  // Não renderizar no servidor ou se não estiver montado
+  if (!mounted) return null
+
+  const content = (
     <AnimatePresence>
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[999] bg-white flex flex-col lg:hidden"
+          className="fixed inset-0 z-[9999] bg-white flex flex-col lg:hidden"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top,12px)] pb-3 border-b border-slate-200 bg-white">
@@ -455,6 +465,9 @@ export function MobileArtifactsScreen({ isOpen, onClose, onViewArtifact }: Mobil
       )}
     </AnimatePresence>
   )
+
+  // Usar portal para renderizar diretamente no body, fora do contexto de stacking
+  return createPortal(content, document.body)
 }
 
 // ==========================================
