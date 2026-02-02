@@ -49,6 +49,15 @@ const QuestionArtifactCard = dynamic(() => import('../ia/QuestionArtifactCard'),
   )
 })
 
+const MermaidDiagram = dynamic(() => import('../ia/MermaidDiagram'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center p-8">
+      <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full" />
+    </div>
+  )
+})
+
 // ==========================================
 // TIPOS
 // ==========================================
@@ -159,6 +168,18 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
             src={artifact.metadata?.image?.url || artifact.content}
             alt={artifact.title}
             className="max-w-full max-h-[60vh] rounded-xl object-contain"
+          />
+        </div>
+      )
+
+    case 'diagram':
+    case 'flowchart':
+      // Renderizar diagrama Mermaid
+      return (
+        <div className="p-3 overflow-x-auto">
+          <MermaidDiagram
+            chart={artifact.content}
+            title={artifact.title}
           />
         </div>
       )
