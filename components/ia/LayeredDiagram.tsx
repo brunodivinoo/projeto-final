@@ -51,41 +51,41 @@ interface LayeredDiagramProps {
   viewMode?: ViewMode
 }
 
-// Paleta de cores por tema
+// Paleta de cores por tema - TEMA CLARO
 const COLOR_PALETTES: Record<string, Record<string, { bg: string; border: string; text: string; gradient: string }>> = {
   histology: {
-    pink: { bg: 'bg-pink-500/30', border: 'border-pink-400', text: 'text-pink-200', gradient: 'from-pink-500/40 to-pink-600/20' },
-    rose: { bg: 'bg-rose-500/30', border: 'border-rose-400', text: 'text-rose-200', gradient: 'from-rose-500/40 to-rose-600/20' },
-    cream: { bg: 'bg-amber-200/20', border: 'border-amber-300', text: 'text-amber-100', gradient: 'from-amber-300/30 to-amber-400/10' },
-    beige: { bg: 'bg-orange-200/20', border: 'border-orange-300', text: 'text-orange-100', gradient: 'from-orange-300/30 to-orange-400/10' },
-    yellow: { bg: 'bg-yellow-500/30', border: 'border-yellow-400', text: 'text-yellow-200', gradient: 'from-yellow-500/40 to-yellow-600/20' },
-    red: { bg: 'bg-red-500/30', border: 'border-red-400', text: 'text-red-200', gradient: 'from-red-500/40 to-red-600/20' },
-    orange: { bg: 'bg-orange-500/30', border: 'border-orange-400', text: 'text-orange-200', gradient: 'from-orange-500/40 to-orange-600/20' },
-    purple: { bg: 'bg-purple-500/30', border: 'border-purple-400', text: 'text-purple-200', gradient: 'from-purple-500/40 to-purple-600/20' },
-    blue: { bg: 'bg-blue-500/30', border: 'border-blue-400', text: 'text-blue-200', gradient: 'from-blue-500/40 to-blue-600/20' },
-    cyan: { bg: 'bg-cyan-500/30', border: 'border-cyan-400', text: 'text-cyan-200', gradient: 'from-cyan-500/40 to-cyan-600/20' },
-    green: { bg: 'bg-emerald-500/30', border: 'border-emerald-400', text: 'text-emerald-200', gradient: 'from-emerald-500/40 to-emerald-600/20' },
-    gray: { bg: 'bg-slate-500/30', border: 'border-slate-400', text: 'text-slate-200', gradient: 'from-slate-500/40 to-slate-600/20' },
-    teal: { bg: 'bg-teal-500/30', border: 'border-teal-400', text: 'text-teal-200', gradient: 'from-teal-500/40 to-teal-600/20' },
+    pink: { bg: 'bg-pink-100', border: 'border-pink-300', text: 'text-pink-700', gradient: 'from-pink-50 to-pink-100' },
+    rose: { bg: 'bg-rose-100', border: 'border-rose-300', text: 'text-rose-700', gradient: 'from-rose-50 to-rose-100' },
+    cream: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', gradient: 'from-amber-50 to-amber-100' },
+    beige: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', gradient: 'from-orange-50 to-orange-100' },
+    yellow: { bg: 'bg-yellow-100', border: 'border-yellow-300', text: 'text-yellow-700', gradient: 'from-yellow-50 to-yellow-100' },
+    red: { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-700', gradient: 'from-red-50 to-red-100' },
+    orange: { bg: 'bg-orange-100', border: 'border-orange-300', text: 'text-orange-700', gradient: 'from-orange-50 to-orange-100' },
+    purple: { bg: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-700', gradient: 'from-purple-50 to-purple-100' },
+    blue: { bg: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-700', gradient: 'from-blue-50 to-blue-100' },
+    cyan: { bg: 'bg-cyan-100', border: 'border-cyan-300', text: 'text-cyan-700', gradient: 'from-cyan-50 to-cyan-100' },
+    green: { bg: 'bg-emerald-100', border: 'border-emerald-300', text: 'text-emerald-700', gradient: 'from-emerald-50 to-emerald-100' },
+    gray: { bg: 'bg-slate-100', border: 'border-slate-300', text: 'text-slate-700', gradient: 'from-slate-50 to-slate-100' },
+    teal: { bg: 'bg-teal-100', border: 'border-teal-300', text: 'text-teal-700', gradient: 'from-teal-50 to-teal-100' },
   },
   anatomy: {
-    muscle: { bg: 'bg-red-600/30', border: 'border-red-500', text: 'text-red-200', gradient: 'from-red-600/40 to-red-700/20' },
-    mucosa: { bg: 'bg-pink-400/30', border: 'border-pink-300', text: 'text-pink-200', gradient: 'from-pink-400/40 to-pink-500/20' },
-    serosa: { bg: 'bg-amber-300/20', border: 'border-amber-200', text: 'text-amber-100', gradient: 'from-amber-300/30 to-amber-400/10' },
-    connective: { bg: 'bg-orange-300/20', border: 'border-orange-200', text: 'text-orange-100', gradient: 'from-orange-300/30 to-orange-400/10' },
-    epithelium: { bg: 'bg-purple-400/30', border: 'border-purple-300', text: 'text-purple-200', gradient: 'from-purple-400/40 to-purple-500/20' },
+    muscle: { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-700', gradient: 'from-red-50 to-red-100' },
+    mucosa: { bg: 'bg-pink-100', border: 'border-pink-300', text: 'text-pink-700', gradient: 'from-pink-50 to-pink-100' },
+    serosa: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', gradient: 'from-amber-50 to-amber-100' },
+    connective: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', gradient: 'from-orange-50 to-orange-100' },
+    epithelium: { bg: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-700', gradient: 'from-purple-50 to-purple-100' },
   },
   staging: {
-    tis: { bg: 'bg-emerald-500/30', border: 'border-emerald-400', text: 'text-emerald-200', gradient: 'from-emerald-500/40 to-emerald-600/20' },
-    t1: { bg: 'bg-yellow-500/30', border: 'border-yellow-400', text: 'text-yellow-200', gradient: 'from-yellow-500/40 to-yellow-600/20' },
-    t2: { bg: 'bg-orange-500/30', border: 'border-orange-400', text: 'text-orange-200', gradient: 'from-orange-500/40 to-orange-600/20' },
-    t3: { bg: 'bg-red-500/30', border: 'border-red-400', text: 'text-red-200', gradient: 'from-red-500/40 to-red-600/20' },
-    t4: { bg: 'bg-red-700/30', border: 'border-red-600', text: 'text-red-200', gradient: 'from-red-700/40 to-red-800/20' },
+    tis: { bg: 'bg-emerald-100', border: 'border-emerald-300', text: 'text-emerald-700', gradient: 'from-emerald-50 to-emerald-100' },
+    t1: { bg: 'bg-yellow-100', border: 'border-yellow-300', text: 'text-yellow-700', gradient: 'from-yellow-50 to-yellow-100' },
+    t2: { bg: 'bg-orange-100', border: 'border-orange-300', text: 'text-orange-700', gradient: 'from-orange-50 to-orange-100' },
+    t3: { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-700', gradient: 'from-red-50 to-red-100' },
+    t4: { bg: 'bg-red-200', border: 'border-red-400', text: 'text-red-800', gradient: 'from-red-100 to-red-200' },
   },
   invasion: {
-    free: { bg: 'bg-emerald-500/20', border: 'border-emerald-400', text: 'text-emerald-300', gradient: 'from-emerald-500/30 to-emerald-600/10' },
-    invaded: { bg: 'bg-red-500/30', border: 'border-red-400', text: 'text-red-200', gradient: 'from-red-500/40 to-red-600/20' },
-    partial: { bg: 'bg-amber-500/30', border: 'border-amber-400', text: 'text-amber-200', gradient: 'from-amber-500/40 to-amber-600/20' },
+    free: { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-700', gradient: 'from-emerald-50 to-emerald-100' },
+    invaded: { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-700', gradient: 'from-red-50 to-red-100' },
+    partial: { bg: 'bg-amber-100', border: 'border-amber-300', text: 'text-amber-700', gradient: 'from-amber-50 to-amber-100' },
   }
 }
 
@@ -167,9 +167,9 @@ function LayerCard({
 
               {/* Nome da camada */}
               <div>
-                <h4 className="font-bold text-white text-lg">{layer.name}</h4>
+                <h4 className="font-bold text-slate-800 text-lg">{layer.name}</h4>
                 {layer.invaded && (
-                  <span className="text-xs text-red-300 flex items-center gap-1">
+                  <span className="text-xs text-red-600 flex items-center gap-1">
                     <AlertTriangle className="w-3 h-3" />
                     {layer.invasionLevel === 'full' ? 'Invadida' : 'Parcialmente invadida'}
                   </span>
@@ -183,23 +183,23 @@ function LayerCard({
                 <div className="flex flex-col items-end">
                   <span className={`
                     px-3 py-1 rounded-full text-sm font-bold
-                    ${layer.staging.toLowerCase().includes('tis') ? 'bg-emerald-500/30 text-emerald-300' :
-                      layer.staging.toLowerCase().includes('t1') ? 'bg-yellow-500/30 text-yellow-300' :
-                      layer.staging.toLowerCase().includes('t2') ? 'bg-orange-500/30 text-orange-300' :
-                      layer.staging.toLowerCase().includes('t3') ? 'bg-red-500/30 text-red-300' :
-                      'bg-red-700/30 text-red-300'}
+                    ${layer.staging.toLowerCase().includes('tis') ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' :
+                      layer.staging.toLowerCase().includes('t1') ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' :
+                      layer.staging.toLowerCase().includes('t2') ? 'bg-orange-100 text-orange-700 border border-orange-300' :
+                      layer.staging.toLowerCase().includes('t3') ? 'bg-red-100 text-red-700 border border-red-300' :
+                      'bg-red-200 text-red-800 border border-red-400'}
                   `}>
                     {layer.staging}
                   </span>
                   {layer.stagingName && (
-                    <span className="text-xs text-slate-600 mt-1">{layer.stagingName}</span>
+                    <span className="text-xs text-slate-500 mt-1">{layer.stagingName}</span>
                   )}
                 </div>
               )}
 
               {/* Marcador */}
               {layer.marker && (
-                <span className="text-sm text-emerald-300 font-medium">
+                <span className="text-sm text-emerald-600 font-medium">
                   {layer.marker}
                 </span>
               )}
@@ -337,7 +337,7 @@ function CrossSectionView({
                   </span>
                   {/* Nome e sublayers */}
                   <div>
-                    <h5 className="font-bold text-white text-sm">{layer.name}</h5>
+                    <h5 className="font-bold text-slate-800 text-sm">{layer.name}</h5>
                     {layer.sublayers && layer.sublayers.length > 0 && (
                       <p className="text-[10px] text-slate-500 truncate max-w-[200px]">
                         {layer.sublayers.slice(0, 2).map(s => typeof s === 'string' ? s : s.name).join(' • ')}
@@ -351,11 +351,11 @@ function CrossSectionView({
                 {layer.staging && (
                   <span className={`
                     px-2 py-1 rounded text-xs font-bold
-                    ${layer.staging.toLowerCase().includes('tis') ? 'bg-emerald-500/30 text-emerald-300' :
-                      layer.staging.toLowerCase().includes('t1') ? 'bg-yellow-500/30 text-yellow-300' :
-                      layer.staging.toLowerCase().includes('t2') ? 'bg-orange-500/30 text-orange-300' :
-                      layer.staging.toLowerCase().includes('t3') ? 'bg-red-500/30 text-red-300' :
-                      'bg-red-700/30 text-red-300'}
+                    ${layer.staging.toLowerCase().includes('tis') ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' :
+                      layer.staging.toLowerCase().includes('t1') ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' :
+                      layer.staging.toLowerCase().includes('t2') ? 'bg-orange-100 text-orange-700 border border-orange-300' :
+                      layer.staging.toLowerCase().includes('t3') ? 'bg-red-100 text-red-700 border border-red-300' :
+                      'bg-red-200 text-red-800 border border-red-400'}
                   `}>
                     {layer.staging}
                   </span>
@@ -431,7 +431,7 @@ function TimelineView({
                       {index + 1}
                     </span>
                     <div>
-                      <h5 className="font-bold text-white text-sm">{layer.name}</h5>
+                      <h5 className="font-bold text-slate-800 text-sm">{layer.name}</h5>
                       {layer.staging && (
                         <span className="text-[10px] text-slate-500">{layer.stagingName || layer.staging}</span>
                       )}
@@ -508,18 +508,18 @@ function LayerDetailPanel({
       exit={{ opacity: 0, x: 20 }}
       className="absolute top-4 right-4 w-72 z-20"
     >
-      <div className="bg-slate-800/95 backdrop-blur-sm border border-slate-300 rounded-xl shadow-2xl overflow-hidden">
+      <div className="bg-white backdrop-blur-sm border border-slate-200 rounded-xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className={`flex items-center justify-between px-4 py-3 bg-gradient-to-r ${colors.gradient} border-b border-slate-200`}>
           <div className="flex items-center gap-2">
-            <Microscope className="w-4 h-4 text-slate-700" />
-            <span className="text-white font-medium text-sm">Detalhes da Camada</span>
+            <Microscope className="w-4 h-4 text-slate-600" />
+            <span className="text-slate-800 font-medium text-sm">Detalhes da Camada</span>
           </div>
           <button
             onClick={onClose}
             className="p-1 hover:bg-slate-100 rounded transition-colors"
           >
-            <X className="w-4 h-4 text-slate-600" />
+            <X className="w-4 h-4 text-slate-500" />
           </button>
         </div>
 
@@ -527,27 +527,27 @@ function LayerDetailPanel({
         <div className="p-4 space-y-4">
           {/* Nome */}
           <div>
-            <span className="text-xs text-slate-500 uppercase tracking-wider">Camada</span>
-            <p className="text-white font-bold text-lg mt-1">{layer.name}</p>
+            <span className="text-xs text-slate-400 uppercase tracking-wider">Camada</span>
+            <p className="text-slate-800 font-bold text-lg mt-1">{layer.name}</p>
           </div>
 
           {/* Estadiamento */}
           {layer.staging && (
             <div>
-              <span className="text-xs text-slate-500 uppercase tracking-wider">Estadiamento</span>
+              <span className="text-xs text-slate-400 uppercase tracking-wider">Estadiamento</span>
               <div className="flex items-center gap-2 mt-1">
                 <span className={`
                   px-3 py-1.5 rounded-lg text-sm font-bold
-                  ${layer.staging.toLowerCase().includes('tis') ? 'bg-emerald-500/30 text-emerald-300' :
-                    layer.staging.toLowerCase().includes('t1') ? 'bg-yellow-500/30 text-yellow-300' :
-                    layer.staging.toLowerCase().includes('t2') ? 'bg-orange-500/30 text-orange-300' :
-                    layer.staging.toLowerCase().includes('t3') ? 'bg-red-500/30 text-red-300' :
-                    'bg-red-700/30 text-red-300'}
+                  ${layer.staging.toLowerCase().includes('tis') ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' :
+                    layer.staging.toLowerCase().includes('t1') ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' :
+                    layer.staging.toLowerCase().includes('t2') ? 'bg-orange-100 text-orange-700 border border-orange-300' :
+                    layer.staging.toLowerCase().includes('t3') ? 'bg-red-100 text-red-700 border border-red-300' :
+                    'bg-red-200 text-red-800 border border-red-400'}
                 `}>
                   {layer.staging}
                 </span>
                 {layer.stagingName && (
-                  <span className="text-slate-600 text-sm">{layer.stagingName}</span>
+                  <span className="text-slate-500 text-sm">{layer.stagingName}</span>
                 )}
               </div>
             </div>
@@ -555,10 +555,10 @@ function LayerDetailPanel({
 
           {/* Status de invasão */}
           {layer.invaded && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-400" />
-                <span className="text-red-300 text-sm font-medium">
+                <AlertTriangle className="w-4 h-4 text-red-500" />
+                <span className="text-red-700 text-sm font-medium">
                   {layer.invasionLevel === 'full' ? 'Camada totalmente invadida' : 'Camada parcialmente invadida'}
                 </span>
               </div>
@@ -568,7 +568,7 @@ function LayerDetailPanel({
           {/* Sublayers */}
           {layer.sublayers && layer.sublayers.length > 0 && (
             <div>
-              <span className="text-xs text-slate-500 uppercase tracking-wider">Componentes</span>
+              <span className="text-xs text-slate-400 uppercase tracking-wider">Componentes</span>
               <ul className="mt-2 space-y-1.5">
                 {layer.sublayers.map((sub, i) => {
                   const subName = typeof sub === 'string' ? sub : sub.name
@@ -591,9 +591,9 @@ function LayerDetailPanel({
 
           {/* Detalhes extras */}
           {layer.details && (
-            <div className="bg-slate-900/50 rounded-lg p-3">
+            <div className="bg-slate-50 rounded-lg p-3">
               <div className="flex items-start gap-2">
-                <BookOpen className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                <BookOpen className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-slate-600">{layer.details}</p>
               </div>
             </div>
@@ -601,8 +601,8 @@ function LayerDetailPanel({
 
           {/* Marcador */}
           {layer.marker && (
-            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
-              <p className="text-emerald-300 text-sm font-medium">{layer.marker}</p>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+              <p className="text-emerald-700 text-sm font-medium">{layer.marker}</p>
             </div>
           )}
         </div>
@@ -681,19 +681,19 @@ export default function LayeredDiagram({
 
   const content = (
     <div className={`
-      ${isFullscreen ? 'h-full overflow-y-auto' : 'bg-slate-900/50 rounded-2xl border border-slate-200 overflow-hidden'}
+      ${isFullscreen ? 'h-full overflow-y-auto bg-white' : 'bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm'}
     `}>
       {/* Header */}
-      <div className="p-4 border-b border-slate-200 bg-slate-100">
+      <div className="p-4 border-b border-slate-200 bg-gradient-to-r from-purple-50 to-pink-50">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-sm">
               <Target className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-lg">{title}</h3>
+              <h3 className="font-bold text-slate-800 text-lg">{title}</h3>
               {description && (
-                <p className="text-slate-600 text-sm">{description}</p>
+                <p className="text-slate-500 text-sm">{description}</p>
               )}
             </div>
           </div>
@@ -701,11 +701,11 @@ export default function LayeredDiagram({
           <div className="flex items-center gap-2">
             {/* Stats */}
             <div className="flex items-center gap-4 mr-2 text-sm">
-              <span className="text-slate-600">
-                <span className="font-bold text-white">{layers.length}</span> camadas
+              <span className="text-slate-500">
+                <span className="font-bold text-slate-700">{layers.length}</span> camadas
               </span>
               {invadedCount > 0 && (
-                <span className="text-red-400">
+                <span className="text-red-500">
                   <span className="font-bold">{invadedCount}</span> invadida{invadedCount > 1 ? 's' : ''}
                 </span>
               )}
@@ -777,11 +777,11 @@ export default function LayeredDiagram({
             <span className="text-xs text-slate-500">Estadiamento:</span>
             <div className="flex items-center gap-2 flex-wrap">
               {[
-                { label: 'Tis', color: 'bg-emerald-500/30 text-emerald-300' },
-                { label: 'T1', color: 'bg-yellow-500/30 text-yellow-300' },
-                { label: 'T2', color: 'bg-orange-500/30 text-orange-300' },
-                { label: 'T3', color: 'bg-red-500/30 text-red-300' },
-                { label: 'T4', color: 'bg-red-700/30 text-red-300' },
+                { label: 'Tis', color: 'bg-emerald-100 text-emerald-700 border border-emerald-300' },
+                { label: 'T1', color: 'bg-yellow-100 text-yellow-700 border border-yellow-300' },
+                { label: 'T2', color: 'bg-orange-100 text-orange-700 border border-orange-300' },
+                { label: 'T3', color: 'bg-red-100 text-red-700 border border-red-300' },
+                { label: 'T4', color: 'bg-red-200 text-red-800 border border-red-400' },
               ].map(item => (
                 <span key={item.label} className={`px-2 py-0.5 rounded text-xs font-medium ${item.color}`}>
                   {item.label}
@@ -846,7 +846,7 @@ export default function LayeredDiagram({
 
       {/* Footer com info dinâmico */}
       {interactive && (
-        <div className="p-3 border-t border-slate-200 bg-slate-100">
+        <div className="p-3 border-t border-slate-200 bg-slate-50">
           <p className="text-xs text-slate-500 text-center">
             {viewMode === 'stacked'
               ? 'Clique nas camadas para ver detalhes'
@@ -865,11 +865,11 @@ export default function LayeredDiagram({
       <>
         {/* Backdrop OPACO - não deixa ver o conteúdo por trás */}
         <div
-          className="fixed inset-0 bg-slate-950 z-40"
+          className="fixed inset-0 bg-slate-100 z-40"
           onClick={() => setIsFullscreen(false)}
         />
         {/* Container do conteúdo fullscreen */}
-        <div className={`fixed z-50 bg-slate-900 rounded-2xl border border-slate-200 overflow-hidden flex flex-col shadow-2xl ${
+        <div className={`fixed z-50 bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col shadow-2xl ${
           isMobile ? 'inset-0 rounded-none' : 'inset-4'
         }`}>
           {content}

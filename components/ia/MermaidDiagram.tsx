@@ -72,80 +72,81 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
 
         mermaid.initialize({
           startOnLoad: false,
-          theme: 'dark',
+          theme: 'base',
           securityLevel: 'loose',
           suppressErrorRendering: false,
           themeVariables: {
-            // Cores principais - todas escuras para melhor contraste de texto
-            primaryColor: '#1e3a5f',
-            primaryTextColor: '#ffffff',
+            // TEMA CLARO - Cores vibrantes e legíveis
+            // Cores principais
+            primaryColor: '#10b981', // Verde esmeralda
+            primaryTextColor: '#1e293b', // Texto escuro
             primaryBorderColor: '#10b981',
-            lineColor: '#94a3b8',
-            secondaryColor: '#1e293b',
-            tertiaryColor: '#334155',
-            background: '#0f172a',
-            mainBkg: '#1e293b',
+            lineColor: '#64748b',
+            secondaryColor: '#3b82f6', // Azul
+            tertiaryColor: '#8b5cf6', // Roxo
+            background: '#ffffff',
+            mainBkg: '#ffffff',
 
-            // Nós e bordas
+            // Nós e bordas - cores vibrantes com texto escuro
             nodeBorder: '#10b981',
-            nodeTextColor: '#ffffff',
+            nodeTextColor: '#1e293b',
 
-            // Clusters/subgraphs - fundo escuro sempre
-            clusterBkg: '#1e293b',
-            clusterBorder: '#475569',
+            // Clusters/subgraphs - fundo claro
+            clusterBkg: '#f8fafc',
+            clusterBorder: '#e2e8f0',
 
             // Títulos e labels
-            titleColor: '#ffffff',
-            edgeLabelBackground: '#1e293b',
+            titleColor: '#1e293b',
+            edgeLabelBackground: '#ffffff',
 
             // Atores (sequence diagrams)
-            actorTextColor: '#ffffff',
-            actorBkg: '#1e3a5f',
-            actorBorder: '#10b981',
+            actorTextColor: '#1e293b',
+            actorBkg: '#10b981',
+            actorBorder: '#059669',
 
             // Sinais
-            signalColor: '#ffffff',
-            signalTextColor: '#ffffff',
+            signalColor: '#1e293b',
+            signalTextColor: '#1e293b',
 
             // Labels
-            labelBoxBkgColor: '#1e293b',
-            labelBoxBorderColor: '#475569',
-            labelTextColor: '#ffffff',
-            loopTextColor: '#ffffff',
+            labelBoxBkgColor: '#ffffff',
+            labelBoxBorderColor: '#e2e8f0',
+            labelTextColor: '#1e293b',
+            loopTextColor: '#1e293b',
 
             // Notas
-            noteBkgColor: '#334155',
-            noteTextColor: '#ffffff',
-            noteBorderColor: '#64748b',
+            noteBkgColor: '#fef3c7',
+            noteTextColor: '#1e293b',
+            noteBorderColor: '#fbbf24',
 
             // Ativação
-            activationBkgColor: '#1e293b',
-            sequenceNumberColor: '#10b981',
+            activationBkgColor: '#dbeafe',
+            sequenceNumberColor: '#3b82f6',
 
             // Seções
-            sectionBkgColor: '#1e293b',
-            altSectionBkgColor: '#334155',
-            sectionBkgColor2: '#1e293b',
+            sectionBkgColor: '#f0fdf4',
+            altSectionBkgColor: '#eff6ff',
+            sectionBkgColor2: '#faf5ff',
 
             // Tasks (gantt)
-            taskBkgColor: '#1e3a5f',
+            taskBkgColor: '#10b981',
             taskTextColor: '#ffffff',
-            taskTextLightColor: '#ffffff',
-            taskTextOutsideColor: '#ffffff',
-            taskTextClickableColor: '#10b981',
-            activeTaskBorderColor: '#10b981',
-            gridColor: '#475569',
-            doneTaskBkgColor: '#064e3b',
+            taskTextLightColor: '#1e293b',
+            taskTextOutsideColor: '#1e293b',
+            taskTextClickableColor: '#3b82f6',
+            activeTaskBorderColor: '#059669',
+            gridColor: '#e2e8f0',
+            doneTaskBkgColor: '#86efac',
             doneTaskBorderColor: '#10b981',
-            critBkgColor: '#7f1d1d',
+            critBkgColor: '#fecaca',
             critBorderColor: '#ef4444',
             todayLineColor: '#f59e0b',
 
             // Flowchart específico
-            defaultLinkColor: '#94a3b8',
+            defaultLinkColor: '#64748b',
 
-            // Mindmap - cores escuras para contraste
-            mindmapBranchColor: '#94a3b8',
+            // Mindmap
+            mindmapBranchColor: '#64748b',
 
             // Fonte
             fontFamily: 'ui-sans-serif, system-ui, sans-serif',
@@ -560,12 +561,12 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
   }
 
   return (
-    <div className={`my-4 ${isFullscreen ? 'fixed inset-0 z-50 bg-slate-900/95 p-8 overflow-hidden' : ''}`}>
-      <div className={`bg-slate-800/50 border border-slate-200 rounded-xl overflow-hidden ${isFullscreen ? 'h-full flex flex-col' : ''}`}>
+    <div className={`my-4 ${isFullscreen ? 'fixed inset-0 z-50 bg-white p-8 overflow-hidden' : ''}`}>
+      <div className={`bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm ${isFullscreen ? 'h-full flex flex-col' : ''}`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-3 py-2.5 bg-slate-800/80 border-b border-slate-200">
+        <div className="flex items-center justify-between px-3 py-2.5 bg-gradient-to-r from-purple-50 to-blue-50 border-b border-slate-200">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0 shadow-sm">
               <span className="text-base">🔀</span>
             </div>
             <div className="min-w-0">
@@ -573,7 +574,7 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
                 {title || 'Diagrama'}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-purple-400 text-xs font-medium">Fluxograma</span>
+                <span className="text-purple-600 text-xs font-medium">Fluxograma</span>
                 <span className="text-slate-400 text-xs">Preview</span>
               </div>
             </div>
@@ -704,21 +705,21 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
                   transform: 'translate(-50%, -100%)'
                 }}
               >
-                <div className="bg-slate-800 border border-slate-300 rounded-lg px-3 py-2 shadow-xl">
-                  <p className="text-white font-medium text-sm">{hoveredNode.label}</p>
+                <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-xl">
+                  <p className="text-slate-800 font-medium text-sm">{hoveredNode.label}</p>
                   {hoveredNode.description && (
-                    <p className="text-slate-600 text-xs mt-1 max-w-[200px]">
+                    <p className="text-slate-500 text-xs mt-1 max-w-[200px]">
                       {hoveredNode.description}
                     </p>
                   )}
                   {!hoveredNode.description && (
-                    <p className="text-slate-500 text-xs mt-1 italic">
+                    <p className="text-slate-400 text-xs mt-1 italic">
                       Clique para ver mais
                     </p>
                   )}
                 </div>
                 {/* Arrow */}
-                <div className="w-3 h-3 bg-slate-800 border-r border-b border-slate-300 rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1.5" />
+                <div className="w-3 h-3 bg-white border-r border-b border-slate-200 rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1.5" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -732,12 +733,12 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
                 exit={{ opacity: 0, x: 20 }}
                 className="absolute top-4 right-4 z-30 w-80"
               >
-                <div className="bg-slate-800/95 backdrop-blur-sm border border-slate-300 rounded-xl shadow-2xl overflow-hidden">
+                <div className="bg-white backdrop-blur-sm border border-slate-200 rounded-xl shadow-2xl overflow-hidden">
                   {/* Header do painel */}
-                  <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border-b border-slate-200">
+                  <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-50 to-cyan-50 border-b border-slate-200">
                     <div className="flex items-center gap-2">
-                      <Info className="w-4 h-4 text-emerald-400" />
-                      <span className="text-white font-medium text-sm">Detalhes do Nó</span>
+                      <Info className="w-4 h-4 text-emerald-600" />
+                      <span className="text-slate-800 font-medium text-sm">Detalhes do Nó</span>
                     </div>
                     <button
                       onClick={(e) => {
@@ -746,7 +747,7 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
                       }}
                       className="p-1 hover:bg-slate-100 rounded transition-colors"
                     >
-                      <X className="w-4 h-4 text-slate-600" />
+                      <X className="w-4 h-4 text-slate-500" />
                     </button>
                   </div>
 
@@ -754,24 +755,24 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
                   <div className="p-4 space-y-4">
                     {/* Nome/Label principal */}
                     <div>
-                      <span className="text-xs text-slate-500 uppercase tracking-wider">Elemento</span>
-                      <p className="text-white font-bold text-lg mt-1">{selectedNode.info.label}</p>
+                      <span className="text-xs text-slate-400 uppercase tracking-wider">Elemento</span>
+                      <p className="text-slate-800 font-bold text-lg mt-1">{selectedNode.info.label}</p>
                     </div>
 
                     {/* Tipo de nó (detectado automaticamente) */}
                     <div>
-                      <span className="text-xs text-slate-500 uppercase tracking-wider">Tipo</span>
+                      <span className="text-xs text-slate-400 uppercase tracking-wider">Tipo</span>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           selectedNode.info.label.includes('?')
-                            ? 'bg-amber-500/20 text-amber-300'
+                            ? 'bg-amber-100 text-amber-700'
                             : selectedNode.info.id.toLowerCase().includes('start') || selectedNode.info.id.toLowerCase().includes('inicio')
-                              ? 'bg-emerald-500/20 text-emerald-300'
+                              ? 'bg-emerald-100 text-emerald-700'
                               : selectedNode.info.id.toLowerCase().includes('end') || selectedNode.info.id.toLowerCase().includes('fim')
-                                ? 'bg-red-500/20 text-red-300'
+                                ? 'bg-red-100 text-red-700'
                                 : selectedNode.info.label.toLowerCase().includes('t1') || selectedNode.info.label.toLowerCase().includes('t2') || selectedNode.info.label.toLowerCase().includes('t3') || selectedNode.info.label.toLowerCase().includes('t4') || selectedNode.info.label.toLowerCase().includes('tis')
-                                  ? 'bg-purple-500/20 text-purple-300'
-                                  : 'bg-blue-500/20 text-blue-300'
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : 'bg-blue-100 text-blue-700'
                         }`}>
                           {selectedNode.info.label.includes('?') ? '⬥ Decisão' :
                            selectedNode.info.id.toLowerCase().includes('start') || selectedNode.info.id.toLowerCase().includes('inicio') ? '▶ Início' :
@@ -784,23 +785,23 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
 
                     {/* ID técnico */}
                     <div>
-                      <span className="text-xs text-slate-500 uppercase tracking-wider">ID</span>
-                      <p className="text-emerald-400 font-mono text-sm mt-1">{selectedNode.info.id}</p>
+                      <span className="text-xs text-slate-400 uppercase tracking-wider">ID</span>
+                      <p className="text-emerald-600 font-mono text-sm mt-1">{selectedNode.info.id}</p>
                     </div>
 
                     {/* Descrição contextual */}
                     {selectedNode.info.description ? (
-                      <div className="bg-slate-900/50 rounded-lg p-3">
-                        <span className="text-xs text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                      <div className="bg-slate-50 rounded-lg p-3">
+                        <span className="text-xs text-emerald-600 uppercase tracking-wider flex items-center gap-1">
                           📚 Explicação
                         </span>
-                        <p className="text-slate-700 text-sm mt-2 leading-relaxed">
+                        <p className="text-slate-600 text-sm mt-2 leading-relaxed">
                           {selectedNode.info.description}
                         </p>
                       </div>
                     ) : (
-                      <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-                        <p className="text-amber-200/80 text-xs leading-relaxed">
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                        <p className="text-amber-700 text-xs leading-relaxed">
                           💡 Este nó representa um passo no algoritmo. Clique em outros nós para entender o fluxo completo de decisões.
                         </p>
                       </div>
@@ -809,20 +810,20 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
                     {/* Conexões */}
                     {highlightedPaths.size > 0 && (
                       <div>
-                        <span className="text-xs text-slate-500 uppercase tracking-wider">Conexões</span>
-                        <p className="text-cyan-400 text-sm mt-1 flex items-center gap-2">
-                          <span className="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                        <span className="text-xs text-slate-400 uppercase tracking-wider">Conexões</span>
+                        <p className="text-cyan-600 text-sm mt-1 flex items-center gap-2">
+                          <span className="inline-block w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
                           {highlightedPaths.size} caminho(s) destacado(s)
                         </p>
-                        <p className="text-slate-500 text-xs mt-1">
+                        <p className="text-slate-400 text-xs mt-1">
                           Siga as linhas destacadas para ver o fluxo
                         </p>
                       </div>
                     )}
 
                     {/* Dica de uso */}
-                    <div className="pt-3 border-t border-slate-200">
-                      <p className="text-slate-500 text-xs flex items-center gap-2">
+                    <div className="pt-3 border-t border-slate-100">
+                      <p className="text-slate-400 text-xs flex items-center gap-2">
                         <MousePointer2 className="w-3 h-3" />
                         Clique em outros nós para ver suas conexões
                       </p>
@@ -835,21 +836,21 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
 
           {/* Hint para zoom/pan em fullscreen */}
           {isFullscreen && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 bg-slate-800/80 rounded-lg text-slate-500 text-xs">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 bg-white/90 border border-slate-200 rounded-lg text-slate-500 text-xs shadow-sm">
               <Move className="w-3 h-3" />
               <span>Arraste para mover</span>
-              <span className="text-white/20">|</span>
+              <span className="text-slate-300">|</span>
               <span>Ctrl + Scroll para zoom</span>
-              <span className="text-white/20">|</span>
+              <span className="text-slate-300">|</span>
               <span>ESC para sair</span>
             </div>
           )}
 
           {/* Indicador de modo interativo */}
           {interactiveMode && !isFullscreen && (
-            <div className="absolute bottom-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-              <MousePointer2 className="w-3 h-3 text-emerald-400" />
-              <span className="text-emerald-400 text-xs">Clique nos nós</span>
+            <div className="absolute bottom-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <MousePointer2 className="w-3 h-3 text-emerald-600" />
+              <span className="text-emerald-600 text-xs">Clique nos nós</span>
             </div>
           )}
         </div>

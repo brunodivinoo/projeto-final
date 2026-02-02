@@ -1441,28 +1441,58 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   // Ordenar por índice
   allMatches.sort((a, b) => (a.match.index ?? 0) - (b.match.index ?? 0))
 
-  // Função auxiliar para remover headers/títulos redundantes antes de artefatos
-  // Remove linhas que começam com ## ou ### e contêm palavras como SIMULADO, FLASHCARD, etc.
-  const cleanTextBeforeArtifact = (text: string, _artifactType: string): string => {
+  // Função auxiliar para remover headers/títulos/tabelas redundantes antes de artefatos
+  // Remove conteúdo markdown que é redundante com o artefato visual
+  const cleanTextBeforeArtifact = (text: string, artifactType: string): string => {
     if (!text) return text
-    // Padrões de títulos a remover (aparecem logo antes do artefato)
+    let cleaned = text
+
+    // Para flashcards, remover TUDO relacionado a resumos/instruções de flashcards
+    if (artifactType === 'flashcards') {
+      // Remover seções de "Resumo do Deck" com tabelas markdown
+      cleaned = cleaned.replace(/#{1,4}\s*[🎴📝🃏]?\s*Resumo\s+d[oe]\s+Deck[\s\S]*?(?=\n#{1,4}\s|$)/gi, '')
+      // Remover seções "Como Usar os Flashcards"
+      cleaned = cleaned.replace(/#{1,4}\s*[🎯📚]?\s*Como\s+Usar[\s\S]*?(?=\n#{1,4}\s|$)/gi, '')
+      // Remover tabelas markdown inteiras (| ... | ... |)
+      cleaned = cleaned.replace(/\|[^\n]+\|[\s\S]*?\|[^\n]+\|\n?/g, '')
+      // Remover instruções sobre flashcards
+      cleaned = cleaned.replace(/.*(?:toque|clique|deslize|navegue|responda).*flashcard.*\n?/gi, '')
+      cleaned = cleaned.replace(/.*(?:cards?|cartões?).*(?:estudar|revisar|memorizar).*\n?/gi, '')
+      // Remover listas de categorias/tópicos cobertos
+      cleaned = cleaned.replace(/\*\*(?:Categoria|Tópico|Conceito)[^\n]*\*\*[^\n]*\n?/gi, '')
+      // Remover linhas com contagem de cards
+      cleaned = cleaned.replace(/.*\d+\s*cards?.*\n?/gi, '')
+    }
+
+    // Para simulados, remover instruções redundantes
+    if (artifactType === 'simulado') {
+      cleaned = cleaned.replace(/#{1,4}\s*[📋📝]?\s*(?:Instruções|Como\s+Fazer)[\s\S]*?(?=\n#{1,4}\s|$)/gi, '')
+      cleaned = cleaned.replace(/.*(?:tempo|cronômetro|minutos).*simulado.*\n?/gi, '')
+    }
+
+    // Para questões, remover instruções
+    if (artifactType === 'question') {
+      cleaned = cleaned.replace(/#{1,4}\s*[❓🎯]?\s*(?:Questão|Question)[\s\S]*?(?=```quest)/gi, '')
+    }
+
+    // Padrões gerais de títulos a remover (aparecem logo antes do artefato)
     const headerPatterns = [
-      /\n?#{1,4}\s*.*?(SIMULADO|FLASHCARD|QUESTÕES?|QUIZ|TESTE|FIXAÇÃO|QUESTÃO).*?\n?$/gi,
-      /\n?#{1,4}\s*📋.*?\n?$/gi,
-      /\n?#{1,4}\s*🧠.*?\n?$/gi,
-      /\n?#{1,4}\s*🎯.*?\n?$/gi,
-      /\n?#{1,4}\s*❓.*?\n?$/gi,
-      /\n?\*{2}.*?(SIMULADO|FLASHCARD|QUESTÕES?|QUESTÃO|FIXAÇÃO).*?\*{2}\n?$/gi,
-      /\n---+\n?$/g,
+      /\n?#{1,4}\s*.*?(SIMULADO|FLASHCARD|QUESTÕES?|QUIZ|TESTE|FIXAÇÃO|QUESTÃO|DECK).*?\n?/gi,
+      /\n?#{1,4}\s*[📋🧠🎯❓🃏📝🎴]\s*[^\n]*\n?/gi,
+      /\n?\*{2}.*?(SIMULADO|FLASHCARD|QUESTÕES?|QUESTÃO|FIXAÇÃO|DECK).*?\*{2}\n?/gi,
+      /\n---+\n?/g,
       // Remover blocos de código vazios ou com apenas markdown headers
       /```[a-z]*\n?#{1,4}[^\n]*\n?```/gi,
     ]
-    let cleaned = text
+
     for (const pattern of headerPatterns) {
       cleaned = cleaned.replace(pattern, '\n')
     }
+
+    // Remover múltiplas quebras de linha consecutivas
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
     // Remover espaços/quebras extras no final
-    return cleaned.replace(/\n{3,}$/, '\n\n').trim()
+    return cleaned.trim()
   }
 
   // Processar matches
