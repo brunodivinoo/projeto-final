@@ -1998,15 +1998,15 @@ export default function IAPage() {
           )}
         </div>
 
-        {/* Botão voltar ao final - só ícone */}
+        {/* Botão voltar ao final - posicionado acima do input */}
         {!isAtBottom && mensagens.length > 0 && (
-          <div className="absolute bottom-36 md:bottom-32 right-3 md:right-6 z-10">
+          <div className="absolute bottom-20 md:bottom-20 right-4 md:right-8 z-10">
             <button
               onClick={() => scrollToBottom(true)}
-              className="p-2 md:p-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-all hover:scale-105"
+              className="p-2.5 md:p-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-all hover:scale-105"
               title="Voltar ao final"
             >
-              <ChevronDown className="w-4 h-4 md:w-5 md:h-5" />
+              <ChevronDown className="w-5 h-5" />
             </button>
           </div>
         )}

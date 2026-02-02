@@ -704,6 +704,14 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         )
       }
 
+    case 'mermaid':
+      // Renderizar diagrama Mermaid genérico
+      return (
+        <div className={containerClass}>
+          <MermaidDiagram chart={artifact.content} title={artifact.title} />
+        </div>
+      )
+
     case 'modern_flowchart':
       // Renderizar fluxograma moderno
       try {
@@ -742,7 +750,6 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
       }
 
     case 'tree_diagram':
-    case 'organograma':
       // Renderizar organograma em árvore
       try {
         const treeData = JSON.parse(artifact.content)

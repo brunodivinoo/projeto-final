@@ -27,6 +27,9 @@ export type ArtifactType =
   | 'image_uploaded' // Imagens enviadas pelo usuário
   | 'pdf_uploaded' // PDFs enviados pelo usuário
   | 'document' // Documentos gerais
+  | 'modern_flowchart' // Fluxogramas modernos com nodes/edges
+  | 'tree_diagram' // Organogramas/árvores hierárquicas
+  | 'mermaid' // Diagramas Mermaid genéricos
 
 // Categorias de artefatos para abas
 export type ArtifactCategory = 'all' | 'images_generated' | 'images_uploaded' | 'pdfs' | 'questions' | 'diagrams' | 'simulados' | 'flashcards_cat'
@@ -495,7 +498,10 @@ export const ARTIFACT_ICONS: Record<ArtifactType, string> = {
   image_generated: '🖼️',
   image_uploaded: '📷',
   pdf_uploaded: '📄',
-  document: '📑'
+  document: '📑',
+  modern_flowchart: '🔀',
+  tree_diagram: '🌳',
+  mermaid: '📊'
 }
 
 // Labels para cada tipo
@@ -521,7 +527,10 @@ export const ARTIFACT_LABELS: Record<ArtifactType, string> = {
   image_generated: 'Imagem Gerada',
   image_uploaded: 'Imagem Enviada',
   pdf_uploaded: 'PDF Enviado',
-  document: 'Documento'
+  document: 'Documento',
+  modern_flowchart: 'Fluxograma',
+  tree_diagram: 'Organograma',
+  mermaid: 'Diagrama'
 }
 
 // Labels para categorias de artefatos

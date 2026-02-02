@@ -241,6 +241,14 @@ const FLASHCARD_BLOCK_REGEX = /```flashcards?(?::([^\n]*))?\n([\s\S]*?)```/g
 // Regex para detectar flashcards em formato JSON direto
 const FLASHCARD_JSON_REGEX = /```(?:json)?\s*\n?\s*(\[\s*\{[^`]*"frente"[^`]*"verso"[^`]*\}\s*\])\s*```/g
 
+// Regex para detectar JSON de fluxograma em blocos de código genéricos
+// Detecta { "title": ..., "nodes": [...], "edges": [...] }
+const FLOWCHART_JSON_REGEX = /```(?:json)?\s*\n(\s*\{[\s\S]*?"nodes"\s*:\s*\[[\s\S]*?"edges"\s*:\s*\[[\s\S]*?\})\s*\n```/g
+
+// Regex para detectar JSON de organograma/árvore em blocos de código genéricos
+// Detecta { "title": ..., "data": { "id": ..., "name": ..., "children": [...] } }
+const TREE_JSON_REGEX = /```(?:json)?\s*\n(\s*\{[\s\S]*?"data"\s*:\s*\{[\s\S]*?"children"\s*:\s*\[[\s\S]*?\})\s*\n```/g
+
 // Tipo de dificuldade para flashcards
 type FlashcardDificuldade = 'facil' | 'medio' | 'dificil'
 
@@ -1235,6 +1243,50 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
     allMatches.push({ match, type: 'tree_diagram' })
   }
 
+  // Buscar JSON de fluxograma em blocos de código genéricos (sem prefixo flowchart:)
+  const flowchartJsonRegex = new RegExp(FLOWCHART_JSON_REGEX.source, 'g')
+  while ((match = flowchartJsonRegex.exec(processedContent)) !== null) {
+    try {
+      const jsonContent = match[1].trim()
+      const flowchartData = JSON.parse(jsonContent)
+
+      // Validar que é um fluxograma (tem nodes e edges)
+      if (flowchartData.nodes && Array.isArray(flowchartData.nodes) && flowchartData.nodes.length >= 2) {
+        // Criar match sintético com título
+        const syntheticMatch = [match[0], flowchartData.title || 'Fluxograma', jsonContent] as RegExpMatchArray
+        syntheticMatch.index = match.index
+        syntheticMatch.input = processedContent
+
+        allMatches.push({ match: syntheticMatch, type: 'modern_flowchart' })
+        console.log('[ArtifactRenderer] Fluxograma JSON detectado:', flowchartData.title || 'Sem título', 'com', flowchartData.nodes.length, 'nós')
+      }
+    } catch (e) {
+      console.log('[ArtifactRenderer] Erro ao parsear JSON de fluxograma:', e)
+    }
+  }
+
+  // Buscar JSON de organograma/árvore em blocos de código genéricos (sem prefixo tree:)
+  const treeJsonRegex = new RegExp(TREE_JSON_REGEX.source, 'g')
+  while ((match = treeJsonRegex.exec(processedContent)) !== null) {
+    try {
+      const jsonContent = match[1].trim()
+      const treeData = JSON.parse(jsonContent)
+
+      // Validar que é um organograma (tem data com children)
+      if (treeData.data && treeData.data.children && Array.isArray(treeData.data.children)) {
+        // Criar match sintético com título
+        const syntheticMatch = [match[0], treeData.title || 'Organograma', jsonContent] as RegExpMatchArray
+        syntheticMatch.index = match.index
+        syntheticMatch.input = processedContent
+
+        allMatches.push({ match: syntheticMatch, type: 'tree_diagram' })
+        console.log('[ArtifactRenderer] Organograma JSON detectado:', treeData.title || 'Sem título')
+      }
+    } catch (e) {
+      console.log('[ArtifactRenderer] Erro ao parsear JSON de organograma:', e)
+    }
+  }
+
   // Buscar simulados gerados pela IA (formato JSON completo)
   const simuladoRegex = new RegExp(SIMULADO_REGEX.source, 'g')
   while ((match = simuladoRegex.exec(processedContent)) !== null) {
@@ -1514,16 +1566,37 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
       cleaned = cleaned.replace(/.*(?:tempo|cronômetro|minutos).*simulado.*\n?/gi, '')
     }
 
-    // Para questões, remover instruções
+    // Para questões, remover instruções e títulos
     if (artifactType === 'question') {
       cleaned = cleaned.replace(/#{1,4}\s*[❓🎯]?\s*(?:Questão|Question)[\s\S]*?(?=```quest)/gi, '')
+      // Remover títulos de questões
+      cleaned = cleaned.replace(/\n?#{1,4}\s*[🎯❓📋]?\s*(?:QUESTÃO|QUESTÕES|QUESTION).*?\n/gi, '\n')
+    }
+
+    // Para fluxogramas, remover títulos redundantes
+    if (artifactType === 'modern_flowchart' || artifactType === 'mermaid') {
+      // Remover títulos de fluxograma com emojis
+      cleaned = cleaned.replace(/\n?#{1,4}\s*[🔀📊🔄⚡]?\s*(?:FLUXOGRAMA|FLOWCHART|DIAGRAMA).*?\n/gi, '\n')
+      cleaned = cleaned.replace(/\n?\*{2}[🔀📊🔄⚡]?\s*(?:FLUXOGRAMA|FLOWCHART|DIAGRAMA).*?\*{2}\n?/gi, '\n')
+    }
+
+    // Para organogramas, remover títulos redundantes
+    if (artifactType === 'tree_diagram') {
+      // Remover títulos de organograma com emojis
+      cleaned = cleaned.replace(/\n?#{1,4}\s*[🌳👥📊🏢]?\s*(?:ORGANOGRAMA|ORGANIZAÇÃO|HIERARQUIA|ESTRUTURA).*?\n/gi, '\n')
+      cleaned = cleaned.replace(/\n?\*{2}[🌳👥📊🏢]?\s*(?:ORGANOGRAMA|ORGANIZAÇÃO|HIERARQUIA|ESTRUTURA).*?\*{2}\n?/gi, '\n')
+    }
+
+    // Para layers/diagramas de camadas
+    if (artifactType === 'layers') {
+      cleaned = cleaned.replace(/\n?#{1,4}\s*[📊🔀]?\s*(?:CAMADAS|LAYERS|DIAGRAMA).*?\n/gi, '\n')
     }
 
     // Padrões gerais de títulos a remover (aparecem logo antes do artefato)
     const headerPatterns = [
-      /\n?#{1,4}\s*.*?(SIMULADO|FLASHCARD|QUESTÕES?|QUIZ|TESTE|FIXAÇÃO|QUESTÃO|DECK).*?\n?/gi,
-      /\n?#{1,4}\s*[📋🧠🎯❓🃏📝🎴]\s*[^\n]*\n?/gi,
-      /\n?\*{2}.*?(SIMULADO|FLASHCARD|QUESTÕES?|QUESTÃO|FIXAÇÃO|DECK).*?\*{2}\n?/gi,
+      /\n?#{1,4}\s*.*?(SIMULADO|FLASHCARD|QUESTÕES?|QUIZ|TESTE|FIXAÇÃO|QUESTÃO|DECK|FLUXOGRAMA|ORGANOGRAMA).*?\n?/gi,
+      /\n?#{1,4}\s*[📋🧠🎯❓🃏📝🎴🔀📊🌳👥]\s*[^\n]*\n?/gi,
+      /\n?\*{2}.*?(SIMULADO|FLASHCARD|QUESTÕES?|QUESTÃO|FIXAÇÃO|DECK|FLUXOGRAMA|ORGANOGRAMA).*?\*{2}\n?/gi,
       /\n---+\n?/g,
       // Remover blocos de código vazios ou com apenas markdown headers
       /```[a-z]*\n?#{1,4}[^\n]*\n?```/gi,
@@ -1548,8 +1621,9 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
     // Adicionar texto antes do artefato
     if (startIndex > lastIndex) {
       let textBefore = processedContent.substring(lastIndex, startIndex)
-      // Limpar headers redundantes antes de simulados, flashcards e questões
-      if (type === 'simulado' || type === 'flashcards' || type === 'question') {
+      // Limpar headers redundantes antes de todos os tipos de artefatos
+      const typesToClean = ['simulado', 'flashcards', 'question', 'modern_flowchart', 'tree_diagram', 'mermaid', 'layers']
+      if (typesToClean.includes(type)) {
         textBefore = cleanTextBeforeArtifact(textBefore, type)
       }
       if (textBefore.trim()) {
@@ -2210,118 +2284,219 @@ function ArtifactRendererComponent({
           )
         }
 
-        // Renderizar artefatos - com containers responsivos
+        // Renderizar artefatos Mermaid - Card de Preview Compacto (abre na sidebar)
         if (part.type === 'mermaid' || (part.type === 'artifact' && (part.subtype === 'diagram' || part.subtype === 'flowchart'))) {
+          const diagramTitle = part.title || 'Diagrama'
+
           return (
-            <div key={index} className="my-3 max-h-[350px] md:max-h-[450px] overflow-auto rounded-xl">
-              <MermaidDiagram
-                chart={part.content}
-                title={part.title}
-              />
+            <button
+              key={index}
+              onClick={() => openArtifactInSidebar('mermaid', diagramTitle)}
+              className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-cyan-50 to-blue-50 hover:from-cyan-100 hover:to-blue-100 border border-cyan-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
+            >
+              {/* Ícone */}
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <span className="text-xl">🔀</span>
+              </div>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-slate-800 truncate text-sm">{diagramTitle}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Diagrama • Toque para visualizar
+                </p>
+              </div>
+              {/* Seta */}
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-100 group-hover:bg-cyan-200 flex items-center justify-center transition-colors">
+                <svg className="w-4 h-4 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+          )
+        }
+
+        // Renderizar diagramas de camadas (layers) - Card de Preview Compacto (abre na sidebar)
+        if (part.type === 'layers') {
+          let layerTitle = part.title || 'Diagrama de Camadas'
+          let layerCount = 0
+          try {
+            const layerData = JSON.parse(part.content)
+            layerTitle = part.title || layerData.title || 'Diagrama de Camadas'
+            layerCount = layerData.layers?.length || 0
+          } catch { /* ignore */ }
+
+          return (
+            <button
+              key={index}
+              onClick={() => openArtifactInSidebar('layers', layerTitle)}
+              className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-pink-50 to-purple-50 hover:from-pink-100 hover:to-purple-100 border border-pink-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
+            >
+              {/* Ícone */}
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center shadow-lg shadow-pink-500/20">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-slate-800 truncate text-sm">{layerTitle}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {layerCount > 0 ? `${layerCount} camadas` : 'Diagrama de camadas'} • Toque para explorar
+                </p>
+              </div>
+              {/* Seta */}
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-pink-100 group-hover:bg-pink-200 flex items-center justify-center transition-colors">
+                <svg className="w-4 h-4 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+          )
+        }
+
+        // Fluxograma Moderno - Card de Preview Rico (abre na sidebar)
+        if (part.type === 'modern_flowchart') {
+          let flowTitle = part.title || 'Fluxograma'
+          let nodeLabels: string[] = []
+          try {
+            const flowchartData = JSON.parse(part.content)
+            flowTitle = part.title || flowchartData.title || 'Fluxograma'
+            // Extrair labels dos nós para as tags
+            if (flowchartData.nodes && Array.isArray(flowchartData.nodes)) {
+              nodeLabels = flowchartData.nodes
+                .slice(0, 4)
+                .map((n: { label?: string; name?: string }) => n.label || n.name || '')
+                .filter((l: string) => l.length > 0)
+            }
+          } catch { /* ignore */ }
+
+          const extraCount = nodeLabels.length > 4 ? nodeLabels.length - 4 : 0
+
+          return (
+            <div
+              key={index}
+              onClick={() => openArtifactInSidebar('modern_flowchart', flowTitle)}
+              className="my-3 w-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <span className="text-sm text-slate-600 font-medium">Fluxograma</span>
+                </div>
+                <span className="text-xs text-blue-500 group-hover:text-blue-600 font-medium flex items-center gap-1">
+                  Abrir
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </span>
+              </div>
+              {/* Body */}
+              <div className="p-4">
+                <h3 className="font-bold text-slate-800 text-base mb-3">{flowTitle}</h3>
+                {/* Tags dos nós */}
+                {nodeLabels.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {nodeLabels.map((label, i) => (
+                      <span
+                        key={i}
+                        className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs rounded-lg border border-blue-100 truncate max-w-[120px]"
+                      >
+                        {label}
+                      </span>
+                    ))}
+                    {extraCount > 0 && (
+                      <span className="px-2.5 py-1 text-slate-500 text-xs">
+                        +{extraCount}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )
         }
 
-        // Renderizar diagramas de camadas (layers) - responsivos
-        if (part.type === 'layers') {
-          try {
-            const layerData = JSON.parse(part.content)
-            return (
-              <div key={index} className="my-3 max-h-[350px] md:max-h-[450px] overflow-auto">
-                <LayeredDiagram
-                  title={part.title || layerData.title || 'Diagrama de Camadas'}
-                  layers={layerData.layers || []}
-                  showStaging={layerData.showStaging}
-                  interactive={layerData.interactive !== false}
-                  theme={layerData.theme || 'histology'}
-                  description={layerData.description}
-                  orientation={layerData.orientation}
-                />
-              </div>
-            )
-          } catch {
-            // Se não for JSON válido, mostrar como texto
-            return (
-              <div key={index} className="my-3 bg-slate-800/50 border border-slate-200 rounded-xl p-3">
-                <pre className="text-slate-700 text-xs whitespace-pre-wrap">{part.content}</pre>
-              </div>
-            )
-          }
-        }
-
-        // Fluxograma Moderno - Card de Preview Compacto (abre na sidebar)
-        if (part.type === 'modern_flowchart') {
-          let nodeCount = 0
-          let flowTitle = part.title || 'Fluxograma'
-          try {
-            const flowchartData = JSON.parse(part.content)
-            nodeCount = flowchartData.nodes?.length || 0
-            flowTitle = part.title || flowchartData.title || 'Fluxograma'
-          } catch { /* ignore */ }
-
-          return (
-            <button
-              key={index}
-              onClick={() => openArtifactInSidebar('modern_flowchart', flowTitle)}
-              className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-emerald-50 hover:from-blue-100 hover:to-emerald-100 border border-blue-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
-            >
-              {/* Ícone */}
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-slate-800 truncate text-sm">{flowTitle}</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {nodeCount > 0 ? `${nodeCount} etapas` : 'Fluxograma'} • Toque para visualizar
-                </p>
-              </div>
-              {/* Seta */}
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center transition-colors">
-                <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </button>
-          )
-        }
-
-        // Organograma/Árvore - Card de Preview Compacto (abre na sidebar)
+        // Organograma/Árvore - Card de Preview Rico (abre na sidebar)
         if (part.type === 'tree_diagram') {
           let treeTitle = part.title || 'Organograma'
+          let treeItems: Array<{ name: string; description?: string }> = []
+          let totalCount = 0
           try {
             const treeData = JSON.parse(part.content)
             treeTitle = part.title || treeData.title || 'Organograma'
+            // Extrair primeiros itens da árvore
+            const rootData = treeData.data || treeData
+            if (rootData.children && Array.isArray(rootData.children)) {
+              // Função para contar total de nós
+              const countNodes = (node: { children?: unknown[] }): number => {
+                let count = 1
+                if (node.children && Array.isArray(node.children)) {
+                  node.children.forEach((child) => {
+                    count += countNodes(child as { children?: unknown[] })
+                  })
+                }
+                return count
+              }
+              totalCount = countNodes(rootData)
+
+              // Extrair primeiros 3 itens do primeiro nível
+              treeItems = rootData.children.slice(0, 3).map((child: { name?: string; label?: string; description?: string }) => ({
+                name: child.name || child.label || 'Item',
+                description: child.description
+              }))
+            }
           } catch { /* ignore */ }
 
+          const extraCount = totalCount > 3 ? totalCount - 3 : 0
+
           return (
-            <button
+            <div
               key={index}
               onClick={() => openArtifactInSidebar('tree_diagram', treeTitle)}
-              className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border border-purple-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
+              className="my-3 w-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group"
             >
-              {/* Ícone */}
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span className="text-sm text-slate-600 font-medium">Organograma</span>
+                </div>
+                <span className="text-xs text-purple-500 group-hover:text-purple-600 font-medium flex items-center gap-1">
+                  Abrir
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </span>
               </div>
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-slate-800 truncate text-sm">{treeTitle}</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Hierarquia • Toque para explorar
-                </p>
+              {/* Body */}
+              <div className="p-4">
+                <h3 className="font-bold text-slate-800 text-base mb-3">{treeTitle}</h3>
+                {/* Lista hierárquica */}
+                {treeItems.length > 0 && (
+                  <div className="space-y-1.5">
+                    {treeItems.map((item, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className="text-purple-500 mt-0.5">•</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm text-purple-700 font-medium">{item.name}</span>
+                          {item.description && (
+                            <span className="text-xs text-slate-500 ml-1">- {item.description}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {extraCount > 0 && (
+                      <p className="text-xs text-slate-400 ml-4">+{extraCount} itens</p>
+                    )}
+                  </div>
+                )}
               </div>
-              {/* Seta */}
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 group-hover:bg-purple-200 flex items-center justify-center transition-colors">
-                <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </button>
+            </div>
           )
         }
 
@@ -2490,37 +2665,48 @@ function ArtifactRendererComponent({
           )
         }
 
-        // Simulado - Card de Preview Compacto (abre na sidebar)
+        // Simulado - Card de Preview Rico (abre na sidebar)
         if (part.type === 'simulado' && part.simuladoData) {
           const questionCount = part.simuladoData.questoes?.length || 0
+          // Extrair preview da primeira questão
+          const firstQuestion = part.simuladoData.questoes?.[0]
+          const firstQuestionPreview = firstQuestion?.enunciado?.substring(0, 80) || ''
+
           return (
-            <button
+            <div
               key={index}
               onClick={() => openArtifactInSidebar('simulado', part.simuladoData?.titulo)}
-              className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
+              className="my-3 w-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group"
             >
-              {/* Ícone */}
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                  <span className="text-sm text-slate-600 font-medium">Simulado</span>
+                </div>
+                <span className="text-xs text-blue-500 group-hover:text-blue-600 font-medium flex items-center gap-1">
+                  Abrir
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </span>
               </div>
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-slate-800 truncate text-sm">
-                  {part.simuladoData.titulo || 'Simulado'}
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {questionCount} {questionCount === 1 ? 'questão' : 'questões'} • Toque para iniciar
+              {/* Body */}
+              <div className="p-4">
+                <h3 className="font-bold text-slate-800 text-base">{part.simuladoData.titulo || 'Simulado'}</h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  {questionCount} {questionCount === 1 ? 'questão' : 'questões'}
                 </p>
+                {/* Preview da primeira questão */}
+                {firstQuestionPreview && (
+                  <p className="text-sm text-slate-600 mt-3 line-clamp-2">
+                    {firstQuestionPreview}...
+                  </p>
+                )}
               </div>
-              {/* Seta */}
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center transition-colors">
-                <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </button>
+            </div>
           )
         }
 

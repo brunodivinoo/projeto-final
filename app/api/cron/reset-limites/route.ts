@@ -19,12 +19,16 @@ import { createClient } from '@supabase/supabase-js'
 // }
 // =============================================
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Função para criar cliente Supabase admin (lazy init)
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function GET(request: NextRequest) {
+  const supabaseAdmin = getSupabaseAdmin()
   try {
     // Verificar autorização (Vercel Cron ou API key)
     const authHeader = request.headers.get('authorization')
