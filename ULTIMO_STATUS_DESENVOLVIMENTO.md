@@ -3,6 +3,32 @@
 
 ---
 
+## FLUXO DE DEPLOY PARA VERCEL (IMPORTANTE)
+
+O push direto para `main` e bloqueado. Para fazer deploy no Vercel, siga este fluxo:
+
+### Passo a Passo:
+1. **Commit no branch claude/*** - Fazer alteracoes e commit no branch que comeca com `claude/`
+2. **Push para o branch** - `git push -u origin claude/nome-do-branch`
+3. **Criar PR no GitHub** - Acessar: `https://github.com/brunodivinoo/projeto-final/compare/main...claude/nome-do-branch`
+4. **Clicar em "Create pull request"**
+5. **Se houver conflitos** - Executar:
+   ```bash
+   git fetch origin main
+   git rebase origin/main
+   git push -f origin claude/nome-do-branch
+   ```
+6. **Atualizar pagina do PR** - Refresh na pagina
+7. **Clicar em "Merge pull request"** - Botao verde no final da pagina
+8. **Confirmar merge** - Clicar em "Confirm merge"
+9. **Vercel faz deploy automatico** - Aguardar alguns minutos
+
+### Verificar Deploy:
+- Site: https://projeto-final-zeta-navy.vercel.app (redireciona para https://preparamed-navy.vercel.app)
+- Vercel Dashboard: https://vercel.com/brunos-projects-5f2d50e2/projeto-final
+
+---
+
 ## O QUE FOI FEITO NESTA SESSAO (02/02/2026)
 
 ### 1. SIDEBAR (ChatHistorySidebar) - REDESIGN COMPLETO
@@ -71,12 +97,17 @@
 
 | Item | Status |
 |------|--------|
-| Site em producao | https://projeto-final-zeta-navy.vercel.app |
+| Site em producao | https://preparamed-navy.vercel.app |
 | Sidebar | **REDESENHADA** - Visual profissional |
 | ArtifactsSidebar | **CORRIGIDA** - Tema claro |
 | Chat IA Verde | **CORRIGIDO** - Gradiente mais escuro |
-| Branch | claude/continue-prepara-med-ScMrD |
-| Commit | 47e03ec |
+| PR #15 | **MERGED** |
+| Deploy Vercel | **SUCESSO** |
+
+### PRs Criados e Merged nesta Sessao
+| PR | Titulo | Status |
+|----|--------|--------|
+| [#15](https://github.com/brunodivinoo/projeto-final/pull/15) | fix: redesenhar sidebar e corrigir cores em artefatos e chat | **MERGED** |
 
 ---
 
