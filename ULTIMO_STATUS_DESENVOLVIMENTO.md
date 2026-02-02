@@ -1,52 +1,48 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 02/02/2026 - Sessao Visual Diagramas/Flashcards
+## Atualizado em: 02/02/2026 - Sessao Correcao Cards e Cores
 
 ---
 
-## O QUE FOI FEITO NESTA SESSAO (02/02/2026) - VISUAL DIAGRAMAS E FLASHCARDS
+## O QUE FOI FEITO NESTA SESSAO (02/02/2026) - CORRECAO CARDS E CORES
 
-### 1. FLASHCARDS - REMOCAO MARKDOWN REDUNDANTE
+### 1. ARTEFATOS COMO CARDS PREVIEW NO CHAT
 **Problema identificado:**
-- Ao gerar flashcards, aparecia "Resumo do Deck" com tabelas markdown
-- Instrucoes "Como Usar os Flashcards" aparecendo junto com o card
-- Contagem de cards e categorias em texto markdown
+- Fluxogramas e organogramas apareciam expandidos no chat
+- Deveriam aparecer como cards compactos clicaveis (como flashcards)
+- Alguns artefatos mostravam JSON bruto ao inves de renderizar
 
 **Correcoes aplicadas:**
-- Funcao `cleanTextBeforeArtifact` melhorada para remover:
-  - Tabelas markdown inteiras
-  - Secoes "Resumo do Deck" e "Como Usar"
-  - Instrucoes sobre flashcards
-  - Listas de categorias/topicos
-  - Contagem de cards em texto
-- Agora so aparece o card visual compacto
+- `ArtifactRenderer.tsx` completamente reestruturado:
+  - Novos regex para detectar JSON de flowchart/organogram sem marcadores
+  - Todos os tipos de diagrama agora mostram cards preview
+  - Cards com icones, cores e contagem de itens
+  - Click abre no sidebar para visualizacao completa
+- `artifactsStore.ts` - Novos tipos adicionados:
+  - `modern_flowchart`
+  - `tree_diagram`
+  - `mermaid`
 
-### 2. MERMAID DIAGRAM - TEMA CLARO
+### 2. CORES DO ORGANOGRAMA (LayeredDiagram)
 **Problema identificado:**
-- Diagramas/fluxogramas com fundo escuro e cores ruins
-- Texto dificil de ler (cores claras em fundo escuro)
-- Visual feio comparado com prints de referencia
+- Texto branco em fundo branco (ilegivel)
+- Fallback de cores errado
 
 **Correcoes aplicadas:**
-- Tema mudado de `dark` para `base` com themeVariables customizadas
-- Fundo branco (`#ffffff`)
-- Texto escuro legivel (`#1e293b`)
-- Cores vibrantes para nos: verde (#10b981), azul (#3b82f6), roxo (#8b5cf6)
-- Header com gradiente purple-blue
-- Tooltips e paineis com fundo claro
-- Container com `bg-white` ao inves de `bg-slate-800`
+- `getLayerColors()` retorna `text-slate-700` ao inves de `text-slate-200`
+- Fallback completo para cores de fundo claro
+- Badges de estadiamento com cores corretas
 
-### 3. LAYERED DIAGRAM (ORGANOGRAMAS) - TEMA CLARO
+### 3. RESPOSTAS TRUNCADAS DA IA
 **Problema identificado:**
-- Organogramas com tema escuro igual aos diagramas
-- Cores de estadiamento (Tis, T1-T4) com fundo escuro
+- IA cortava respostas no meio
+- `max_tokens` muito baixo (4096)
 
 **Correcoes aplicadas:**
-- COLOR_PALETTES atualizado para cores claras (bg-*-100, text-*-700)
-- Badges de estadiamento com bordas coloridas
-- Container principal com `bg-white` e `shadow-sm`
-- Header com gradiente purple-pink
-- Paineis de detalhes com fundo claro
-- Fullscreen com fundo `bg-slate-100` ao inves de `bg-slate-950`
+- `anthropic.ts` - max_tokens aumentado de 4096 para 8192
+
+### 4. OUTRAS CORRECOES
+- Botao de scroll reposicionado (bottom-20)
+- Build error do cron corrigido (lazy init do Supabase)
 
 ---
 
@@ -54,7 +50,10 @@
 
 | Hash | Descricao |
 |------|-----------|
-| `7d0e67f` | fix: visual limpo para diagramas/flashcards e remover markdown redundante |
+| `1e8bed6` | fix: corrigir cores de organograma e aumentar max_tokens |
+| `c6ddbfa` | chore: atualiza dependencias do projeto |
+| `c81c271` | fix: melhorias nos cards de artefatos e correcoes visuais |
+| `a49ef8a` | fix: artefatos aparecem como cards preview no chat |
 
 ---
 
@@ -62,18 +61,23 @@
 
 | PR | Titulo | Status |
 |----|--------|--------|
-| [#31](https://github.com/brunodivinoo/projeto-final/pull/31) | fix: visual limpo para diagramas/flashcards e remover markdown redundante | **MERGED** |
+| #36 | fix: melhorias nos cards de artefatos e correcoes visuais | **MERGED** |
+| #37 | chore: atualiza dependencias do projeto | **MERGED** |
+
+**Pendente:** Commit `1e8bed6` no branch `claude/continue-prepara-med-ONDSh` (criar PR manualmente)
 
 ---
 
-## ARQUIVOS MODIFICADOS
+## ARQUIVOS MODIFICADOS NESTA SESSAO
 
-**Total:** 3 arquivos modificados (+210, -179)
-
-### Arquivos:
-- `components/ia/ArtifactRenderer.tsx` - Limpeza de markdown redundante antes de flashcards
-- `components/ia/MermaidDiagram.tsx` - Tema claro com cores vibrantes
-- `components/ia/LayeredDiagram.tsx` - Tema claro para organogramas
+### Principais:
+- `components/ia/ArtifactRenderer.tsx` - Cards preview para todos artefatos
+- `components/ia/ArtifactsSidebar.tsx` - Renderizacao de mermaid
+- `components/ia/LayeredDiagram.tsx` - Cores corrigidas
+- `stores/artifactsStore.ts` - Novos tipos de artefato
+- `lib/ai/anthropic.ts` - max_tokens aumentado
+- `app/medicina/(dashboard)/dashboard/ia/page.tsx` - Posicao do scroll button
+- `app/api/cron/reset-limites/route.ts` - Lazy init Supabase
 
 ---
 
@@ -82,40 +86,51 @@
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Flashcards no Chat | **CORRIGIDO** - Sem markdown redundante |
-| MermaidDiagram | **CORRIGIDO** - Tema claro, cores vibrantes |
-| LayeredDiagram | **CORRIGIDO** - Tema claro, badges coloridos |
-| Deploy | **EM ANDAMENTO** - Vercel processando |
+| Cards Preview | **IMPLEMENTADO** - Todos artefatos como cards |
+| Cores Organograma | **CORRIGIDO** - Texto legivel |
+| Respostas IA | **CORRIGIDO** - max_tokens 8192 |
+| Deploy | Criar PR para ultimo commit |
+
+---
+
+## ERRO PENDENTE (NAO RESOLVIDO)
+
+**Mermaid Syntax Error:**
+- Usuario reportou "Syntax error in text - mermaid version 11.12.2"
+- Provavelmente diagrama com sintaxe invalida gerada pela IA
+- Investigar em proxima sessao
 
 ---
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Testar em producao** - Verificar diagramas e flashcards com visual novo
-2. **Gerar flashcards de teste** - Confirmar que markdown nao aparece mais
-3. **Gerar fluxogramas de teste** - Confirmar cores claras e legiveis
-4. **Verificar outros artefatos** - Questoes, simulados, etc.
+1. **Criar PR** para commit `1e8bed6` e fazer merge
+2. **Investigar erro Mermaid** - Verificar sintaxe gerada pela IA
+3. **Testar em producao** - Verificar cards e cores
+4. **Monitorar** - Verificar se respostas nao truncam mais
 
 ---
 
 ## HISTORICO ANTERIOR
 
+### Sessao 02/02/2026 - Visual Diagramas
+- Flashcards sem markdown redundante
+- MermaidDiagram tema claro
+- LayeredDiagram tema claro
+- PR #31 merged
+
 ### Sessao 02/02/2026 - UI Mobile
 - Header mobile como icones flutuantes
 - Menu + (anexos) corrigido
 - Flashcards layout responsivo
-- Pagina inicial compacta
 
-### Sessao 02/02/2026 - Redesign Sidebar Principal
-- Sidebar principal com tema escuro profissional
+### Sessao 02/02/2026 - Redesign Sidebar
+- Sidebar principal tema escuro
 - Sidebar chat redesenhada
 - MobileArtifactsScreen corrigida
-- Chat IA verde mais escuro
 
-### Sessao 01/02/2026 - Correcao Tema Claro Dashboard
-- Todas as paginas do dashboard corrigidas para tema claro
-- Estatisticas, Biblioteca, Perfil, Indicacoes, Assinaturas
-- Modal UsageLimits, Sidebar Mobile, Chat IA Sugestoes
+### Sessao 01/02/2026 - Tema Claro Dashboard
+- Todas as paginas corrigidas para tema claro
 
 ---
 
