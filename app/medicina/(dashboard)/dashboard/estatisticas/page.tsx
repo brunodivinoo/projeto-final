@@ -172,7 +172,7 @@ export default function EstatisticasPage() {
   const maxQuestoesDia = Math.max(...estatisticasDia.map(d => d.questoes), 1)
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6 pt-14 lg:pt-0">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -339,15 +339,15 @@ export default function EstatisticasPage() {
                       <div className="flex items-center gap-4 text-sm">
                         <span className="text-slate-500">{disc.questoes} questões</span>
                         <span className={`font-medium ${
-                          disc.porcentagem >= 70 ? 'text-emerald-400' :
-                          disc.porcentagem >= 50 ? 'text-amber-400' :
-                          'text-red-400'
+                          disc.porcentagem >= 70 ? 'text-emerald-600' :
+                          disc.porcentagem >= 50 ? 'text-amber-600' :
+                          'text-red-600'
                         }`}>
                           {disc.porcentagem}%
                         </span>
                       </div>
                     </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${
                           disc.porcentagem >= 70 ? 'bg-emerald-500' :
