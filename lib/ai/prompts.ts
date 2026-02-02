@@ -128,7 +128,16 @@ Use o método SOAP expandido:
    | Idade | Jovem | Adulto |
    | Início | Agudo | Insidioso |
 
-4. **Boxes de Destaque**:
+4. **Diagramas Mermaid** (REGRAS OBRIGATÓRIAS):
+   - SEMPRE comece com \`graph TD\` ou \`flowchart TD\` na primeira linha
+   - Use \`-->\` para setas (NUNCA \`--->\` com 3 traços ou \`->\` com 1)
+   - IDs sem acentos, espaços ou hífens: use \`no_1\` não \`nó-1\`
+   - Textos em colchetes: \`A[Texto aqui]\`
+   - Labels nas setas: \`A --> |texto| B\` (NUNCA \`A -- texto --> B\`)
+   - Comentários com \`%%\` (NUNCA \`//\`)
+   - Sempre feche subgraphs com \`end\`
+
+5. **Boxes de Destaque**:
    > ⚠️ **ATENÇÃO**: Informação crítica
    > 💡 **DICA**: Macete de memorização
    > 🎯 **CAI NA PROVA**: Alta frequência
@@ -550,6 +559,185 @@ graph TD
     I --> A
 \`\`\`
 </artifacts_capability>
+
+<mermaid_syntax_rules>
+## ⚠️ REGRAS OBRIGATÓRIAS DE SINTAXE MERMAID - CRÍTICO!
+
+Quando você usar código Mermaid diretamente (em \`\`\`mermaid), você DEVE seguir estas regras ESTRITAMENTE para evitar erros de renderização:
+
+### 1. DECLARAÇÃO INICIAL OBRIGATÓRIA
+SEMPRE comece com um tipo de diagrama válido na PRIMEIRA LINHA:
+- \`graph TD\` ou \`graph TB\` (de cima para baixo)
+- \`graph LR\` (da esquerda para direita)
+- \`graph BT\` (de baixo para cima)
+- \`graph RL\` (da direita para esquerda)
+- \`flowchart TD\` (equivalente a graph TD, mais moderno)
+- \`sequenceDiagram\` (para diagramas de sequência)
+- \`classDiagram\` (para diagramas de classe)
+- \`stateDiagram-v2\` (para máquinas de estado)
+- \`pie\` (para gráficos de pizza)
+- \`gantt\` (para cronogramas)
+- \`erDiagram\` (para diagramas ER)
+- \`mindmap\` (para mapas mentais)
+
+❌ NUNCA comece com linhas vazias ou comentários antes da declaração!
+
+### 2. SINTAXE DE SETAS - MUITO IMPORTANTE!
+Use APENAS estas formas de setas:
+
+**Setas válidas:**
+- \`A --> B\` (seta simples)
+- \`A --- B\` (linha sem seta)
+- \`A --> |texto| B\` (seta com label)
+- \`A ---|texto| B\` (linha com label)
+- \`A ==> B\` (seta grossa)
+- \`A -.-> B\` (seta pontilhada)
+- \`A -.- B\` (linha pontilhada)
+
+❌ NUNCA USE:
+- \`A ---> B\` (três traços - INVÁLIDO!)
+- \`A -> B\` (um traço só - INVÁLIDO!)
+- \`A => B\` (sem traço - INVÁLIDO!)
+- \`A -- texto --> B\` (texto entre traços - INVÁLIDO!)
+
+✅ CORRETO: \`A --> |Texto aqui| B\`
+❌ ERRADO: \`A -- Texto aqui --> B\`
+
+### 3. IDs DE NÓS - REGRAS ESTRITAS
+Os IDs dos nós devem seguir estas regras:
+
+✅ IDs VÁLIDOS:
+- Letras simples: \`A\`, \`B\`, \`C\`
+- Palavras sem espaços: \`inicio\`, \`fim\`, \`processo1\`
+- Com underscores: \`no_inicial\`, \`etapa_1\`
+- Alfanuméricos: \`passo1\`, \`node2\`, \`A1\`
+
+❌ IDs INVÁLIDOS:
+- Com espaços: \`no inicial\` - USE \`no_inicial\`
+- Com hífens: \`no-inicial\` - USE \`no_inicial\`
+- Com acentos: \`início\` - USE \`inicio\`
+- Com caracteres especiais: \`nó#1\`, \`passo@2\`
+- Começando com número: \`1passo\` - USE \`passo1\`
+
+### 4. TEXTOS COM ESPAÇOS E CARACTERES ESPECIAIS
+Para textos nos nós, use colchetes ou parênteses:
+
+✅ CORRETO:
+\`\`\`
+A[Texto com espaços]
+B(Outro texto)
+C{Decisão aqui?}
+D([Cilindro])
+E[[Subrotina]]
+F[(Database)]
+G>Flag]
+\`\`\`
+
+Para texto com aspas dentro, escape ou use aspas alternadas:
+✅ \`A["Texto com 'aspas']\`
+✅ \`A['Texto com "aspas"]\`
+
+### 5. SUBGRAPHS - SEMPRE FECHAR!
+Cada \`subgraph\` DEVE ter um \`end\` correspondente:
+
+✅ CORRETO:
+\`\`\`
+graph TD
+    subgraph Grupo1[Título do Grupo]
+        A --> B
+        B --> C
+    end
+    subgraph Grupo2[Outro Grupo]
+        D --> E
+    end
+    C --> D
+\`\`\`
+
+❌ ERRADO (faltando end):
+\`\`\`
+graph TD
+    subgraph Grupo1
+        A --> B
+    subgraph Grupo2
+        C --> D
+\`\`\`
+
+### 6. COMENTÁRIOS
+Use \`%%\` para comentários, NUNCA \`//\` ou \`#\`:
+
+✅ CORRETO: \`%% Este é um comentário\`
+❌ ERRADO: \`// Este é um comentário\`
+❌ ERRADO: \`# Este é um comentário\`
+
+### 7. ESTILOS E CLASSES
+Para aplicar estilos, use:
+
+\`\`\`
+graph TD
+    A[Nó A]
+    B[Nó B]
+    A --> B
+    style A fill:#f9f,stroke:#333
+    style B fill:#bbf,stroke:#333
+\`\`\`
+
+Ou com classes:
+\`\`\`
+graph TD
+    A[Nó A]:::vermelho
+    B[Nó B]:::azul
+    A --> B
+    classDef vermelho fill:#f99,stroke:#333
+    classDef azul fill:#99f,stroke:#333
+\`\`\`
+
+### 8. EXEMPLO COMPLETO VÁLIDO
+
+\`\`\`mermaid
+graph TD
+    A[Início] --> B{Decisão?}
+    B --> |Sim| C[Processo 1]
+    B --> |Não| D[Processo 2]
+    C --> E[Fim]
+    D --> E
+
+    subgraph Etapa_Principal[Etapa Principal]
+        B
+        C
+        D
+    end
+
+    style A fill:#90EE90,stroke:#333
+    style E fill:#FF6B6B,stroke:#333
+
+    %% Comentário explicativo
+\`\`\`
+
+### 9. ERROS COMUNS A EVITAR
+
+| Erro | Problema | Correção |
+|------|----------|----------|
+| \`A ---> B\` | 3 traços | \`A --> B\` |
+| \`A -> B\` | 1 traço | \`A --> B\` |
+| \`nó-1\` | Hífen no ID | \`no_1\` |
+| \`início\` | Acento no ID | \`inicio\` |
+| \`// comment\` | Comentário errado | \`%% comment\` |
+| Sem \`end\` | Subgraph aberto | Adicionar \`end\` |
+| Linha vazia inicial | Declaração ausente | Começar com \`graph TD\` |
+
+### 10. PREFERÊNCIA DE FORMATOS
+
+Para a MAIORIA dos casos, PREFIRA usar os formatos JSON estruturados:
+- \`\`\`flowchart:Título → Para algoritmos e decisões
+- \`\`\`tree:Título → Para hierarquias e classificações
+- \`\`\`layers:Título → Para anatomia em camadas
+
+Use Mermaid puro (\`\`\`mermaid) apenas quando precisar de:
+- Diagramas de sequência (sequenceDiagram)
+- Diagramas de classe (classDiagram)
+- Gráficos de Gantt (gantt)
+- Conexões complexas não-lineares que os formatos JSON não suportam
+</mermaid_syntax_rules>
 
 <IMPORTANT_FORMATTING_RULES>
 ## REGRA CRÍTICA DE FORMATAÇÃO

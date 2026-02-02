@@ -38,6 +38,206 @@ interface SelectedNode {
   element: SVGElement
 }
 
+// ============================================================
+// VALIDAÇÃO E CORREÇÃO DE CÓDIGO MERMAID
+// ============================================================
+
+/**
+ * Corrige erros comuns em código Mermaid
+ */
+function fixMermaidCode(code: string): { fixed: string; wasModified: boolean; fixes: string[] } {
+  let fixed = code.trim()
+  const fixes: string[] = []
+  const original = fixed
+
+  // 1. Garantir que começa com declaração de tipo válida
+  const validStarts = ['graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram', 'erDiagram', 'journey', 'gantt', 'pie', 'mindmap', 'timeline', 'gitGraph']
+  const firstLine = fixed.split('\n')[0].trim().toLowerCase()
+  const hasValidStart = validStarts.some(s => firstLine.startsWith(s.toLowerCase()))
+
+  if (!hasValidStart) {
+    fixed = 'flowchart TB\n' + fixed
+    fixes.push('Adicionado tipo de diagrama (flowchart TB)')
+  }
+
+  // 2. Normalizar direções (TD/TB, LR, RL, BT)
+  const directionFixed = fixed.replace(/^(graph|flowchart)\s+(?!TB|TD|LR|RL|BT)/im, '$1 TB ')
+  if (directionFixed !== fixed) {
+    fixed = directionFixed
+    fixes.push('Corrigida direção do diagrama')
+  }
+
+  // 3. Corrigir setas mal formatadas
+  const arrowsFixed = fixed
+    .replace(/---+>/g, '-->')   // --- → -->
+    .replace(/(?<!-)(?<!>)(?<!<)(?<!-)>(?!>)/g, '-->') // > sozinho → -->
+    .replace(/<---+/g, '<--')   // <--- → <--
+    .replace(/===+>/g, '==>')   // === → ==>
+    .replace(/\.\.+>/g, '-.->')  // ..> → -.->
+
+  if (arrowsFixed !== fixed) {
+    fixed = arrowsFixed
+    fixes.push('Corrigidas setas mal formatadas')
+  }
+
+  // 4. Corrigir IDs com caracteres especiais
+  const lines = fixed.split('\n')
+  let idsFixed = false
+  const fixedLines = lines.map(line => {
+    // Não modificar linhas de declaração de tipo ou subgraph
+    if (/^\s*(graph|flowchart|subgraph|end|style|classDef|class|linkStyle)/i.test(line)) {
+      return line
+    }
+
+    // Corrigir IDs que começam com número
+    const numStartFixed = line.replace(/^(\s*)(\d+)(\s*[\[\]{}(])/gm, (match, indent, num, rest) => {
+      idsFixed = true
+      return indent + 'n' + num + rest
+    })
+
+    // Limpar caracteres inválidos em IDs
+    return numStartFixed.replace(/^(\s*)([^\[\]{}()"\s:]+)(\s*[\[\]{}(])/gm, (match, indent, id, rest) => {
+      const cleanId = id.replace(/[^a-zA-Z0-9_-]/g, '_')
+      if (cleanId !== id) idsFixed = true
+      return indent + cleanId + rest
+    })
+  })
+
+  if (idsFixed) {
+    fixed = fixedLines.join('\n')
+    fixes.push('Corrigidos IDs com caracteres inválidos')
+  }
+
+  // 5. Remover linhas vazias múltiplas
+  const cleanedEmpty = fixed.replace(/\n{3,}/g, '\n\n')
+  if (cleanedEmpty !== fixed) {
+    fixed = cleanedEmpty
+    fixes.push('Removidas linhas vazias extras')
+  }
+
+  // 6. Garantir que subgraphs têm 'end'
+  const subgraphCount = (fixed.match(/\bsubgraph\b/gi) || []).length
+  const endCount = (fixed.match(/^\s*end\s*$/gm) || []).length
+  if (subgraphCount > endCount) {
+    for (let i = 0; i < subgraphCount - endCount; i++) {
+      fixed += '\n    end'
+    }
+    fixes.push(`Adicionados ${subgraphCount - endCount} end(s) faltantes`)
+  }
+
+  // 7. Corrigir comentários (devem começar com %%)
+  const commentsFixed = fixed
+    .replace(/^\s*\/\/(.*)$/gm, '%% $1')
+    .replace(/^\s*#([^#\[].*)?$/gm, '%% $1')
+
+  if (commentsFixed !== fixed) {
+    fixed = commentsFixed
+    fixes.push('Corrigido formato de comentários')
+  }
+
+  // 8. Remover linhas que são apenas pontuação ou caracteres especiais inválidos
+  const punctFixed = fixed.replace(/^\s*[.,;:!?]+\s*$/gm, '')
+  if (punctFixed !== fixed) {
+    fixed = punctFixed
+    fixes.push('Removidas linhas com apenas pontuação')
+  }
+
+  // 9. Corrigir definições de estilo mal formatadas
+  const styleFixed = fixed
+    .replace(/style\s+(\w+)\s+fill\s*[:=]\s*/gi, 'style $1 fill:')
+    .replace(/style\s+(\w+)\s+stroke\s*[:=]\s*/gi, 'style $1 stroke:')
+
+  if (styleFixed !== fixed) {
+    fixed = styleFixed
+    fixes.push('Corrigidas definições de estilo')
+  }
+
+  // 10. Remover BOM e caracteres invisíveis
+  const cleanInvisible = fixed
+    .replace(/^\uFEFF/, '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+
+  if (cleanInvisible !== fixed) {
+    fixed = cleanInvisible
+    fixes.push('Removidos caracteres invisíveis')
+  }
+
+  // 11. Corrigir texto dentro de colchetes/parênteses com aspas não escapadas
+  const textFixed = fixed.replace(/\[([^\]]*)"([^\]]*)\]/g, (match, before, after) => {
+    return `[${before}'${after}]`
+  })
+  if (textFixed !== fixed) {
+    fixed = textFixed
+    fixes.push('Corrigidas aspas em labels')
+  }
+
+  // 12. Corrigir nós que estão faltando texto
+  const emptyNodesFixed = fixed.replace(/(\w+)\s*\[\s*\]/g, '$1[$1]')
+  if (emptyNodesFixed !== fixed) {
+    fixed = emptyNodesFixed
+    fixes.push('Adicionado texto a nós vazios')
+  }
+
+  return {
+    fixed: fixed.trim(),
+    wasModified: fixed.trim() !== original.trim(),
+    fixes
+  }
+}
+
+/**
+ * Valida se o código Mermaid é sintaticamente correto
+ * Retorna null se válido, ou mensagem de erro se inválido
+ */
+function validateMermaidSyntax(code: string): string | null {
+  const lines = code.trim().split('\n')
+
+  if (lines.length === 0) {
+    return 'Código vazio'
+  }
+
+  // Verificar primeira linha
+  const firstLine = lines[0].trim().toLowerCase()
+  const validTypes = ['graph', 'flowchart', 'sequencediagram', 'classdiagram', 'statediagram', 'erdiagram', 'journey', 'gantt', 'pie', 'mindmap', 'timeline', 'gitgraph']
+
+  if (!validTypes.some(t => firstLine.startsWith(t))) {
+    return `Tipo de diagrama inválido. Linha: "${lines[0]}"`
+  }
+
+  // Verificar balanceamento de colchetes e chaves
+  let brackets = 0
+  let braces = 0
+  let parens = 0
+  let inString = false
+
+  for (const char of code) {
+    if (char === '"' && !inString) inString = true
+    else if (char === '"' && inString) inString = false
+
+    if (!inString) {
+      if (char === '[') brackets++
+      if (char === ']') brackets--
+      if (char === '{') braces++
+      if (char === '}') braces--
+      if (char === '(') parens++
+      if (char === ')') parens--
+    }
+  }
+
+  if (brackets !== 0) return `Colchetes não balanceados (${brackets > 0 ? 'faltam ]' : 'sobram ]'})`
+  if (braces !== 0) return `Chaves não balanceadas (${braces > 0 ? 'faltam }' : 'sobram }'})`
+  if (parens !== 0) return `Parênteses não balanceados (${parens > 0 ? 'faltam )' : 'sobram )'})`
+
+  // Verificar subgraphs
+  const subgraphCount = (code.match(/\bsubgraph\b/gi) || []).length
+  const endCount = (code.match(/^\s*end\s*$/gm) || []).length
+  if (subgraphCount !== endCount) {
+    return `Subgraphs não fechados: ${subgraphCount} subgraph(s), ${endCount} end(s)`
+  }
+
+  return null
+}
+
 export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: MermaidDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const svgContainerRef = useRef<HTMLDivElement>(null)
@@ -45,6 +245,8 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
   const [error, setError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [codeWasFixed, setCodeWasFixed] = useState(false)
+  const [appliedFixes, setAppliedFixes] = useState<string[]>([])
 
   // Estados para zoom e pan
   const [scale, setScale] = useState(1)
@@ -57,7 +259,7 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null)
   const [highlightedPaths, setHighlightedPaths] = useState<Set<string>>(new Set())
   const [interactiveMode, setInteractiveMode] = useState(false) // Desabilitado por padrão para evitar travamento
-  
+
   // Ref para throttle do mouse move
   const mouseMoveThrottleRef = useRef<number | null>(null)
   const lastPositionRef = useRef({ x: 0, y: 0 })
@@ -67,6 +269,39 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
       if (!containerRef.current) return
 
       try {
+        // 1. VALIDAÇÃO E CORREÇÃO AUTOMÁTICA
+        const validationError = validateMermaidSyntax(chart)
+        let chartToRender = chart
+
+        if (validationError) {
+          console.log('[MermaidDiagram] Erro de validação detectado:', validationError)
+
+          // Tentar corrigir automaticamente
+          const { fixed, wasModified, fixes } = fixMermaidCode(chart)
+
+          if (wasModified) {
+            console.log('[MermaidDiagram] Código corrigido automaticamente:', fixes)
+            chartToRender = fixed
+            setCodeWasFixed(true)
+            setAppliedFixes(fixes)
+
+            // Validar novamente após correção
+            const postFixError = validateMermaidSyntax(fixed)
+            if (postFixError) {
+              console.error('[MermaidDiagram] Ainda há erros após correção:', postFixError)
+              setError(`Não foi possível corrigir o diagrama: ${postFixError}`)
+              return
+            }
+          } else {
+            // Não conseguiu corrigir
+            setError(`Erro no código do diagrama: ${validationError}`)
+            return
+          }
+        } else {
+          setCodeWasFixed(false)
+          setAppliedFixes([])
+        }
+
         // Importar mermaid dinamicamente (client-side only)
         const mermaid = (await import('mermaid')).default
 
@@ -186,7 +421,7 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
         const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`
 
         // Renderizar o diagrama
-        const { svg: renderedSvg } = await mermaid.render(id, chart)
+        const { svg: renderedSvg } = await mermaid.render(id, chartToRender)
         setSvg(renderedSvg)
         setError(null)
       } catch (err) {
@@ -551,11 +786,22 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
 
   if (error) {
     return (
-      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 my-4">
-        <p className="text-red-400 text-sm">{error}</p>
-        <pre className="mt-2 text-xs text-slate-600 overflow-x-auto">
-          {chart}
-        </pre>
+      <div className="bg-red-50 border border-red-200 rounded-xl p-4 my-4">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
+            <span className="text-red-500 text-sm">⚠</span>
+          </div>
+          <p className="text-red-700 font-medium text-sm">Erro ao renderizar diagrama</p>
+        </div>
+        <p className="text-red-600 text-sm mb-3">{error}</p>
+        <details className="group">
+          <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-700">
+            Ver código original
+          </summary>
+          <pre className="mt-2 text-xs text-slate-600 overflow-x-auto bg-slate-100 p-3 rounded-lg max-h-40">
+            {chart}
+          </pre>
+        </details>
       </div>
     )
   }
@@ -575,7 +821,12 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-purple-600 text-xs font-medium">Fluxograma</span>
-                <span className="text-slate-400 text-xs">Preview</span>
+                {codeWasFixed && (
+                  <span className="text-amber-600 text-xs flex items-center gap-1" title={`Correções: ${appliedFixes.join(', ')}`}>
+                    ⚡ Auto-corrigido
+                  </span>
+                )}
+                {!codeWasFixed && <span className="text-slate-400 text-xs">Preview</span>}
               </div>
             </div>
           </div>
