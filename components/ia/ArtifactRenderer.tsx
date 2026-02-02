@@ -1037,26 +1037,36 @@ function cleanRenderedTextForChat(content: string): string {
   let cleaned = content
 
   // =====================================
+  // 0. REMOVER BLOCOS COMPLETOS DE GABARITO COMENTADO (MAIS IMPORTANTE)
+  // =====================================
+  // CRÍTICO: Remover "GABARITO COMENTADO - Questão X" e TODO conteúdo até próxima questão/fim
+  // Este padrão pega o bloco inteiro incluindo explicação e análise
+  cleaned = cleaned.replace(/(?:^|\n)\s*(?:#{1,4}\s*)?\*{0,2}GABARITO\s+COMENTADO[^]*?(?=(?:\n\s*#{1,4}|\n\s*```questao|\n\s*\*{2}Questão|\n\s*\[Q\d+\]|$))/gi, '\n')
+
+  // Remover variações: "## GABARITO COMENTADO", "**GABARITO COMENTADO**"
+  cleaned = cleaned.replace(/(?:^|\n)\s*#{1,4}\s*GABARITO\s+COMENTADO[^\n]*[\s\S]*?(?=\n#{1,4}[^G]|\n```|$)/gi, '\n')
+
+  // =====================================
   // 1. REMOVER GABARITO/RESPOSTA CORRETA
   // =====================================
   // Padrão: "✅ Resposta correta: Alternativa X" ou variações
-  cleaned = cleaned.replace(/[✅✓☑]\s*(?:Resposta\s+)?[Cc]orreta:?\s*(?:Alternativa\s*)?[A-Ea-e](?:[^\n]*\n)?/gi, '')
-  cleaned = cleaned.replace(/(?:^|\n)\s*\*{0,2}[✅✓]\s*(?:Resposta\s+correta|Gabarito)[:\s]*\*{0,2}\s*(?:Alternativa\s*)?[A-E][^\n]*\n?/gi, '\n')
-  cleaned = cleaned.replace(/(?:^|\n)\s*Gabarito:?\s*(?:Alternativa\s*)?[A-E][^\n]*\n?/gi, '\n')
+  cleaned = cleaned.replace(/[✅✓☑]\s*(?:Resposta\s+)?[Cc]orreta:?\s*(?:Alternativa\s*)?[A-Ea-e][^\n]*/gi, '')
+  cleaned = cleaned.replace(/(?:^|\n)\s*\*{0,2}[✅✓]\s*(?:Resposta\s+correta|Gabarito)[:\s]*\*{0,2}[^\n]*/gi, '\n')
+  cleaned = cleaned.replace(/(?:^|\n)\s*Gabarito:?\s*(?:Alternativa\s*)?[A-E][^\n]*/gi, '\n')
 
   // =====================================
-  // 2. REMOVER EXPLICAÇÃO DETALHADA
+  // 2. REMOVER EXPLICAÇÃO DETALHADA (MAIS AGRESSIVO)
   // =====================================
-  // Padrão: "📖 EXPLICAÇÃO DETALHADA:" ou "**Explicação:**" seguido de texto
-  cleaned = cleaned.replace(/[📖📚🔍]\s*(?:EXPLICAÇÃO\s+DETALHADA|Explicação\s+Detalhada)[:\s]*[\s\S]*?(?=\n\n[A-Z📊🎯✅❌]|$)/gi, '')
-  cleaned = cleaned.replace(/(?:^|\n)\s*\*{2}(?:EXPLICAÇÃO\s+DETALHADA|Explicação)[:\*\s]*\*{0,2}[\s\S]*?(?=\n\n(?:#{1,4}|[A-Z📊🎯✅❌])|$)/gi, '\n')
+  // Padrão: "📖 EXPLICAÇÃO DETALHADA:" e todo texto até próxima seção
+  cleaned = cleaned.replace(/[📖📚🔍💡]\s*(?:EXPLICAÇÃO\s+DETALHADA|Explicação\s+Detalhada|EXPLICAÇÃO)[:\s]*[^]*?(?=\n\n(?:#{1,4}|```|\*{2}Questão|\[Q\d+\])|$)/gi, '')
+  cleaned = cleaned.replace(/(?:^|\n)\s*\*{0,2}(?:EXPLICAÇÃO\s+DETALHADA|Explicação\s+Detalhada|EXPLICAÇÃO)[:\*\s]*\*{0,2}[^]*?(?=\n\n(?:#{1,4}|```|\*{2})|$)/gi, '\n')
 
   // =====================================
   // 3. REMOVER ANÁLISE DE ALTERNATIVAS
   // =====================================
   // Padrão: "**Alternativa A:** Texto..." ou "❌ Alternativa A: Texto..."
-  cleaned = cleaned.replace(/(?:^|\n)\s*[❌✅⚠️•●]\s*\*{0,2}Alternativa\s+[A-Ea-e][:\*\s]*\*{0,2}[^\n]*(?:\n(?![❌✅⚠️•●\n#\*])[^\n]*)*/gi, '\n')
-  cleaned = cleaned.replace(/(?:^|\n)\s*\*{0,2}Alternativa\s+[A-Ea-e][:\*\s]+[^\n]*(?:\n(?![A-Z📊🎯❌✅⚠️•●\n#\*])[^\n]*)*/gi, '\n')
+  cleaned = cleaned.replace(/(?:^|\n)\s*[❌✅⚠️•●]\s*\*{0,2}Alternativa\s+[A-Ea-e][:\*\s]*\*{0,2}[^\n]*(?:\n(?![❌✅⚠️•●\n#\*```])[^\n]*)*/gi, '\n')
+  cleaned = cleaned.replace(/(?:^|\n)\s*\*{0,2}Alternativa\s+[A-Ea-e][:\*\s]+[^\n]*(?:\n(?![A-Z📊🎯❌✅⚠️•●\n#\*```])[^\n]*)*/gi, '\n')
 
   // =====================================
   // 4. REMOVER TÍTULOS REDUNDANTES DE DECKS
@@ -1067,15 +1077,21 @@ function cleanRenderedTextForChat(content: string): string {
   // =====================================
   // 5. REMOVER SEÇÕES DE REFERÊNCIAS DE QUESTÕES
   // =====================================
-  cleaned = cleaned.replace(/(?:^|\n)\s*\*{0,2}(?:Ponto[s]?\s+(?:-\s+)?[Cc]have|Referência[s]?|Dica[s]?\s+de\s+Estudo)[:\*\s]*\*{0,2}[^\n]*(?:\n(?![#\n])[^\n]*)*/gi, '\n')
+  cleaned = cleaned.replace(/(?:^|\n)\s*\*{0,2}(?:Ponto[s]?\s+(?:-\s+)?[Cc]have|Referência[s]?|Dica[s]?\s+de\s+Estudo)[:\*\s]*\*{0,2}[^\n]*(?:\n(?![#\n```])[^\n]*)*/gi, '\n')
 
   // =====================================
   // 6. REMOVER BLOCOS DE "POR QUE ERROU"
   // =====================================
-  cleaned = cleaned.replace(/(?:^|\n)\s*\*{0,2}(?:Por\s+que\s+(?:está\s+)?(?:errad[oa]|incorret[oa])|Por\s+que\s+a\s+alternativa)[:\*\s]*\*{0,2}[\s\S]*?(?=\n\n|$)/gi, '\n')
+  cleaned = cleaned.replace(/(?:^|\n)\s*\*{0,2}(?:Por\s+que\s+(?:está\s+)?(?:errad[oa]|incorret[oa])|Por\s+que\s+a\s+alternativa)[:\*\s]*\*{0,2}[^]*?(?=\n\n|$)/gi, '\n')
 
   // =====================================
-  // 7. LIMPEZA GERAL
+  // 7. REMOVER CITAÇÕES ÓRFÃS [1] [2] etc
+  // =====================================
+  // Remove citações que ficaram sozinhas após limpeza
+  cleaned = cleaned.replace(/\s*\[\d+\]\s*/g, ' ')
+
+  // =====================================
+  // 8. LIMPEZA GERAL
   // =====================================
   // Remover múltiplas quebras de linha consecutivas
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n')

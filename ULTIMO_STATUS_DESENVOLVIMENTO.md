@@ -1,52 +1,52 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 02/02/2026 - Sessao Visual Diagramas/Flashcards
+## Atualizado em: 02/02/2026 - Sessao Correcao Diagramas e Texto
 
 ---
 
-## O QUE FOI FEITO NESTA SESSAO (02/02/2026) - VISUAL DIAGRAMAS E FLASHCARDS
+## O QUE FOI FEITO NESTA SESSAO (02/02/2026)
 
-### 1. FLASHCARDS - REMOCAO MARKDOWN REDUNDANTE
+### 1. CORRECAO RENDERIZACAO DIAGRAMAS JSON
 **Problema identificado:**
-- Ao gerar flashcards, aparecia "Resumo do Deck" com tabelas markdown
-- Instrucoes "Como Usar os Flashcards" aparecendo junto com o card
-- Contagem de cards e categorias em texto markdown
+- Diagramas JSON (flowchart e tree) estavam sendo passados para MermaidDiagram
+- Erro de parsing: "flowchart TB{ 'title': 'Trajeto..."
+- JSON nao e sintaxe Mermaid valida
 
 **Correcoes aplicadas:**
-- Funcao `cleanTextBeforeArtifact` melhorada para remover:
-  - Tabelas markdown inteiras
-  - Secoes "Resumo do Deck" e "Como Usar"
-  - Instrucoes sobre flashcards
-  - Listas de categorias/topicos
-  - Contagem de cards em texto
-- Agora so aparece o card visual compacto
+- `ArtifactRenderer.tsx`: Mapeamento correto de tipos para store
+  - `modern_flowchart` agora usa ModernFlowchart
+  - `tree_diagram` agora usa TreeDiagram
+  - Deteccao automatica de JSON vs Mermaid
+- `ArtifactsSidebar.tsx`: Verificacao de JSON antes de passar para Mermaid
+  - Se tem `nodes[]` -> ModernFlowchart
+  - Se tem `data/root/tree/children` -> TreeDiagram
+  - Se tem `layers[]` -> LayeredDiagram
+  - Se comeca com `flowchart/graph` -> MermaidDiagram
 
-### 2. MERMAID DIAGRAM - TEMA CLARO
+### 2. LIMPEZA DE TEXTO NO CHAT
 **Problema identificado:**
-- Diagramas/fluxogramas com fundo escuro e cores ruins
-- Texto dificil de ler (cores claras em fundo escuro)
-- Visual feio comparado com prints de referencia
+- Gabarito/explicacao das questoes aparecendo no chat
+- Titulos redundantes vazando (ex: "- Ciclo Cardiaco e Circulacao Sanguinea")
 
 **Correcoes aplicadas:**
-- Tema mudado de `dark` para `base` com themeVariables customizadas
-- Fundo branco (`#ffffff`)
-- Texto escuro legivel (`#1e293b`)
-- Cores vibrantes para nos: verde (#10b981), azul (#3b82f6), roxo (#8b5cf6)
-- Header com gradiente purple-blue
-- Tooltips e paineis com fundo claro
-- Container com `bg-white` ao inves de `bg-slate-800`
+- Nova funcao `cleanRenderedTextForChat()` que remove:
+  - Gabarito/resposta correta
+  - Explicacao detalhada
+  - Analise de alternativas
+  - Titulos redundantes de decks
+  - Secoes de referencias de questoes
+- Funcao `cleanTextBeforeArtifact()` melhorada:
+  - Remove titulos descritivos antes de fluxogramas/organogramas
+  - Remove listas com titulos de deck
+  - Emojis medicos adicionados ao pattern
 
-### 3. LAYERED DIAGRAM (ORGANOGRAMAS) - TEMA CLARO
+### 3. TIMEOUT AUMENTADO
 **Problema identificado:**
-- Organogramas com tema escuro igual aos diagramas
-- Cores de estadiamento (Tis, T1-T4) com fundo escuro
+- Timeout de 120 segundos no Vercel
+- Respostas cortadas quando gerando muito conteudo
 
 **Correcoes aplicadas:**
-- COLOR_PALETTES atualizado para cores claras (bg-*-100, text-*-700)
-- Badges de estadiamento com bordas coloridas
-- Container principal com `bg-white` e `shadow-sm`
-- Header com gradiente purple-pink
-- Paineis de detalhes com fundo claro
-- Fullscreen com fundo `bg-slate-100` ao inves de `bg-slate-950`
+- `maxDuration` aumentado de 120s para 300s (maximo Vercel Pro)
+- Permite geracao de flashcards + questoes + diagramas sem timeout
 
 ---
 
@@ -54,7 +54,7 @@
 
 | Hash | Descricao |
 |------|-----------|
-| `7d0e67f` | fix: visual limpo para diagramas/flashcards e remover markdown redundante |
+| `f2d5fe2` | fix: corrigir renderizacao de diagramas JSON e limpar texto no chat |
 
 ---
 
@@ -62,18 +62,18 @@
 
 | PR | Titulo | Status |
 |----|--------|--------|
-| [#31](https://github.com/brunodivinoo/projeto-final/pull/31) | fix: visual limpo para diagramas/flashcards e remover markdown redundante | **MERGED** |
+| [#41](https://github.com/brunodivinoo/projeto-final/pull/41) | fix: corrigir renderizacao de diagramas JSON e limpar texto no chat | **MERGED** |
 
 ---
 
 ## ARQUIVOS MODIFICADOS
 
-**Total:** 3 arquivos modificados (+210, -179)
+**Total:** 3 arquivos modificados (+218, -24)
 
 ### Arquivos:
-- `components/ia/ArtifactRenderer.tsx` - Limpeza de markdown redundante antes de flashcards
-- `components/ia/MermaidDiagram.tsx` - Tema claro com cores vibrantes
-- `components/ia/LayeredDiagram.tsx` - Tema claro para organogramas
+- `app/api/medicina/ia/chat/route.ts` - maxDuration 120s -> 300s
+- `components/ia/ArtifactRenderer.tsx` - cleanRenderedTextForChat + mapeamento tipos
+- `components/ia/ArtifactsSidebar.tsx` - Deteccao JSON em flowchart/diagram
 
 ---
 
@@ -82,23 +82,28 @@
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Flashcards no Chat | **CORRIGIDO** - Sem markdown redundante |
-| MermaidDiagram | **CORRIGIDO** - Tema claro, cores vibrantes |
-| LayeredDiagram | **CORRIGIDO** - Tema claro, badges coloridos |
+| Diagramas JSON | **CORRIGIDO** - Usa componente correto |
+| Limpeza texto chat | **CORRIGIDO** - Gabarito e titulos removidos |
+| Timeout API | **CORRIGIDO** - 300s (maximo Vercel Pro) |
 | Deploy | **EM ANDAMENTO** - Vercel processando |
 
 ---
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Testar em producao** - Verificar diagramas e flashcards com visual novo
-2. **Gerar flashcards de teste** - Confirmar que markdown nao aparece mais
-3. **Gerar fluxogramas de teste** - Confirmar cores claras e legiveis
-4. **Verificar outros artefatos** - Questoes, simulados, etc.
+1. **Testar em producao** - Gerar flashcards, fluxogramas, organogramas
+2. **Verificar questoes** - Confirmar que gabarito nao aparece no chat
+3. **Testar timeout** - Gerar conteudo longo para verificar se nao corta
+4. **Monitorar logs** - Verificar erros no console da Vercel
 
 ---
 
 ## HISTORICO ANTERIOR
+
+### Sessao 02/02/2026 - Visual Diagramas/Flashcards
+- Flashcards - Remocao markdown redundante
+- MermaidDiagram - Tema claro com cores vibrantes
+- LayeredDiagram - Tema claro para organogramas
 
 ### Sessao 02/02/2026 - UI Mobile
 - Header mobile como icones flutuantes

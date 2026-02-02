@@ -58,6 +58,33 @@ const MermaidDiagram = dynamic(() => import('../ia/MermaidDiagram'), {
   )
 })
 
+const ModernFlowchart = dynamic(() => import('../ia/ModernFlowchart'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center p-8">
+      <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full" />
+    </div>
+  )
+})
+
+const TreeDiagram = dynamic(() => import('../ia/TreeDiagram'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center p-8">
+      <div className="animate-spin w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full" />
+    </div>
+  )
+})
+
+const LayeredDiagram = dynamic(() => import('../ia/LayeredDiagram'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center p-8">
+      <div className="animate-spin w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full" />
+    </div>
+  )
+})
+
 // ==========================================
 // TIPOS
 // ==========================================
@@ -172,17 +199,174 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
         </div>
       )
 
-    case 'diagram':
-    case 'flowchart':
-      // Renderizar diagrama Mermaid
+    case 'modern_flowchart':
+      // Renderizar fluxograma moderno
+      try {
+        const flowchartData = JSON.parse(artifact.content)
+        if (flowchartData.nodes && Array.isArray(flowchartData.nodes)) {
+          return (
+            <div className="p-3 overflow-x-auto">
+              <ModernFlowchart
+                title={flowchartData.title || artifact.title}
+                nodes={flowchartData.nodes}
+                edges={flowchartData.edges || []}
+                description={flowchartData.description}
+                showLegend={flowchartData.showLegend !== false}
+              />
+            </div>
+          )
+        }
+      } catch {
+        // Fallback
+      }
       return (
-        <div className="p-3 overflow-x-auto">
-          <MermaidDiagram
-            chart={artifact.content}
-            title={artifact.title}
-          />
+        <div className="p-4">
+          <div className="bg-blue-50 rounded-xl p-4 text-center">
+            <p className="text-blue-600">Fluxograma disponível</p>
+          </div>
         </div>
       )
+
+    case 'tree_diagram':
+      // Renderizar organograma em árvore
+      try {
+        const treeData = JSON.parse(artifact.content)
+        const rootData = treeData.data || treeData.root || treeData.tree || treeData
+        if (rootData.name || rootData.label || rootData.children) {
+          return (
+            <div className="p-3 overflow-x-auto">
+              <TreeDiagram
+                title={treeData.title || artifact.title}
+                data={rootData}
+                description={treeData.description}
+                defaultExpanded={treeData.defaultExpanded !== false}
+                showChildCount={treeData.showChildCount !== false}
+              />
+            </div>
+          )
+        }
+      } catch {
+        // Fallback
+      }
+      return (
+        <div className="p-4">
+          <div className="bg-purple-50 rounded-xl p-4 text-center">
+            <p className="text-purple-600">Organograma disponível</p>
+          </div>
+        </div>
+      )
+
+    case 'layers':
+    case 'anatomy':
+      // Renderizar diagrama de camadas
+      try {
+        const layersData = JSON.parse(artifact.content)
+        if (layersData.layers && Array.isArray(layersData.layers)) {
+          return (
+            <div className="p-3 overflow-x-auto">
+              <LayeredDiagram
+                title={layersData.title || artifact.title}
+                layers={layersData.layers}
+                theme={layersData.theme || 'histology'}
+                showLegend={layersData.showLegend}
+                interactive={layersData.interactive ?? true}
+                description={layersData.description}
+              />
+            </div>
+          )
+        }
+      } catch {
+        // Fallback
+      }
+      return (
+        <div className="p-4">
+          <div className="bg-pink-50 rounded-xl p-4 text-center">
+            <p className="text-pink-600">Diagrama de camadas disponível</p>
+          </div>
+        </div>
+      )
+
+    case 'diagram':
+    case 'flowchart': {
+      // IMPORTANTE: Verificar se é JSON antes de passar para Mermaid
+      try {
+        const parsed = JSON.parse(artifact.content)
+
+        // Se tem nodes, é um ModernFlowchart
+        if (parsed.nodes && Array.isArray(parsed.nodes)) {
+          return (
+            <div className="p-3 overflow-x-auto">
+              <ModernFlowchart
+                title={parsed.title || artifact.title}
+                nodes={parsed.nodes}
+                edges={parsed.edges || []}
+                description={parsed.description}
+                showLegend={parsed.showLegend !== false}
+              />
+            </div>
+          )
+        }
+
+        // Se tem data/root/tree/children, é um TreeDiagram
+        if (parsed.data || parsed.root || parsed.tree || parsed.children || (parsed.name && parsed.children)) {
+          const rootData = parsed.data || parsed.root || parsed.tree || parsed
+          return (
+            <div className="p-3 overflow-x-auto">
+              <TreeDiagram
+                title={parsed.title || artifact.title}
+                data={rootData}
+                description={parsed.description}
+                defaultExpanded={parsed.defaultExpanded !== false}
+                showChildCount={parsed.showChildCount !== false}
+              />
+            </div>
+          )
+        }
+
+        // Se tem layers, é um LayeredDiagram
+        if (parsed.layers && Array.isArray(parsed.layers)) {
+          return (
+            <div className="p-3 overflow-x-auto">
+              <LayeredDiagram
+                title={parsed.title || artifact.title}
+                layers={parsed.layers}
+                theme={parsed.theme || 'histology'}
+                showLegend={parsed.showLegend}
+                interactive={parsed.interactive ?? true}
+                description={parsed.description}
+              />
+            </div>
+          )
+        }
+      } catch {
+        // Não é JSON, verificar se é Mermaid válido
+      }
+
+      // Verificar se é sintaxe Mermaid válida
+      const trimmedContent = artifact.content.trim()
+      const isMermaidSyntax = /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|gitGraph|mindmap|timeline)/i.test(trimmedContent)
+
+      if (isMermaidSyntax) {
+        return (
+          <div className="p-3 overflow-x-auto">
+            <MermaidDiagram
+              chart={artifact.content}
+              title={artifact.title}
+            />
+          </div>
+        )
+      }
+
+      // Fallback: mostrar conteúdo como texto
+      return (
+        <div className="p-4">
+          <div className="bg-slate-50 rounded-xl p-4">
+            <h4 className="font-medium text-slate-800 mb-2">{artifact.title}</h4>
+            <p className="text-slate-600 text-sm whitespace-pre-wrap">{artifact.content.substring(0, 500)}...</p>
+          </div>
+        </div>
+      )
+    }
 
     default:
       return (
