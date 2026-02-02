@@ -1,57 +1,52 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 02/02/2026 - Sessao de Melhorias UI Mobile
+## Atualizado em: 02/02/2026 - Sessao Visual Diagramas/Flashcards
 
 ---
 
-## O QUE FOI FEITO NESTA SESSAO (02/02/2026) - UI MOBILE
+## O QUE FOI FEITO NESTA SESSAO (02/02/2026) - VISUAL DIAGRAMAS E FLASHCARDS
 
-### 1. HEADER MOBILE - ICONES FLUTUANTES
+### 1. FLASHCARDS - REMOCAO MARKDOWN REDUNDANTE
 **Problema identificado:**
-- Barra branca do header ocupando espaco no topo
-- Icone do menu visivel quando sidebar esta aberta (sobrepondo)
+- Ao gerar flashcards, aparecia "Resumo do Deck" com tabelas markdown
+- Instrucoes "Como Usar os Flashcards" aparecendo junto com o card
+- Contagem de cards e categorias em texto markdown
 
 **Correcoes aplicadas:**
-- Header transformado em icones flutuantes (menu hamburguer + artefatos)
-- Icone do menu esconde automaticamente quando sidebar abre (`!sidebarOpen &&`)
-- Posicao: `fixed top-2 left-3 z-[60]` com `env(safe-area-inset-top)`
+- Funcao `cleanTextBeforeArtifact` melhorada para remover:
+  - Tabelas markdown inteiras
+  - Secoes "Resumo do Deck" e "Como Usar"
+  - Instrucoes sobre flashcards
+  - Listas de categorias/topicos
+  - Contagem de cards em texto
+- Agora so aparece o card visual compacto
 
-### 2. CHAT - PADDING PARA ICONES
+### 2. MERMAID DIAGRAM - TEMA CLARO
 **Problema identificado:**
-- Conteudo do chat ficando atras dos icones flutuantes
+- Diagramas/fluxogramas com fundo escuro e cores ruins
+- Texto dificil de ler (cores claras em fundo escuro)
+- Visual feio comparado com prints de referencia
 
 **Correcoes aplicadas:**
-- Adicionado `pt-14` no mobile para criar espaco abaixo dos icones
-- Desktop mantem `lg:pt-5` normal
+- Tema mudado de `dark` para `base` com themeVariables customizadas
+- Fundo branco (`#ffffff`)
+- Texto escuro legivel (`#1e293b`)
+- Cores vibrantes para nos: verde (#10b981), azul (#3b82f6), roxo (#8b5cf6)
+- Header com gradiente purple-blue
+- Tooltips e paineis com fundo claro
+- Container com `bg-white` ao inves de `bg-slate-800`
 
-### 3. MENU + (ANEXOS) - OVERFLOW CORRIGIDO
+### 3. LAYERED DIAGRAM (ORGANOGRAMAS) - TEMA CLARO
 **Problema identificado:**
-- Menu de opcoes do botao + ficava escondido (overflow-hidden no container)
+- Organogramas com tema escuro igual aos diagramas
+- Cores de estadiamento (Tis, T1-T4) com fundo escuro
 
 **Correcoes aplicadas:**
-- Removido `overflow-hidden` do container do input
-- Menu agora aparece corretamente com `absolute bottom-12 left-0 z-[100]`
-
-### 4. FLASHCARDS - LAYOUT CORRIGIDO
-**Problema identificado:**
-- Texto sumiu completamente (min-h + flex-1 nao funcionava com absolute)
-- Badge "Resposta" sobrepondo texto
-- Layout quebrado no mobile
-
-**Correcoes aplicadas:**
-- Altura fixa: `h-[180px]` mobile / `h-[280px]` desktop (em vez de min-h)
-- Texto com `max-h` e `overflow-y-auto` para textos longos
-- Padding adequado: `p-4` mobile / `p-8` desktop
-- Icone do livro: `w-10 h-10` com `mb-3`
-- Fonte do texto: `text-sm` mobile / `text-xl` desktop
-- Badge "Resposta": `top-2 right-2` com tamanho adequado
-- Botoes de acao maiores e mais legiveis
-
-### 5. PAGINA INICIAL - LAYOUT COMPACTO
-**Correcoes aplicadas:**
-- Padding reduzido: `py-4` mobile / `py-10` desktop
-- Logo menor: `w-12 h-12` mobile
-- Titulo: `text-lg` mobile / `text-3xl` desktop
-- Espacamentos otimizados para aproveitar tela
+- COLOR_PALETTES atualizado para cores claras (bg-*-100, text-*-700)
+- Badges de estadiamento com bordas coloridas
+- Container principal com `bg-white` e `shadow-sm`
+- Header com gradiente purple-pink
+- Paineis de detalhes com fundo claro
+- Fullscreen com fundo `bg-slate-100` ao inves de `bg-slate-950`
 
 ---
 
@@ -59,8 +54,7 @@
 
 | Hash | Descricao |
 |------|-----------|
-| `1e1be36` | fix: melhorias UI mobile - header limpo, menu +, flashcards responsivos |
-| `92452ff` | fix: correcoes mobile - icone menu, padding chat, flashcards |
+| `7d0e67f` | fix: visual limpo para diagramas/flashcards e remover markdown redundante |
 
 ---
 
@@ -68,20 +62,18 @@
 
 | PR | Titulo | Status |
 |----|--------|--------|
-| [#24](https://github.com/brunodivinoo/projeto-final/pull/24) | fix: melhorias UI mobile - header limpo, menu +, flashcards responsivos | **MERGED** |
-| [#25](https://github.com/brunodivinoo/projeto-final/pull/25) | fix: correcoes mobile - icone menu, padding chat, flashcards | **MERGED** |
+| [#31](https://github.com/brunodivinoo/projeto-final/pull/31) | fix: visual limpo para diagramas/flashcards e remover markdown redundante | **MERGED** |
 
 ---
 
 ## ARQUIVOS MODIFICADOS
 
-**Total:** 4 arquivos modificados
+**Total:** 3 arquivos modificados (+210, -179)
 
 ### Arquivos:
-- `app/medicina/(dashboard)/layout.tsx` - Header mobile como icones flutuantes
-- `app/medicina/(dashboard)/dashboard/page.tsx` - Layout compacto mobile
-- `app/medicina/(dashboard)/dashboard/ia/page.tsx` - Padding chat, menu + corrigido
-- `components/ia/FlashcardDeck.tsx` - Layout completo corrigido
+- `components/ia/ArtifactRenderer.tsx` - Limpeza de markdown redundante antes de flashcards
+- `components/ia/MermaidDiagram.tsx` - Tema claro com cores vibrantes
+- `components/ia/LayeredDiagram.tsx` - Tema claro para organogramas
 
 ---
 
@@ -90,23 +82,29 @@
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Header Mobile | **CORRIGIDO** - Icones flutuantes |
-| Menu + (Anexos) | **CORRIGIDO** - Opcoes aparecem |
-| Flashcards Mobile | **CORRIGIDO** - Layout funcional |
-| Pagina Inicial | **CORRIGIDA** - Layout compacto |
-| Icone Menu/Sidebar | **CORRIGIDO** - Esconde ao abrir sidebar |
+| Flashcards no Chat | **CORRIGIDO** - Sem markdown redundante |
+| MermaidDiagram | **CORRIGIDO** - Tema claro, cores vibrantes |
+| LayeredDiagram | **CORRIGIDO** - Tema claro, badges coloridos |
+| Deploy | **EM ANDAMENTO** - Vercel processando |
 
 ---
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Testar em producao** - Verificar todas as correcoes no mobile
-2. **Verificar outros componentes** - Buscar mais inconsistencias de UI
-3. **Implementar novas features** - Continuar desenvolvimento
+1. **Testar em producao** - Verificar diagramas e flashcards com visual novo
+2. **Gerar flashcards de teste** - Confirmar que markdown nao aparece mais
+3. **Gerar fluxogramas de teste** - Confirmar cores claras e legiveis
+4. **Verificar outros artefatos** - Questoes, simulados, etc.
 
 ---
 
 ## HISTORICO ANTERIOR
+
+### Sessao 02/02/2026 - UI Mobile
+- Header mobile como icones flutuantes
+- Menu + (anexos) corrigido
+- Flashcards layout responsivo
+- Pagina inicial compacta
 
 ### Sessao 02/02/2026 - Redesign Sidebar Principal
 - Sidebar principal com tema escuro profissional
