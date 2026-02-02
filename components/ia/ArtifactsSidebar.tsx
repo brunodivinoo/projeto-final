@@ -1046,26 +1046,26 @@ function FullscreenModal({
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-200">
+      {/* Header - fundo escuro com texto claro */}
+      <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-900/80">
         <div className="flex items-center gap-3">
           <span className="text-2xl">{ARTIFACT_ICONS[artifact.type]}</span>
           <div>
-            <h2 className="text-slate-800 font-semibold text-lg">{artifact.title}</h2>
-            <span className="text-slate-500 text-sm">{ARTIFACT_LABELS[artifact.type]}</span>
+            <h2 className="text-emerald-400 font-semibold text-lg">{artifact.title}</h2>
+            <span className="text-slate-400 text-sm">{ARTIFACT_LABELS[artifact.type]}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Contador */}
-          <span className="text-slate-500 text-sm mr-4">
+          <span className="text-slate-400 text-sm mr-4">
             {currentIndex + 1} / {totalCount}
           </span>
 
           {/* Copiar */}
           <button
             onClick={handleCopy}
-            className="p-2 text-slate-600 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
             title="Copiar conteúdo"
           >
             {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
@@ -1074,7 +1074,7 @@ function FullscreenModal({
           {/* Fechar */}
           <button
             onClick={onClose}
-            className="p-2 text-slate-600 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
             title="Fechar (ESC)"
           >
             <Minimize2 className="w-5 h-5" />
@@ -1082,31 +1082,33 @@ function FullscreenModal({
         </div>
       </div>
 
-      {/* Conteúdo */}
+      {/* Conteúdo - com scroll quando necessário */}
       <div className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
-        <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full">
-          <div className="flex-1 bg-white rounded-xl overflow-hidden border border-slate-200 flex flex-col">
-            <ArtifactContent artifact={artifact} isFullscreen />
+        <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full overflow-hidden">
+          <div className="flex-1 bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto">
+              <ArtifactContent artifact={artifact} isFullscreen />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Navegação */}
-      <div className="flex items-center justify-center gap-4 p-4 border-t border-slate-200">
+      {/* Navegação - fundo escuro */}
+      <div className="flex items-center justify-center gap-4 p-4 border-t border-slate-700 bg-slate-900/80">
         <button
           onClick={onPrevious}
           disabled={!hasPrevious}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
             hasPrevious
-              ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              ? 'bg-slate-700 text-white hover:bg-slate-600'
+              : 'bg-slate-800 text-slate-500 cursor-not-allowed'
           }`}
         >
           <ChevronLeft className="w-5 h-5" />
           <span>Anterior</span>
         </button>
 
-        <div className="text-slate-500 text-sm">
+        <div className="text-slate-400 text-sm">
           Use ← → para navegar, ESC para fechar
         </div>
 
@@ -1115,8 +1117,8 @@ function FullscreenModal({
           disabled={!hasNext}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
             hasNext
-              ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              ? 'bg-purple-600 text-white hover:bg-purple-500'
+              : 'bg-slate-800 text-slate-500 cursor-not-allowed'
           }`}
         >
           <span>Próximo</span>
@@ -1148,10 +1150,10 @@ function ArtifactCard({
 }) {
   const [previewLevel, setPreviewLevel] = useState<PreviewLevel>('collapsed')
 
-  // Quando selecionado, mostrar preview automaticamente
+  // Quando selecionado, expandir automaticamente para mostrar conteúdo completo
   useEffect(() => {
     if (isSelected && previewLevel === 'collapsed') {
-      setPreviewLevel('preview')
+      setPreviewLevel('expanded')
     }
   }, [isSelected, previewLevel])
 
