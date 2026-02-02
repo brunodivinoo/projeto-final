@@ -7,6 +7,8 @@ export type ChatModeType = 'chat' | 'caso_clinico' | 'tutor' | 'questoes'
 export type ArtifactType =
   | 'diagram'
   | 'flowchart'
+  | 'modern_flowchart' // Fluxograma moderno com nós coloridos
+  | 'tree_diagram' // Diagrama de árvore / organograma
   | 'table'
   | 'code'
   | 'ecg'
@@ -370,7 +372,7 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
       case 'questions':
         return artifacts.filter((a) => a.type === 'question')
       case 'diagrams':
-        return artifacts.filter((a) => ['diagram', 'flowchart', 'layers'].includes(a.type))
+        return artifacts.filter((a) => ['diagram', 'flowchart', 'modern_flowchart', 'tree_diagram', 'layers'].includes(a.type))
       default:
         return artifacts
     }
@@ -476,6 +478,8 @@ export function detectArtifactType(content: string): ArtifactType | null {
 export const ARTIFACT_ICONS: Record<ArtifactType, string> = {
   diagram: '📊',
   flowchart: '🔀',
+  modern_flowchart: '🔄',
+  tree_diagram: '🌳',
   table: '📋',
   code: '💻',
   ecg: '💓',
@@ -502,6 +506,8 @@ export const ARTIFACT_ICONS: Record<ArtifactType, string> = {
 export const ARTIFACT_LABELS: Record<ArtifactType, string> = {
   diagram: 'Diagrama',
   flowchart: 'Fluxograma',
+  modern_flowchart: 'Fluxograma Moderno',
+  tree_diagram: 'Organograma',
   table: 'Tabela',
   code: 'Código',
   ecg: 'ECG',
