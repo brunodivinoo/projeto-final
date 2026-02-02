@@ -9,6 +9,7 @@ export type ArtifactType =
   | 'flowchart'
   | 'modern_flowchart' // Fluxograma moderno com nós coloridos
   | 'tree_diagram' // Diagrama de árvore / organograma
+  | 'organograma' // Alias para tree_diagram
   | 'table'
   | 'code'
   | 'ecg'
@@ -372,7 +373,7 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
       case 'questions':
         return artifacts.filter((a) => a.type === 'question')
       case 'diagrams':
-        return artifacts.filter((a) => ['diagram', 'flowchart', 'modern_flowchart', 'tree_diagram', 'layers'].includes(a.type))
+        return artifacts.filter((a) => ['diagram', 'flowchart', 'modern_flowchart', 'tree_diagram', 'organograma', 'layers'].includes(a.type))
       default:
         return artifacts
     }
@@ -480,6 +481,7 @@ export const ARTIFACT_ICONS: Record<ArtifactType, string> = {
   flowchart: '🔀',
   modern_flowchart: '🔄',
   tree_diagram: '🌳',
+  organograma: '🏢',
   table: '📋',
   code: '💻',
   ecg: '💓',
@@ -507,7 +509,8 @@ export const ARTIFACT_LABELS: Record<ArtifactType, string> = {
   diagram: 'Diagrama',
   flowchart: 'Fluxograma',
   modern_flowchart: 'Fluxograma Moderno',
-  tree_diagram: 'Organograma',
+  tree_diagram: 'Árvore Hierárquica',
+  organograma: 'Organograma',
   table: 'Tabela',
   code: 'Código',
   ecg: 'ECG',
