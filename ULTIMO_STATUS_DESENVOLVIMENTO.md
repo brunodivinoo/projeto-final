@@ -1,9 +1,31 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 02/02/2026 - Sessao de Redesign Sidebar e Correcao de Artefatos
+## Atualizado em: 02/02/2026 - Sessao de Redesign Sidebar Principal com Tema Escuro
 
 ---
 
-## O QUE FOI FEITO NESTA SESSAO (02/02/2026)
+## O QUE FOI FEITO NESTA SESSAO (02/02/2026) - PARTE 2
+
+### 1. SIDEBAR PRINCIPAL (layout.tsx) - REDESIGN TEMA ESCURO PROFISSIONAL
+**Problema identificado:**
+- Sidebar principal do dashboard com aparencia amadora, nao profissional
+
+**Correcoes aplicadas:**
+- Container: `bg-slate-900 border-r border-slate-800`
+- Logo: gradiente `from-emerald-400 to-emerald-600` com `shadow-lg shadow-emerald-500/30`
+- Navegacao ativa: `bg-emerald-500 text-white shadow-lg shadow-emerald-500/30`
+- Navegacao hover: `bg-slate-800 text-white`
+- Botao Nova Conversa: `bg-gradient-to-r from-emerald-500 to-emerald-600` com sombra brilhante
+- Input de busca: `bg-slate-800 border-slate-700 text-white`
+- Conversas ativas: `bg-emerald-500/20 border-emerald-500/30`
+- Upgrade banner: gradiente `from-amber-500/20 to-orange-500/20` com borda amber
+- Badge container: `bg-slate-800/50 border-slate-700`
+- Perfil dropdown: `bg-slate-800 border-slate-700`
+- Toggle button: `bg-slate-800 border-slate-700`
+- Menu portal (renomear/excluir): `bg-slate-800 border-slate-700`
+
+---
+
+## SESSAO ANTERIOR (02/02/2026) - PARTE 1
 
 ### 1. SIDEBAR (ChatHistorySidebar) - REDESIGN COMPLETO
 **Problema identificado:**
@@ -50,20 +72,21 @@
 
 | Hash | Descricao |
 |------|-----------|
+| `661f188` | fix: redesenhar sidebar principal com tema escuro profissional |
+| `d8beb0f` | fix: redesenhar sidebar e corrigir tela de artefatos mobile |
 | `47e03ec` | fix: redesenhar sidebar e corrigir cores em artefatos e chat |
 
 ---
 
 ## ARQUIVOS MODIFICADOS
 
-**Total:** 3 arquivos modificados
-**Adicoes:** 99 linhas
-**Remocoes:** 93 linhas
+**Total:** 4 arquivos modificados
 
 ### Arquivos:
+- `app/medicina/(dashboard)/layout.tsx` - **NOVO**: Sidebar principal com tema escuro profissional
+- `components/mobile/MobileArtifactsScreen.tsx` - Correcao de cores e tema claro
 - `components/medicina/ChatHistorySidebar.tsx` - Redesign profissional
-- `components/ia/ArtifactsSidebar.tsx` - Correcao de 50+ instancias de cores
-- `app/medicina/(dashboard)/dashboard/ia/page.tsx` - Tom de verde mais escuro
+- `app/medicina/(dashboard)/dashboard/ia/page.tsx` - Tom de verde mais escuro (emerald-600)
 
 ---
 
@@ -72,11 +95,13 @@
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Sidebar | **REDESENHADA** - Visual profissional |
-| ArtifactsSidebar | **CORRIGIDA** - Tema claro |
-| Chat IA Verde | **CORRIGIDO** - Gradiente mais escuro |
-| Branch | claude/continue-prepara-med-ScMrD |
-| Commit | 47e03ec |
+| Sidebar Principal | **REDESENHADA** - Tema escuro profissional (layout.tsx) |
+| Sidebar Chat | **REDESENHADA** - Visual profissional (ChatHistorySidebar.tsx) |
+| MobileArtifactsScreen | **CORRIGIDA** - Tema claro |
+| Chat IA Verde | **CORRIGIDO** - Emerald-600 mais escuro |
+| Branch | claude/fix-sidebar-artifacts-v2-ScMrD |
+| Commit | 661f188 |
+| PR Pendente | https://github.com/brunodivinoo/projeto-final/compare/main...claude/fix-sidebar-artifacts-v2-ScMrD |
 
 ---
 
