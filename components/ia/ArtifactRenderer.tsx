@@ -49,7 +49,7 @@ import { ZoomIn } from 'lucide-react'
 const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
   ssr: false,
   loading: () => (
-    <div className="bg-slate-800/50 border border-slate-200 rounded-xl p-6 my-4">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 my-4 shadow-sm">
       <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full" />
         <span>Carregando diagrama...</span>
@@ -62,7 +62,7 @@ const MermaidDiagram = dynamic(() => import('./MermaidDiagram'), {
 const LayeredDiagram = dynamic(() => import('./LayeredDiagram'), {
   ssr: false,
   loading: () => (
-    <div className="bg-slate-800/50 border border-slate-200 rounded-xl p-6 my-4">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 my-4 shadow-sm">
       <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full" />
         <span>Carregando diagrama de camadas...</span>
@@ -101,7 +101,7 @@ const TreeDiagram = dynamic(() => import('./TreeDiagram'), {
 const StagingTable = dynamic(() => import('./StagingTable'), {
   ssr: false,
   loading: () => (
-    <div className="bg-slate-800/50 border border-slate-200 rounded-xl p-6 my-4">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 my-4 shadow-sm">
       <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full" />
         <span>Carregando tabela de estadiamento...</span>
@@ -127,7 +127,7 @@ const ImageGenerator = dynamic(() => import('./ImageGenerator'), {
 const MedicalImageGallery = dynamic(() => import('./MedicalImageGallery'), {
   ssr: false,
   loading: () => (
-    <div className="bg-slate-800/30 rounded-xl p-4 my-4">
+    <div className="bg-white border border-slate-200 rounded-xl p-4 my-4 shadow-sm">
       <div className="flex items-center gap-2 text-slate-500">
         <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full" />
         <span>Buscando imagens médicas...</span>
@@ -248,6 +248,14 @@ const FLOWCHART_JSON_REGEX = /```(?:json)?\s*\n(\s*\{[\s\S]*?"nodes"\s*:\s*\[[\s
 // Regex para detectar JSON de organograma/árvore em blocos de código genéricos
 // Detecta { "title": ..., "data": { "id": ..., "name": ..., "children": [...] } }
 const TREE_JSON_REGEX = /```(?:json)?\s*\n(\s*\{[\s\S]*?"data"\s*:\s*\{[\s\S]*?"children"\s*:\s*\[[\s\S]*?\})\s*\n```/g
+
+// Regex para detectar JSON de fluxograma SOLTO (sem bloco de código)
+// Captura JSON com "nodes" e "edges" que não esteja dentro de backticks
+const FLOWCHART_LOOSE_JSON_REGEX = /(?:^|\n)\s*(\{\s*"(?:title|nodes)"[\s\S]*?"nodes"\s*:\s*\[[\s\S]*?\]\s*,\s*"edges"\s*:\s*\[[\s\S]*?\]\s*\})/g
+
+// Regex para detectar JSON de organograma SOLTO (sem bloco de código)
+// Captura JSON com "data" contendo "children" que não esteja dentro de backticks
+const TREE_LOOSE_JSON_REGEX = /(?:^|\n)\s*(\{\s*"(?:title|data)"[\s\S]*?"data"\s*:\s*\{[\s\S]*?"children"\s*:\s*\[[\s\S]*?\]\s*\}\s*\})/g
 
 // Tipo de dificuldade para flashcards
 type FlashcardDificuldade = 'facil' | 'medio' | 'dificil'
@@ -1287,6 +1295,62 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
     }
   }
 
+  // NOVO: Buscar JSON de fluxograma SOLTO (sem bloco de código ```json```)
+  const flowchartLooseRegex = new RegExp(FLOWCHART_LOOSE_JSON_REGEX.source, 'g')
+  while ((match = flowchartLooseRegex.exec(processedContent)) !== null) {
+    try {
+      const jsonContent = match[1].trim()
+
+      // Verificar se não está dentro de um bloco de código
+      const beforeMatch = processedContent.substring(0, match.index)
+      const codeBlocksCount = (beforeMatch.match(/```/g) || []).length
+      if (codeBlocksCount % 2 !== 0) continue // Dentro de bloco de código, ignorar
+
+      const flowchartData = JSON.parse(jsonContent)
+
+      // Validar que é um fluxograma (tem nodes e edges)
+      if (flowchartData.nodes && Array.isArray(flowchartData.nodes) && flowchartData.nodes.length >= 2) {
+        // Criar match sintético com título
+        const syntheticMatch = [match[0], flowchartData.title || 'Fluxograma', jsonContent] as RegExpMatchArray
+        syntheticMatch.index = match.index
+        syntheticMatch.input = processedContent
+
+        allMatches.push({ match: syntheticMatch, type: 'modern_flowchart' })
+        console.log('[ArtifactRenderer] Fluxograma JSON SOLTO detectado:', flowchartData.title || 'Sem título')
+      }
+    } catch (e) {
+      // JSON incompleto ou inválido, ignorar silenciosamente
+    }
+  }
+
+  // NOVO: Buscar JSON de organograma SOLTO (sem bloco de código ```json```)
+  const treeLooseRegex = new RegExp(TREE_LOOSE_JSON_REGEX.source, 'g')
+  while ((match = treeLooseRegex.exec(processedContent)) !== null) {
+    try {
+      const jsonContent = match[1].trim()
+
+      // Verificar se não está dentro de um bloco de código
+      const beforeMatch = processedContent.substring(0, match.index)
+      const codeBlocksCount = (beforeMatch.match(/```/g) || []).length
+      if (codeBlocksCount % 2 !== 0) continue // Dentro de bloco de código, ignorar
+
+      const treeData = JSON.parse(jsonContent)
+
+      // Validar que é um organograma (tem data com children)
+      if (treeData.data && treeData.data.children && Array.isArray(treeData.data.children)) {
+        // Criar match sintético com título
+        const syntheticMatch = [match[0], treeData.title || 'Organograma', jsonContent] as RegExpMatchArray
+        syntheticMatch.index = match.index
+        syntheticMatch.input = processedContent
+
+        allMatches.push({ match: syntheticMatch, type: 'tree_diagram' })
+        console.log('[ArtifactRenderer] Organograma JSON SOLTO detectado:', treeData.title || 'Sem título')
+      }
+    } catch (e) {
+      // JSON incompleto ou inválido, ignorar silenciosamente
+    }
+  }
+
   // Buscar simulados gerados pela IA (formato JSON completo)
   const simuladoRegex = new RegExp(SIMULADO_REGEX.source, 'g')
   while ((match = simuladoRegex.exec(processedContent)) !== null) {
@@ -1830,13 +1894,13 @@ const MemoizedImage = memo(function MemoizedImage({ src, alt, onClickImage }: Me
     >
       <button
         onClick={handleClick}
-        className="relative w-full bg-slate-800/50 rounded-lg overflow-hidden border border-slate-200 hover:border-blue-500/50 transition-colors cursor-zoom-in"
+        className="relative w-full bg-slate-100 rounded-lg overflow-hidden border border-slate-200 hover:border-blue-500/50 transition-colors cursor-zoom-in"
         title="Clique para ampliar"
       >
         {/* Placeholder skeleton - só aparece se não carregou ainda */}
         {!isLoaded && (
           <div
-            className="absolute inset-0 bg-gradient-to-r from-slate-800/50 via-slate-700/50 to-slate-800/50 animate-pulse"
+            className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 animate-pulse"
             style={{ zIndex: 1, minHeight: '200px' }}
           />
         )}
@@ -2200,7 +2264,7 @@ function ArtifactRendererComponent({
 
                 // Pre (for code blocks without language) - mais compacto
                 pre: ({ children }) => (
-                  <pre className="bg-slate-800/80 rounded-lg p-3 my-2 overflow-x-auto text-xs font-mono text-slate-700">
+                  <pre className="bg-slate-100 border border-slate-200 rounded-lg p-3 my-2 overflow-x-auto text-xs font-mono text-slate-700">
                     {children}
                   </pre>
                 ),
@@ -2518,7 +2582,7 @@ function ArtifactRendererComponent({
           } catch {
             // Se não for JSON válido, mostrar como texto
             return (
-              <div key={index} className="my-3 bg-slate-800/50 border border-slate-200 rounded-xl p-3">
+              <div key={index} className="my-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
                 <pre className="text-slate-700 text-xs whitespace-pre-wrap">{part.content}</pre>
               </div>
             )
@@ -2713,8 +2777,8 @@ function ArtifactRendererComponent({
         // Outros tipos de artefato (tabela, comparação, mindmap) - responsivo
         if (part.type === 'artifact') {
           return (
-            <div key={index} className="my-3 bg-slate-800/50 border border-slate-200 rounded-xl overflow-hidden max-h-[300px] md:max-h-[400px] overflow-auto">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 border-b border-slate-200 sticky top-0">
+            <div key={index} className="my-3 bg-white border border-slate-200 rounded-xl overflow-hidden max-h-[300px] md:max-h-[400px] overflow-auto shadow-sm">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border-b border-slate-200 sticky top-0">
                 <div className="w-2 h-2 rounded-full bg-blue-500" />
                 <span className="text-slate-700 text-xs font-medium">
                   {part.title || part.subtype}
