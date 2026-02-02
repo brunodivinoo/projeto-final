@@ -2537,12 +2537,12 @@ function ArtifactRendererComponent({
               components={{
                 // Headings - menores e mais compactos
                 h1: ({ children }) => (
-                  <h1 className="text-base lg:text-base font-bold text-white mt-3 mb-1.5 pb-1 border-b border-slate-200">
+                  <h1 className="text-base lg:text-base font-bold text-slate-800 mt-3 mb-1.5 pb-1 border-b border-slate-200">
                     {children}
                   </h1>
                 ),
                 h2: ({ children }) => (
-                  <h2 className="text-sm lg:text-sm font-semibold text-white mt-2.5 mb-1.5">
+                  <h2 className="text-sm lg:text-sm font-semibold text-slate-800 mt-2.5 mb-1.5">
                     {children}
                   </h2>
                 ),
