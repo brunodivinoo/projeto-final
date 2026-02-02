@@ -2110,21 +2110,21 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
         conversionType: asciiType
       }
     } else if (type === 'flashcards' && matchData.flashcardData) {
-      // Flashcards interativos
+      // Flashcards interativos - serializar dados no content para persistência
       artifact = {
         type: 'flashcards',
         title: matchData.flashcardData.titulo,
-        content: '', // O conteudo fica em flashcardData
+        content: JSON.stringify(matchData.flashcardData),
         startIndex,
         endIndex,
         flashcardData: matchData.flashcardData
       }
     } else if (type === 'simulado' && matchData.simuladoData) {
-      // Simulado completo
+      // Simulado completo - serializar dados no content para persistência
       artifact = {
         type: 'simulado',
         title: matchData.simuladoData.titulo,
-        content: '', // O conteudo fica em simuladoData
+        content: JSON.stringify(matchData.simuladoData),
         startIndex,
         endIndex,
         simuladoData: matchData.simuladoData
