@@ -1503,7 +1503,7 @@ export default function IAPage() {
   // (gratuito agora tem 10 chats, então não bloqueia mais)
 
   return (
-    <div className={`h-[calc(100dvh-72px-24px)] lg:h-[calc(100dvh-48px)] flex flex-col md:flex-row transition-all duration-300 ${
+    <div className={`h-[calc(100dvh-24px)] lg:h-[calc(100dvh-48px)] flex flex-col md:flex-row transition-all duration-300 ${
       isArtifactsSidebarOpen && hasArtifacts && !isMobile ? 'mr-[420px]' : ''
     }`}>
       {/* MOBILE: Sidebar como Drawer sobreposto */}
@@ -1686,7 +1686,7 @@ export default function IAPage() {
       <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
         {/* Mobile - Botão de Artefatos Flutuante no canto superior direito */}
         {hasArtifacts && (
-          <div className="lg:hidden fixed top-2 right-3 z-[60]">
+          <div className="lg:hidden fixed top-2 right-3 z-[60]" style={{ paddingTop: 'env(safe-area-inset-top, 8px)' }}>
             <button
               onClick={() => setMobileArtifactsOpen(true)}
               className="relative flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-lg border border-slate-200 active:scale-95 transition-all"
@@ -1701,7 +1701,7 @@ export default function IAPage() {
 
         {/* Mobile - Indicador de Ficha Flutuante (caso_clinico) */}
         {fichaAtiva && chatMode === 'caso_clinico' && (
-          <div className="lg:hidden fixed top-2 right-16 z-[60]">
+          <div className="lg:hidden fixed top-2 right-16 z-[60]" style={{ paddingTop: 'env(safe-area-inset-top, 8px)' }}>
             <IndicadorProgresso
               itensPreenchidos={fichaItensPreenchidos}
               totalItens={7}
@@ -1981,7 +1981,7 @@ export default function IAPage() {
         <div className="px-2 md:px-3 py-2 border-t border-slate-200 bg-white">
           <div className="relative max-w-4xl mx-auto">
             {/* Container do input */}
-            <div className="bg-slate-100 border border-slate-200 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/30 focus-within:border-emerald-500/50 transition-all">
+            <div className="bg-slate-100 border border-slate-200 rounded-2xl focus-within:ring-2 focus-within:ring-emerald-500/30 focus-within:border-emerald-500/50 transition-all">
 
               {/* Área de anexos - aparece quando tem anexo */}
               {(imagemBase64 || pdfBase64) && (

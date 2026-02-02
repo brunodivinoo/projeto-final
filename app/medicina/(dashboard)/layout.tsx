@@ -275,17 +275,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-surface-100 overflow-x-hidden" data-main-container>
-      {/* Mobile Header - Minimalista: só hamburger */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-surface-300 px-4 pt-[env(safe-area-inset-top,8px)] pb-2">
-        <div className="flex items-center justify-start max-w-full mt-1">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-xl text-content-secondary hover:text-content-primary hover:bg-surface-200 transition-all"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-        </div>
-      </header>
+      {/* Mobile Header - Apenas ícone flutuante do menu */}
+      <div className="lg:hidden fixed top-2 left-3 z-[60]" style={{ paddingTop: 'env(safe-area-inset-top, 8px)' }}>
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-lg border border-slate-200 active:scale-95 transition-all"
+        >
+          <Menu className="w-5 h-5 text-slate-600" />
+        </button>
+      </div>
 
       {/* Mobile Overlay */}
       <AnimatePresence>
@@ -652,10 +650,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <main
-        className={`pt-[72px] lg:pt-0 min-h-screen transition-all duration-300 overflow-x-hidden bg-surface-100 ${sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-72'}`}
+        className={`pt-0 lg:pt-0 min-h-screen transition-all duration-300 overflow-x-hidden bg-surface-100 ${sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-72'}`}
         data-main-container
       >
-        <div className="p-3 md:p-4 lg:p-6 max-w-full overflow-x-hidden">
+        <div className="px-2 py-1 md:p-4 lg:p-6 max-w-full overflow-x-hidden" style={{ paddingTop: 'env(safe-area-inset-top, 4px)' }}>
           {children}
         </div>
       </main>

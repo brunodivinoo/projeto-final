@@ -320,29 +320,29 @@ export default function FlashcardDeck({
   const cardProgress = progress.get(currentCard.id)
 
   return (
-    <div className={`bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 transition-all ${isExpanded ? 'fixed inset-4 z-50 flex flex-col' : ''}`}>
+    <div className={`bg-white rounded-xl sm:rounded-2xl shadow-xl overflow-hidden border border-gray-100 transition-all ${isExpanded ? 'fixed inset-4 z-50 flex flex-col' : ''}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-4 border-b border-gray-100 bg-gray-50/50">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-md flex-shrink-0">
-            <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+      <div className="flex items-center justify-between px-2 sm:px-5 py-2 sm:py-4 border-b border-gray-100 bg-gray-50/50">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-md flex-shrink-0">
+            <Brain className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
           </div>
           <div className="min-w-0">
-            <h3 className="font-semibold text-gray-800 text-xs sm:text-sm truncate">{titulo}</h3>
-            <p className="text-[10px] sm:text-xs text-gray-500">{stats.total - stats.naoVistos}/{stats.total}</p>
+            <h3 className="font-semibold text-gray-800 text-[11px] sm:text-sm truncate max-w-[120px] sm:max-w-none">{titulo}</h3>
+            <p className="text-[9px] sm:text-xs text-gray-500">{stats.total - stats.naoVistos}/{stats.total}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+        <div className="flex items-center gap-0.5 sm:gap-2 flex-shrink-0">
           <div className="hidden sm:flex items-center gap-1.5 text-gray-500 text-xs bg-gray-100 px-3 py-1.5 rounded-full">
             <Clock className="w-3 h-3" />
             {elapsedTime}
           </div>
-          <button onClick={shuffleCards} className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Embaralhar">
-            <Shuffle className="w-4 h-4 text-gray-500" />
+          <button onClick={shuffleCards} className="p-1 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Embaralhar">
+            <Shuffle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
           </button>
-          <button onClick={() => setShowStats(!showStats)} className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Estatísticas">
-            <BarChart3 className="w-4 h-4 text-gray-500" />
+          <button onClick={() => setShowStats(!showStats)} className="p-1 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Estatísticas">
+            <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
           </button>
           <button onClick={() => setIsExpanded(!isExpanded)} className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors">
             {isExpanded ? <Minimize2 className="w-4 h-4 text-gray-500" /> : <Maximize2 className="w-4 h-4 text-gray-500" />}
@@ -406,20 +406,20 @@ export default function FlashcardDeck({
       </AnimatePresence>
 
       {/* Card Area */}
-      <div className={`p-3 sm:p-6 ${isExpanded ? 'flex-1 flex flex-col justify-center' : ''}`}>
+      <div className={`p-2 sm:p-6 ${isExpanded ? 'flex-1 flex flex-col justify-center' : ''}`}>
         {/* Card Counter */}
-        <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
-          <span className="text-xs sm:text-sm font-medium text-gray-400">Card</span>
-          <span className="px-2 sm:px-3 py-1 bg-gray-100 rounded-full text-xs sm:text-sm font-bold text-gray-700">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-2 sm:mb-4">
+          <span className="text-[10px] sm:text-sm font-medium text-gray-400">Card</span>
+          <span className="px-2 py-0.5 sm:py-1 bg-gray-100 rounded-full text-[10px] sm:text-sm font-bold text-gray-700">
             {currentIndex + 1} / {cards.length}
           </span>
           {cardProgress?.status && cardProgress.status !== 'nao_visto' && (
-            <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${
+            <span className={`px-1.5 py-0.5 rounded-full text-[9px] sm:text-xs font-medium ${
               cardProgress.status === 'acertou' ? 'bg-emerald-100 text-emerald-700' :
               cardProgress.status === 'errou' ? 'bg-red-100 text-red-700' :
               'bg-amber-100 text-amber-700'
             }`}>
-              {cardProgress.status === 'acertou' ? '✓ Acertou' : cardProgress.status === 'errou' ? '✗ Errou' : '↻ Revisar'}
+              {cardProgress.status === 'acertou' ? '✓' : cardProgress.status === 'errou' ? '✗' : '↻'}
             </span>
           )}
         </div>
@@ -427,7 +427,7 @@ export default function FlashcardDeck({
         {/* Flashcard */}
         <div
           ref={cardRef}
-          className={`relative cursor-pointer ${isExpanded ? 'min-h-[300px] sm:min-h-[350px]' : 'min-h-[180px] sm:min-h-[280px]'}`}
+          className={`relative cursor-pointer ${isExpanded ? 'min-h-[250px] sm:min-h-[350px]' : 'min-h-[140px] sm:min-h-[280px]'}`}
           onClick={flipCard}
           style={{ perspective: '1000px' }}
         >
@@ -439,7 +439,7 @@ export default function FlashcardDeck({
           >
             {/* Frente */}
             <div
-              className={`absolute inset-0 rounded-xl sm:rounded-2xl p-4 sm:p-8 flex flex-col items-center justify-center shadow-lg border-2 transition-all ${
+              className={`absolute inset-0 rounded-xl sm:rounded-2xl p-3 sm:p-8 flex flex-col items-center justify-center shadow-lg border-2 transition-all ${
                 animatingAnswer === 'errou' ? 'border-red-300 bg-red-50' :
                 animatingAnswer === 'acertou' ? 'border-emerald-300 bg-emerald-50' :
                 animatingAnswer === 'revisao' ? 'border-amber-300 bg-amber-50' :
@@ -447,33 +447,35 @@ export default function FlashcardDeck({
               }`}
               style={{ backfaceVisibility: 'hidden' }}
             >
-              <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-3 sm:mb-6 shadow-md">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-2 sm:mb-6 shadow-md flex-shrink-0">
                 <BookOpen className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
               </div>
-              <p className="text-sm sm:text-xl font-medium text-center text-gray-800 leading-relaxed">{currentCard.frente}</p>
-              <p className="mt-3 sm:mt-6 text-xs sm:text-sm text-purple-500 flex items-center gap-1">
+              <p className="text-xs sm:text-xl font-medium text-center text-gray-800 leading-relaxed flex-1 flex items-center overflow-y-auto">{currentCard.frente}</p>
+              <p className="mt-2 sm:mt-6 text-[10px] sm:text-sm text-purple-500 flex items-center gap-1 flex-shrink-0">
                 <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" /> Toque para ver
               </p>
             </div>
 
             {/* Verso */}
             <div
-              className="absolute inset-0 rounded-xl sm:rounded-2xl p-4 sm:p-8 flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg border-2 border-purple-200"
+              className="absolute inset-0 rounded-xl sm:rounded-2xl p-3 pt-8 sm:p-8 sm:pt-10 flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg border-2 border-purple-200 overflow-hidden"
               style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
             >
-              <div className="absolute top-2 sm:top-4 right-2 sm:right-4 px-2 sm:px-3 py-0.5 sm:py-1 bg-purple-500 text-white text-[10px] sm:text-xs font-medium rounded-full">
+              <div className="absolute top-2 right-2 sm:top-4 sm:right-4 px-2 py-0.5 sm:px-3 sm:py-1 bg-purple-500 text-white text-[9px] sm:text-xs font-medium rounded-full z-10">
                 Resposta
               </div>
-              <p className="text-sm sm:text-lg font-medium text-center text-gray-800 leading-relaxed mb-2 sm:mb-4 mt-4 sm:mt-0">{currentCard.verso}</p>
-              {currentCard.referencia && (
-                <p className="text-[10px] sm:text-xs text-purple-500 text-center italic">{currentCard.referencia}</p>
-              )}
+              <div className="flex-1 w-full flex flex-col items-center justify-center overflow-y-auto">
+                <p className="text-xs sm:text-lg font-medium text-center text-gray-800 leading-relaxed px-1">{currentCard.verso}</p>
+                {currentCard.referencia && (
+                  <p className="text-[9px] sm:text-xs text-purple-500 text-center italic mt-2 flex-shrink-0">{currentCard.referencia}</p>
+                )}
+              </div>
             </div>
           </motion.div>
         </div>
 
         {/* Botões de Ação */}
-        <div className="mt-4 sm:mt-6">
+        <div className="mt-3 sm:mt-6">
           <AnimatePresence mode="wait">
             {!isFlipped ? (
               <motion.div
@@ -486,22 +488,22 @@ export default function FlashcardDeck({
                 <button
                   onClick={goToPrev}
                   disabled={currentIndex === 0}
-                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center disabled:opacity-30 transition-all"
+                  className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center disabled:opacity-30 transition-all"
                 >
-                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                  <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6 text-gray-600" />
                 </button>
                 <button
                   onClick={flipCard}
-                  className="px-4 sm:px-8 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm sm:text-base font-medium shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all hover:scale-105 active:scale-95"
+                  className="px-4 sm:px-8 py-2 sm:py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs sm:text-base font-medium shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all hover:scale-105 active:scale-95"
                 >
                   Ver Resposta
                 </button>
                 <button
                   onClick={goToNext}
                   disabled={currentIndex === cards.length - 1}
-                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center disabled:opacity-30 transition-all"
+                  className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center disabled:opacity-30 transition-all"
                 >
-                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                  <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6 text-gray-600" />
                 </button>
               </motion.div>
             ) : (
@@ -510,33 +512,33 @@ export default function FlashcardDeck({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="space-y-2 sm:space-y-3"
+                className="space-y-1.5 sm:space-y-3"
               >
-                <p className="text-center text-gray-500 text-xs sm:text-sm">Como foi?</p>
+                <p className="text-center text-gray-500 text-[10px] sm:text-sm">Como foi?</p>
                 <div className="flex items-center justify-center gap-2 sm:gap-3">
                   <button
                     onClick={() => markAnswer('errou')}
                     disabled={!!animatingAnswer}
-                    className="flex-1 max-w-[90px] sm:max-w-[130px] py-2.5 sm:py-4 rounded-xl bg-red-50 hover:bg-red-100 border-2 border-red-200 text-red-600 font-medium transition-all active:scale-95 disabled:opacity-50"
+                    className="flex-1 max-w-[80px] sm:max-w-[130px] py-2 sm:py-4 rounded-xl bg-red-50 hover:bg-red-100 border-2 border-red-200 text-red-600 font-medium transition-all active:scale-95 disabled:opacity-50"
                   >
-                    <X className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-0.5 sm:mb-1" />
-                    <span className="text-xs sm:text-sm">Errei</span>
+                    <X className="w-4 h-4 sm:w-5 sm:h-5 mx-auto" />
+                    <span className="text-[10px] sm:text-sm block">Errei</span>
                   </button>
                   <button
                     onClick={() => markAnswer('revisao')}
                     disabled={!!animatingAnswer}
-                    className="flex-1 max-w-[90px] sm:max-w-[130px] py-2.5 sm:py-4 rounded-xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-600 font-medium transition-all active:scale-95 disabled:opacity-50"
+                    className="flex-1 max-w-[80px] sm:max-w-[130px] py-2 sm:py-4 rounded-xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-600 font-medium transition-all active:scale-95 disabled:opacity-50"
                   >
-                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-0.5 sm:mb-1" />
-                    <span className="text-xs sm:text-sm">Revisar</span>
+                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 mx-auto" />
+                    <span className="text-[10px] sm:text-sm block">Revisar</span>
                   </button>
                   <button
                     onClick={() => markAnswer('acertou')}
                     disabled={!!animatingAnswer}
-                    className="flex-1 max-w-[90px] sm:max-w-[130px] py-2.5 sm:py-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200 text-emerald-600 font-medium transition-all active:scale-95 disabled:opacity-50"
+                    className="flex-1 max-w-[80px] sm:max-w-[130px] py-2 sm:py-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200 text-emerald-600 font-medium transition-all active:scale-95 disabled:opacity-50"
                   >
-                    <Check className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-0.5 sm:mb-1" />
-                    <span className="text-xs sm:text-sm">Acertei</span>
+                    <Check className="w-4 h-4 sm:w-5 sm:h-5 mx-auto" />
+                    <span className="text-[10px] sm:text-sm block">Acertei</span>
                   </button>
                 </div>
               </motion.div>
