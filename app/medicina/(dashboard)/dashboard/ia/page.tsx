@@ -169,21 +169,14 @@ const MemoizedMessage = memo(function MemoizedMessage({
   const temQuestao = msg.tipo === 'ia' && chatMode === 'questoes' && msg.conteudo?.includes('```questao')
   return (
     <div
-      className={`flex ${msg.tipo === 'usuario' ? 'justify-end' : 'gap-2 md:gap-3 justify-start'}`}
+      className={`flex ${msg.tipo === 'usuario' ? 'justify-end' : 'justify-start'}`}
     >
-      {/* Avatar - menor no mobile */}
-      {msg.tipo === 'ia' && (
-        <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0 mt-1">
-          <Bot className="w-3 h-3 md:w-5 md:h-5 text-white" />
-        </div>
-      )}
-
       {/* Mensagem com largura diferenciada - usuário compacta, IA expande total */}
       <div className={`${
         msg.tipo === 'usuario'
           ? 'max-w-[80%] md:max-w-[55%] lg:max-w-[45%]'
-          : 'max-w-full'
-      } ${msg.tipo === 'usuario' ? 'order-first' : ''}`}>
+          : 'w-full'
+      }`}>
         {msg.thinking && (
           <div className="mb-1.5 p-2 bg-amber-100 border border-amber-200 rounded-lg">
             <p className="text-amber-700 text-[10px] font-medium mb-0.5 flex items-center gap-1">
@@ -390,6 +383,7 @@ export default function IAPage() {
   const [mobileConversasOpen, setMobileConversasOpen] = useState(false)
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false)
   const [mobileArtifactsOpen, setMobileArtifactsOpen] = useState(false)
+  const [showMobileAttachMenu, setShowMobileAttachMenu] = useState(false)
 
   // Estado para menu de 3 pontinhos (renomear/excluir conversa)
   const [menuConversaAberto, setMenuConversaAberto] = useState<string | null>(null)
@@ -1509,7 +1503,7 @@ export default function IAPage() {
   // (gratuito agora tem 10 chats, então não bloqueia mais)
 
   return (
-    <div className={`h-[calc(100dvh-64px)] lg:h-[calc(100dvh-0px)] flex flex-col md:flex-row transition-all duration-300 ${
+    <div className={`h-[calc(100dvh-72px-24px)] lg:h-[calc(100dvh-48px)] flex flex-col md:flex-row transition-all duration-300 ${
       isArtifactsSidebarOpen && hasArtifacts && !isMobile ? 'mr-[420px]' : ''
     }`}>
       {/* MOBILE: Sidebar como Drawer sobreposto */}
@@ -1954,12 +1948,10 @@ export default function IAPage() {
           )}
 
           {loading && !mensagens.find(m => m.tipo === 'ia' && m.conteudo === '') && (
-            <div className="flex gap-2 md:gap-3">
-              <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
-                <Bot className="w-3 h-3 md:w-5 md:h-5 text-white" />
-              </div>
-              <div className="bg-slate-100 rounded-xl md:rounded-2xl p-3 md:p-4 border border-slate-200">
-                <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-purple-400 animate-spin" />
+            <div className="w-full">
+              <div className="bg-slate-100 rounded-xl p-3 border border-slate-200 inline-flex items-center gap-2">
+                <Loader2 className="w-4 h-4 text-purple-500 animate-spin" />
+                <span className="text-slate-500 text-xs">Pensando...</span>
               </div>
             </div>
           )}
@@ -1994,34 +1986,34 @@ export default function IAPage() {
           </div>
         )}
 
-        {/* Input Area - Compacto */}
-        <div className="px-2 md:px-3 py-2 border-t border-slate-200 bg-slate-50">
-          <div className="relative">
-            {/* Container do input com borda visual */}
-            <div className="bg-slate-100 border border-slate-200 rounded-xl md:rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-purple-500/50 focus-within:border-purple-500/30 transition-all">
+        {/* Input Area - Mobile: estilo ChatGPT / Desktop: completo */}
+        <div className="px-2 md:px-3 py-2 border-t border-slate-200 bg-white">
+          <div className="relative max-w-4xl mx-auto">
+            {/* Container do input */}
+            <div className="bg-slate-100 border border-slate-200 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/30 focus-within:border-emerald-500/50 transition-all">
 
-              {/* Área de anexos DENTRO do container */}
+              {/* Área de anexos - aparece quando tem anexo */}
               {(imagemBase64 || pdfBase64) && (
-                <div className="px-3 md:px-4 pt-3 flex gap-2 flex-wrap">
+                <div className="px-3 pt-2.5 flex gap-2 flex-wrap">
                   {imagemBase64 && (
-                    <div className="flex items-center gap-2 bg-blue-500/20 text-blue-400 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs">
-                      <ImageIcon className="w-3 h-3" />
-                      <span className="hidden sm:inline">Imagem</span>
+                    <div className="flex items-center gap-1.5 bg-blue-100 text-blue-600 px-2.5 py-1 rounded-lg text-xs font-medium">
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      <span>Imagem</span>
                       <button
                         onClick={() => { setImagemBase64(null); setImagemTipo(null) }}
-                        className="hover:bg-blue-500/20 rounded p-0.5"
+                        className="hover:bg-blue-200 rounded p-0.5 ml-0.5"
                       >
                         <X className="w-3 h-3" />
                       </button>
                     </div>
                   )}
                   {pdfBase64 && (
-                    <div className="flex items-center gap-2 bg-red-500/20 text-red-400 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs">
-                      <FileUp className="w-3 h-3" />
-                      <span className="hidden sm:inline">PDF</span>
+                    <div className="flex items-center gap-1.5 bg-red-100 text-red-600 px-2.5 py-1 rounded-lg text-xs font-medium">
+                      <FileUp className="w-3.5 h-3.5" />
+                      <span>PDF</span>
                       <button
                         onClick={() => setPdfBase64(null)}
-                        className="hover:bg-red-500/20 rounded p-0.5"
+                        className="hover:bg-red-200 rounded p-0.5 ml-0.5"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -2030,143 +2022,191 @@ export default function IAPage() {
                 </div>
               )}
 
-              {/* Textarea expandível */}
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    if (loading) {
-                      cancelarGeracao()
-                    } else {
-                      enviarMensagem()
-                    }
-                  }
-                }}
-                placeholder="Digite sua pergunta..."
-                disabled={loading}
-                rows={1}
-                className="w-full bg-transparent py-2.5 md:py-3 px-3 md:px-4 text-white placeholder-white/40 focus:outline-none disabled:opacity-50 resize-none min-h-[40px] md:min-h-[44px] max-h-[100px] md:max-h-[140px] text-sm"
-                style={{ height: 'auto' }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement
-                  target.style.height = 'auto'
-                  target.style.height = Math.min(target.scrollHeight, isMobile ? 120 : 160) + 'px'
-                }}
-              />
+              {/* Linha principal: botão + | textarea | botões direita */}
+              <div className="flex items-end gap-2 p-2">
+                {/* Botão + (abre menu de anexos) - Mobile */}
+                <div className="lg:hidden relative flex-shrink-0">
+                  <button
+                    onClick={() => setShowMobileAttachMenu(!showMobileAttachMenu)}
+                    className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 transition-colors"
+                  >
+                    <Plus className={`w-5 h-5 transition-transform ${showMobileAttachMenu ? 'rotate-45' : ''}`} />
+                  </button>
 
-              {/* Barra de ações DENTRO do container */}
-              <div className="flex items-center justify-between px-2 md:px-4 py-2 border-t border-slate-200 bg-white/[0.02]">
-                {/* Botões de ação à esquerda */}
-                <div className="flex items-center gap-0.5 md:gap-1">
+                  {/* Menu de anexos mobile */}
+                  {showMobileAttachMenu && isResidencia && (
+                    <div className="absolute bottom-12 left-0 bg-white rounded-xl shadow-xl border border-slate-200 py-2 min-w-[160px] z-50">
+                      <button
+                        onClick={() => { fileInputRef.current?.click(); setShowMobileAttachMenu(false) }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-slate-700 text-sm"
+                      >
+                        <ImageIcon className="w-4 h-4 text-blue-500" />
+                        Enviar imagem
+                      </button>
+                      <button
+                        onClick={() => { pdfInputRef.current?.click(); setShowMobileAttachMenu(false) }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-slate-700 text-sm"
+                      >
+                        <FileUp className="w-4 h-4 text-red-500" />
+                        Enviar PDF
+                      </button>
+                      <button
+                        onClick={() => { setShowExamAnalyzer(true); setShowMobileAttachMenu(false) }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-slate-700 text-sm"
+                      >
+                        <Stethoscope className="w-4 h-4 text-emerald-500" />
+                        Analisar exame
+                      </button>
+                      <div className="border-t border-slate-100 my-1" />
+                      <button
+                        onClick={() => { setUseWebSearch(!useWebSearch); setShowMobileAttachMenu(false) }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-sm ${useWebSearch ? 'text-blue-600 bg-blue-50' : 'text-slate-700'}`}
+                      >
+                        <Search className="w-4 h-4" />
+                        Busca web {useWebSearch && '✓'}
+                      </button>
+                      <button
+                        onClick={() => { setUseExtendedThinking(!useExtendedThinking); setShowMobileAttachMenu(false) }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-sm ${useExtendedThinking ? 'text-amber-600 bg-amber-50' : 'text-slate-700'}`}
+                      >
+                        <Zap className="w-4 h-4" />
+                        Pensamento estendido {useExtendedThinking && '✓'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Botões desktop - apenas visíveis no desktop */}
+                <div className="hidden lg:flex items-center gap-1 flex-shrink-0">
                   {isResidencia && (
                     <>
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="p-1.5 md:p-2 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
+                        className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
                         title="Anexar imagem"
                       >
                         <ImageIcon className="w-4 h-4" />
                       </button>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-
                       <button
                         onClick={() => pdfInputRef.current?.click()}
-                        className="p-1.5 md:p-2 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
+                        className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
                         title="Anexar PDF"
                       >
                         <FileUp className="w-4 h-4" />
                       </button>
-                      <input
-                        ref={pdfInputRef}
-                        type="file"
-                        accept=".pdf"
-                        onChange={handlePdfUpload}
-                        className="hidden"
-                      />
-
-                      {/* Separador */}
-                      <div className="w-px h-4 bg-slate-100 mx-0.5 md:mx-1" />
-
-                      {/* Toggle Web Search */}
+                      <div className="w-px h-5 bg-slate-300 mx-1" />
                       <button
                         onClick={() => setUseWebSearch(!useWebSearch)}
-                        className={`p-1.5 md:p-2 rounded-lg transition-colors ${
-                          useWebSearch
-                            ? 'bg-blue-500/20 text-blue-400'
-                            : 'text-slate-500 hover:text-white hover:bg-slate-100'
-                        }`}
+                        className={`p-2 rounded-lg transition-colors ${useWebSearch ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
                         title="Busca na Web"
                       >
                         <Search className="w-4 h-4" />
                       </button>
-
-                      {/* Toggle Extended Thinking */}
                       <button
                         onClick={() => setUseExtendedThinking(!useExtendedThinking)}
-                        className={`p-1.5 md:p-2 rounded-lg transition-colors ${
-                          useExtendedThinking
-                            ? 'bg-amber-500/20 text-amber-400'
-                            : 'text-slate-500 hover:text-white hover:bg-slate-100'
-                        }`}
+                        className={`p-2 rounded-lg transition-colors ${useExtendedThinking ? 'bg-amber-100 text-amber-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
                         title="Extended Thinking"
                       >
                         <Zap className="w-4 h-4" />
                       </button>
-
-                      {/* Separador */}
-                      <div className="w-px h-4 bg-slate-100 mx-0.5 md:mx-1" />
-
-                      {/* Botão Análise de Exames */}
                       <button
                         onClick={() => setShowExamAnalyzer(true)}
-                        className="p-1.5 md:p-2 text-slate-500 hover:text-white hover:bg-slate-100 rounded-lg transition-colors"
+                        className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
                         title="Analisar Exame"
                       >
                         <Stethoscope className="w-4 h-4" />
                       </button>
-
-                      {/* Botão de Voz */}
                       <VoiceButton
                         onTranscription={(text) => setInput(prev => prev + ' ' + text)}
                         variant="compact"
                       />
+                      <div className="w-px h-5 bg-slate-300 mx-1" />
                     </>
                   )}
                 </div>
 
-                {/* Botão enviar/cancelar à direita */}
-                <button
-                  data-enviar-btn
-                  onClick={loading ? cancelarGeracao : enviarMensagem}
-                  disabled={!loading && !input.trim()}
-                  className={`p-2 md:p-2.5 rounded-lg md:rounded-xl transition-all ${
-                    loading
-                      ? 'bg-red-500/80 hover:bg-red-600 text-white'
-                      : 'bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105'
-                  }`}
-                >
-                  {loading ? (
-                    <Square className="w-4 h-4 md:w-5 md:h-5" />
-                  ) : (
-                    <Send className="w-4 h-4 md:w-5 md:h-5" />
+                {/* Inputs hidden para anexos */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handlePdfUpload}
+                  className="hidden"
+                />
+
+                {/* Textarea - expande até 4 linhas */}
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      if (loading) {
+                        cancelarGeracao()
+                      } else {
+                        enviarMensagem()
+                      }
+                    }
+                  }}
+                  placeholder="Pergunte alguma coisa..."
+                  disabled={loading}
+                  rows={1}
+                  className="flex-1 bg-transparent py-2 px-1 text-slate-800 placeholder-slate-400 focus:outline-none disabled:opacity-50 resize-none text-[15px] leading-relaxed overflow-y-auto"
+                  style={{
+                    minHeight: '36px',
+                    maxHeight: '120px',
+                    height: 'auto'
+                  }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement
+                    target.style.height = 'auto'
+                    const newHeight = Math.min(target.scrollHeight, 120)
+                    target.style.height = newHeight + 'px'
+                  }}
+                />
+
+                {/* Botões da direita */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {/* Microfone - mobile */}
+                  {isResidencia && (
+                    <div className="lg:hidden">
+                      <VoiceButton
+                        onTranscription={(text) => setInput(prev => prev + ' ' + text)}
+                        variant="compact"
+                      />
+                    </div>
                   )}
-                </button>
+
+                  {/* Botão enviar/cancelar */}
+                  <button
+                    data-enviar-btn
+                    onClick={loading ? cancelarGeracao : enviarMensagem}
+                    disabled={!loading && !input.trim()}
+                    className={`w-9 h-9 flex items-center justify-center rounded-full transition-all ${
+                      loading
+                        ? 'bg-red-500 hover:bg-red-600 text-white'
+                        : input.trim()
+                          ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                          : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
+                  >
+                    {loading ? (
+                      <Square className="w-4 h-4" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Dica de atalho - apenas desktop */}
-          <p className="hidden lg:block text-center text-white/15 text-[8px] mt-0.5">
-            Enter para enviar • Shift+Enter para nova linha
-          </p>
         </div>
       </div>
 
