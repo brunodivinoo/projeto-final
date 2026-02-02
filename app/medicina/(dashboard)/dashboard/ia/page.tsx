@@ -1684,40 +1684,31 @@ export default function IAPage() {
 
       {/* Chat Principal */}
       <div className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
-        {/* Mobile Header - Barra limpa: título + artefatos */}
-        <div className="lg:hidden flex items-center justify-between px-3 py-2.5 border-b border-slate-200 bg-white/80 backdrop-blur-sm">
-          {/* Título do Chat */}
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
-              <Brain className="w-3.5 h-3.5 text-white" />
-            </div>
-            <span className="text-sm font-medium text-slate-800 truncate">
-              {tituloConversa || 'Nova Conversa'}
-            </span>
+        {/* Mobile - Botão de Artefatos Flutuante no canto superior direito */}
+        {hasArtifacts && (
+          <div className="lg:hidden fixed top-2 right-3 z-[60]">
+            <button
+              onClick={() => setMobileArtifactsOpen(true)}
+              className="relative flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-lg border border-slate-200 active:scale-95 transition-all"
+            >
+              <Layers className="w-5 h-5 text-emerald-600" />
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-emerald-500 text-white text-[10px] font-bold rounded-full px-1">
+                {useArtifactsStore.getState().artifacts.filter(a => a.conversaId === conversaAtual || !a.conversaId).length}
+              </span>
+            </button>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Indicador de Ficha - Mobile */}
-            {fichaAtiva && chatMode === 'caso_clinico' && (
-              <IndicadorProgresso
-                itensPreenchidos={fichaItensPreenchidos}
-                totalItens={7}
-                onClick={() => setFichaAberta(true)}
-              />
-            )}
-            {/* Botão Artefatos - Mobile */}
-            {hasArtifacts && (
-              <button
-                onClick={() => setMobileArtifactsOpen(true)}
-                className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-slate-100 active:bg-slate-100 transition-colors"
-              >
-                <Layers className="w-4 h-4 text-slate-600" />
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] flex items-center justify-center bg-emerald-500 text-white text-[9px] font-bold rounded-full px-1">
-                  {useArtifactsStore.getState().artifacts.filter(a => a.conversaId === conversaAtual || !a.conversaId).length}
-                </span>
-              </button>
-            )}
+        )}
+
+        {/* Mobile - Indicador de Ficha Flutuante (caso_clinico) */}
+        {fichaAtiva && chatMode === 'caso_clinico' && (
+          <div className="lg:hidden fixed top-2 right-16 z-[60]">
+            <IndicadorProgresso
+              itensPreenchidos={fichaItensPreenchidos}
+              totalItens={7}
+              onClick={() => setFichaAberta(true)}
+            />
           </div>
-        </div>
+        )}
 
         {/* Header Desktop - Oculto no mobile (já tem barra de modo acima) */}
         <div className="hidden lg:flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-slate-200">
@@ -2034,44 +2025,61 @@ export default function IAPage() {
                   </button>
 
                   {/* Menu de anexos mobile */}
-                  {showMobileAttachMenu && isResidencia && (
-                    <div className="absolute bottom-12 left-0 bg-white rounded-xl shadow-xl border border-slate-200 py-2 min-w-[160px] z-50">
-                      <button
-                        onClick={() => { fileInputRef.current?.click(); setShowMobileAttachMenu(false) }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-slate-700 text-sm"
-                      >
-                        <ImageIcon className="w-4 h-4 text-blue-500" />
-                        Enviar imagem
-                      </button>
-                      <button
-                        onClick={() => { pdfInputRef.current?.click(); setShowMobileAttachMenu(false) }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-slate-700 text-sm"
-                      >
-                        <FileUp className="w-4 h-4 text-red-500" />
-                        Enviar PDF
-                      </button>
-                      <button
-                        onClick={() => { setShowExamAnalyzer(true); setShowMobileAttachMenu(false) }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-slate-700 text-sm"
-                      >
-                        <Stethoscope className="w-4 h-4 text-emerald-500" />
-                        Analisar exame
-                      </button>
-                      <div className="border-t border-slate-100 my-1" />
-                      <button
-                        onClick={() => { setUseWebSearch(!useWebSearch); setShowMobileAttachMenu(false) }}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-sm ${useWebSearch ? 'text-blue-600 bg-blue-50' : 'text-slate-700'}`}
-                      >
-                        <Search className="w-4 h-4" />
-                        Busca web {useWebSearch && '✓'}
-                      </button>
-                      <button
-                        onClick={() => { setUseExtendedThinking(!useExtendedThinking); setShowMobileAttachMenu(false) }}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-sm ${useExtendedThinking ? 'text-amber-600 bg-amber-50' : 'text-slate-700'}`}
-                      >
-                        <Zap className="w-4 h-4" />
-                        Pensamento estendido {useExtendedThinking && '✓'}
-                      </button>
+                  {showMobileAttachMenu && (
+                    <div className="absolute bottom-12 left-0 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 min-w-[180px] z-[100]">
+                      {isResidencia ? (
+                        <>
+                          <button
+                            onClick={() => { fileInputRef.current?.click(); setShowMobileAttachMenu(false) }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-slate-700 text-sm"
+                          >
+                            <ImageIcon className="w-4 h-4 text-blue-500" />
+                            Enviar imagem
+                          </button>
+                          <button
+                            onClick={() => { pdfInputRef.current?.click(); setShowMobileAttachMenu(false) }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-slate-700 text-sm"
+                          >
+                            <FileUp className="w-4 h-4 text-red-500" />
+                            Enviar PDF
+                          </button>
+                          <button
+                            onClick={() => { setShowExamAnalyzer(true); setShowMobileAttachMenu(false) }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-slate-700 text-sm"
+                          >
+                            <Stethoscope className="w-4 h-4 text-emerald-500" />
+                            Analisar exame
+                          </button>
+                          <div className="border-t border-slate-100 my-1" />
+                          <button
+                            onClick={() => { setUseWebSearch(!useWebSearch); setShowMobileAttachMenu(false) }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-sm ${useWebSearch ? 'text-blue-600 bg-blue-50' : 'text-slate-700'}`}
+                          >
+                            <Search className="w-4 h-4" />
+                            Busca web {useWebSearch && '✓'}
+                          </button>
+                          <button
+                            onClick={() => { setUseExtendedThinking(!useExtendedThinking); setShowMobileAttachMenu(false) }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-sm ${useExtendedThinking ? 'text-amber-600 bg-amber-50' : 'text-slate-700'}`}
+                          >
+                            <Zap className="w-4 h-4" />
+                            Pensamento estendido {useExtendedThinking && '✓'}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="px-4 py-2 text-xs text-slate-500 border-b border-slate-100">
+                            Recursos PRO
+                          </div>
+                          <button
+                            onClick={() => { setShowMobileAttachMenu(false); window.location.href = '/medicina/dashboard/assinatura' }}
+                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-amber-50 text-amber-600 text-sm"
+                          >
+                            <Crown className="w-4 h-4" />
+                            Fazer upgrade
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

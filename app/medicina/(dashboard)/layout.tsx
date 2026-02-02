@@ -275,29 +275,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-surface-100 overflow-x-hidden" data-main-container>
-      {/* Mobile Header - Clean e Profissional */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-surface-300 px-4 pt-[env(safe-area-inset-top,8px)] pb-3">
-        <div className="flex items-center justify-between max-w-full mt-1">
+      {/* Mobile Header - Minimalista: só hamburger */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-surface-300 px-4 pt-[env(safe-area-inset-top,8px)] pb-2">
+        <div className="flex items-center justify-start max-w-full mt-1">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2.5 rounded-xl text-content-secondary hover:text-content-primary hover:bg-surface-200 transition-all"
+            className="p-2 rounded-xl text-content-secondary hover:text-content-primary hover:bg-surface-200 transition-all"
           >
             <Menu className="w-6 h-6" />
           </button>
-
-          <Link href="/medicina/dashboard" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-soft">
-              <Stethoscope className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-content-primary font-bold text-lg tracking-tight">PREPARA MED</span>
-          </Link>
-
-          <Link
-            href="/medicina/dashboard/perfil"
-            className="p-2.5 rounded-xl text-content-secondary hover:text-content-primary hover:bg-surface-200 transition-all"
-          >
-            <User className="w-6 h-6" />
-          </Link>
         </div>
       </header>
 
