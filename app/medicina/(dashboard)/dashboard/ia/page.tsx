@@ -1761,41 +1761,14 @@ export default function IAPage() {
           </div>
         )}
 
-        {/* Opcoes Avancadas - Integradas ao layout (apenas Residencia) */}
-        {isResidencia && (
-          <div className="hidden lg:flex items-center gap-3 px-4 py-2 border-b border-slate-100 bg-slate-50/50">
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs">
-              <input
-                type="checkbox"
-                checked={useWebSearch}
-                onChange={(e) => setUseWebSearch(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500"
-              />
-              <Search className="w-3.5 h-3.5 text-blue-500" />
-              <span className="text-slate-600">Busca Web</span>
-            </label>
-
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs">
-              <input
-                type="checkbox"
-                checked={useExtendedThinking}
-                onChange={(e) => setUseExtendedThinking(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500"
-              />
-              <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span className="text-slate-600">Raciocinio Extendido</span>
-            </label>
-
-            {/* Indicador de Ficha - Desktop */}
-            {fichaAtiva && chatMode === 'caso_clinico' && (
-              <div className="ml-auto">
-                <IndicadorProgresso
-                  itensPreenchidos={fichaItensPreenchidos}
-                  totalItens={7}
-                  onClick={() => setFichaAberta(true)}
-                />
-              </div>
-            )}
+        {/* Indicador de Ficha - Desktop (quando em caso clínico) */}
+        {isResidencia && fichaAtiva && chatMode === 'caso_clinico' && (
+          <div className="hidden lg:flex items-center justify-end px-4 py-2 border-b border-slate-100 bg-slate-50/50">
+            <IndicadorProgresso
+              itensPreenchidos={fichaItensPreenchidos}
+              totalItens={7}
+              onClick={() => setFichaAberta(true)}
+            />
           </div>
         )}
 

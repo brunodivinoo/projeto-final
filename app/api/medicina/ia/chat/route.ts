@@ -1332,12 +1332,12 @@ async function streamClaude(params: StreamClaudeParams) {
           // Se já tem conteúdo substancial, apenas avisar que pode estar incompleto
           fallbackMessage = '\n\n---\n*Resposta pode estar incompleta. Se precisar de mais detalhes, pergunte novamente.*'
         } else if (isOverloaded || isRateLimit) {
-          // Se API está sobrecarregada, dar mensagem amigável
-          fallbackMessage = 'Estamos com muitos acessos no momento. Aguarde alguns segundos e sua resposta sera gerada automaticamente. Se preferir, reformule sua pergunta.'
+          // Se API está sobrecarregada - mensagem mais amigável
+          fallbackMessage = 'Nossos servidores estao processando muitas solicitacoes. Por favor, aguarde alguns segundos e tente novamente. Sua pergunta sera respondida normalmente.'
         } else if (isTimeout) {
-          fallbackMessage = 'A resposta esta demorando mais que o esperado. Por favor, tente fazer uma pergunta mais especifica ou divida em partes menores.'
+          fallbackMessage = 'O processamento esta levando mais tempo que o esperado. Tente uma pergunta mais curta ou especifica.'
         } else {
-          fallbackMessage = 'Desculpe, tive uma instabilidade tecnica. Por favor, tente novamente ou reformule sua pergunta de forma diferente.'
+          fallbackMessage = 'Ocorreu um problema temporario. Por favor, tente novamente em alguns instantes.'
         }
 
         // Se já tem resposta parcial, adicionar aviso
