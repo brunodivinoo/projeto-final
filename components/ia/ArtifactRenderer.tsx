@@ -2287,7 +2287,7 @@ function ArtifactRendererComponent({
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { parts, artifacts, hasIncompleteQuestion } = useMemo(() => parseArtifacts(debouncedContent), [debouncedContent])
-  const { addArtifact, artifacts: storeArtifacts, updateQuestionAnswer, setSidebarOpen, selectArtifact, setMobileDrawerOpen } = useArtifactsStore()
+  const { addArtifact, artifacts: storeArtifacts, updateQuestionAnswer, setSidebarOpen, selectArtifact, setMobileDrawerOpen, setFullscreenArtifact } = useArtifactsStore()
   const addedArtifactsRef = useRef<Set<string>>(new Set())
 
   // Cache de respostas anteriores para este componente
@@ -2471,7 +2471,7 @@ function ArtifactRendererComponent({
     setImageModalState(null)
   }, [])
 
-  // Função para abrir artefato na sidebar
+  // Função para abrir artefato em fullscreen
   const openArtifactInSidebar = useCallback((artifactType: string, artifactTitle?: string) => {
     // Buscar artefatos diretamente da store para evitar problemas de closure
     const currentArtifacts = useArtifactsStore.getState().artifacts
@@ -2484,17 +2484,20 @@ function ArtifactRendererComponent({
     )
 
     if (matchingArtifact) {
+      // Selecionar o artefato
       selectArtifact(matchingArtifact.id)
+      // Abrir diretamente em fullscreen (tanto desktop quanto mobile)
+      setFullscreenArtifact(matchingArtifact.id)
     }
 
-    // Abrir sidebar (desktop) ou drawer (mobile)
+    // Abrir sidebar (desktop) ou drawer (mobile) como fallback
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024
     if (isMobile) {
       setMobileDrawerOpen(true)
     } else {
       setSidebarOpen(true)
     }
-  }, [messageId, selectArtifact, setSidebarOpen, setMobileDrawerOpen])
+  }, [messageId, selectArtifact, setSidebarOpen, setMobileDrawerOpen, setFullscreenArtifact])
 
   return (
     <div className="artifact-renderer lg:text-[0.9em] xl:text-[0.85em]">

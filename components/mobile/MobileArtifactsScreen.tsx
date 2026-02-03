@@ -400,7 +400,21 @@ export function MobileArtifactsScreen({ isOpen, onClose, onViewArtifact }: Mobil
   const artifacts = useArtifactsStore(state => state.artifacts)
   const currentConversaId = useArtifactsStore(state => state.currentConversaId)
   const storeSelectedId = useArtifactsStore(state => state.selectedArtifactId)
+  const fullscreenArtifactId = useArtifactsStore(state => state.fullscreenArtifactId)
   const selectArtifact = useArtifactsStore(state => state.selectArtifact)
+  const setFullscreenArtifact = useArtifactsStore(state => state.setFullscreenArtifact)
+
+  // Sincronizar fullscreen do store com o estado local
+  useEffect(() => {
+    if (isOpen && fullscreenArtifactId) {
+      const artifact = artifacts.find(a => a.id === fullscreenArtifactId)
+      if (artifact) {
+        setSelectedArtifact(artifact)
+        // Limpar o store após usar para não reabrir automaticamente
+        setFullscreenArtifact(null)
+      }
+    }
+  }, [isOpen, fullscreenArtifactId, artifacts, setFullscreenArtifact])
 
   // Auto-selecionar artefato do store APENAS quando abrir via clique em artefato específico
   // (quando storeSelectedId muda enquanto isOpen é false, significa que usuário clicou em artefato no chat)

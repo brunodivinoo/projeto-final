@@ -10,11 +10,52 @@ import { z } from 'zod'
 // TIPOS E SCHEMAS
 // ==========================================
 
+// Função para normalizar valores de dificuldade (remove acentos e normaliza)
+function normalizeDificuldade(value: unknown): 'facil' | 'media' | 'dificil' | undefined {
+  if (!value || typeof value !== 'string') return undefined
+
+  const normalized = value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .trim()
+
+  // Mapear variações para valores válidos
+  const mapping: Record<string, 'facil' | 'media' | 'dificil'> = {
+    'facil': 'facil',
+    'fácil': 'facil',
+    'baixa': 'facil',
+    'baixo': 'facil',
+    'easy': 'facil',
+    'media': 'media',
+    'média': 'media',
+    'medio': 'media',
+    'médio': 'media',
+    'moderada': 'media',
+    'moderado': 'media',
+    'medium': 'media',
+    'intermediaria': 'media',
+    'intermediario': 'media',
+    'dificil': 'dificil',
+    'difícil': 'dificil',
+    'alta': 'dificil',
+    'alto': 'dificil',
+    'hard': 'dificil',
+    'avancada': 'dificil',
+    'avancado': 'dificil',
+  }
+
+  return mapping[normalized] || undefined
+}
+
 export const FlashcardSchema = z.object({
   frente: z.string().min(5),
   verso: z.string().min(10),
   categoria: z.string(),
-  dificuldade: z.enum(['facil', 'media', 'dificil']).optional(),
+  dificuldade: z.preprocess(
+    normalizeDificuldade,
+    z.enum(['facil', 'media', 'dificil']).optional()
+  ),
   dica: z.string().optional(),
   tags: z.array(z.string()).optional()
 })

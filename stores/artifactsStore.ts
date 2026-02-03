@@ -167,6 +167,7 @@ interface ArtifactsState {
   // Estado
   artifacts: Artifact[]
   selectedArtifactId: string | null
+  fullscreenArtifactId: string | null  // Artefato para exibir em fullscreen
   isSidebarOpen: boolean
   isMobileDrawerOpen: boolean
   currentConversaId: string | null  // Conversa atual para filtrar artefatos
@@ -186,6 +187,7 @@ interface ArtifactsState {
   setChatModeFilter: (filter: ChatModeType | 'all') => void  // Definir filtro por modo de chat
   setCategoryFilter: (filter: ArtifactCategory) => void  // Definir filtro por categoria
   selectArtifact: (id: string | null) => void
+  setFullscreenArtifact: (id: string | null) => void  // Definir artefato em fullscreen
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
   toggleMobileDrawer: () => void
@@ -204,6 +206,7 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
   // Estado inicial
   artifacts: [],
   selectedArtifactId: null,
+  fullscreenArtifactId: null,
   isSidebarOpen: false,
   isMobileDrawerOpen: false,
   currentConversaId: null,
@@ -323,6 +326,11 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
   // Selecionar artefato
   selectArtifact: (id) => {
     set({ selectedArtifactId: id })
+  },
+
+  // Definir artefato em fullscreen
+  setFullscreenArtifact: (id) => {
+    set({ fullscreenArtifactId: id })
   },
 
   // Toggle sidebar

@@ -1353,8 +1353,10 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
   const {
     artifacts: allArtifacts,
     selectedArtifactId,
+    fullscreenArtifactId,
     isSidebarOpen,
     selectArtifact,
+    setFullscreenArtifact: storeSetFullscreenArtifact,
     removeArtifact,
     clearArtifacts,
     toggleSidebar,
@@ -1385,8 +1387,25 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
   // Estados locais
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<ArtifactType | 'all'>('all')
-  const [fullscreenArtifact, setFullscreenArtifact] = useState<Artifact | null>(null)
+  const [fullscreenArtifact, setFullscreenArtifactLocal] = useState<Artifact | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+
+  // Sincronizar fullscreen do store com o estado local
+  useEffect(() => {
+    if (fullscreenArtifactId) {
+      const artifact = allArtifacts.find(a => a.id === fullscreenArtifactId)
+      if (artifact) {
+        setFullscreenArtifactLocal(artifact)
+        // Limpar o store após usar para não reabrir automaticamente
+        storeSetFullscreenArtifact(null)
+      }
+    }
+  }, [fullscreenArtifactId, allArtifacts, storeSetFullscreenArtifact])
+
+  // Wrapper para setFullscreenArtifact que atualiza o estado local
+  const setFullscreenArtifact = useCallback((artifact: Artifact | null) => {
+    setFullscreenArtifactLocal(artifact)
+  }, [])
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   // Estados para filtros de questões - MULTI-SELEÇÃO (arrays ao invés de strings)
   const [questionStatusFilter, setQuestionStatusFilter] = useState<QuestionStatusFilter>('all')
