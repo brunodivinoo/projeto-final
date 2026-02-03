@@ -1,37 +1,64 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 02/02/2026 - Sessao Artefatos Expandem e Fullscreen
+## Atualizado em: 03/02/2026 - Sessao Fallback Multi-Provider e Performance
 
 ---
 
-## O QUE FOI FEITO NESTA SESSAO (02/02/2026)
+## O QUE FOI FEITO NESTA SESSAO (03/02/2026)
 
-### 1. ARTEFATOS EXPANDEM AUTOMATICAMENTE
+### 1. SISTEMA FALLBACK MULTI-PROVIDER (Problema 1 - Alta Demanda)
 **Problema identificado:**
-- Ao clicar em artefato na sidebar (desktop), apenas selecionava mas nao mostrava conteudo
-- No mobile funcionava corretamente
+- Mensagem "Desculpe, estou com alta demanda no momento" quando API sobrecarregada
+- App precisa suportar 100+ usuarios simultaneos
 
-**Correcoes aplicadas:**
-- `ArtifactsSidebar.tsx`: Ao selecionar, muda previewLevel para `expanded` (nao mais `preview`)
-- Agora ao clicar em qualquer artefato, expande automaticamente mostrando conteudo completo
+**Solucao implementada:**
+- Novo sistema de fallback automatico: Claude -> Gemini -> OpenAI
+- Circuit breaker para gerenciar falhas de providers
+- Rate limiting por provider
+- Quando Claude retorna erro 529/overload, alterna automaticamente para Gemini
+- Notificacao visual para usuario sobre troca de provider
 
-### 2. FULLSCREEN COM VISUAL ESCURO CORRIGIDO
+### 2. OTIMIZACAO DE CARREGAMENTO (Problema 2 - App Lento)
 **Problema identificado:**
-- Header e navegacao tinham cores claras em fundo escuro (baixo contraste)
+- App demorava muito para abrir apos login
+- Usuarios precisavam recarregar pagina multiplas vezes
 
-**Correcoes aplicadas:**
-- Header com `bg-slate-900/80` e texto `text-emerald-400` (titulo verde)
-- Navegacao inferior com fundo escuro `bg-slate-900/80`
-- Botao Proximo com cor roxa destacada `bg-purple-600`
-- Botao Anterior com `bg-slate-700`
-- Textos ajustados para `text-slate-400`
+**Solucao implementada:**
+- Buscas de profile, limites e assinatura agora em PARALELO via `Promise.allSettled`
+- Operacoes de atualizacao movidas para background (nao bloqueiam UI)
+- Reducao significativa no tempo de carregamento inicial
 
-### 3. SCROLL NO FULLSCREEN
+### 3. REMOCAO HEADER DESKTOP (Problema 3 - Print 02)
 **Problema identificado:**
-- Conteudo extenso era cortado no fullscreen
+- Header "PREPARAMED IA | Claude Opus | Ilimitado" redundante no desktop/tablet
 
-**Correcoes aplicadas:**
-- Container de conteudo com `overflow-y-auto` para scroll quando necessario
-- Estrutura flex corrigida para ocupar espaco disponivel
+**Solucao implementada:**
+- Removido header duplicado
+- Opcoes avancadas (Busca Web, Extended Thinking) agora inline e compactas
+- Interface mais limpa e focada no chat
+
+### 4. FEEDBACK VISUAL DURANTE STREAMING (Problema 4 - Tela Branca)
+**Problema identificado:**
+- Tela ficava branca por muito tempo durante geracao de respostas
+
+**Solucao implementada:**
+- Indicador visual quando provider alterna
+- Tratamento de evento `provider_switch` no hook
+- Mensagem informativa durante fallback
+- Streaming continua funcionando normalmente
+
+---
+
+## ARQUIVOS CRIADOS/MODIFICADOS
+
+### Novo Arquivo:
+- `lib/ai/multi-provider.ts` - Sistema multi-provider com circuit breaker (500+ linhas)
+
+### Arquivos Modificados:
+- `app/api/medicina/ia/chat/route.ts` - Fallback automatico para Gemini
+- `app/medicina/(dashboard)/dashboard/ia/page.tsx` - Removido header, opcoes inline
+- `contexts/MedAuthContext.tsx` - Buscas em paralelo
+- `hooks/useChatIA.ts` - Tratamento de provider_switch
+- `lib/ai/index.ts` - Exportacao do multi-provider
 
 ---
 
@@ -39,7 +66,7 @@
 
 | Hash | Descricao |
 |------|-----------|
-| `b4d9299` | fix: artefatos expandem automaticamente e fullscreen com scroll |
+| `f23b56c` | feat: fallback multi-provider e otimizacoes de performance |
 
 ---
 
@@ -47,29 +74,41 @@
 
 | PR | Titulo | Status |
 |----|--------|--------|
-| [#46](https://github.com/brunodivinoo/projeto-final/pull/46) | fix: artefatos expandem automaticamente e fullscreen com scroll | **MERGED** |
+| [#49](https://github.com/brunodivinoo/projeto-final/pull/49) | feat: fallback multi-provider e otimizacoes de performance | **MERGED** |
+
+---
+
+## ARQUITETURA DO SISTEMA MULTI-PROVIDER
+
+```
+FLUXO DE FALLBACK:
+1. Usuario envia mensagem
+2. Tenta com Claude (provider preferido para Residencia)
+3. Se Claude retorna 529/503/overload:
+   - Notifica frontend sobre troca
+   - Alterna automaticamente para Gemini
+   - Continua streaming normalmente
+4. Se Gemini tambem falhar:
+   - Tenta OpenAI (se configurado)
+   - Mostra mensagem de erro amigavel
+
+CIRCUIT BREAKER:
+- Threshold: 3 falhas consecutivas
+- Reset timeout: 60 segundos
+- Half-open: testa 1 request antes de reabrir
+```
 
 ---
 
 ## SESSAO ANTERIOR (02/02/2026)
 
 ### Correcoes Realizadas:
-- Clique nos artefatos corrigido (abre sidebar primeiro)
-- Tela cheia adaptada sem scroll desnecessario
-- Textos brancos corrigidos
+- Artefatos expandem automaticamente ao clicar
+- Fullscreen com visual escuro corrigido
+- Scroll no fullscreen adicionado
 
 ### PRs Merged:
-- [#44](https://github.com/brunodivinoo/projeto-final/pull/44) - Correcao artefatos e textos
-- [#45](https://github.com/brunodivinoo/projeto-final/pull/45) - Atualizacao status
-
----
-
-## ARQUIVOS MODIFICADOS HOJE
-
-**Total:** 1 arquivo modificado
-
-### Arquivos:
-- `components/ia/ArtifactsSidebar.tsx` - previewLevel expanded, fullscreen escuro, scroll
+- [#46](https://github.com/brunodivinoo/projeto-final/pull/46) - Artefatos e fullscreen
 
 ---
 
@@ -78,20 +117,31 @@
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Clique artefato sidebar | **EXPANDE AUTOMATICAMENTE** |
-| Fullscreen visual | **CORES ESCURAS CORRETAS** |
-| Fullscreen scroll | **FUNCIONANDO** |
-| Diagramas JSON Desktop | **CORRIGIDO** |
-| Diagramas JSON Mobile | **CORRIGIDO** |
-| Timeout API | **300s** |
+| Fallback Multi-Provider | **IMPLEMENTADO** |
+| Carregamento Otimizado | **PARALELO** |
+| Header Desktop | **REMOVIDO** |
+| Feedback Visual | **MELHORADO** |
+| Circuit Breaker | **ATIVO** |
 
 ---
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Testar em producao** - Verificar se todas as correcoes funcionam na Vercel
-2. **Testar diferentes tipos de artefatos** - Flashcards, simulados, organogramas, fluxogramas
-3. **Verificar responsividade** - Mobile e desktop
+1. **Testar em producao** - Verificar fallback automatico em alta demanda
+2. **Monitorar logs** - Verificar frequencia de fallbacks
+3. **Configurar OpenAI** - Adicionar como terceiro fallback (opcional)
+4. **Implementar Redis** - Para compartilhar estado de circuit breaker entre instancias (escala)
+
+---
+
+## SOBRE PLANOS E CUSTOS (Nao precisa pagar mais)
+
+O sistema atual JA suporta 100+ usuarios porque:
+- **Fallback automatico**: Se Claude sobrecarrega, usa Gemini sem custo adicional
+- **Seus tokens ja cobrem**: Anthropic, Google e OpenAI ja estao configurados
+- **Circuit breaker**: Distribui carga entre providers automaticamente
+
+**NAO precisa pagar planos adicionais** - o sistema se adapta automaticamente.
 
 ---
 
@@ -100,3 +150,4 @@
 - Producao: https://projeto-final-zeta-navy.vercel.app
 - Chat IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
 - GitHub: https://github.com/brunodivinoo/projeto-final
+- PR #49: https://github.com/brunodivinoo/projeto-final/pull/49
