@@ -1,100 +1,93 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 03/02/2026 - Sessao LangChain + Multi-Agentes PRODUCTION
+## Atualizado em: 03/02/2026 - Sessao Integracao Multi-Agentes
 
 ---
 
 ## O QUE FOI FEITO NESTA SESSAO (03/02/2026)
 
-### 1. ARQUITETURA LANGCHAIN COMPLETA
+### 1. INTEGRACAO MULTI-AGENTES NA API /CHAT
 
-**Implementado sistema completo de orquestracao com LangChain:**
+**Integrado o sistema de multi-agentes (LangChain) na API principal /chat:**
 
-#### Classificador de Intencao
-- Analisa mensagens do usuario e roteia para chain apropriada
-- Detecta: chat simples, questoes, flashcards, caso clinico, plano de estudos, etc.
-- Fallback inteligente baseado em keywords
+#### Novo arquivo: `lib/ai/multiAgentIntegration.ts`
+- Detecta automaticamente quando usar multi-agentes
+- Extrai parametros da mensagem (prova, horas, especialidade, etc.)
+- Roteia para a crew apropriada (StudyPlanCrew ou ContentCrew)
 
-#### Chains Implementadas
-- `chat-chain.ts` - Conversas gerais com fallback multi-provider (Claude->Gemini->OpenAI)
-- `questoes-chain.ts` - Geracao de questoes estruturadas com validacao Zod
-- `flashcards-chain.ts` - Geracao de flashcards com export para Anki
-- `resumo-chain.ts` - Resumos estruturados com diagramas Mermaid
+#### Quando os Multi-Agentes sao ativados:
+- **Plano de Estudos**: Quando detecta keywords como "plano de estudo", "cronograma", "como estudar para"
+- **Conteudo Complexo**: Quando pede multiplos tipos (questoes + flashcards) ou grande quantidade (10+ questoes)
 
-#### Memory System
-- `conversation-memory.ts` - Contexto de conversa com resumo automatico
-- Mantem ultimas 10 mensagens completas
-- Resume mensagens antigas automaticamente
-- Detecta e armazena entidades (paciente, medicamento, doenca, etc.)
+#### Fluxo de execucao:
+```
+USUARIO ENVIA MENSAGEM
+        │
+        ▼
+┌─────────────────────────────┐
+│   detectMultiAgentTask()    │
+│   - Analisa keywords        │
+│   - Extrai parametros       │
+│   - Decide se usa agentes   │
+└─────────────────────────────┘
+        │
+   ┌────┴────┐
+   │         │
+   ▼         ▼
+SIMPLES    COMPLEXO
+   │         │
+   ▼         ▼
+┌─────────┐ ┌─────────────────┐
+│ Claude  │ │ Multi-Agentes   │
+│(normal) │ │ - StudyPlanCrew │
+│         │ │ - ContentCrew   │
+└─────────┘ └─────────────────┘
+```
 
-#### Tools
-- `serper-tool.ts` - Busca web medica com SERPER.DEV
-- `database-tool.ts` - Busca de questoes e flashcards no Supabase
+### 2. SISTEMA DE MEMORIA PERSISTENTE
 
-### 2. SISTEMA MULTI-AGENTES (equivalente ao CrewAI)
+**Novo arquivo: `lib/ai/persistentMemory.ts`**
 
-**Implementado em TypeScript para Next.js:**
+- Salva contexto do usuario no Supabase entre sessoes
+- Detecta entidades (prova alvo, especialidade, nivel de estudo)
+- Armazena topicos estudados
+- Gera contexto automatico para enriquecer prompts
 
-#### Agentes
-- `researcher.ts` - Pesquisa informacoes atualizadas na web
-- `planner.ts` - Cria planos de estudos personalizados
-- `creator.ts` - Gera questoes, flashcards, resumos
-- `reviewer.ts` - Valida qualidade e corrige erros medicos
+#### Funcionalidades:
+- `saveEntity()` - Salva entidades detectadas
+- `saveLearningTopic()` - Salva topicos estudados
+- `getContextForPrompt()` - Gera contexto para o prompt
+- `processMessageForMemory()` - Processa mensagem e extrai entidades
 
-#### Crews (Times de Agentes)
-- `study-plan-crew.ts` - Coordena agentes para criar plano de estudos completo
-- `content-crew.ts` - Coordena criacao de material de estudo de alta qualidade
+### 3. HELPER SUPABASE CENTRALIZADO
 
-### 3. NOVA API ROUTE
+**Novo arquivo: `lib/supabase-admin.ts`**
 
-- `/api/medicina/ia/langchain` - Endpoint que usa o orquestrador LangChain
-- Classificacao automatica de intencao
-- Roteamento para chain/crew apropriado
-- Fallback multi-provider integrado
+- Lazy initialization para evitar erros durante build
+- Helper centralizado para uso em API routes
 
-### 4. BUGS CORRIGIDOS
+### 4. CORRECOES DE BUILD
 
-- Removida barra de opcoes redundante no desktop (Busca Web / Raciocinio)
-- Mensagens de erro melhoradas (sem "alta demanda")
+- Corrigido inicializacao do Supabase em `app/api/admin/separar-disciplinas/route.ts`
+- Corrigido inicializacao do Supabase em `app/api/estudos/ciclos/route.ts`
+- Adicionado arquivo `.env` para build local
 
 ---
 
-## ARQUIVOS CRIADOS
+## ARQUIVOS CRIADOS/MODIFICADOS
 
-### lib/langchain/
+### Novos arquivos:
 ```
-lib/langchain/
-├── index.ts                 # Exportacoes e orquestrador principal
-├── agents/
-│   └── intent-classifier.ts # Classificador de intencao
-├── chains/
-│   ├── chat-chain.ts        # Chain para chat
-│   ├── questoes-chain.ts    # Chain para questoes
-│   ├── flashcards-chain.ts  # Chain para flashcards
-│   └── resumo-chain.ts      # Chain para resumos
-├── memory/
-│   └── conversation-memory.ts # Sistema de memoria
-├── tools/
-│   ├── serper-tool.ts       # Busca web
-│   └── database-tool.ts     # Busca no banco
-└── parsers/                 # (reservado para parsers)
+lib/ai/multiAgentIntegration.ts   # Detector e executor de multi-agentes
+lib/ai/persistentMemory.ts        # Sistema de memoria persistente
+lib/supabase-admin.ts             # Helper centralizado para Supabase
 ```
 
-### lib/agents/
+### Arquivos modificados:
 ```
-lib/agents/
-├── index.ts                 # Exportacoes
-├── agents/
-│   ├── researcher.ts        # Agente pesquisador
-│   ├── planner.ts           # Agente planejador
-│   ├── creator.ts           # Agente criador
-│   └── reviewer.ts          # Agente revisor
-└── crews/
-    ├── study-plan-crew.ts   # Crew de plano de estudos
-    └── content-crew.ts      # Crew de conteudo
+app/api/medicina/ia/chat/route.ts              # Integracao multi-agentes
+app/api/admin/separar-disciplinas/route.ts     # Fix lazy init
+app/api/estudos/ciclos/route.ts                # Fix lazy init
 ```
-
-### Nova API Route
-- `app/api/medicina/ia/langchain/route.ts`
 
 ---
 
@@ -102,7 +95,7 @@ lib/agents/
 
 | Hash | Descricao |
 |------|-----------|
-| `30ac1b8` | feat: implementar arquitetura LangChain + sistema multi-agentes |
+| `1229d13` | feat: integrar multi-agentes na API /chat principal |
 
 ---
 
@@ -110,101 +103,28 @@ lib/agents/
 
 | PR | Titulo | Status |
 |----|--------|--------|
-| [#51](https://github.com/brunodivinoo/projeto-final/pull/51) | feat: arquitetura LangChain + sistema multi-agentes | **MERGED** |
+| [#55](https://github.com/brunodivinoo/projeto-final/pull/55) | feat: integrar multi-agentes na API /chat principal | **MERGED** |
 
 ---
 
-## FLUXO DA ARQUITETURA
+## COMO FUNCIONA AGORA
 
-```
-USUARIO ENVIA MENSAGEM
-         │
-         ▼
-┌────────────────────────────┐
-│   1. Intent Classifier      │
-│   (LangChain)               │
-│   - Detecta intencao        │
-│   - Extrai topico           │
-│   - Define complexidade     │
-└────────────────────────────┘
-         │
-    ┌────┴────┐
-    │         │
-    ▼         ▼
-SIMPLES    COMPLEXO
-    │         │
-    ▼         ▼
-┌─────────┐ ┌─────────────────┐
-│  Chain  │ │  Crew           │
-│ (unica) │ │ (multi-agentes) │
-└─────────┘ └─────────────────┘
-    │         │
-    └────┬────┘
-         │
-         ▼
-┌────────────────────────────┐
-│   3. Multi-Provider         │
-│   Claude -> Gemini -> OpenAI│
-└────────────────────────────┘
-         │
-         ▼
-┌────────────────────────────┐
-│   4. Memory                 │
-│   - Salva contexto          │
-│   - Resume se necessario    │
-└────────────────────────────┘
-         │
-         ▼
-      RESPOSTA
-```
+### Para o usuario:
+1. Usuario envia mensagem normalmente no chat
+2. Sistema detecta automaticamente se precisa de multi-agentes
+3. Se sim: mostra notificacao "🤖 Ativando Multi-Agentes" e executa crews
+4. Se nao: usa fluxo normal do Claude
 
----
+### Exemplos que ativam multi-agentes:
+- "Crie um plano de estudos para residencia de cardiologia"
+- "Monte um cronograma de 30 dias para o REVALIDA"
+- "Gere 15 questoes e 20 flashcards sobre insuficiencia cardiaca"
+- "Material completo sobre diabetes mellitus"
 
-## COMO USAR
-
-### 1. Classificacao de Intencao
-```typescript
-import { classifyIntent } from '@/lib/langchain'
-
-const intention = await classifyIntent('Gere 5 questoes sobre cardiologia')
-// intention.primaryIntent = 'gerar_questoes'
-// intention.topic = 'cardiologia'
-```
-
-### 2. Gerar Questoes
-```typescript
-import { runQuestoesChain } from '@/lib/langchain'
-
-const result = await runQuestoesChain({
-  tema: 'Insuficiencia Cardiaca',
-  quantidade: 5,
-  dificuldade: 'media'
-})
-```
-
-### 3. Criar Plano de Estudos
-```typescript
-import { generateStudyPlan } from '@/lib/agents'
-
-const plano = await generateStudyPlan({
-  objetivo: 'Residencia em Cardiologia',
-  provaAlvo: 'USP',
-  horasDisponiveis: 6,
-  incluirMaterial: true
-})
-```
-
-### 4. Usar Orquestrador Completo
-```typescript
-import { orchestrate } from '@/lib/langchain'
-
-const result = await orchestrate({
-  message: 'Explique ciclo de Krebs e crie 3 questoes',
-  systemPrompt: 'Voce e um tutor de medicina...',
-  preferredProvider: 'claude'
-})
-// Automaticamente detecta 2 tarefas e executa
-```
+### Exemplos que usam fluxo normal:
+- "O que e insuficiencia cardiaca?"
+- "Gere 5 questoes sobre pneumonia"
+- "Explique o ciclo de Krebs"
 
 ---
 
@@ -213,48 +133,37 @@ const result = await orchestrate({
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| LangChain Orchestrator | **IMPLEMENTADO** |
-| Intent Classifier | **ATIVO** |
-| Chains (chat, questoes, flashcards, resumo) | **IMPLEMENTADAS** |
-| Memory System | **IMPLEMENTADO** |
-| Multi-Agentes | **IMPLEMENTADOS** |
-| Crews | **IMPLEMENTADAS** |
+| Multi-Agentes na API /chat | **INTEGRADO** |
+| StudyPlanCrew | **ATIVO** |
+| ContentCrew | **ATIVO** |
+| Memory Persistente | **IMPLEMENTADO** (tabela pendente) |
+| LangChain Orchestrator | Disponivel em `/api/medicina/ia/langchain` |
 | Fallback Multi-Provider | **ATIVO** |
 
 ---
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Testar em producao** - Verificar funcionamento do LangChain no ambiente real
-2. **Integrar com frontend** - Usar nova API /langchain no chat principal
-3. **Adicionar mais Tools** - Calculadora medica, busca de artigos PubMed
-4. **Melhorar Memory** - Persistir memoria no Supabase entre sessoes
-5. **Dashboard de agentes** - Visualizar execucao dos multi-agentes
+1. **Criar tabela user_memory_med no Supabase** - SQL disponivel em `lib/ai/persistentMemory.ts`
+2. **Testar em producao** - Verificar funcionamento dos multi-agentes no chat real
+3. **Adicionar feedback visual** - Mostrar progresso dos agentes no frontend
+4. **Dashboard de agentes** - Visualizar execucao dos multi-agentes
+5. **Melhorar extracao de entidades** - Detectar mais informacoes do usuario
 
 ---
 
-## DEPENDENCIAS ADICIONADAS
+## SESSOES ANTERIORES
 
-```
-langchain
-@langchain/core
-@langchain/anthropic
-@langchain/google-genai
-@langchain/openai
-```
+### Sessao LangChain (03/02/2026 - parte 1)
+- Implementado LangChain Orchestrator completo
+- Chains: chat, questoes, flashcards, resumo
+- Multi-Agentes: researcher, planner, creator, reviewer
+- Crews: study-plan, content
+- PR #51 merged
 
----
-
-## SESSAO ANTERIOR (03/02/2026 - parte 1)
-
-### O que foi feito:
+### Sessao Fallback (03/02/2026 - parte 0)
 - Sistema fallback multi-provider (Claude -> Gemini -> OpenAI)
-- Otimizacao de carregamento (Promise.allSettled)
-- Remocao header desktop redundante
-- Feedback visual durante streaming
-
-### PRs Merged:
-- [#49](https://github.com/brunodivinoo/projeto-final/pull/49) - Fallback multi-provider
+- PR #49 merged
 
 ---
 
@@ -263,4 +172,4 @@ langchain
 - Producao: https://projeto-final-zeta-navy.vercel.app
 - Chat IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
 - GitHub: https://github.com/brunodivinoo/projeto-final
-- PR #51: https://github.com/brunodivinoo/projeto-final/pull/51
+- PR #55: https://github.com/brunodivinoo/projeto-final/pull/55
