@@ -599,18 +599,18 @@ function getErrorMessage(error: unknown): string {
   const errorStr = String(error).toLowerCase()
 
   if (errorStr.includes('overloaded') || errorStr.includes('529') || errorStr.includes('capacity')) {
-    return 'Nossos servidores estao com alta demanda no momento. Sua mensagem foi recebida e estamos processando. Por favor, aguarde alguns segundos e a resposta aparecera automaticamente.'
+    return 'Nossos servidores estao processando muitas solicitacoes. Por favor, aguarde alguns segundos e tente novamente.'
   }
 
   if (errorStr.includes('rate_limit') || errorStr.includes('too many requests')) {
-    return 'Muitas requisicoes simultaneas. Aguarde alguns segundos e tente novamente.'
+    return 'Aguarde alguns segundos antes de enviar outra mensagem.'
   }
 
   if (errorStr.includes('timeout')) {
-    return 'A requisicao demorou mais que o esperado. Tente fazer uma pergunta mais curta ou especifica.'
+    return 'O processamento esta levando mais tempo. Tente uma pergunta mais curta.'
   }
 
-  return 'Ocorreu um erro temporario. Por favor, tente novamente em alguns segundos.'
+  return 'Ocorreu um problema temporario. Por favor, tente novamente.'
 }
 
 // ==========================================
