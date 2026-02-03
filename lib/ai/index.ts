@@ -22,6 +22,9 @@ export * from './cache'
 // Vercel AI SDK helpers (retry, structured outputs, validação)
 export * from './vercel-ai'
 
+// Multi-Provider com fallback automatico (Claude -> Gemini -> OpenAI)
+export * from './multi-provider'
+
 // ==========================================
 // FUNÇÕES UNIFICADAS PARA API ROUTES
 // ==========================================
