@@ -1399,25 +1399,40 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
   // Estados locais
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<ArtifactType | 'all'>('all')
-  const [fullscreenArtifact, setFullscreenArtifactLocal] = useState<Artifact | null>(null)
+  const [viewingArtifact, setViewingArtifactLocal] = useState<Artifact | null>(null) // Artefato sendo visualizado NA SIDEBAR
   const [showFilters, setShowFilters] = useState(false)
 
-  // Sincronizar fullscreen do store com o estado local
+  // Sincronizar seleção do store com o estado local (abre conteúdo na sidebar)
   useEffect(() => {
     if (fullscreenArtifactId) {
       const artifact = allArtifacts.find(a => a.id === fullscreenArtifactId)
       if (artifact) {
-        setFullscreenArtifactLocal(artifact)
+        setViewingArtifactLocal(artifact)
         // Limpar o store após usar para não reabrir automaticamente
         storeSetFullscreenArtifact(null)
       }
     }
   }, [fullscreenArtifactId, allArtifacts, storeSetFullscreenArtifact])
 
-  // Wrapper para setFullscreenArtifact que atualiza o estado local
-  const setFullscreenArtifact = useCallback((artifact: Artifact | null) => {
-    setFullscreenArtifactLocal(artifact)
-  }, [])
+  // Também sincronizar quando selectedArtifactId muda (quando clica no chat)
+  useEffect(() => {
+    if (selectedArtifactId && isSidebarOpen) {
+      const artifact = allArtifacts.find(a => a.id === selectedArtifactId)
+      if (artifact) {
+        setViewingArtifactLocal(artifact)
+      }
+    }
+  }, [selectedArtifactId, allArtifacts, isSidebarOpen])
+
+  // Wrapper para setViewingArtifact que atualiza o estado local
+  const setViewingArtifact = useCallback((artifact: Artifact | null) => {
+    setViewingArtifactLocal(artifact)
+    if (artifact) {
+      selectArtifact(artifact.id)
+    } else {
+      selectArtifact(null)
+    }
+  }, [selectArtifact])
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   // Estados para filtros de questões - MULTI-SELEÇÃO (arrays ao invés de strings)
   const [questionStatusFilter, setQuestionStatusFilter] = useState<QuestionStatusFilter>('all')
@@ -1700,33 +1715,39 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
     setCurrentQuestionIndex(0)
   }, [questionStatusFilter, questionDisciplineFilters, questionAssuntoFilters, questionBancaFilters, questionDifficultyFilters, filteredQuestions.length])
 
-  // Navegação no fullscreen
-  const currentFullscreenIndex = fullscreenArtifact
-    ? filteredArtifacts.findIndex(a => a.id === fullscreenArtifact.id)
+  // Navegação entre artefatos na sidebar
+  const currentViewingIndex = viewingArtifact
+    ? filteredArtifacts.findIndex(a => a.id === viewingArtifact.id)
     : -1
 
-  const handlePreviousFullscreen = useCallback(() => {
-    if (currentFullscreenIndex > 0) {
-      setFullscreenArtifact(filteredArtifacts[currentFullscreenIndex - 1])
+  const handlePreviousArtifact = useCallback(() => {
+    if (currentViewingIndex > 0) {
+      setViewingArtifact(filteredArtifacts[currentViewingIndex - 1])
     }
-  }, [currentFullscreenIndex, filteredArtifacts])
+  }, [currentViewingIndex, filteredArtifacts, setViewingArtifact])
 
-  const handleNextFullscreen = useCallback(() => {
-    if (currentFullscreenIndex < filteredArtifacts.length - 1) {
-      setFullscreenArtifact(filteredArtifacts[currentFullscreenIndex + 1])
+  const handleNextArtifact = useCallback(() => {
+    if (currentViewingIndex < filteredArtifacts.length - 1) {
+      setViewingArtifact(filteredArtifacts[currentViewingIndex + 1])
     }
-  }, [currentFullscreenIndex, filteredArtifacts])
+  }, [currentViewingIndex, filteredArtifacts, setViewingArtifact])
 
-  // Fechar sidebar com ESC (quando não está em fullscreen)
+  // Fechar sidebar com ESC ou voltar para lista se visualizando artefato
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isSidebarOpen && !fullscreenArtifact) {
-        setSidebarOpen(false)
+      if (e.key === 'Escape' && isSidebarOpen) {
+        if (viewingArtifact) {
+          // Se está visualizando artefato, volta para lista
+          setViewingArtifact(null)
+        } else {
+          // Se está na lista, fecha sidebar
+          setSidebarOpen(false)
+        }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isSidebarOpen, setSidebarOpen, fullscreenArtifact])
+  }, [isSidebarOpen, setSidebarOpen, viewingArtifact, setViewingArtifact])
 
   // Se não há artefatos, não mostrar nada
   if (artifacts.length === 0) {
@@ -1735,20 +1756,6 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
 
   return (
     <>
-      {/* Modal Fullscreen */}
-      {fullscreenArtifact && (
-        <FullscreenModal
-          artifact={fullscreenArtifact}
-          onClose={() => setFullscreenArtifact(null)}
-          onPrevious={handlePreviousFullscreen}
-          onNext={handleNextFullscreen}
-          hasPrevious={currentFullscreenIndex > 0}
-          hasNext={currentFullscreenIndex < filteredArtifacts.length - 1}
-          currentIndex={currentFullscreenIndex}
-          totalCount={filteredArtifacts.length}
-        />
-      )}
-
       {/* Botão toggle discreto - estilo Claude */}
       {/* Botão flutuante - apenas desktop (mobile usa botão integrado no header) */}
       {!isSidebarOpen && artifacts.length > 0 && (
@@ -1774,34 +1781,96 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
       >
         {isSidebarOpen && (
           <>
-            {/* Header */}
+            {/* Header - muda baseado se está visualizando artefato ou não */}
             <div className="flex items-center justify-between p-4 border-b border-slate-200">
-              <div className="flex items-center gap-2">
-                <Layers className="w-5 h-5 text-purple-400" />
-                <h3 className="text-slate-800 font-semibold">Artefatos</h3>
-                <span className="text-slate-500 text-sm">({filteredArtifacts.length})</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {artifacts.length > 0 && (
+              {viewingArtifact ? (
+                // Header quando visualizando artefato
+                <>
                   <button
-                    onClick={clearArtifacts}
-                    className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                    title="Limpar todos"
+                    onClick={() => setViewingArtifact(null)}
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <ChevronLeft className="w-5 h-5 text-slate-600" />
                   </button>
-                )}
-                <button
-                  onClick={toggleSidebar}
-                  className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-                  title="Fechar sidebar"
-                >
-                  <PanelRightClose className="w-5 h-5" />
-                </button>
-              </div>
+                  <div className="flex-1 mx-3 min-w-0">
+                    <h2 className="text-sm font-semibold text-slate-800 truncate">{viewingArtifact.title}</h2>
+                    <p className="text-xs text-slate-500">{ARTIFACT_LABELS[viewingArtifact.type] || viewingArtifact.type}</p>
+                  </div>
+                  <button
+                    onClick={toggleSidebar}
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-500 hover:bg-emerald-600 transition-colors"
+                  >
+                    <X className="w-5 h-5 text-white" />
+                  </button>
+                </>
+              ) : (
+                // Header da lista
+                <>
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-purple-400" />
+                    <h3 className="text-slate-800 font-semibold">Artefatos</h3>
+                    <span className="text-slate-500 text-sm">({filteredArtifacts.length})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {artifacts.length > 0 && (
+                      <button
+                        onClick={clearArtifacts}
+                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title="Limpar todos"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={toggleSidebar}
+                      className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                      title="Fechar sidebar"
+                    >
+                      <PanelRightClose className="w-5 h-5" />
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Busca, Filtros e Modo de Visualização */}
+            {/* Conteúdo do artefato sendo visualizado */}
+            {viewingArtifact ? (
+              <div className="flex-1 overflow-y-auto bg-slate-50">
+                <ArtifactContent artifact={viewingArtifact} />
+                {/* Navegação entre artefatos */}
+                <div className="sticky bottom-0 flex items-center justify-center gap-4 p-3 bg-white border-t border-slate-200">
+                  <button
+                    onClick={handlePreviousArtifact}
+                    disabled={currentViewingIndex <= 0}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                      currentViewingIndex > 0
+                        ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        : 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                    }`}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Anterior
+                  </button>
+                  <span className="text-slate-500 text-xs">
+                    {currentViewingIndex + 1} / {filteredArtifacts.length}
+                  </span>
+                  <button
+                    onClick={handleNextArtifact}
+                    disabled={currentViewingIndex >= filteredArtifacts.length - 1}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                      currentViewingIndex < filteredArtifacts.length - 1
+                        ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                        : 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                    }`}
+                  >
+                    Próximo
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Busca, Filtros e Modo de Visualização */}
             <div className="p-3 border-b border-slate-200 space-y-2">
               {/* Campo de busca + botões de modo */}
               <div className="flex items-center gap-2">
@@ -1961,7 +2030,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                           isSelected={selectedArtifactId === artifact.id}
                           onSelect={() => selectArtifact(artifact.id)}
                           onRemove={() => removeArtifact(artifact.id)}
-                          onFullscreen={() => setFullscreenArtifact(artifact)}
+                          onFullscreen={() => setViewingArtifact(artifact)}
                           viewMode="list"
                         />
                       ))}
@@ -1979,7 +2048,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                             isSelected={selectedArtifactId === artifact.id}
                             onSelect={() => selectArtifact(artifact.id)}
                             onRemove={() => removeArtifact(artifact.id)}
-                            onFullscreen={() => setFullscreenArtifact(artifact)}
+                            onFullscreen={() => setViewingArtifact(artifact)}
                             viewMode="grid"
                           />
                         ))}
@@ -1999,7 +2068,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                           selectedArtifactId={selectedArtifactId}
                           onSelectArtifact={selectArtifact}
                           onRemoveArtifact={removeArtifact}
-                          onFullscreen={setFullscreenArtifact}
+                          onFullscreen={setViewingArtifact}
                         />
                       ))}
                       {/* Outros (sem categoria) */}
@@ -2011,7 +2080,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                           selectedArtifactId={selectedArtifactId}
                           onSelectArtifact={selectArtifact}
                           onRemoveArtifact={removeArtifact}
-                          onFullscreen={setFullscreenArtifact}
+                          onFullscreen={setViewingArtifact}
                         />
                       )}
                     </div>
@@ -2420,15 +2489,17 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
               )}
             </div>
 
-            {/* Footer com dica */}
-            <div className="p-3 border-t border-slate-200 text-center">
-              <p className="text-slate-400 text-xs">
-                {viewMode === 'list' && 'Clique para preview • 👁 para expandir • ⛶ para tela cheia'}
-                {viewMode === 'grid' && 'Hover para ações • Clique para selecionar'}
-                {viewMode === 'categories' && 'Clique nas categorias para expandir/recolher'}
-                {viewMode === 'questions' && 'Use ✂️ para eliminar alternativas • Filtre por status ou dificuldade'}
-              </p>
-            </div>
+                {/* Footer com dica */}
+                <div className="p-3 border-t border-slate-200 text-center">
+                  <p className="text-slate-400 text-xs">
+                    {viewMode === 'list' && 'Clique para preview • 👁 para expandir • ⛶ para tela cheia'}
+                    {viewMode === 'grid' && 'Hover para ações • Clique para selecionar'}
+                    {viewMode === 'categories' && 'Clique nas categorias para expandir/recolher'}
+                    {viewMode === 'questions' && 'Use ✂️ para eliminar alternativas • Filtre por status ou dificuldade'}
+                  </p>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
