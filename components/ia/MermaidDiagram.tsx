@@ -893,18 +893,6 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
               <Download className="w-4 h-4 text-slate-600" />
             </button>
 
-            {/* Fullscreen - sempre visível com área maior para touch */}
-            <button
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-2.5 hover:bg-slate-100 rounded-lg transition-colors active:bg-purple-500/20 ml-1"
-              title={isFullscreen ? 'Sair da tela cheia (ESC)' : 'Expandir diagrama'}
-            >
-              {isFullscreen ? (
-                <Minimize2 className="w-5 h-5 text-slate-600" />
-              ) : (
-                <Maximize2 className="w-5 h-5 text-slate-600" />
-              )}
-            </button>
           </div>
         </div>
 

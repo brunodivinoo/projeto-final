@@ -544,13 +544,6 @@ export default function InteractiveDiagram({ type, title }: InteractiveDiagramPr
           <span className="text-slate-700 text-sm font-medium">{title}</span>
           <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">Interativo</span>
         </div>
-        <button
-          onClick={() => setIsFullscreen(true)}
-          className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
-          title="Tela cheia"
-        >
-          <Maximize2 className="w-4 h-4 text-slate-600" />
-        </button>
       </div>
 
       {/* Conteúdo */}

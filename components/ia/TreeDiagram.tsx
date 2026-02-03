@@ -277,16 +277,6 @@ export default function TreeDiagram({
               Recolher
             </button>
 
-            <button
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-2 hover:bg-white/50 rounded-lg transition-colors"
-            >
-              {isFullscreen ? (
-                <X className="w-5 h-5 text-slate-600" />
-              ) : (
-                <Maximize2 className="w-5 h-5 text-slate-600" />
-              )}
-            </button>
           </div>
         </div>
       </div>
