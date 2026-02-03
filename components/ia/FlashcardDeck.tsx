@@ -349,9 +349,6 @@ export default function FlashcardDeck({
           <button onClick={() => setShowStats(!showStats)} className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Estatísticas">
             <BarChart3 className="w-4 h-4 text-gray-500" />
           </button>
-          <button onClick={() => setIsExpanded(!isExpanded)} className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            {isExpanded ? <Minimize2 className="w-4 h-4 text-gray-500" /> : <Maximize2 className="w-4 h-4 text-gray-500" />}
-          </button>
           {onSaveToArtefatos && (
             <button onClick={() => onSaveToArtefatos(cards, titulo)} className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Salvar">
               <Save className="w-4 h-4 text-gray-500" />
