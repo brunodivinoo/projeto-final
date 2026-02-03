@@ -311,7 +311,8 @@ export default function IAPage() {
   const [conversaAtual, setConversaAtual] = useState<string | null>(null)
   const [carregandoConversa, setCarregandoConversa] = useState(false) // Loading ao abrir conversa
   const [showConversas, setShowConversas] = useState(false) // Agora usado apenas no mobile
-  const [showOpcoes, setShowOpcoes] = useState(false)
+  // Estado removido - opcoes avancadas agora sempre visiveis para plano Residencia
+  // const [showOpcoes, setShowOpcoes] = useState(false)
   const [copiado, setCopiado] = useState<string | null>(null)
   const [uso, setUso] = useState<UsoIA | null>(null)
 
@@ -1760,82 +1761,41 @@ export default function IAPage() {
           </div>
         )}
 
-        {/* Header Desktop - Oculto no mobile (já tem barra de modo acima) */}
-        <div className="hidden lg:flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-slate-200">
-          <div className="flex items-center gap-2 md:gap-3">
-            {/* Botão menu/conversas - apenas mobile (desktop usa sidebar do layout) */}
-            {isMobile && (
-              <button
-                onClick={() => setShowConversas(!showConversas)}
-                className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                <Menu className="w-4 h-4 text-slate-600" />
-              </button>
-            )}
+        {/* Opcoes Avancadas - Integradas ao layout (apenas Residencia) */}
+        {isResidencia && (
+          <div className="hidden lg:flex items-center gap-3 px-4 py-2 border-b border-slate-100 bg-slate-50/50">
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs">
+              <input
+                type="checkbox"
+                checked={useWebSearch}
+                onChange={(e) => setUseWebSearch(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500"
+              />
+              <Search className="w-3.5 h-3.5 text-blue-500" />
+              <span className="text-slate-600">Busca Web</span>
+            </label>
 
-            {/* Logo e info - Compacto */}
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
-                <Brain className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xs md:text-sm font-bold text-slate-800">PREPARAMED IA</h1>
-                <p className="text-slate-500 text-[9px] md:text-[10px] hidden sm:block">
-                  {isResidencia ? 'Claude Opus | Ilimitado' : `Gemini Flash | ${uso?.uso_mes.chats || 0}/100`}
-                </p>
-              </div>
-            </div>
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs">
+              <input
+                type="checkbox"
+                checked={useExtendedThinking}
+                onChange={(e) => setUseExtendedThinking(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500"
+              />
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
+              <span className="text-slate-600">Raciocinio Extendido</span>
+            </label>
 
-          </div>
-
-          <div className="flex items-center gap-2">
             {/* Indicador de Ficha - Desktop */}
             {fichaAtiva && chatMode === 'caso_clinico' && (
-              <IndicadorProgresso
-                itensPreenchidos={fichaItensPreenchidos}
-                totalItens={7}
-                onClick={() => setFichaAberta(true)}
-              />
+              <div className="ml-auto">
+                <IndicadorProgresso
+                  itensPreenchidos={fichaItensPreenchidos}
+                  totalItens={7}
+                  onClick={() => setFichaAberta(true)}
+                />
+              </div>
             )}
-
-            {isResidencia && <Crown className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-400" />}
-            <button
-              onClick={() => setShowOpcoes(!showOpcoes)}
-              className={`p-1.5 rounded-lg transition-colors ${
-                showOpcoes ? 'bg-emerald-100 text-emerald-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Settings className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Opções Avançadas */}
-        {showOpcoes && isResidencia && (
-          <div className="p-4 border-b border-slate-200 bg-slate-50">
-            <div className="flex flex-wrap gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={useWebSearch}
-                  onChange={(e) => setUseWebSearch(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500"
-                />
-                <Search className="w-4 h-4 text-blue-500" />
-                <span className="text-slate-700 text-sm">Busca Web</span>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={useExtendedThinking}
-                  onChange={(e) => setUseExtendedThinking(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500"
-                />
-                <Zap className="w-4 h-4 text-amber-500" />
-                <span className="text-slate-700 text-sm">Extended Thinking</span>
-              </label>
-            </div>
           </div>
         )}
 

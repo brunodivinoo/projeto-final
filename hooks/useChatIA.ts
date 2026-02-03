@@ -256,9 +256,21 @@ export function useChatIA(options: UseChatIAOptions = {}): ChatData & ChatAction
                       console.error('[useChatIA] Erro ao adicionar artefato:', artifactError)
                     }
                   }
+                } else if (data.type === 'provider_switch') {
+                  // Notificar sobre troca de provider (fallback automatico)
+                  console.log('[useChatIA] Provider switch:', data.from, '->', data.to)
+                  // Adicionar indicador visual na mensagem
+                  fullResponse += `\n\n*[Alternando para servidor de backup...]*\n\n`
+                  setMensagens(prev => prev.map(m =>
+                    m.id === msgIATemp.id
+                      ? { ...m, content: fullResponse }
+                      : m
+                  ))
                 } else if (data.type === 'done') {
                   novaConversaId = data.conversa_id
-                  // Atualizar tokens
+                  // Atualizar tokens e indicar se foi fallback
+                  const fallbackIndicator = data.fallback ? ' (via servidor alternativo)' : ''
+                  console.log('[useChatIA] Done - Provider:', data.provider || 'claude', fallbackIndicator)
                   setMensagens(prev => prev.map(m =>
                     m.id === msgIATemp.id
                       ? { ...m, tokens: (data.tokens?.input ?? 0) + (data.tokens?.output ?? 0) }

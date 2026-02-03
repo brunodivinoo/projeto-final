@@ -1235,6 +1235,96 @@ async function streamClaude(params: StreamClaudeParams) {
         const isOverloaded = errorMessage.includes('overloaded') || errorMessage.includes('529')
         const isRateLimit = errorMessage.includes('rate_limit') || errorMessage.includes('429')
         const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT')
+        const shouldFallbackToGemini = (isOverloaded || isRateLimit) && fullResponse.length < 100
+
+        // ========== FALLBACK AUTOMATICO PARA GEMINI ==========
+        if (shouldFallbackToGemini) {
+          console.log('[Chat API] Fazendo fallback automatico para Gemini devido a:', errorMessage)
+
+          // Notificar frontend sobre a troca de provider
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({
+              type: 'provider_switch',
+              from: 'claude',
+              to: 'gemini',
+              message: 'Alternando para servidor secundario...'
+            })}\n\n`)
+          )
+
+          try {
+            // Usar Gemini como fallback
+            const geminiModel = genAI.getGenerativeModel({
+              model: MODELOS.gemini.flash,
+              systemInstruction: systemPrompt,
+              generationConfig: {
+                temperature: 0.7,
+                topP: 0.95,
+                maxOutputTokens: 8192
+              }
+            })
+
+            // Preparar historico para Gemini
+            const geminiHistory = currentMessages.slice(0, -1).map(m => ({
+              role: (m.role === 'assistant' ? 'model' : 'user') as 'model' | 'user',
+              parts: [{ text: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) }]
+            }))
+
+            const lastMessage = currentMessages[currentMessages.length - 1]
+            const lastContent = typeof lastMessage.content === 'string'
+              ? lastMessage.content
+              : Array.isArray(lastMessage.content)
+                ? lastMessage.content.map((c: { type: string; text?: string }) => c.type === 'text' ? c.text : '').join(' ')
+                : String(lastMessage.content)
+
+            const geminiChat = geminiModel.startChat({ history: geminiHistory })
+            const geminiResult = await geminiChat.sendMessageStream(lastContent)
+
+            let geminiResponse = ''
+            for await (const chunk of geminiResult.stream) {
+              const text = chunk.text()
+              if (text) {
+                geminiResponse += text
+                fullResponse += text
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ type: 'text', content: text })}\n\n`)
+                )
+              }
+            }
+
+            // Estimar tokens Gemini
+            const geminiInputTokens = Math.ceil(lastContent.length / 4) + geminiHistory.reduce((acc, m) => acc + Math.ceil(m.parts[0].text.length / 4), 0)
+            const geminiOutputTokens = Math.ceil(geminiResponse.length / 4)
+            tokensInput = geminiInputTokens
+            tokensOutput = geminiOutputTokens
+
+            console.log('[Chat API] Fallback Gemini sucesso, tamanho:', geminiResponse.length)
+
+            // Salvar resposta
+            await updateResponse(true)
+
+            // Incrementar uso com Gemini
+            const custoGemini = calcularCusto('gemini-flash', geminiInputTokens, geminiOutputTokens)
+            await incrementarUsoIA(user_id, 'chats', 1, geminiInputTokens, geminiOutputTokens, custoGemini)
+
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                type: 'done',
+                conversa_id,
+                tokens: { input: geminiInputTokens, output: geminiOutputTokens },
+                provider: 'gemini',
+                fallback: true
+              })}\n\n`)
+            )
+
+            controller.close()
+            return
+
+          } catch (geminiError) {
+            console.error('[Chat API] Fallback Gemini tambem falhou:', geminiError)
+            // Continuar para mensagem de erro padrao
+          }
+        }
+        // ========== FIM FALLBACK GEMINI ==========
 
         let fallbackMessage = ''
 
@@ -1243,17 +1333,17 @@ async function streamClaude(params: StreamClaudeParams) {
           fallbackMessage = '\n\n---\n*Resposta pode estar incompleta. Se precisar de mais detalhes, pergunte novamente.*'
         } else if (isOverloaded || isRateLimit) {
           // Se API está sobrecarregada, dar mensagem amigável
-          fallbackMessage = 'Desculpe, estou com alta demanda no momento. Por favor, tente novamente em alguns segundos. Sua pergunta foi salva e você pode reformulá-la se preferir.'
+          fallbackMessage = 'Estamos com muitos acessos no momento. Aguarde alguns segundos e sua resposta sera gerada automaticamente. Se preferir, reformule sua pergunta.'
         } else if (isTimeout) {
-          fallbackMessage = 'A resposta está demorando mais que o esperado. Por favor, tente fazer uma pergunta mais específica ou divida em partes menores.'
+          fallbackMessage = 'A resposta esta demorando mais que o esperado. Por favor, tente fazer uma pergunta mais especifica ou divida em partes menores.'
         } else {
-          fallbackMessage = 'Desculpe, tive uma instabilidade técnica. Por favor, tente novamente ou reformule sua pergunta de forma diferente.'
+          fallbackMessage = 'Desculpe, tive uma instabilidade tecnica. Por favor, tente novamente ou reformule sua pergunta de forma diferente.'
         }
 
         // Se já tem resposta parcial, adicionar aviso
         if (fullResponse && fullResponse.length > 0) {
           fullResponse += fallbackMessage
-          console.log('[Chat API] Salvando resposta parcial após erro, tamanho:', fullResponse.length)
+          console.log('[Chat API] Salvando resposta parcial apos erro, tamanho:', fullResponse.length)
           try {
             // Atualizar resposta existente (já foi criada no início do streaming)
             await updateResponse(true)

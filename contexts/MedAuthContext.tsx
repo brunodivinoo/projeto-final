@@ -304,52 +304,66 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     fetchingRef.current = true
     setProfileLoading(true)
 
+    const mesAtual = new Date().toISOString().slice(0, 7) // "2026-01"
+
     try {
-      // Buscar profile_MED
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles_med')
-        .select('*')
-        .eq('id', userId)
-        .single()
-
-      if (profileError && profileError.code === 'PGRST116') {
-        // Profile não existe - criar novo
-        const { data: newProfile, error: insertError } = await supabase
+      // ========== OTIMIZACAO: Buscar todos os dados em PARALELO ==========
+      const [profileResult, limitesResult, assinaturaResult] = await Promise.allSettled([
+        // 1. Profile
+        supabase
           .from('profiles_med')
-          .insert({
-            id: userId,
-            nome: userName || userEmail?.split('@')[0] || 'Estudante',
-            email: userEmail,
-            plano: 'gratuito'
-          })
-          .select()
-          .single()
-
-        if (insertError) {
-          console.error('Erro ao criar perfil:', insertError)
-        } else if (newProfile) {
-          setProfile(newProfile as ProfileMED)
-        }
-      } else if (profileError) {
-        console.error('Erro ao buscar perfil:', profileError)
-      } else if (profileData) {
-        setProfile(profileData as ProfileMED)
-      }
-
-      // Buscar ou criar limites de uso do mês atual
-      const mesAtual = new Date().toISOString().slice(0, 7) // "2026-01"
-
-      try {
-        const { data: limitesData, error: limitesError } = await supabase
+          .select('*')
+          .eq('id', userId)
+          .single(),
+        // 2. Limites
+        supabase
           .from('limites_uso_med')
           .select('*')
           .eq('user_id', userId)
           .eq('mes_referencia', mesAtual)
-          .single()
+          .single(),
+        // 3. Assinatura
+        supabase
+          .from('assinaturas_med')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('status', 'ativa')
+          .order('created_at', { ascending: false })
+          .limit(1)
+      ])
+
+      // Processar PROFILE
+      if (profileResult.status === 'fulfilled') {
+        const { data: profileData, error: profileError } = profileResult.value
+
+        if (profileError && profileError.code === 'PGRST116') {
+          // Profile nao existe - criar novo
+          const { data: newProfile, error: insertError } = await supabase
+            .from('profiles_med')
+            .insert({
+              id: userId,
+              nome: userName || userEmail?.split('@')[0] || 'Estudante',
+              email: userEmail,
+              plano: 'gratuito'
+            })
+            .select()
+            .single()
+
+          if (!insertError && newProfile) {
+            setProfile(newProfile as ProfileMED)
+          }
+        } else if (profileData) {
+          setProfile(profileData as ProfileMED)
+        }
+      }
+
+      // Processar LIMITES
+      if (limitesResult.status === 'fulfilled') {
+        const { data: limitesData, error: limitesError } = limitesResult.value
 
         if (limitesError && limitesError.code === 'PGRST116') {
-          // Limites não existem para este mês - criar
-          const { data: newLimites, error: insertLimitesError } = await supabase
+          // Limites nao existem - criar novo (em background, nao bloquear)
+          supabase
             .from('limites_uso_med')
             .insert({
               user_id: userId,
@@ -365,51 +379,31 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
             })
             .select()
             .single()
-
-          if (insertLimitesError) {
-            console.error('Erro ao criar limites:', insertLimitesError)
-          } else if (newLimites) {
-            setLimites(newLimites as LimitesUsoMED)
-          }
-        } else if (limitesError) {
-          console.error('Erro ao buscar limites:', limitesError)
+            .then(({ data }) => {
+              if (data) setLimites(data as LimitesUsoMED)
+            })
         } else if (limitesData) {
-          // Verificar se é um novo dia para resetar questoes_dia
+          // Verificar se eh um novo dia - atualizar em background
           const hoje = new Date().toISOString().split('T')[0]
           if (limitesData.data_questoes !== hoje) {
-            const { data: updatedLimites } = await supabase
+            setLimites({ ...limitesData, questoes_dia: 0, data_questoes: hoje } as LimitesUsoMED)
+            // Atualizar no banco em background
+            supabase
               .from('limites_uso_med')
               .update({ questoes_dia: 0, data_questoes: hoje })
               .eq('id', limitesData.id)
-              .select()
-              .single()
-
-            setLimites((updatedLimites || limitesData) as LimitesUsoMED)
           } else {
             setLimites(limitesData as LimitesUsoMED)
           }
         }
-      } catch (limitesErr) {
-        console.error('Erro ao processar limites:', limitesErr)
       }
 
-      // Buscar assinatura ativa
-      try {
-        const { data: assinaturasData, error: assinaturaError } = await supabase
-          .from('assinaturas_med')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('status', 'ativa')
-          .order('created_at', { ascending: false })
-          .limit(1)
-
-        if (assinaturaError) {
-          console.error('Erro ao buscar assinatura:', assinaturaError)
-        } else if (assinaturasData && assinaturasData.length > 0) {
+      // Processar ASSINATURA
+      if (assinaturaResult.status === 'fulfilled') {
+        const { data: assinaturasData } = assinaturaResult.value
+        if (assinaturasData && assinaturasData.length > 0) {
           setAssinatura(assinaturasData[0] as AssinaturaMED)
         }
-      } catch (assinaturaErr) {
-        console.error('Erro ao processar assinatura:', assinaturaErr)
       }
 
       lastFetchedUserIdRef.current = userId
