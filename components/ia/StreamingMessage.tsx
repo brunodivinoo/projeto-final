@@ -150,7 +150,7 @@ export const StreamingMessage = memo(function StreamingMessage({
                     const isInline = !className
                     if (isInline) {
                       return (
-                        <code className="bg-slate-100 px-1.5 py-0.5 rounded text-emerald-300 text-sm" {...props}>
+                        <code className="bg-emerald-100 px-1.5 py-0.5 rounded text-emerald-700 text-sm" {...props}>
                           {children}
                         </code>
                       )

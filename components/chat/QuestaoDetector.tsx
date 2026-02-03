@@ -20,6 +20,36 @@ export function QuestaoDetector({
   onProxima,
   questoesRespondidas = new Set()
 }: QuestaoDetectorProps) {
+  // Função para remover conteúdo de gabarito do texto
+  const removerGabarito = (texto: string): string => {
+    // Remove seções de gabarito comentado que aparecem como markdown
+    let limpo = texto
+
+    // Padrões de gabarito a remover
+    const padroesGabarito = [
+      /---\s*\n?\s*\*?\*?📚?\s*GABARITO COMENTADO[\s\S]*?(?=---|\n```questao|$)/gi,
+      /\*?\*?📚?\s*GABARITO COMENTADO\s*-?\s*Questão\s*\d+\*?\*?[\s\S]*?(?=\*?\*?📚?\s*GABARITO COMENTADO|\n```questao|$)/gi,
+      /✅\s*Resposta correta:[\s\S]*?(?=\n```questao|✅\s*Resposta correta|$)/gi,
+      /🔬\s*EXPLICAÇÃO DETALHADA:[\s\S]*?(?=\n```questao|🔬\s*EXPLICAÇÃO DETALHADA|$)/gi,
+      /❌\s*POR QUE AS OUTRAS ESTÃO ERRADAS:[\s\S]*?(?=\n```questao|❌\s*POR QUE|$)/gi,
+      /💡\s*DICA DE MEMORIZAÇÃO:[\s\S]*?(?=\n```questao|💡\s*DICA|$)/gi,
+      /📖\s*REFERÊNCIAS BIBLIOGRÁFICAS[\s\S]*?(?=\n```questao|📖\s*REFERÊNCIAS|$)/gi,
+      /🔗\s*TEMAS RELACIONADOS:[\s\S]*?(?=\n```questao|🔗\s*TEMAS|$)/gi,
+      /🖼️\s*IMAGENS DE REFERÊNCIA:[\s\S]*?(?=\n```questao|🖼️\s*IMAGENS|$)/gi,
+      /📌\s*Fonte:[\s\S]*?(?=\n\n|\n```questao|$)/gi,
+      /\*?\*?Alternativa\s+[A-E]\s*\([^)]+\)\*?\*?:[\s\S]*?(?=\*?\*?Alternativa|```questao|$)/gi,
+    ]
+
+    for (const padrao of padroesGabarito) {
+      limpo = limpo.replace(padrao, '')
+    }
+
+    // Limpar linhas vazias extras
+    limpo = limpo.replace(/\n{3,}/g, '\n\n').trim()
+
+    return limpo
+  }
+
   // Extrair questões do conteúdo
   const partes = useMemo(() => {
     const resultado: Array<{ tipo: 'texto' | 'questao'; conteudo: string; questao?: QuestaoData }> = []
@@ -31,9 +61,9 @@ export function QuestaoDetector({
     let match
 
     while ((match = questaoRegex.exec(conteudo)) !== null) {
-      // Adicionar texto antes da questão
+      // Adicionar texto antes da questão (removendo gabarito)
       if (match.index > lastIndex) {
-        const textoAntes = conteudo.slice(lastIndex, match.index).trim()
+        const textoAntes = removerGabarito(conteudo.slice(lastIndex, match.index).trim())
         if (textoAntes) {
           resultado.push({ tipo: 'texto', conteudo: textoAntes })
         }
@@ -63,9 +93,9 @@ export function QuestaoDetector({
       lastIndex = match.index + match[0].length
     }
 
-    // Adicionar texto restante
+    // Adicionar texto restante (removendo gabarito)
     if (lastIndex < conteudo.length) {
-      const textoRestante = conteudo.slice(lastIndex).trim()
+      const textoRestante = removerGabarito(conteudo.slice(lastIndex).trim())
       if (textoRestante) {
         resultado.push({ tipo: 'texto', conteudo: textoRestante })
       }
@@ -109,7 +139,7 @@ export function QuestaoDetector({
               onResponder={handleResponder(parte.questao)}
               onProxima={onProxima}
               showTimer={!jaRespondida}
-              autoShowGabarito={true}
+              autoShowGabarito={false}
             />
           )
         }
