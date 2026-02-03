@@ -2363,17 +2363,24 @@ function ArtifactRendererComponent({
     if (artifacts.length === 0) return
 
     artifacts.forEach((artifact) => {
-      // Criar uma chave única para evitar duplicatas
-      const artifactKey = `${messageId}-${artifact.startIndex}-${artifact.type}`
+      // Criar uma chave única para evitar duplicatas (inclui conversaId para evitar conflitos entre conversas)
+      const artifactKey = `${conversaId}-${messageId}-${artifact.startIndex}-${artifact.type}`
 
-      // Verificar se já foi adicionado nesta sessão ou está na store
+      // Verificar se já foi adicionado nesta sessão
       if (addedArtifactsRef.current.has(artifactKey)) return
 
-      // Verificar se já existe na store (para evitar duplicatas em re-renders)
-      const exists = storeArtifacts.some(
-        (a) => a.messageId === messageId && a.content === artifact.content
+      // Verificar se já existe na store (buscar estado mais recente para evitar race conditions)
+      const currentStoreArtifacts = useArtifactsStore.getState().artifacts
+      const exists = currentStoreArtifacts.some(
+        (a) => a.messageId === messageId &&
+               a.content === artifact.content &&
+               a.conversaId === conversaId
       )
-      if (exists) return
+      if (exists) {
+        // Marcar como já adicionado para evitar verificações futuras
+        addedArtifactsRef.current.add(artifactKey)
+        return
+      }
 
       // Adicionar à store - usar tipo do artefato se já definido
       // Mapear tipos internos para tipos da store
