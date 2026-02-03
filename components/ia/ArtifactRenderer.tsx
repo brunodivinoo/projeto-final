@@ -2473,8 +2473,11 @@ function ArtifactRendererComponent({
 
   // Função para abrir artefato na sidebar
   const openArtifactInSidebar = useCallback((artifactType: string, artifactTitle?: string) => {
+    // Buscar artefatos diretamente da store para evitar problemas de closure
+    const currentArtifacts = useArtifactsStore.getState().artifacts
+
     // Encontrar o artefato na store pelo tipo e messageId
-    const matchingArtifact = storeArtifacts.find(
+    const matchingArtifact = currentArtifacts.find(
       a => a.type === artifactType &&
            a.messageId === messageId &&
            (artifactTitle ? a.title === artifactTitle : true)
@@ -2491,7 +2494,7 @@ function ArtifactRendererComponent({
     } else {
       setSidebarOpen(true)
     }
-  }, [storeArtifacts, messageId, selectArtifact, setSidebarOpen, setMobileDrawerOpen])
+  }, [messageId, selectArtifact, setSidebarOpen, setMobileDrawerOpen])
 
   return (
     <div className="artifact-renderer lg:text-[0.9em] xl:text-[0.85em]">
@@ -2554,7 +2557,7 @@ function ArtifactRendererComponent({
                   </h2>
                 ),
                 h3: ({ children }) => (
-                  <h3 className="text-sm font-semibold text-emerald-400 mt-2 mb-1">
+                  <h3 className="text-sm font-semibold text-emerald-700 mt-2 mb-1">
                     {children}
                   </h3>
                 ),
@@ -2616,7 +2619,7 @@ function ArtifactRendererComponent({
 
                 // Strong and emphasis
                 strong: ({ children }) => (
-                  <strong className="font-semibold text-emerald-400">
+                  <strong className="font-semibold text-emerald-700">
                     {children}
                   </strong>
                 ),
@@ -2633,7 +2636,7 @@ function ArtifactRendererComponent({
 
                   if (isInline) {
                     return (
-                      <code className="bg-emerald-500/20 text-emerald-300 px-1 py-0.5 rounded text-xs font-mono">
+                      <code className="bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded text-xs font-mono">
                         {children}
                       </code>
                     )
@@ -2682,7 +2685,7 @@ function ArtifactRendererComponent({
                   </tr>
                 ),
                 th: ({ children }) => (
-                  <th className="px-2 md:px-3 py-2 text-left text-xs font-semibold text-emerald-400 border-b border-slate-200">
+                  <th className="px-2 md:px-3 py-2 text-left text-xs font-semibold text-emerald-700 border-b border-slate-200">
                     {children}
                   </th>
                 ),
@@ -2707,7 +2710,7 @@ function ArtifactRendererComponent({
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2"
+                    className="text-emerald-600 hover:text-emerald-700 underline underline-offset-2"
                   >
                     {children}
                   </a>
