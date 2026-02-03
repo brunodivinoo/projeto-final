@@ -1129,10 +1129,7 @@ function FullscreenModal({
   )
 }
 
-// Níveis de preview
-type PreviewLevel = 'collapsed' | 'preview' | 'expanded'
-
-// Card de artefato com 3 níveis de preview
+// Card de artefato - clique abre em tela cheia
 function ArtifactCard({
   artifact,
   isSelected,
@@ -1148,25 +1145,6 @@ function ArtifactCard({
   onFullscreen: () => void
   viewMode?: ViewMode
 }) {
-  const [previewLevel, setPreviewLevel] = useState<PreviewLevel>('collapsed')
-
-  // Quando selecionado, expandir automaticamente para mostrar conteúdo completo
-  useEffect(() => {
-    if (isSelected && previewLevel === 'collapsed') {
-      setPreviewLevel('expanded')
-    }
-  }, [isSelected, previewLevel])
-
-  // Alternar entre níveis de preview (simplificado: collapsed <-> expanded)
-  const cyclePreview = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (previewLevel === 'collapsed') {
-      setPreviewLevel('expanded')
-    } else {
-      setPreviewLevel('collapsed')
-    }
-  }
-
   // Encontrar categoria do artefato
   const category = Object.entries(ARTIFACT_CATEGORIES).find(([, cat]) =>
     cat.types.includes(artifact.type)
@@ -1186,7 +1164,7 @@ function ArtifactCard({
             ? 'border-purple-500/50 shadow-lg shadow-purple-500/10 ring-2 ring-purple-500/30'
             : 'border-slate-200 hover:border-slate-300'
         }`}
-        onClick={onSelect}
+        onClick={onFullscreen}
       >
         {/* Gradiente de fundo baseado na categoria */}
         <div className={`absolute inset-0 bg-gradient-to-br ${categoryColor} opacity-10`} />
@@ -1195,15 +1173,8 @@ function ArtifactCard({
         <div className="relative h-24 bg-slate-900/50 flex items-center justify-center overflow-hidden">
           <span className="text-3xl opacity-50">{ARTIFACT_ICONS[artifact.type]}</span>
 
-          {/* Ações no hover */}
+          {/* Ação de remover no hover */}
           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-            <button
-              onClick={(e) => { e.stopPropagation(); onFullscreen() }}
-              className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-              title="Tela cheia"
-            >
-              <Maximize2 className="w-4 h-4 text-slate-600" />
-            </button>
             <button
               onClick={(e) => { e.stopPropagation(); onRemove() }}
               className="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors"
@@ -1246,10 +1217,10 @@ function ArtifactCard({
       {/* Indicador de categoria (barra lateral) */}
       <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${categoryColor}`} />
 
-      {/* Header do card - clique seleciona o artefato */}
+      {/* Header do card - clique abre em tela cheia */}
       <div
         className="flex items-center gap-3 p-3 pl-4 cursor-pointer"
-        onClick={onSelect}
+        onClick={onFullscreen}
       >
         {/* Ícone do tipo */}
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all ${
@@ -1280,38 +1251,13 @@ function ArtifactCard({
                 <span className="hidden sm:inline">{CHAT_MODE_CONFIG[artifact.chatMode].label}</span>
               </span>
             )}
-            {/* Indicador de preview level */}
-            {previewLevel !== 'collapsed' && (
-              <span className="text-xs text-slate-400">
-                {previewLevel === 'preview' ? 'Preview' : 'Expandido'}
-              </span>
-            )}
           </div>
         </div>
 
-        {/* Ações */}
+        {/* Ação de remover */}
         <div className={`flex items-center gap-1 transition-opacity ${
           isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
         }`}>
-          {/* Toggle preview - apenas expandir/fechar */}
-          <button
-            onClick={cyclePreview}
-            className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-            title={previewLevel === 'collapsed' ? 'Expandir' : 'Fechar'}
-          >
-            {previewLevel === 'collapsed' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-          </button>
-
-          {/* Fullscreen */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onFullscreen() }}
-            className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-            title="Tela cheia"
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
-
-          {/* Remover */}
           <button
             onClick={(e) => { e.stopPropagation(); onRemove() }}
             className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
@@ -1321,31 +1267,6 @@ function ArtifactCard({
           </button>
         </div>
       </div>
-
-      {/* Preview do conteúdo - apenas um nível (expandido) */}
-      <AnimatePresence>
-        {previewLevel === 'expanded' && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="px-4 pb-3 pt-1 border-t border-purple-500/20">
-              <div className="bg-slate-900/50 rounded-lg overflow-hidden max-h-64 overflow-y-auto">
-                <ArtifactContent artifact={artifact} />
-              </div>
-              <button
-                onClick={cyclePreview}
-                className="w-full mt-2 py-1 text-xs text-slate-500 hover:text-slate-600 transition-colors"
-              >
-                Fechar ↑
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   )
 }
