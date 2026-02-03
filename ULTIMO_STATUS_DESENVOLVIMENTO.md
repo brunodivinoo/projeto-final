@@ -1,64 +1,100 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 03/02/2026 - Sessao Fallback Multi-Provider e Performance
+## Atualizado em: 03/02/2026 - Sessao LangChain + Multi-Agentes
 
 ---
 
 ## O QUE FOI FEITO NESTA SESSAO (03/02/2026)
 
-### 1. SISTEMA FALLBACK MULTI-PROVIDER (Problema 1 - Alta Demanda)
-**Problema identificado:**
-- Mensagem "Desculpe, estou com alta demanda no momento" quando API sobrecarregada
-- App precisa suportar 100+ usuarios simultaneos
+### 1. ARQUITETURA LANGCHAIN COMPLETA
 
-**Solucao implementada:**
-- Novo sistema de fallback automatico: Claude -> Gemini -> OpenAI
-- Circuit breaker para gerenciar falhas de providers
-- Rate limiting por provider
-- Quando Claude retorna erro 529/overload, alterna automaticamente para Gemini
-- Notificacao visual para usuario sobre troca de provider
+**Implementado sistema completo de orquestracao com LangChain:**
 
-### 2. OTIMIZACAO DE CARREGAMENTO (Problema 2 - App Lento)
-**Problema identificado:**
-- App demorava muito para abrir apos login
-- Usuarios precisavam recarregar pagina multiplas vezes
+#### Classificador de Intencao
+- Analisa mensagens do usuario e roteia para chain apropriada
+- Detecta: chat simples, questoes, flashcards, caso clinico, plano de estudos, etc.
+- Fallback inteligente baseado em keywords
 
-**Solucao implementada:**
-- Buscas de profile, limites e assinatura agora em PARALELO via `Promise.allSettled`
-- Operacoes de atualizacao movidas para background (nao bloqueiam UI)
-- Reducao significativa no tempo de carregamento inicial
+#### Chains Implementadas
+- `chat-chain.ts` - Conversas gerais com fallback multi-provider (Claude->Gemini->OpenAI)
+- `questoes-chain.ts` - Geracao de questoes estruturadas com validacao Zod
+- `flashcards-chain.ts` - Geracao de flashcards com export para Anki
+- `resumo-chain.ts` - Resumos estruturados com diagramas Mermaid
 
-### 3. REMOCAO HEADER DESKTOP (Problema 3 - Print 02)
-**Problema identificado:**
-- Header "PREPARAMED IA | Claude Opus | Ilimitado" redundante no desktop/tablet
+#### Memory System
+- `conversation-memory.ts` - Contexto de conversa com resumo automatico
+- Mantem ultimas 10 mensagens completas
+- Resume mensagens antigas automaticamente
+- Detecta e armazena entidades (paciente, medicamento, doenca, etc.)
 
-**Solucao implementada:**
-- Removido header duplicado
-- Opcoes avancadas (Busca Web, Extended Thinking) agora inline e compactas
-- Interface mais limpa e focada no chat
+#### Tools
+- `serper-tool.ts` - Busca web medica com SERPER.DEV
+- `database-tool.ts` - Busca de questoes e flashcards no Supabase
 
-### 4. FEEDBACK VISUAL DURANTE STREAMING (Problema 4 - Tela Branca)
-**Problema identificado:**
-- Tela ficava branca por muito tempo durante geracao de respostas
+### 2. SISTEMA MULTI-AGENTES (equivalente ao CrewAI)
 
-**Solucao implementada:**
-- Indicador visual quando provider alterna
-- Tratamento de evento `provider_switch` no hook
-- Mensagem informativa durante fallback
-- Streaming continua funcionando normalmente
+**Implementado em TypeScript para Next.js:**
+
+#### Agentes
+- `researcher.ts` - Pesquisa informacoes atualizadas na web
+- `planner.ts` - Cria planos de estudos personalizados
+- `creator.ts` - Gera questoes, flashcards, resumos
+- `reviewer.ts` - Valida qualidade e corrige erros medicos
+
+#### Crews (Times de Agentes)
+- `study-plan-crew.ts` - Coordena agentes para criar plano de estudos completo
+- `content-crew.ts` - Coordena criacao de material de estudo de alta qualidade
+
+### 3. NOVA API ROUTE
+
+- `/api/medicina/ia/langchain` - Endpoint que usa o orquestrador LangChain
+- Classificacao automatica de intencao
+- Roteamento para chain/crew apropriado
+- Fallback multi-provider integrado
+
+### 4. BUGS CORRIGIDOS
+
+- Removida barra de opcoes redundante no desktop (Busca Web / Raciocinio)
+- Mensagens de erro melhoradas (sem "alta demanda")
 
 ---
 
-## ARQUIVOS CRIADOS/MODIFICADOS
+## ARQUIVOS CRIADOS
 
-### Novo Arquivo:
-- `lib/ai/multi-provider.ts` - Sistema multi-provider com circuit breaker (500+ linhas)
+### lib/langchain/
+```
+lib/langchain/
+├── index.ts                 # Exportacoes e orquestrador principal
+├── agents/
+│   └── intent-classifier.ts # Classificador de intencao
+├── chains/
+│   ├── chat-chain.ts        # Chain para chat
+│   ├── questoes-chain.ts    # Chain para questoes
+│   ├── flashcards-chain.ts  # Chain para flashcards
+│   └── resumo-chain.ts      # Chain para resumos
+├── memory/
+│   └── conversation-memory.ts # Sistema de memoria
+├── tools/
+│   ├── serper-tool.ts       # Busca web
+│   └── database-tool.ts     # Busca no banco
+└── parsers/                 # (reservado para parsers)
+```
 
-### Arquivos Modificados:
-- `app/api/medicina/ia/chat/route.ts` - Fallback automatico para Gemini
-- `app/medicina/(dashboard)/dashboard/ia/page.tsx` - Removido header, opcoes inline
-- `contexts/MedAuthContext.tsx` - Buscas em paralelo
-- `hooks/useChatIA.ts` - Tratamento de provider_switch
-- `lib/ai/index.ts` - Exportacao do multi-provider
+### lib/agents/
+```
+lib/agents/
+├── index.ts                 # Exportacoes
+├── agents/
+│   ├── researcher.ts        # Agente pesquisador
+│   ├── planner.ts           # Agente planejador
+│   ├── creator.ts           # Agente criador
+│   └── reviewer.ts          # Agente revisor
+└── crews/
+    ├── study-plan-crew.ts   # Crew de plano de estudos
+    └── content-crew.ts      # Crew de conteudo
+```
+
+### Nova API Route
+- `app/api/medicina/ia/langchain/route.ts`
 
 ---
 
@@ -66,7 +102,7 @@
 
 | Hash | Descricao |
 |------|-----------|
-| `f23b56c` | feat: fallback multi-provider e otimizacoes de performance |
+| `30ac1b8` | feat: implementar arquitetura LangChain + sistema multi-agentes |
 
 ---
 
@@ -74,41 +110,101 @@
 
 | PR | Titulo | Status |
 |----|--------|--------|
-| [#49](https://github.com/brunodivinoo/projeto-final/pull/49) | feat: fallback multi-provider e otimizacoes de performance | **MERGED** |
+| [#51](https://github.com/brunodivinoo/projeto-final/pull/51) | feat: arquitetura LangChain + sistema multi-agentes | **MERGED** |
 
 ---
 
-## ARQUITETURA DO SISTEMA MULTI-PROVIDER
+## FLUXO DA ARQUITETURA
 
 ```
-FLUXO DE FALLBACK:
-1. Usuario envia mensagem
-2. Tenta com Claude (provider preferido para Residencia)
-3. Se Claude retorna 529/503/overload:
-   - Notifica frontend sobre troca
-   - Alterna automaticamente para Gemini
-   - Continua streaming normalmente
-4. Se Gemini tambem falhar:
-   - Tenta OpenAI (se configurado)
-   - Mostra mensagem de erro amigavel
-
-CIRCUIT BREAKER:
-- Threshold: 3 falhas consecutivas
-- Reset timeout: 60 segundos
-- Half-open: testa 1 request antes de reabrir
+USUARIO ENVIA MENSAGEM
+         │
+         ▼
+┌────────────────────────────┐
+│   1. Intent Classifier      │
+│   (LangChain)               │
+│   - Detecta intencao        │
+│   - Extrai topico           │
+│   - Define complexidade     │
+└────────────────────────────┘
+         │
+    ┌────┴────┐
+    │         │
+    ▼         ▼
+SIMPLES    COMPLEXO
+    │         │
+    ▼         ▼
+┌─────────┐ ┌─────────────────┐
+│  Chain  │ │  Crew           │
+│ (unica) │ │ (multi-agentes) │
+└─────────┘ └─────────────────┘
+    │         │
+    └────┬────┘
+         │
+         ▼
+┌────────────────────────────┐
+│   3. Multi-Provider         │
+│   Claude -> Gemini -> OpenAI│
+└────────────────────────────┘
+         │
+         ▼
+┌────────────────────────────┐
+│   4. Memory                 │
+│   - Salva contexto          │
+│   - Resume se necessario    │
+└────────────────────────────┘
+         │
+         ▼
+      RESPOSTA
 ```
 
 ---
 
-## SESSAO ANTERIOR (02/02/2026)
+## COMO USAR
 
-### Correcoes Realizadas:
-- Artefatos expandem automaticamente ao clicar
-- Fullscreen com visual escuro corrigido
-- Scroll no fullscreen adicionado
+### 1. Classificacao de Intencao
+```typescript
+import { classifyIntent } from '@/lib/langchain'
 
-### PRs Merged:
-- [#46](https://github.com/brunodivinoo/projeto-final/pull/46) - Artefatos e fullscreen
+const intention = await classifyIntent('Gere 5 questoes sobre cardiologia')
+// intention.primaryIntent = 'gerar_questoes'
+// intention.topic = 'cardiologia'
+```
+
+### 2. Gerar Questoes
+```typescript
+import { runQuestoesChain } from '@/lib/langchain'
+
+const result = await runQuestoesChain({
+  tema: 'Insuficiencia Cardiaca',
+  quantidade: 5,
+  dificuldade: 'media'
+})
+```
+
+### 3. Criar Plano de Estudos
+```typescript
+import { generateStudyPlan } from '@/lib/agents'
+
+const plano = await generateStudyPlan({
+  objetivo: 'Residencia em Cardiologia',
+  provaAlvo: 'USP',
+  horasDisponiveis: 6,
+  incluirMaterial: true
+})
+```
+
+### 4. Usar Orquestrador Completo
+```typescript
+import { orchestrate } from '@/lib/langchain'
+
+const result = await orchestrate({
+  message: 'Explique ciclo de Krebs e crie 3 questoes',
+  systemPrompt: 'Voce e um tutor de medicina...',
+  preferredProvider: 'claude'
+})
+// Automaticamente detecta 2 tarefas e executa
+```
 
 ---
 
@@ -117,31 +213,48 @@ CIRCUIT BREAKER:
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Fallback Multi-Provider | **IMPLEMENTADO** |
-| Carregamento Otimizado | **PARALELO** |
-| Header Desktop | **REMOVIDO** |
-| Feedback Visual | **MELHORADO** |
-| Circuit Breaker | **ATIVO** |
+| LangChain Orchestrator | **IMPLEMENTADO** |
+| Intent Classifier | **ATIVO** |
+| Chains (chat, questoes, flashcards, resumo) | **IMPLEMENTADAS** |
+| Memory System | **IMPLEMENTADO** |
+| Multi-Agentes | **IMPLEMENTADOS** |
+| Crews | **IMPLEMENTADAS** |
+| Fallback Multi-Provider | **ATIVO** |
 
 ---
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Testar em producao** - Verificar fallback automatico em alta demanda
-2. **Monitorar logs** - Verificar frequencia de fallbacks
-3. **Configurar OpenAI** - Adicionar como terceiro fallback (opcional)
-4. **Implementar Redis** - Para compartilhar estado de circuit breaker entre instancias (escala)
+1. **Testar em producao** - Verificar funcionamento do LangChain no ambiente real
+2. **Integrar com frontend** - Usar nova API /langchain no chat principal
+3. **Adicionar mais Tools** - Calculadora medica, busca de artigos PubMed
+4. **Melhorar Memory** - Persistir memoria no Supabase entre sessoes
+5. **Dashboard de agentes** - Visualizar execucao dos multi-agentes
 
 ---
 
-## SOBRE PLANOS E CUSTOS (Nao precisa pagar mais)
+## DEPENDENCIAS ADICIONADAS
 
-O sistema atual JA suporta 100+ usuarios porque:
-- **Fallback automatico**: Se Claude sobrecarrega, usa Gemini sem custo adicional
-- **Seus tokens ja cobrem**: Anthropic, Google e OpenAI ja estao configurados
-- **Circuit breaker**: Distribui carga entre providers automaticamente
+```
+langchain
+@langchain/core
+@langchain/anthropic
+@langchain/google-genai
+@langchain/openai
+```
 
-**NAO precisa pagar planos adicionais** - o sistema se adapta automaticamente.
+---
+
+## SESSAO ANTERIOR (03/02/2026 - parte 1)
+
+### O que foi feito:
+- Sistema fallback multi-provider (Claude -> Gemini -> OpenAI)
+- Otimizacao de carregamento (Promise.allSettled)
+- Remocao header desktop redundante
+- Feedback visual durante streaming
+
+### PRs Merged:
+- [#49](https://github.com/brunodivinoo/projeto-final/pull/49) - Fallback multi-provider
 
 ---
 
@@ -150,4 +263,4 @@ O sistema atual JA suporta 100+ usuarios porque:
 - Producao: https://projeto-final-zeta-navy.vercel.app
 - Chat IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
 - GitHub: https://github.com/brunodivinoo/projeto-final
-- PR #49: https://github.com/brunodivinoo/projeto-final/pull/49
+- PR #51: https://github.com/brunodivinoo/projeto-final/pull/51
