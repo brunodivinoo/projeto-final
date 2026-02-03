@@ -400,16 +400,20 @@ export function MobileArtifactsScreen({ isOpen, onClose, onViewArtifact }: Mobil
   const artifacts = useArtifactsStore(state => state.artifacts)
   const currentConversaId = useArtifactsStore(state => state.currentConversaId)
   const storeSelectedId = useArtifactsStore(state => state.selectedArtifactId)
+  const selectArtifact = useArtifactsStore(state => state.selectArtifact)
 
-  // Auto-selecionar artefato do store quando abrir
-  useMemo(() => {
+  // Auto-selecionar artefato do store APENAS quando abrir via clique em artefato específico
+  // (quando storeSelectedId muda enquanto isOpen é false, significa que usuário clicou em artefato no chat)
+  useEffect(() => {
     if (isOpen && storeSelectedId && !selectedArtifact) {
       const artifact = artifacts.find(a => a.id === storeSelectedId)
       if (artifact) {
         setSelectedArtifact(artifact)
+        // Limpar seleção da store após usar
+        selectArtifact(null)
       }
     }
-  }, [isOpen, storeSelectedId, artifacts, selectedArtifact])
+  }, [isOpen, storeSelectedId, artifacts, selectedArtifact, selectArtifact])
 
   // Filtrar artefatos
   const filteredArtifacts = useMemo(() => {
