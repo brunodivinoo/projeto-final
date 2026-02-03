@@ -10,6 +10,7 @@ export const maxDuration = 300 // 300 segundos (máximo do Vercel Pro para Serve
 import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 import {
   PlanoIA,
   LIMITES_IA,
@@ -185,6 +186,11 @@ const anthropic = new Anthropic({
 })
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+
+// OpenAI client para fallback
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+}) : null
 
 // ==========================================
 // POST - Enviar Mensagem com Streaming
@@ -1230,16 +1236,33 @@ async function streamClaude(params: StreamClaudeParams) {
         clearInterval(heartbeatInterval)
         console.error('Erro no stream Claude:', error)
         const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+        const errorString = String(error).toLowerCase()
 
         // Verificar tipo de erro para dar resposta adequada
-        const isOverloaded = errorMessage.includes('overloaded') || errorMessage.includes('529')
-        const isRateLimit = errorMessage.includes('rate_limit') || errorMessage.includes('429')
+        // Detectar mais padroes de erro de sobrecarga/rate limit
+        const isOverloaded = errorMessage.includes('overloaded') ||
+                            errorMessage.includes('529') ||
+                            errorString.includes('overloaded') ||
+                            errorString.includes('capacity') ||
+                            errorString.includes('service unavailable') ||
+                            errorString.includes('503')
+        const isRateLimit = errorMessage.includes('rate_limit') ||
+                          errorMessage.includes('429') ||
+                          errorString.includes('too many requests') ||
+                          errorString.includes('rate limit')
         const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT')
-        const shouldFallbackToGemini = (isOverloaded || isRateLimit) && fullResponse.length < 100
 
-        // ========== FALLBACK AUTOMATICO PARA GEMINI ==========
-        if (shouldFallbackToGemini) {
-          console.log('[Chat API] Fazendo fallback automatico para Gemini devido a:', errorMessage)
+        // SEMPRE tentar fallback se o erro for de sobrecarga ou rate limit
+        // Removido a condicao fullResponse.length < 100 para garantir que o fallback funcione
+        const shouldFallback = isOverloaded || isRateLimit
+
+        console.log(`[Chat API] Erro detectado - Overloaded: ${isOverloaded}, RateLimit: ${isRateLimit}, Timeout: ${isTimeout}, ShouldFallback: ${shouldFallback}`)
+        console.log(`[Chat API] Resposta parcial existente: ${fullResponse.length} caracteres`)
+
+        // ========== FALLBACK AUTOMATICO MULTI-PROVIDER ==========
+        // Ordem: Claude falhou -> Gemini -> OpenAI
+        if (shouldFallback) {
+          console.log('[Chat API] Iniciando fallback automatico devido a:', errorMessage.substring(0, 100))
 
           // Notificar frontend sobre a troca de provider
           controller.enqueue(
@@ -1251,7 +1274,11 @@ async function streamClaude(params: StreamClaudeParams) {
             })}\n\n`)
           )
 
+          // ========== TENTATIVA 1: GEMINI ==========
+          let fallbackSuccess = false
           try {
+            console.log('[Chat API] Tentando fallback para Gemini...')
+
             // Usar Gemini como fallback
             const geminiModel = genAI.getGenerativeModel({
               model: MODELOS.gemini.flash,
@@ -1317,14 +1344,102 @@ async function streamClaude(params: StreamClaudeParams) {
             )
 
             controller.close()
+            fallbackSuccess = true
             return
 
           } catch (geminiError) {
-            console.error('[Chat API] Fallback Gemini tambem falhou:', geminiError)
-            // Continuar para mensagem de erro padrao
+            console.error('[Chat API] Fallback Gemini falhou:', geminiError)
+          }
+
+          // ========== TENTATIVA 2: OPENAI ==========
+          if (!fallbackSuccess && openai) {
+            try {
+              console.log('[Chat API] Tentando fallback para OpenAI...')
+
+              // Notificar frontend
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({
+                  type: 'provider_switch',
+                  from: 'gemini',
+                  to: 'openai',
+                  message: 'Alternando para servidor terciario...'
+                })}\n\n`)
+              )
+
+              const lastMessage = currentMessages[currentMessages.length - 1]
+              const lastContent = typeof lastMessage.content === 'string'
+                ? lastMessage.content
+                : Array.isArray(lastMessage.content)
+                  ? lastMessage.content.map((c: { type: string; text?: string }) => c.type === 'text' ? c.text : '').join(' ')
+                  : String(lastMessage.content)
+
+              // Preparar mensagens para OpenAI
+              const openaiMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+                { role: 'system', content: systemPrompt }
+              ]
+
+              currentMessages.slice(0, -1).forEach(m => {
+                openaiMessages.push({
+                  role: m.role === 'assistant' ? 'assistant' : 'user',
+                  content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+                })
+              })
+
+              openaiMessages.push({ role: 'user', content: lastContent })
+
+              const openaiStream = await openai.chat.completions.create({
+                model: 'gpt-4o-mini', // Modelo rapido e economico
+                messages: openaiMessages,
+                stream: true,
+                max_tokens: 8192,
+                temperature: 0.7
+              })
+
+              let openaiResponse = ''
+              for await (const chunk of openaiStream) {
+                const text = chunk.choices[0]?.delta?.content || ''
+                if (text) {
+                  openaiResponse += text
+                  fullResponse += text
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ type: 'text', content: text })}\n\n`)
+                  )
+                }
+              }
+
+              // Estimar tokens OpenAI
+              const openaiInputTokens = Math.ceil(lastContent.length / 4)
+              const openaiOutputTokens = Math.ceil(openaiResponse.length / 4)
+              tokensInput = openaiInputTokens
+              tokensOutput = openaiOutputTokens
+
+              console.log('[Chat API] Fallback OpenAI sucesso, tamanho:', openaiResponse.length)
+
+              // Salvar resposta
+              await updateResponse(true)
+
+              // Incrementar uso
+              await incrementarUsoIA(user_id, 'chats', 1, openaiInputTokens, openaiOutputTokens, 0)
+
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({
+                  type: 'done',
+                  conversa_id,
+                  tokens: { input: openaiInputTokens, output: openaiOutputTokens },
+                  provider: 'openai',
+                  fallback: true
+                })}\n\n`)
+              )
+
+              controller.close()
+              return
+
+            } catch (openaiError) {
+              console.error('[Chat API] Fallback OpenAI tambem falhou:', openaiError)
+            }
           }
         }
-        // ========== FIM FALLBACK GEMINI ==========
+        // ========== FIM FALLBACK MULTI-PROVIDER ==========
 
         let fallbackMessage = ''
 
