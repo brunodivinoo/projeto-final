@@ -1,10 +1,18 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Lazy initialization para evitar erro durante build
+let _supabase: SupabaseClient | null = null
+
+function getSupabase(): SupabaseClient {
+  if (!_supabase) {
+    _supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  }
+  return _supabase
+}
 
 // Mapeamento de termos para identificar disciplinas que devem ser separadas
 const TERMOS_SEPARACAO = [
@@ -28,6 +36,7 @@ export async function GET(req: NextRequest) {
     const disciplinaOrigem = url.searchParams.get('disciplina') || 'Direito Penal'
 
     // Buscar questões da disciplina
+    const supabase = getSupabase()
     const { data: questoes, error } = await supabase
       .from('questoes')
       .select('id, disciplina, assunto, enunciado')
@@ -106,6 +115,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Parâmetros obrigatórios' }, { status: 400 })
     }
 
+    const supabase = getSupabase()
     const resultados = {
       disciplinaCriada: false,
       disciplinaId: null as string | null,
@@ -233,6 +243,8 @@ export async function PUT(req: NextRequest) {
     if (!nome) {
       return NextResponse.json({ error: 'Nome obrigatório' }, { status: 400 })
     }
+
+    const supabase = getSupabase()
 
     // Verificar se já existe
     const { data: existente } = await supabase

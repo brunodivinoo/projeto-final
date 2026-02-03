@@ -85,6 +85,15 @@ import {
 import { updateUserLearning } from '@/lib/suggestions'
 // ========== FIM SUGESTOES INTELIGENTES ==========
 
+// ========== INTEGRACAO MULTI-AGENTES ==========
+import {
+  detectMultiAgentTask,
+  executeMultiAgentTask,
+  type MultiAgentDetectionResult,
+  type MultiAgentExecutionResult
+} from '@/lib/ai/multiAgentIntegration'
+// ========== FIM INTEGRACAO MULTI-AGENTES ==========
+
 // Formatar resposta de tool para exibição
 function formatToolResponse(toolName: string, data: unknown): string {
   const resultado = data as Record<string, unknown>
@@ -369,7 +378,32 @@ export async function POST(request: NextRequest) {
       content: m.content
     })) || []
 
-    // Escolher modelo e fazer streaming
+    // ========== VERIFICAR SE DEVE USAR MULTI-AGENTES ==========
+    // Multi-agentes são usados para tarefas complexas como:
+    // - Planos de estudo (requer pesquisa + planejamento + criação)
+    // - Conteúdo complexo (múltiplos tipos ou grande quantidade)
+    // Só usar se não tem imagem/PDF (multi-agentes não suportam)
+
+    if (!imagem_base64 && !pdf_base64) {
+      const multiAgentDetection = detectMultiAgentTask(mensagem)
+
+      if (multiAgentDetection.shouldUseAgents) {
+        console.log(`[Chat API] 🤖 Multi-agentes ativados: ${multiAgentDetection.reason}`)
+        console.log(`[Chat API] Tipo: ${multiAgentDetection.taskType} | Confiança: ${multiAgentDetection.confidence}`)
+
+        // Executar com multi-agentes e retornar via streaming simulado
+        return await streamMultiAgentResponse({
+          detection: multiAgentDetection,
+          conversa_id: conversaAtual,
+          user_id,
+          mensagem,
+          plano
+        })
+      }
+    }
+    // ========== FIM VERIFICAÇÃO MULTI-AGENTES ==========
+
+    // Escolher modelo e fazer streaming normal
     // Premium = Sonnet | Residência = Opus (ambos Claude)
     return await streamClaude({
       historico,
@@ -391,6 +425,241 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+// ==========================================
+// STREAMING COM MULTI-AGENTES
+// ==========================================
+
+interface StreamMultiAgentParams {
+  detection: MultiAgentDetectionResult
+  conversa_id: string
+  user_id: string
+  mensagem: string
+  plano: string
+}
+
+async function streamMultiAgentResponse(params: StreamMultiAgentParams) {
+  const { detection, conversa_id, user_id, mensagem, plano } = params
+
+  const encoder = new TextEncoder()
+
+  const readableStream = new ReadableStream({
+    async start(controller) {
+      let fullResponse = ''
+
+      // Criar registro de resposta ANTES de iniciar
+      const { data: assistantMsg, error: createMsgError } = await supabase
+        .from('mensagens_ia_med')
+        .insert({
+          conversa_id,
+          role: 'assistant',
+          content: '[Processando com multi-agentes...]',
+          tokens: 0
+        })
+        .select('id')
+        .single()
+
+      if (createMsgError) {
+        console.error('[MultiAgent] Erro ao criar mensagem:', createMsgError)
+      }
+
+      const assistantMsgId = assistantMsg?.id
+      console.log('[MultiAgent] Mensagem criada com ID:', assistantMsgId)
+
+      // Enviar conversa_id imediatamente
+      controller.enqueue(
+        encoder.encode(`data: ${JSON.stringify({
+          type: 'conversa_created',
+          conversa_id,
+          titulo: mensagem.substring(0, 50) + (mensagem.length > 50 ? '...' : ''),
+          modelo: 'multi-agent'
+        })}\n\n`)
+      )
+
+      // Notificar que está usando multi-agentes
+      const agentNotice = `🤖 **Ativando Multi-Agentes**\n\n*${detection.reason}*\n\n---\n\n`
+      fullResponse += agentNotice
+      controller.enqueue(
+        encoder.encode(`data: ${JSON.stringify({ type: 'text', content: agentNotice })}\n\n`)
+      )
+
+      // Enviar notificação de progresso
+      controller.enqueue(
+        encoder.encode(`data: ${JSON.stringify({
+          type: 'agent_status',
+          status: 'starting',
+          taskType: detection.taskType,
+          message: 'Iniciando processamento com multi-agentes...'
+        })}\n\n`)
+      )
+
+      try {
+        // Executar multi-agentes
+        const result = await executeMultiAgentTask(
+          detection.taskType,
+          detection.extractedParams
+        )
+
+        if (result.success) {
+          // Enviar resposta em chunks para simular streaming
+          const responseChunks = chunkResponse(result.response, 100) // 100 chars por chunk
+
+          for (const chunk of responseChunks) {
+            fullResponse += chunk
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`)
+            )
+            // Pequeno delay para efeito de streaming
+            await new Promise(resolve => setTimeout(resolve, 10))
+          }
+
+          // Enviar log de execução se disponível
+          if (result.executionLog && result.executionLog.length > 0) {
+            const logSection = '\n\n---\n\n<details>\n<summary>📋 Log de Execução dos Agentes</summary>\n\n```\n' +
+              result.executionLog.join('\n') +
+              '\n```\n</details>'
+            fullResponse += logSection
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: 'text', content: logSection })}\n\n`)
+            )
+          }
+
+          // Enviar artefatos se disponíveis
+          if (result.artifacts) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                type: 'artifacts',
+                artifactType: result.artifacts.type,
+                data: result.artifacts.data
+              })}\n\n`)
+            )
+          }
+
+        } else {
+          // Erro - informar e fazer fallback
+          const errorMsg = `\n\n⚠️ Erro nos multi-agentes: ${result.error}\n\nTentando resposta alternativa...`
+          fullResponse += errorMsg
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: 'text', content: errorMsg })}\n\n`)
+          )
+        }
+
+        // Estimar tokens
+        const tokensInput = Math.ceil(mensagem.length / 4)
+        const tokensOutput = Math.ceil(fullResponse.length / 4)
+
+        // Atualizar resposta no banco
+        if (assistantMsgId) {
+          await supabase
+            .from('mensagens_ia_med')
+            .update({
+              content: fullResponse || '[Resposta vazia]',
+              tokens: tokensInput + tokensOutput
+            })
+            .eq('id', assistantMsgId)
+        }
+
+        // Atualizar conversa
+        await supabase
+          .from('conversas_ia_med')
+          .update({
+            tokens_usados: tokensInput + tokensOutput,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', conversa_id)
+
+        // Incrementar uso
+        await incrementarUsoIA(user_id, 'chats', 1, tokensInput, tokensOutput, 0)
+
+        // Atualizar aprendizado
+        try {
+          const topicoEstudado = extractTopic(mensagem)
+          if (topicoEstudado && topicoEstudado !== 'medicina') {
+            await updateUserLearning(user_id, topicoEstudado)
+          }
+        } catch (e) {
+          console.error('[MultiAgent] Erro ao atualizar aprendizado:', e)
+        }
+
+        // Enviar conclusão
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({
+            type: 'done',
+            conversa_id,
+            tokens: { input: tokensInput, output: tokensOutput },
+            provider: 'multi-agent',
+            taskType: detection.taskType
+          })}\n\n`)
+        )
+
+      } catch (error) {
+        console.error('[MultiAgent] Erro na execução:', error)
+
+        const errorMsg = `\n\n❌ Erro ao processar com multi-agentes: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+        fullResponse += errorMsg
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: 'text', content: errorMsg })}\n\n`)
+        )
+
+        // Atualizar resposta com erro
+        if (assistantMsgId) {
+          await supabase
+            .from('mensagens_ia_med')
+            .update({ content: fullResponse })
+            .eq('id', assistantMsgId)
+        }
+
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({
+            type: 'done',
+            conversa_id,
+            error: true
+          })}\n\n`)
+        )
+      }
+
+      controller.close()
+    }
+  })
+
+  return new Response(readableStream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive'
+    }
+  })
+}
+
+/**
+ * Divide resposta em chunks para simular streaming
+ */
+function chunkResponse(text: string, chunkSize: number): string[] {
+  const chunks: string[] = []
+  let i = 0
+
+  while (i < text.length) {
+    // Tentar não quebrar no meio de uma palavra
+    let end = Math.min(i + chunkSize, text.length)
+
+    if (end < text.length) {
+      // Procurar o próximo espaço ou quebra de linha
+      const nextSpace = text.indexOf(' ', end)
+      const nextNewline = text.indexOf('\n', end)
+
+      if (nextSpace !== -1 && nextSpace - end < 20) {
+        end = nextSpace + 1
+      } else if (nextNewline !== -1 && nextNewline - end < 20) {
+        end = nextNewline + 1
+      }
+    }
+
+    chunks.push(text.slice(i, end))
+    i = end
+  }
+
+  return chunks
 }
 
 // ==========================================
