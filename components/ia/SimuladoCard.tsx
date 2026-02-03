@@ -16,6 +16,8 @@ import {
   PieChart
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import { useMedAuth } from '@/contexts/MedAuthContext'
+import type { PlanoUsuario } from './QuestionArtifactCard'
 
 // Importar QuestionArtifactCard dinamicamente
 const QuestionArtifactCard = dynamic(() => import('./QuestionArtifactCard'), {
@@ -67,6 +69,10 @@ export default function SimuladoCard({ simulado, userId, conversaId, isFullscree
   const [paused, setPaused] = useState(false)
   const [showStats, setShowStats] = useState(false)
   const [respostas, setRespostas] = useState<Record<number, { resposta: string; acertou: boolean }>>({})
+
+  // Obter plano do usuário para controle de gabarito
+  const { plano } = useMedAuth()
+  const planoUsuario: PlanoUsuario = (plano === 'premium' || plano === 'residencia') ? plano : 'gratuito'
 
   // Estatísticas
   const stats = useMemo(() => {
@@ -404,6 +410,7 @@ export default function SimuladoCard({ simulado, userId, conversaId, isFullscree
           }}
           userId={userId}
           conversaId={conversaId}
+          planoUsuario={planoUsuario}
           onAnswerSubmit={(qId, answer, correct) => {
             handleAnswer(questaoAtual.numero, answer, correct)
           }}
