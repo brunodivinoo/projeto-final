@@ -21,7 +21,8 @@ export type NivelDificuldade = 'facil' | 'medio' | 'dificil' | 'muito_dificil'
 export type NivelCognitivo = 'lembrar' | 'entender' | 'aplicar' | 'analisar' | 'avaliar' | 'criar'
 
 export type EstiloProva =
-  | 'enade'
+  | 'enamed'  // PRIORIDADE - Exame Nacional de Medicina
+  | 'enade'   // Exame Nacional de Desempenho de Estudantes
   | 'residencia'
   | 'revalida'
   | 'concurso'
@@ -532,13 +533,32 @@ export const ESTILOS_PROVA: Record<EstiloProva, {
   nivelMedio: NivelDificuldade
   tempoMedioPorQuestao: number
 }> = {
+  enamed: {
+    caracteristicas: [
+      '🎯 FOCO PRINCIPAL: Exame Nacional de Medicina (ENAMED)',
+      'Casos clínicos detalhados e realistas baseados em situações reais de atendimento',
+      'Foco em raciocínio clínico e tomada de decisão médica',
+      'Questões que avaliam competências essenciais do médico generalista',
+      'Integração de conhecimentos básicos e clínicos',
+      'Ênfase em Atenção Primária à Saúde e SUS',
+      'Situações de urgência e emergência médica',
+      'Abordagem multiprofissional e humanizada',
+      'Conhecimento de protocolos nacionais e diretrizes do Ministério da Saúde',
+      'Contextualização com a realidade brasileira de saúde'
+    ],
+    tiposPreferidos: ['caso_clinico', 'multipla_escolha', 'verdadeiro_falso'],
+    nivelMedio: 'medio',
+    tempoMedioPorQuestao: 3
+  },
   enade: {
     caracteristicas: [
-      'Questões contextualizadas',
-      'Foco em competências e habilidades',
-      'Interdisciplinaridade',
-      'Textos-base extensos',
-      'Situações-problema'
+      'Questões contextualizadas no estilo ENADE/ENAMED',
+      'Foco em competências e habilidades clínicas',
+      'Interdisciplinaridade entre áreas médicas',
+      'Textos-base extensos com casos clínicos',
+      'Situações-problema do cotidiano médico',
+      'Avaliação de raciocínio clínico',
+      'Contextualização com políticas de saúde brasileiras'
     ],
     tiposPreferidos: ['multipla_escolha', 'caso_clinico', 'dissertativa'],
     nivelMedio: 'medio',
@@ -747,6 +767,7 @@ function selecionarSubtopicos(
 
 /**
  * Gera prompt completo para criar questões profissionais (Pipeline Meta AI)
+ * ⚠️ TODAS as questões são geradas no estilo ENAMED/ENADE por padrão
  */
 export function gerarPromptQuestoesProfissional(config: ConfiguracaoQuestoes): string {
   // 1. ANÁLISE DE CONTEÚDO - Selecionar subtópicos
@@ -769,8 +790,9 @@ export function gerarPromptQuestoesProfissional(config: ConfiguracaoQuestoes): s
     distribuicaoDificuldade = `- Todas as questões devem ser de nível ${config.dificuldade.toUpperCase()}`
   }
 
-  // 4. Obter info do estilo se especificado
-  const estiloInfo = config.estilo ? ESTILOS_PROVA[config.estilo] : null
+  // 4. SEMPRE usar estilo ENAMED como padrão (prioridade máxima)
+  const estiloFinal = config.estilo || 'enamed'
+  const estiloInfo = ESTILOS_PROVA[estiloFinal]
 
   // 5. MONTAR PROMPT COMPLETO
   return `
@@ -952,16 +974,33 @@ Use estas fontes confiáveis:
 - RANG, H.P.; DALE, M.M. Farmacologia. 9ª ed. Rio de Janeiro: Elsevier, 2020.
 - PORTO, C.C. Semiologia Médica. 8ª ed. Rio de Janeiro: Guanabara Koogan, 2019.
 
-${estiloInfo ? `
 ---
 
-## ESTILO DE PROVA: ${config.estilo?.toUpperCase()}
+## 🎯 ESTILO OBRIGATÓRIO: ENAMED/ENADE
 
-Características específicas deste estilo:
+⚠️ **TODAS AS QUESTÕES DEVEM SEGUIR O PADRÃO ENAMED (Exame Nacional de Medicina) E ENADE:**
+
+### Características OBRIGATÓRIAS das questões:
 ${estiloInfo.caracteristicas.map(c => `- ${c}`).join('\n')}
 
-Tipos preferidos: ${estiloInfo.tiposPreferidos.join(', ')}
-` : ''}
+### Padrão de questões ENAMED/ENADE:
+1. **Casos Clínicos Realistas**: Sempre que possível, contextualize com um caso clínico real
+2. **Raciocínio Clínico**: As questões devem exigir raciocínio, não apenas memorização
+3. **Contexto Brasileiro**: Use referências ao SUS, protocolos do MS, realidade brasileira
+4. **Competências do Médico Generalista**: Foque nas competências essenciais
+5. **Integração de Conhecimentos**: Combine conhecimentos de diferentes áreas
+6. **Situações de Atenção Primária**: Priorize contextos de UBS, ESF, ambulatórios
+7. **Urgências e Emergências**: Inclua situações de pronto-socorro quando pertinente
+8. **Abordagem Humanizada**: Considere aspectos éticos e de comunicação médico-paciente
+
+### Tipos preferidos para ENAMED/ENADE:
+${estiloInfo.tiposPreferidos.join(', ')}
+
+### IMPORTANTE - Banca ENAMED:
+- Use linguagem técnica mas acessível
+- Enunciados devem ter contexto clínico claro
+- Alternativas devem ser plausíveis e bem elaboradas
+- Evite questões puramente teóricas - sempre contextualize clinicamente
 
 ---
 
