@@ -1,97 +1,125 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 02/02/2026 - Sessao Artefatos Expandem e Fullscreen
+## Atualizado em: 03/02/2026 - Sessao Correcoes Fallback e UI
 
 ---
 
-## O QUE FOI FEITO NESTA SESSAO (02/02/2026)
+## O QUE FOI FEITO NESTA SESSAO (03/02/2026)
 
-### 1. ARTEFATOS EXPANDEM AUTOMATICAMENTE
+### 1. REMOCAO BARRA DE OPCOES DESKTOP (BUG 2)
 **Problema identificado:**
-- Ao clicar em artefato na sidebar (desktop), apenas selecionava mas nao mostrava conteudo
-- No mobile funcionava corretamente
+- Barra "Busca Web" e "Raciocinio Extendido" ainda aparecia no desktop
+- Usuario pediu para remover COMPLETAMENTE
 
 **Correcoes aplicadas:**
-- `ArtifactsSidebar.tsx`: Ao selecionar, muda previewLevel para `expanded` (nao mais `preview`)
-- Agora ao clicar em qualquer artefato, expande automaticamente mostrando conteudo completo
+- Removida barra de opcoes avancadas do desktop em `page.tsx`
+- Mantido apenas indicador de Ficha Clinica quando aplicavel
+- Opcoes continuam disponiveis no mobile (menu de anexos)
 
-### 2. FULLSCREEN COM VISUAL ESCURO CORRIGIDO
+### 2. FALLBACK MULTI-PROVIDER MELHORADO (BUG 1)
 **Problema identificado:**
-- Header e navegacao tinham cores claras em fundo escuro (baixo contraste)
+- Mensagem "alta demanda" continuava aparecendo
+- Fallback para Gemini nao estava sendo acionado
+- Condicao `fullResponse.length < 100` era muito restritiva
 
 **Correcoes aplicadas:**
-- Header com `bg-slate-900/80` e texto `text-emerald-400` (titulo verde)
-- Navegacao inferior com fundo escuro `bg-slate-900/80`
-- Botao Proximo com cor roxa destacada `bg-purple-600`
-- Botao Anterior com `bg-slate-700`
-- Textos ajustados para `text-slate-400`
+- Removida condicao restritiva de length
+- Adicionados mais padroes de deteccao de erro (503, capacity, service unavailable)
+- Adicionado OpenAI como terceiro fallback: Claude -> Gemini -> OpenAI
+- Adicionados logs detalhados para debug do sistema de fallback
 
-### 3. SCROLL NO FULLSCREEN
-**Problema identificado:**
-- Conteudo extenso era cortado no fullscreen
-
-**Correcoes aplicadas:**
-- Container de conteudo com `overflow-y-auto` para scroll quando necessario
-- Estrutura flex corrigida para ocupar espaco disponivel
+### 3. IMPORTACAO OPENAI
+**Mudancas:**
+- Importado cliente OpenAI na rota de chat
+- Configurado OpenAI apenas quando API key esta disponivel
+- Modelo usado: gpt-4o-mini (rapido e economico)
 
 ---
 
-## COMMITS REALIZADOS NESTA SESSAO
+## ARQUIVOS MODIFICADOS NESTA SESSAO
+
+| Arquivo | Mudancas |
+|---------|----------|
+| `app/api/medicina/ia/chat/route.ts` | Import OpenAI, cliente OpenAI, fallback multi-provider |
+| `app/medicina/(dashboard)/dashboard/ia/page.tsx` | Removida barra de opcoes do desktop |
+
+---
+
+## COMMITS DESTA SESSAO
 
 | Hash | Descricao |
 |------|-----------|
-| `b4d9299` | fix: artefatos expandem automaticamente e fullscreen com scroll |
+| `534819c` | fix: remover barra de opcoes desktop e melhorar fallback multi-provider |
 
 ---
 
-## PR MERGEADO
+## BRANCH PARA MERGE
 
-| PR | Titulo | Status |
-|----|--------|--------|
-| [#46](https://github.com/brunodivinoo/projeto-final/pull/46) | fix: artefatos expandem automaticamente e fullscreen com scroll | **MERGED** |
-
----
-
-## SESSAO ANTERIOR (02/02/2026)
-
-### Correcoes Realizadas:
-- Clique nos artefatos corrigido (abre sidebar primeiro)
-- Tela cheia adaptada sem scroll desnecessario
-- Textos brancos corrigidos
-
-### PRs Merged:
-- [#44](https://github.com/brunodivinoo/projeto-final/pull/44) - Correcao artefatos e textos
-- [#45](https://github.com/brunodivinoo/projeto-final/pull/45) - Atualizacao status
+**Branch:** `claude/continue-prepara-med-9U8OZ`
+**Base:** `main`
+**Status:** Pronto para PR
 
 ---
 
-## ARQUIVOS MODIFICADOS HOJE
+## BUGS CORRIGIDOS
 
-**Total:** 1 arquivo modificado
-
-### Arquivos:
-- `components/ia/ArtifactsSidebar.tsx` - previewLevel expanded, fullscreen escuro, scroll
-
----
-
-## STATUS ATUAL DO PROJETO
-
-| Item | Status |
-|------|--------|
-| Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Clique artefato sidebar | **EXPANDE AUTOMATICAMENTE** |
-| Fullscreen visual | **CORES ESCURAS CORRETAS** |
-| Fullscreen scroll | **FUNCIONANDO** |
-| Diagramas JSON Desktop | **CORRIGIDO** |
-| Diagramas JSON Mobile | **CORRIGIDO** |
-| Timeout API | **300s** |
+| Bug | Descricao | Status |
+|-----|-----------|--------|
+| BUG 1 | Fallback Gemini nao funcionava em alta demanda | **CORRIGIDO** |
+| BUG 2 | Barra de opcoes ainda aparecia no desktop | **CORRIGIDO** |
 
 ---
 
-## PROXIMOS PASSOS SUGERIDOS
+## ARQUITETURA FALLBACK ATUAL
 
-1. **Testar em producao** - Verificar se todas as correcoes funcionam na Vercel
-2. **Testar diferentes tipos de artefatos** - Flashcards, simulados, organogramas, fluxogramas
-3. **Verificar responsividade** - Mobile e desktop
+```
+USUARIO ENVIA MENSAGEM
+        |
+        v
++------------------+
+| 1. CLAUDE (OPUS) |  <-- Tenta primeiro
++------------------+
+        |
+     ERRO?
+        |
+        v
++------------------+
+| 2. GEMINI FLASH  |  <-- Primeiro fallback
++------------------+
+        |
+     ERRO?
+        |
+        v
++------------------+
+| 3. OPENAI GPT-4o |  <-- Segundo fallback
++------------------+
+        |
+     ERRO?
+        |
+        v
++------------------+
+| MENSAGEM DE ERRO |  <-- Todos falharam
++------------------+
+```
+
+---
+
+## PADROES DE ERRO DETECTADOS
+
+O sistema agora detecta:
+- `overloaded` (Claude 529)
+- `capacity` (capacidade esgotada)
+- `503` (service unavailable)
+- `429` (rate limit)
+- `too many requests`
+
+---
+
+## PROXIMOS PASSOS
+
+1. **Criar PR** - Merge da branch `claude/continue-prepara-med-9U8OZ` para `main`
+2. **Testar em producao** - Verificar se fallback funciona quando Claude esta sobrecarregado
+3. **Implementar LangChain** - Arquitetura planejada na sessao anterior
+4. **Monitorar logs** - Verificar quando fallback e acionado
 
 ---
 
@@ -100,3 +128,4 @@
 - Producao: https://projeto-final-zeta-navy.vercel.app
 - Chat IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
 - GitHub: https://github.com/brunodivinoo/projeto-final
+- Branch: https://github.com/brunodivinoo/projeto-final/tree/claude/continue-prepara-med-9U8OZ
