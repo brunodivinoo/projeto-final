@@ -1,10 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 // GET - Listar ciclos do usuário
 export async function GET(request: NextRequest) {
@@ -21,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     // Buscar ciclo específico
     if (id) {
-      const { data: ciclo, error } = await supabase
+      const { data: ciclo, error } = await getSupabaseAdmin()
         .from('ciclos_estudo')
         .select(`
           *,
@@ -46,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     // Buscar ciclo atual (em progresso)
     if (atual === 'true') {
-      const { data: ciclo } = await supabase
+      const { data: ciclo } = await getSupabaseAdmin()
         .from('ciclos_estudo')
         .select(`
           *,
@@ -68,7 +63,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Listar ciclos
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('ciclos_estudo')
       .select(`
         *,
@@ -111,13 +106,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Contar ciclos existentes para numeração
-    const { count } = await supabase
+    const { count } = await getSupabaseAdmin()
       .from('ciclos_estudo')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user_id)
 
     // Criar ciclo
-    const { data: ciclo, error: cicloError } = await supabase
+    const { data: ciclo, error: cicloError } = await getSupabaseAdmin()
       .from('ciclos_estudo')
       .insert({
         user_id,
@@ -156,7 +151,7 @@ export async function POST(request: NextRequest) {
         ordem: index
       }))
 
-      const { error: itensError } = await supabase
+      const { error: itensError } = await getSupabaseAdmin()
         .from('ciclo_itens')
         .insert(itensParaInserir)
 
@@ -166,7 +161,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar ciclo completo
-    const { data: cicloCompleto } = await supabase
+    const { data: cicloCompleto } = await getSupabaseAdmin()
       .from('ciclos_estudo')
       .select(`
         *,
@@ -199,7 +194,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verificar propriedade
-    const { data: cicloExistente } = await supabase
+    const { data: cicloExistente } = await getSupabaseAdmin()
       .from('ciclos_estudo')
       .select('id')
       .eq('id', id)
@@ -217,7 +212,7 @@ export async function PUT(request: NextRequest) {
     if (status !== undefined) updateData.status = status
     if (horas_planejadas !== undefined) updateData.horas_planejadas = horas_planejadas
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await getSupabaseAdmin()
       .from('ciclos_estudo')
       .update(updateData)
       .eq('id', id)
@@ -229,7 +224,7 @@ export async function PUT(request: NextRequest) {
 
     // Atualizar itens se fornecidos
     if (itens !== undefined) {
-      await supabase
+      await getSupabaseAdmin()
         .from('ciclo_itens')
         .delete()
         .eq('ciclo_id', id)
@@ -250,12 +245,12 @@ export async function PUT(request: NextRequest) {
           ordem: index
         }))
 
-        await supabase.from('ciclo_itens').insert(itensParaInserir)
+        await getSupabaseAdmin().from('ciclo_itens').insert(itensParaInserir)
       }
     }
 
     // Buscar ciclo atualizado
-    const { data: cicloAtualizado } = await supabase
+    const { data: cicloAtualizado } = await getSupabaseAdmin()
       .from('ciclos_estudo')
       .select(`
         *,
@@ -288,7 +283,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID e user_id são obrigatórios' }, { status: 400 })
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('ciclos_estudo')
       .delete()
       .eq('id', id)
