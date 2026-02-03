@@ -137,39 +137,40 @@ function TableRow({
       onClick={hasDetails ? onToggle : undefined}
     >
       {/* Linha principal */}
-      <div className={`p-4 ${colors.bg}`}>
-        <div className="flex items-center gap-3 md:gap-4">
+      <div className={`p-3 md:p-4 ${colors.bg}`}>
+        {/* Layout Desktop */}
+        <div className="hidden md:flex items-center gap-4">
           {/* Estádio */}
           <div className={`
-            w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center font-bold text-lg md:text-xl
+            w-14 h-14 rounded-xl flex items-center justify-center font-bold text-xl flex-shrink-0
             border ${getStageColor(row.stage)}
           `}>
             {row.stage}
           </div>
 
-          {/* TNM */}
-          <div className="flex-1 grid grid-cols-3 gap-2 md:gap-4">
-            <div className="text-center">
-              <span className="text-[10px] md:text-xs text-slate-400 uppercase font-medium">T</span>
-              <p className="text-slate-700 font-semibold text-sm md:text-base">{row.t}</p>
+          {/* TNM em colunas separadas */}
+          <div className="flex items-center gap-6 flex-1">
+            <div className="text-center min-w-[50px]">
+              <span className="text-xs text-slate-400 uppercase font-medium block">T</span>
+              <p className="text-slate-700 font-semibold text-base">{row.t}</p>
             </div>
-            <div className="text-center">
-              <span className="text-[10px] md:text-xs text-slate-400 uppercase font-medium">N</span>
-              <p className="text-slate-700 font-semibold text-sm md:text-base">{row.n}</p>
+            <div className="text-center min-w-[50px]">
+              <span className="text-xs text-slate-400 uppercase font-medium block">N</span>
+              <p className="text-slate-700 font-semibold text-base">{row.n}</p>
             </div>
-            <div className="text-center">
-              <span className="text-[10px] md:text-xs text-slate-400 uppercase font-medium">M</span>
-              <p className="text-slate-700 font-semibold text-sm md:text-base">{row.m}</p>
+            <div className="text-center min-w-[50px]">
+              <span className="text-xs text-slate-400 uppercase font-medium block">M</span>
+              <p className="text-slate-700 font-semibold text-base">{row.m}</p>
             </div>
           </div>
 
           {/* Sobrevida */}
-          <div className="w-28 md:w-36">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] md:text-xs text-slate-400">5 anos</span>
-              <span className={`text-xs md:text-sm font-bold ${colors.text}`}>{row.survival5y}</span>
+          <div className="w-40 flex-shrink-0">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs text-slate-400">Sobrevida 5 anos</span>
+              <span className={`text-sm font-bold ${colors.text}`}>{row.survival5y}</span>
             </div>
-            <div className="h-1.5 md:h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${row.survivalPercent}%` }}
@@ -180,7 +181,7 @@ function TableRow({
           </div>
 
           {/* Ícone de prognóstico */}
-          <div className={`hidden md:flex w-8 h-8 rounded-full items-center justify-center ${colors.bg} border ${colors.border}`}>
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${colors.bg} border ${colors.border}`}>
             {colors.icon === 'check' && <CheckCircle2 className={`w-4 h-4 ${colors.text}`} />}
             {colors.icon === 'info' && <Info className={`w-4 h-4 ${colors.text}`} />}
             {colors.icon === 'alert' && <AlertCircle className={`w-4 h-4 ${colors.text}`} />}
@@ -188,14 +189,65 @@ function TableRow({
 
           {/* Botão expandir */}
           {hasDetails && (
-            <button className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
+            <button className="p-1 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0">
               {isExpanded ? (
-                <ChevronUp className="w-4 h-4 md:w-5 md:h-5 text-slate-500" />
+                <ChevronUp className="w-5 h-5 text-slate-500" />
               ) : (
-                <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-slate-500" />
+                <ChevronDown className="w-5 h-5 text-slate-500" />
               )}
             </button>
           )}
+        </div>
+
+        {/* Layout Mobile - empilhado */}
+        <div className="md:hidden">
+          {/* Primeira linha: Estádio + TNM compacto + seta */}
+          <div className="flex items-center gap-3">
+            {/* Estádio */}
+            <div className={`
+              w-11 h-11 rounded-lg flex items-center justify-center font-bold text-base flex-shrink-0
+              border ${getStageColor(row.stage)}
+            `}>
+              {row.stage}
+            </div>
+
+            {/* TNM compacto */}
+            <div className="flex-1">
+              <p className="text-slate-700 font-semibold text-sm">
+                T{row.t} N{row.n} M{row.m}
+              </p>
+              <p className="text-slate-400 text-xs mt-0.5">
+                Tumor • Linfonodo • Metástase
+              </p>
+            </div>
+
+            {/* Seta */}
+            {hasDetails && (
+              <button className="p-1 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0">
+                {isExpanded ? (
+                  <ChevronUp className="w-4 h-4 text-slate-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-slate-500" />
+                )}
+              </button>
+            )}
+          </div>
+
+          {/* Segunda linha: Sobrevida */}
+          <div className="mt-3 pt-3 border-t border-slate-200/50">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs text-slate-400">Sobrevida em 5 anos</span>
+              <span className={`text-sm font-bold ${colors.text}`}>{row.survival5y}</span>
+            </div>
+            <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${row.survivalPercent}%` }}
+                transition={{ duration: 0.8, delay: index * 0.1 }}
+                className={`h-full ${colors.bar} rounded-full`}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
