@@ -1,5 +1,5 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 03/02/2026 - Sessao Fallback Multi-Provider e Performance
+## Atualizado em: 03/02/2026 - Sessao Fallback Multi-Provider e Arquitetura LangChain
 
 ---
 
@@ -18,130 +18,171 @@
 - Notificacao visual para usuario sobre troca de provider
 
 ### 2. OTIMIZACAO DE CARREGAMENTO (Problema 2 - App Lento)
-**Problema identificado:**
-- App demorava muito para abrir apos login
-- Usuarios precisavam recarregar pagina multiplas vezes
-
 **Solucao implementada:**
 - Buscas de profile, limites e assinatura agora em PARALELO via `Promise.allSettled`
 - Operacoes de atualizacao movidas para background (nao bloqueiam UI)
-- Reducao significativa no tempo de carregamento inicial
 
-### 3. REMOCAO HEADER DESKTOP (Problema 3 - Print 02)
-**Problema identificado:**
-- Header "PREPARAMED IA | Claude Opus | Ilimitado" redundante no desktop/tablet
-
+### 3. REMOCAO HEADER DESKTOP (Problema 3)
 **Solucao implementada:**
-- Removido header duplicado
-- Opcoes avancadas (Busca Web, Extended Thinking) agora inline e compactas
-- Interface mais limpa e focada no chat
-
-### 4. FEEDBACK VISUAL DURANTE STREAMING (Problema 4 - Tela Branca)
-**Problema identificado:**
-- Tela ficava branca por muito tempo durante geracao de respostas
-
-**Solucao implementada:**
-- Indicador visual quando provider alterna
-- Tratamento de evento `provider_switch` no hook
-- Mensagem informativa durante fallback
-- Streaming continua funcionando normalmente
+- Removido header "PREPARAMED IA | Claude Opus | Ilimitado"
+- Opcoes avancadas (Busca Web, Extended Thinking) movidas para inline
 
 ---
 
-## ARQUIVOS CRIADOS/MODIFICADOS
+## BUGS PENDENTES PARA PROXIMA SESSAO
+
+### BUG 1: Mensagem "Alta Demanda" ainda aparece
+- O fallback para Gemini foi implementado mas pode nao estar funcionando
+- Possivel causa: Deploy na Vercel ainda nao completou OU Gemini tambem esta falhando
+- **ACAO**: Verificar logs da Vercel e testar fallback
+
+### BUG 2: Barra de Opcoes ainda aparece (Print 03)
+- A barra "Busca Web" e "Raciocinio Extendido" ainda aparece no desktop
+- Usuario quer REMOVER COMPLETAMENTE essa barra
+- **ACAO**: Remover o bloco de opcoes avancadas da pagina de IA
+
+---
+
+## ARQUITETURA LANGCHAIN/CREWAI PLANEJADA
+
+### Fluxo Proposto:
+```
+USUARIO ENVIA MENSAGEM
+        │
+        ▼
+┌─────────────────────────────────────┐
+│ 1. LANGCHAIN - Classificador        │
+│    - chat_simples                   │
+│    - gerar_questoes                 │
+│    - gerar_flashcards               │
+│    - caso_clinico                   │
+│    - buscar_informacao (SERPER)     │
+│    - tarefa_complexa (CREWAI)       │
+└─────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────┐
+│ 2. SELECAO DE MODELO (Fallback)     │
+│    Claude → Gemini → OpenAI → HF    │
+└─────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────┐
+│ 3. LANGCHAIN MEMORY                 │
+│    - ConversationSummaryBuffer      │
+│    - EntityMemory                   │
+└─────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────┐
+│ 4. OUTPUT PARSER + VALIDACAO        │
+└─────────────────────────────────────┘
+        │
+        ▼
+    RESPOSTA
+```
+
+### Onde Cada Ferramenta se Encaixa:
+| Ferramenta | Papel |
+|------------|-------|
+| **LangChain** | Orquestrador principal - gerencia todo o fluxo |
+| **Claude/Gemini/OpenAI** | LLMs principais para gerar respostas |
+| **Hugging Face** | Embeddings, modelos medicos, fallback gratuito |
+| **SERPER.DEV** | Busca na web (medicamentos, guidelines) |
+| **CrewAI** | Multi-agentes para tarefas complexas |
+
+### CrewAI - Quando Usar:
+```
+CENARIO: "Monte um plano de estudos completo para residencia em cardiologia"
+
+AGENTE 1: Pesquisador → Busca provas, analisa edital
+AGENTE 2: Planejador → Monta cronograma, define prioridades
+AGENTE 3: Criador → Gera questoes, flashcards, resumos
+AGENTE 4: Revisor → Valida qualidade, monta resposta final
+```
+
+### Estrutura de Arquivos Proposta:
+```
+lib/
+├── langchain/
+│   ├── chains/
+│   │   ├── chat-chain.ts
+│   │   ├── questoes-chain.ts
+│   │   └── flashcards-chain.ts
+│   ├── agents/
+│   │   ├── intent-classifier.ts
+│   │   └── medical-agent.ts
+│   ├── memory/
+│   │   └── conversation-memory.ts
+│   ├── tools/
+│   │   ├── serper-tool.ts
+│   │   └── database-tool.ts
+│   └── parsers/
+│       └── questao-parser.ts
+│
+├── crewai/
+│   ├── crews/
+│   │   └── study-plan-crew.ts
+│   └── agents/
+│       ├── researcher.ts
+│       ├── planner.ts
+│       ├── creator.ts
+│       └── reviewer.ts
+```
+
+---
+
+## ARQUIVOS CRIADOS/MODIFICADOS NESTA SESSAO
 
 ### Novo Arquivo:
-- `lib/ai/multi-provider.ts` - Sistema multi-provider com circuit breaker (500+ linhas)
+- `lib/ai/multi-provider.ts` - Sistema multi-provider com circuit breaker
 
 ### Arquivos Modificados:
 - `app/api/medicina/ia/chat/route.ts` - Fallback automatico para Gemini
-- `app/medicina/(dashboard)/dashboard/ia/page.tsx` - Removido header, opcoes inline
+- `app/medicina/(dashboard)/dashboard/ia/page.tsx` - Removido header
 - `contexts/MedAuthContext.tsx` - Buscas em paralelo
 - `hooks/useChatIA.ts` - Tratamento de provider_switch
 - `lib/ai/index.ts` - Exportacao do multi-provider
 
 ---
 
-## COMMITS REALIZADOS NESTA SESSAO
-
-| Hash | Descricao |
-|------|-----------|
-| `f23b56c` | feat: fallback multi-provider e otimizacoes de performance |
-
----
-
-## PR MERGEADO
+## COMMITS E PRS DESTA SESSAO
 
 | PR | Titulo | Status |
 |----|--------|--------|
 | [#49](https://github.com/brunodivinoo/projeto-final/pull/49) | feat: fallback multi-provider e otimizacoes de performance | **MERGED** |
+| [#50](https://github.com/brunodivinoo/projeto-final/pull/50) | docs: atualizar status | **MERGED** |
 
 ---
 
-## ARQUITETURA DO SISTEMA MULTI-PROVIDER
+## PROXIMOS PASSOS (PROXIMA SESSAO)
 
-```
-FLUXO DE FALLBACK:
-1. Usuario envia mensagem
-2. Tenta com Claude (provider preferido para Residencia)
-3. Se Claude retorna 529/503/overload:
-   - Notifica frontend sobre troca
-   - Alterna automaticamente para Gemini
-   - Continua streaming normalmente
-4. Se Gemini tambem falhar:
-   - Tenta OpenAI (se configurado)
-   - Mostra mensagem de erro amigavel
+### Prioridade ALTA (Bugs):
+1. [ ] Verificar por que fallback Gemini nao esta funcionando
+2. [ ] Remover COMPLETAMENTE a barra de opcoes do desktop
+3. [ ] Testar em producao apos deploy completo
 
-CIRCUIT BREAKER:
-- Threshold: 3 falhas consecutivas
-- Reset timeout: 60 segundos
-- Half-open: testa 1 request antes de reabrir
-```
+### Prioridade MEDIA (LangChain):
+4. [ ] Instalar dependencias: `langchain @langchain/anthropic @langchain/google-genai`
+5. [ ] Criar estrutura de pastas `lib/langchain/`
+6. [ ] Implementar classificador de intencao
+7. [ ] Implementar memory para conversas
+
+### Prioridade BAIXA (CrewAI):
+8. [ ] Instalar CrewAI
+9. [ ] Criar agentes especializados
+10. [ ] Implementar crew para plano de estudos
 
 ---
 
-## SESSAO ANTERIOR (02/02/2026)
+## CREDENCIAIS DISPONIVEIS
 
-### Correcoes Realizadas:
-- Artefatos expandem automaticamente ao clicar
-- Fullscreen com visual escuro corrigido
-- Scroll no fullscreen adicionado
-
-### PRs Merged:
-- [#46](https://github.com/brunodivinoo/projeto-final/pull/46) - Artefatos e fullscreen
-
----
-
-## STATUS ATUAL DO PROJETO
-
-| Item | Status |
-|------|--------|
-| Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Fallback Multi-Provider | **IMPLEMENTADO** |
-| Carregamento Otimizado | **PARALELO** |
-| Header Desktop | **REMOVIDO** |
-| Feedback Visual | **MELHORADO** |
-| Circuit Breaker | **ATIVO** |
-
----
-
-## PROXIMOS PASSOS SUGERIDOS
-
-1. **Testar em producao** - Verificar fallback automatico em alta demanda
-2. **Monitorar logs** - Verificar frequencia de fallbacks
-3. **Configurar OpenAI** - Adicionar como terceiro fallback (opcional)
-4. **Implementar Redis** - Para compartilhar estado de circuit breaker entre instancias (escala)
-
----
-
-## SOBRE PLANOS E CUSTOS (Nao precisa pagar mais)
-
-O sistema atual JA suporta 100+ usuarios porque:
-- **Fallback automatico**: Se Claude sobrecarrega, usa Gemini sem custo adicional
-- **Seus tokens ja cobrem**: Anthropic, Google e OpenAI ja estao configurados
-- **Circuit breaker**: Distribui carga entre providers automaticamente
-
-**NAO precisa pagar planos adicionais** - o sistema se adapta automaticamente.
+- **Anthropic (Claude)**: Configurado ✓
+- **Google (Gemini)**: Configurado ✓
+- **OpenAI**: Configurado ✓
+- **Hugging Face**: Configurado ✓
+- **SERPER.DEV**: Configurado ✓
+- **LangChain**: Precisa instalar pacotes
 
 ---
 
@@ -150,4 +191,4 @@ O sistema atual JA suporta 100+ usuarios porque:
 - Producao: https://projeto-final-zeta-navy.vercel.app
 - Chat IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
 - GitHub: https://github.com/brunodivinoo/projeto-final
-- PR #49: https://github.com/brunodivinoo/projeto-final/pull/49
+- Vercel Dashboard: https://vercel.com/brunos-projects-5f2d50e2/projeto-final
