@@ -2957,20 +2957,42 @@ function ArtifactRendererComponent({
           )
         }
 
-        // Renderizar tabelas de estadiamento - responsivas
+        // Staging - Card de Preview Compacto (abre na sidebar)
         if (part.type === 'staging') {
           try {
             const stagingData = JSON.parse(part.content)
+            const stageCount = stagingData.rows?.length || 0
+            const stagingTitle = part.title || stagingData.title || 'Estadiamento TNM'
+            const cancerType = stagingData.cancerType || ''
+
             return (
-              <div key={index} className="my-3 max-h-[400px] md:max-h-[500px] overflow-auto">
-                <StagingTable
-                  title={part.title || stagingData.title || 'Estadiamento'}
-                  rows={stagingData.rows || []}
-                  highlightStage={stagingData.highlightStage}
-                  cancerType={stagingData.cancerType}
-                  source={stagingData.source}
-                />
-              </div>
+              <button
+                key={index}
+                onClick={() => openArtifactInSidebar('staging', stagingTitle)}
+                className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border border-blue-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
+              >
+                {/* Ícone */}
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-slate-800 truncate text-sm">
+                    {stagingTitle}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {stageCount} {stageCount === 1 ? 'estádio' : 'estádios'}{cancerType ? ` • ${cancerType}` : ''} • Toque para ver
+                  </p>
+                </div>
+                {/* Seta */}
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center transition-colors">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
             )
           } catch {
             // Se não for JSON válido, mostrar como texto
