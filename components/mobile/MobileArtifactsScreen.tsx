@@ -20,6 +20,8 @@ import {
   Maximize2
 } from 'lucide-react'
 import { useArtifactsStore, ARTIFACT_ICONS, ARTIFACT_LABELS, type Artifact, type ArtifactType } from '@/stores/artifactsStore'
+import { useMedAuth } from '@/contexts/MedAuthContext'
+import type { PlanoUsuario } from '../ia/QuestionArtifactCard'
 
 // Importar componentes de renderização dinamicamente
 const FlashcardDeck = dynamic(() => import('../ia/FlashcardDeck'), {
@@ -118,6 +120,10 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
 // ==========================================
 
 function ArtifactContent({ artifact }: { artifact: Artifact }) {
+  // Obter plano do usuário para controle de gabarito
+  const { plano } = useMedAuth()
+  const planoUsuario: PlanoUsuario = (plano === 'premium' || plano === 'residencia') ? plano : 'gratuito'
+
   switch (artifact.type) {
     case 'flashcard':
     case 'flashcards':
@@ -173,7 +179,7 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
           return (
             <div className="p-3 overflow-x-hidden">
               <div className="max-w-full overflow-hidden rounded-xl shadow-lg">
-                <QuestionArtifactCard question={questionData} />
+                <QuestionArtifactCard question={questionData} planoUsuario={planoUsuario} />
               </div>
             </div>
           )

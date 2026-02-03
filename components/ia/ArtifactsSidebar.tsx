@@ -27,7 +27,9 @@ import {
   Clock
 } from 'lucide-react'
 import { useArtifactsStore, ARTIFACT_ICONS, ARTIFACT_LABELS, CHAT_MODE_CONFIG, type Artifact, type ArtifactType, type ChatModeType } from '@/stores/artifactsStore'
+import { useMedAuth } from '@/contexts/MedAuthContext'
 import dynamic from 'next/dynamic'
+import type { PlanoUsuario } from './QuestionArtifactCard'
 
 // Importar QuestionArtifactCard dinamicamente para renderizar questões
 const QuestionArtifactCard = dynamic(() => import('./QuestionArtifactCard'), {
@@ -458,6 +460,10 @@ interface ArtifactsSidebarProps {
 // Componente para renderizar conteúdo do artefato
 function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifact; isFullscreen?: boolean }) {
   const [copied, setCopied] = useState(false)
+  const { plano } = useMedAuth()
+
+  // Converter plano para PlanoUsuario (garantir tipo correto)
+  const planoUsuario: PlanoUsuario = (plano === 'premium' || plano === 'residencia') ? plano : 'gratuito'
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(artifact.content)
@@ -879,6 +885,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
           <div className={containerClass}>
             <QuestionArtifactCard
               question={questionData}
+              planoUsuario={planoUsuario}
             />
           </div>
         )
@@ -890,6 +897,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
           <div className={containerClass}>
             <QuestionArtifactCard
               question={parsedQuestion}
+              planoUsuario={planoUsuario}
             />
           </div>
         )
@@ -1366,6 +1374,10 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
     setChatModeFilter,
     updateQuestionAnswer
   } = useArtifactsStore()
+
+  // Obter plano do usuário para controle de gabarito
+  const { plano } = useMedAuth()
+  const planoUsuario: PlanoUsuario = (plano === 'premium' || plano === 'residencia') ? plano : 'gratuito'
 
   // Filtrar artefatos pela conversa atual e modo de chat
   const artifacts = useMemo(() => {
@@ -2285,6 +2297,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                                   userId={userId}
                                   conversaId={currentConversaId || undefined}
                                   respostaAnterior={respostaAnterior}
+                                  planoUsuario={planoUsuario}
                                   onAnswerSubmit={async (qId, answer, correct) => {
                                     // Sincronizar com a store
                                     updateQuestionAnswer(currentArtifact.id, answer, correct)
