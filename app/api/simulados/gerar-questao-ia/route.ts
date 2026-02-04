@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
@@ -24,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar próximo item pendente da fila
-    const { data: proximoItem, error: itemError } = await supabase
+    const { data: proximoItem, error: itemError } = await getSupabaseAdmin()
       .from('simulado_ia_fila')
       .select('*')
       .eq('simulado_id', simulado_id)
@@ -36,18 +33,18 @@ export async function POST(request: NextRequest) {
 
     if (itemError || !proximoItem) {
       // Verificar se já concluiu
-      const { count: pendentes } = await supabase
+      const { count: pendentes } = await getSupabaseAdmin()
         .from('simulado_ia_fila')
         .select('*', { count: 'exact', head: true })
         .eq('simulado_id', simulado_id)
         .eq('status', 'pendente')
 
-      const { count: total } = await supabase
+      const { count: total } = await getSupabaseAdmin()
         .from('simulado_ia_fila')
         .select('*', { count: 'exact', head: true })
         .eq('simulado_id', simulado_id)
 
-      const { count: geradas } = await supabase
+      const { count: geradas } = await getSupabaseAdmin()
         .from('simulado_ia_fila')
         .select('*', { count: 'exact', head: true })
         .eq('simulado_id', simulado_id)
@@ -55,7 +52,7 @@ export async function POST(request: NextRequest) {
 
       if (pendentes === 0) {
         // Atualizar status do simulado para pendente (pronto para iniciar)
-        await supabase
+        await getSupabaseAdmin()
           .from('simulados')
           .update({ status: 'pendente' })
           .eq('id', simulado_id)
@@ -76,13 +73,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Marcar item como processando
-    await supabase
+    await getSupabaseAdmin()
       .from('simulado_ia_fila')
       .update({ status: 'processando' })
       .eq('id', proximoItem.id)
 
     // Buscar opções avançadas do simulado
-    const { data: simulado } = await supabase
+    const { data: simulado } = await getSupabaseAdmin()
       .from('simulados')
       .select('opcoes_avancadas')
       .eq('id', simulado_id)
@@ -103,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     if (!questao) {
       // Marcar como erro
-      await supabase
+      await getSupabaseAdmin()
         .from('simulado_ia_fila')
         .update({
           status: 'erro',
@@ -113,18 +110,18 @@ export async function POST(request: NextRequest) {
         .eq('id', proximoItem.id)
 
       // Buscar contadores atualizados
-      const { count: total } = await supabase
+      const { count: total } = await getSupabaseAdmin()
         .from('simulado_ia_fila')
         .select('*', { count: 'exact', head: true })
         .eq('simulado_id', simulado_id)
 
-      const { count: geradas } = await supabase
+      const { count: geradas } = await getSupabaseAdmin()
         .from('simulado_ia_fila')
         .select('*', { count: 'exact', head: true })
         .eq('simulado_id', simulado_id)
         .eq('status', 'concluido')
 
-      const { count: erros } = await supabase
+      const { count: erros } = await getSupabaseAdmin()
         .from('simulado_ia_fila')
         .select('*', { count: 'exact', head: true })
         .eq('simulado_id', simulado_id)
@@ -142,7 +139,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Inserir questão no banco
-    const { data: questaoInserida, error: questaoError } = await supabase
+    const { data: questaoInserida, error: questaoError } = await getSupabaseAdmin()
       .from('questoes')
       .insert({
         enunciado: questao.enunciado,
@@ -165,7 +162,7 @@ export async function POST(request: NextRequest) {
     if (questaoError || !questaoInserida) {
       console.error('[GERAR QUESTAO IA] Erro ao inserir questão:', questaoError)
 
-      await supabase
+      await getSupabaseAdmin()
         .from('simulado_ia_fila')
         .update({
           status: 'erro',
@@ -182,7 +179,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Vincular questão ao simulado
-    await supabase
+    await getSupabaseAdmin()
       .from('simulado_questoes')
       .insert({
         simulado_id,
@@ -191,7 +188,7 @@ export async function POST(request: NextRequest) {
       })
 
     // Atualizar item da fila como concluído
-    await supabase
+    await getSupabaseAdmin()
       .from('simulado_ia_fila')
       .update({
         status: 'concluido',
@@ -201,18 +198,18 @@ export async function POST(request: NextRequest) {
       .eq('id', proximoItem.id)
 
     // Buscar contadores atualizados
-    const { count: total } = await supabase
+    const { count: total } = await getSupabaseAdmin()
       .from('simulado_ia_fila')
       .select('*', { count: 'exact', head: true })
       .eq('simulado_id', simulado_id)
 
-    const { count: geradas } = await supabase
+    const { count: geradas } = await getSupabaseAdmin()
       .from('simulado_ia_fila')
       .select('*', { count: 'exact', head: true })
       .eq('simulado_id', simulado_id)
       .eq('status', 'concluido')
 
-    const { count: pendentes } = await supabase
+    const { count: pendentes } = await getSupabaseAdmin()
       .from('simulado_ia_fila')
       .select('*', { count: 'exact', head: true })
       .eq('simulado_id', simulado_id)
@@ -221,13 +218,13 @@ export async function POST(request: NextRequest) {
     // Verificar se concluiu todas
     const concluido = pendentes === 0
     if (concluido) {
-      await supabase
+      await getSupabaseAdmin()
         .from('simulados')
         .update({ status: 'pendente' })
         .eq('id', simulado_id)
 
       // Registrar atividade de conclusão
-      await supabase
+      await getSupabaseAdmin()
         .from('historico_atividades')
         .insert({
           user_id,

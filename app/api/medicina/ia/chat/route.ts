@@ -1,5 +1,6 @@
 // API Route - Chat IA PREPARAMED com Streaming
 
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Configuração de runtime para permitir execução mais longa
@@ -7,7 +8,6 @@ import { NextRequest, NextResponse } from 'next/server'
 // Vercel Pro permite até 300s para Serverless Functions
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 300 segundos (máximo do Vercel Pro para Serverless)
-import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import {
@@ -184,10 +184,7 @@ function formatToolResponse(toolName: string, data: unknown): string {
 }
 
 // Clientes
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!
@@ -223,7 +220,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano')
       .eq('id', user_id)
@@ -287,7 +284,7 @@ export async function POST(request: NextRequest) {
 
     if (!conversaAtual) {
       // Criar nova conversa
-      const { data: novaConversa, error: convError } = await supabase
+      const { data: novaConversa, error: convError } = await getSupabaseAdmin()
         .from('conversas_ia_med')
         .insert({
           user_id,
@@ -306,7 +303,7 @@ export async function POST(request: NextRequest) {
       conversaAtual = novaConversa.id
     } else {
       // CORREÇÃO RACE CONDITION: Verificar se conversa existe, se não existir, criar
-      const { data: conversaExistente, error: checkError } = await supabase
+      const { data: conversaExistente, error: checkError } = await getSupabaseAdmin()
         .from('conversas_ia_med')
         .select('id')
         .eq('id', conversaAtual)
@@ -316,7 +313,7 @@ export async function POST(request: NextRequest) {
         console.log('[Chat API] Conversa não encontrada, criando:', conversaAtual)
         
         // Criar conversa com o ID fornecido (upsert)
-        const { error: createError } = await supabase
+        const { error: createError } = await getSupabaseAdmin()
           .from('conversas_ia_med')
           .upsert({
             id: conversaAtual,
@@ -329,7 +326,7 @@ export async function POST(request: NextRequest) {
         if (createError) {
           console.error('[Chat API] Erro ao criar conversa com ID fornecido:', createError)
           // Se falhar o upsert, criar com ID novo
-          const { data: novaConversa, error: newConvError } = await supabase
+          const { data: novaConversa, error: newConvError } = await getSupabaseAdmin()
             .from('conversas_ia_med')
             .insert({
               user_id,
@@ -350,7 +347,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar mensagens anteriores da conversa
-    const { data: mensagensAnteriores } = await supabase
+    const { data: mensagensAnteriores } = await getSupabaseAdmin()
       .from('mensagens_ia_med')
       .select('role, content')
       .eq('conversa_id', conversaAtual)
@@ -358,7 +355,7 @@ export async function POST(request: NextRequest) {
 
     // Salvar mensagem do usuário
     console.log('[Chat API] Salvando mensagem do usuário, conversa_id:', conversaAtual)
-    const { error: userMsgError } = await supabase
+    const { error: userMsgError } = await getSupabaseAdmin()
       .from('mensagens_ia_med')
       .insert({
         conversa_id: conversaAtual,
@@ -449,7 +446,7 @@ async function streamMultiAgentResponse(params: StreamMultiAgentParams) {
       let fullResponse = ''
 
       // Criar registro de resposta ANTES de iniciar
-      const { data: assistantMsg, error: createMsgError } = await supabase
+      const { data: assistantMsg, error: createMsgError } = await getSupabaseAdmin()
         .from('mensagens_ia_med')
         .insert({
           conversa_id,
@@ -551,7 +548,7 @@ async function streamMultiAgentResponse(params: StreamMultiAgentParams) {
 
         // Atualizar resposta no banco
         if (assistantMsgId) {
-          await supabase
+          await getSupabaseAdmin()
             .from('mensagens_ia_med')
             .update({
               content: fullResponse || '[Resposta vazia]',
@@ -561,7 +558,7 @@ async function streamMultiAgentResponse(params: StreamMultiAgentParams) {
         }
 
         // Atualizar conversa
-        await supabase
+        await getSupabaseAdmin()
           .from('conversas_ia_med')
           .update({
             tokens_usados: tokensInput + tokensOutput,
@@ -604,7 +601,7 @@ async function streamMultiAgentResponse(params: StreamMultiAgentParams) {
 
         // Atualizar resposta com erro
         if (assistantMsgId) {
-          await supabase
+          await getSupabaseAdmin()
             .from('mensagens_ia_med')
             .update({ content: fullResponse })
             .eq('id', assistantMsgId)
@@ -987,7 +984,7 @@ async function streamClaude(params: StreamClaudeParams) {
       const MAX_CONTINUATIONS = 5 // Limite de continuações automáticas por max_tokens (aumentado para garantir respostas completas)
 
       // Criar registro de resposta ANTES de iniciar streaming (para garantir salvamento)
-      const { data: assistantMsg, error: createMsgError } = await supabase
+      const { data: assistantMsg, error: createMsgError } = await getSupabaseAdmin()
         .from('mensagens_ia_med')
         .insert({
           conversa_id,
@@ -1029,7 +1026,7 @@ async function streamClaude(params: StreamClaudeParams) {
         if (!assistantMsgId) return
 
         lastUpdateTime = now
-        const { error } = await supabase
+        const { error } = await getSupabaseAdmin()
           .from('mensagens_ia_med')
           .update({
             content: fullResponse || '[Resposta vazia]',
@@ -1425,7 +1422,7 @@ async function streamClaude(params: StreamClaudeParams) {
         await updateResponse(true)
 
         // Atualizar tokens da conversa
-        const { error: updateError } = await supabase
+        const { error: updateError } = await getSupabaseAdmin()
           .from('conversas_ia_med')
           .update({
             tokens_usados: tokensInput + tokensOutput,
@@ -1732,7 +1729,7 @@ async function streamGemini(params: StreamGeminiParams) {
       let fullResponse = ''
 
       // Criar registro de resposta ANTES de iniciar streaming
-      const { data: assistantMsg, error: createMsgError } = await supabase
+      const { data: assistantMsg, error: createMsgError } = await getSupabaseAdmin()
         .from('mensagens_ia_med')
         .insert({
           conversa_id,
@@ -1768,7 +1765,7 @@ async function streamGemini(params: StreamGeminiParams) {
         // Atualizar resposta final
         if (assistantMsgId) {
           console.log('[Gemini] Atualizando resposta final, tamanho:', fullResponse.length)
-          const { error: updateMsgError } = await supabase
+          const { error: updateMsgError } = await getSupabaseAdmin()
             .from('mensagens_ia_med')
             .update({
               content: fullResponse || '[Resposta vazia]',
@@ -1784,7 +1781,7 @@ async function streamGemini(params: StreamGeminiParams) {
         }
 
         // Atualizar conversa
-        const { error: updateError } = await supabase
+        const { error: updateError } = await getSupabaseAdmin()
           .from('conversas_ia_med')
           .update({
             tokens_usados: tokensInput + tokensOutput,
@@ -1845,7 +1842,7 @@ export async function GET(request: NextRequest) {
 
     if (conversa_id) {
       // Buscar conversa específica com mensagens
-      const { data: conversa, error: convError } = await supabase
+      const { data: conversa, error: convError } = await getSupabaseAdmin()
         .from('conversas_ia_med')
         .select('*')
         .eq('id', conversa_id)
@@ -1859,7 +1856,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 })
       }
 
-      const { data: mensagens, error: msgError } = await supabase
+      const { data: mensagens, error: msgError } = await getSupabaseAdmin()
         .from('mensagens_ia_med')
         .select('*')
         .eq('conversa_id', conversa_id)
@@ -1871,7 +1868,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Listar conversas do usuário (filtradas por modo se especificado)
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('conversas_ia_med')
       .select('*')
       .eq('user_id', user_id)
@@ -1910,7 +1907,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar se conversa pertence ao usuário
-    const { data: conversa } = await supabase
+    const { data: conversa } = await getSupabaseAdmin()
       .from('conversas_ia_med')
       .select('id')
       .eq('id', conversa_id)
@@ -1922,7 +1919,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Deletar (cascade vai deletar mensagens)
-    await supabase
+    await getSupabaseAdmin()
       .from('conversas_ia_med')
       .delete()
       .eq('id', conversa_id)

@@ -1,10 +1,7 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // GET - Listar teorias
 export async function GET(request: NextRequest) {
@@ -17,7 +14,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('teorias_med')
       .select(`
         id,
@@ -59,7 +56,7 @@ export async function GET(request: NextRequest) {
     if (userId && teorias && teorias.length > 0) {
       const teoriaIds = teorias.map(t => t.id)
 
-      const { data: progressoData } = await supabase
+      const { data: progressoData } = await getSupabaseAdmin()
         .from('progresso_leitura_med')
         .select('*')
         .eq('user_id', userId)
@@ -106,7 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se já existe progresso
-    const { data: existente } = await supabase
+    const { data: existente } = await getSupabaseAdmin()
       .from('progresso_leitura_med')
       .select('*')
       .eq('user_id', userId)
@@ -123,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     let result
     if (existente) {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseAdmin()
         .from('progresso_leitura_med')
         .update(dados)
         .eq('id', existente.id)
@@ -133,7 +130,7 @@ export async function POST(request: NextRequest) {
       if (error) throw error
       result = data
     } else {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseAdmin()
         .from('progresso_leitura_med')
         .insert({
           user_id: userId,
@@ -148,7 +145,7 @@ export async function POST(request: NextRequest) {
 
       // Atualizar estudo diário
       const hoje = new Date().toISOString().split('T')[0]
-      const { data: estudoHoje } = await supabase
+      const { data: estudoHoje } = await getSupabaseAdmin()
         .from('estudo_diario_med')
         .select('*')
         .eq('user_id', userId)
@@ -156,14 +153,14 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (estudoHoje) {
-        await supabase
+        await getSupabaseAdmin()
           .from('estudo_diario_med')
           .update({
             teorias_lidas: estudoHoje.teorias_lidas + 1
           })
           .eq('id', estudoHoje.id)
       } else {
-        await supabase
+        await getSupabaseAdmin()
           .from('estudo_diario_med')
           .insert({
             user_id: userId,

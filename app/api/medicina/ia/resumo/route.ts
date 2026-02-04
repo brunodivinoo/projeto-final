@@ -1,7 +1,7 @@
 // API Route - Geração de Resumos IA PREPARAMED
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { PlanoIA, verificarLimiteIA, incrementarUsoIA, calcularCusto } from '@/lib/ai'
@@ -9,10 +9,7 @@ import { PROMPT_GERAR_RESUMO, SYSTEM_PROMPT_PREMIUM, SYSTEM_PROMPT_RESIDENCIA } 
 import { MODELOS } from '@/lib/ai/config'
 import { TOOL_GERAR_RESUMO } from '@/lib/ai/tools'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!
@@ -37,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano')
       .eq('id', user_id)
@@ -146,7 +143,7 @@ Gere o resumo completo em formato Markdown.`
     }
 
     // Salvar resumo no banco
-    const { data: resumo, error: saveError } = await supabase
+    const { data: resumo, error: saveError } = await getSupabaseAdmin()
       .from('resumos_ia_med')
       .insert({
         user_id,
@@ -202,7 +199,7 @@ export async function GET(request: NextRequest) {
 
     if (resumo_id) {
       // Buscar resumo específico
-      const { data: resumo } = await supabase
+      const { data: resumo } = await getSupabaseAdmin()
         .from('resumos_ia_med')
         .select('*')
         .eq('id', resumo_id)
@@ -213,7 +210,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Listar todos os resumos
-    const { data: resumos } = await supabase
+    const { data: resumos } = await getSupabaseAdmin()
       .from('resumos_ia_med')
       .select('id, titulo, tema, created_at')
       .eq('user_id', user_id)
@@ -244,7 +241,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    await supabase
+    await getSupabaseAdmin()
       .from('resumos_ia_med')
       .delete()
       .eq('id', resumo_id)

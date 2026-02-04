@@ -7,12 +7,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -33,7 +30,7 @@ export async function GET(
     }
 
     // Buscar conversa
-    const { data: conversa, error: convError } = await supabase
+    const { data: conversa, error: convError } = await getSupabaseAdmin()
       .from('conversas_ia_med')
       .select('*')
       .eq('id', id)
@@ -46,7 +43,7 @@ export async function GET(
     }
 
     // Buscar mensagens
-    const { data: mensagens, error: msgError } = await supabase
+    const { data: mensagens, error: msgError } = await getSupabaseAdmin()
       .from('mensagens_ia_med')
       .select('*')
       .eq('conversa_id', id)
@@ -86,7 +83,7 @@ export async function PATCH(
     }
 
     // Verificar se conversa pertence ao usuario
-    const { data: conversa } = await supabase
+    const { data: conversa } = await getSupabaseAdmin()
       .from('conversas_ia_med')
       .select('id')
       .eq('id', id)
@@ -98,7 +95,7 @@ export async function PATCH(
     }
 
     // Atualizar titulo
-    const { error: updateError } = await supabase
+    const { error: updateError } = await getSupabaseAdmin()
       .from('conversas_ia_med')
       .update({
         titulo: titulo.trim(),
@@ -134,7 +131,7 @@ export async function DELETE(
     }
 
     // Verificar se conversa pertence ao usuario
-    const { data: conversa } = await supabase
+    const { data: conversa } = await getSupabaseAdmin()
       .from('conversas_ia_med')
       .select('id')
       .eq('id', id)
@@ -148,7 +145,7 @@ export async function DELETE(
     // Antes de deletar, migrar artefatos para tabela centralizada
     // (os artefatos sao preservados mesmo apos excluir o chat)
     try {
-      const { data: mensagens } = await supabase
+      const { data: mensagens } = await getSupabaseAdmin()
         .from('mensagens_ia_med')
         .select('content')
         .eq('conversa_id', id)
@@ -165,7 +162,7 @@ export async function DELETE(
     }
 
     // Deletar conversa (cascade vai deletar mensagens)
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await getSupabaseAdmin()
       .from('conversas_ia_med')
       .delete()
       .eq('id', id)

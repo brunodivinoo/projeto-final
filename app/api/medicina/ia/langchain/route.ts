@@ -2,7 +2,7 @@
 // Nova arquitetura com classificador de intencao e multi-agentes
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 // Configuracao
 export const dynamic = 'force-dynamic'
@@ -25,10 +25,7 @@ import {
 } from '@/lib/agents'
 
 // Supabase
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 // ==========================================
 // TIPOS
@@ -73,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar perfil do usuario
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano, nome')
       .eq('id', user_id)
@@ -279,7 +276,7 @@ async function saveMessages(
 ) {
   try {
     // Salvar mensagem do usuario
-    await supabase.from('mensagens_med').insert({
+    await getSupabaseAdmin().from('mensagens_med').insert({
       conversa_id: conversaId,
       user_id: userId,
       role: 'user',
@@ -287,7 +284,7 @@ async function saveMessages(
     })
 
     // Salvar resposta do assistente
-    await supabase.from('mensagens_med').insert({
+    await getSupabaseAdmin().from('mensagens_med').insert({
       conversa_id: conversaId,
       user_id: userId,
       role: 'assistant',

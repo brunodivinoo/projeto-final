@@ -1,3 +1,4 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
 import { isAdmin } from '@/lib/admin/auth'
@@ -7,7 +8,7 @@ export async function GET() {
     const supabase = await createClient()
 
     // Verificar autenticação
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await getSupabaseAdmin().auth.getUser()
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -19,7 +20,7 @@ export async function GET() {
     }
 
     // Buscar disciplinas
-    const { data: disciplinas, error } = await supabase
+    const { data: disciplinas, error } = await getSupabaseAdmin()
       .from('disciplinas_med')
       .select('id, nome, icone, cor, ordem, ativo')
       .eq('ativo', true)
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient()
 
     // Verificar autenticação
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await getSupabaseAdmin().auth.getUser()
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Criar disciplina
-    const { data: disciplina, error } = await supabase
+    const { data: disciplina, error } = await getSupabaseAdmin()
       .from('disciplinas_med')
       .insert({
         nome,

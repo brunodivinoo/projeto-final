@@ -8,13 +8,10 @@
  * GET - Listar artefatos com filtros
  */
 
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 // Tipos de artefatos validos
 const TIPOS_VALIDOS = [
@@ -69,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Inserir artefato
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseAdmin()
       .from('artefatos_med')
       .insert({
         user_id,
@@ -98,7 +95,7 @@ export async function POST(request: NextRequest) {
     // Atualizar aprendizado do usuario
     if (topico || disciplina) {
       try {
-        await supabase.rpc('atualizar_aprendizado_med', {
+        await getSupabaseAdmin().rpc('atualizar_aprendizado_med', {
           p_user_id: user_id,
           p_disciplina: disciplina || 'Geral',
           p_topico: topico || titulo,
@@ -135,7 +132,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Construir query
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('artefatos_med')
       .select('*', { count: 'exact' })
       .eq('user_id', user_id)
@@ -179,7 +176,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar estatisticas agregadas
-    const { data: stats } = await supabase
+    const { data: stats } = await getSupabaseAdmin()
       .from('artefatos_med')
       .select('tipo')
       .eq('user_id', user_id)
@@ -231,7 +228,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Verificar se artefato pertence ao usuario
-    const { data: artefato } = await supabase
+    const { data: artefato } = await getSupabaseAdmin()
       .from('artefatos_med')
       .select('id')
       .eq('id', id)
@@ -260,7 +257,7 @@ export async function PATCH(request: NextRequest) {
     if (intervalo_dias !== undefined) updates.intervalo_dias = intervalo_dias
     if (facilidade !== undefined) updates.facilidade = facilidade
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await getSupabaseAdmin()
       .from('artefatos_med')
       .update(updates)
       .eq('id', id)
@@ -291,7 +288,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar se artefato pertence ao usuario
-    const { data: artefato } = await supabase
+    const { data: artefato } = await getSupabaseAdmin()
       .from('artefatos_med')
       .select('id')
       .eq('id', id)
@@ -304,7 +301,7 @@ export async function DELETE(request: NextRequest) {
 
     if (hard) {
       // Exclusao permanente
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await getSupabaseAdmin()
         .from('artefatos_med')
         .delete()
         .eq('id', id)
@@ -316,7 +313,7 @@ export async function DELETE(request: NextRequest) {
       }
     } else {
       // Soft delete - apenas arquivar
-      const { error: archiveError } = await supabase
+      const { error: archiveError } = await getSupabaseAdmin()
         .from('artefatos_med')
         .update({
           status: 'arquivado',

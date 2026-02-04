@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Obter detalhes de um simulado
 export async function GET(
@@ -21,7 +18,7 @@ export async function GET(
     }
 
     // Buscar simulado com todas as relações
-    const { data: simulado, error: simuladoError } = await supabase
+    const { data: simulado, error: simuladoError } = await getSupabaseAdmin()
       .from('simulados')
       .select(`
         *,
@@ -55,7 +52,7 @@ export async function GET(
     if (simulado.status !== 'pendente') {
       const questaoIds = simulado.simulado_questoes.map((sq: { questao_id: string }) => sq.questao_id)
 
-      const { data: questoesDetalhes, error: questoesError } = await supabase
+      const { data: questoesDetalhes, error: questoesError } = await getSupabaseAdmin()
         .from('questoes')
         .select('id, enunciado, alternativas, resposta_correta, disciplina, assunto, subassunto, dificuldade, modalidade, explicacao')
         .in('id', questaoIds)
@@ -77,7 +74,7 @@ export async function GET(
     // Buscar desempenho se finalizado
     let desempenho = null
     if (simulado.status === 'finalizado') {
-      const { data: desempenhoData } = await supabase
+      const { data: desempenhoData } = await getSupabaseAdmin()
         .from('simulado_desempenho')
         .select('*')
         .eq('simulado_id', id)
@@ -111,7 +108,7 @@ export async function PATCH(
     }
 
     // Verificar se o simulado pertence ao usuário
-    const { data: simuladoExistente, error: checkError } = await supabase
+    const { data: simuladoExistente, error: checkError } = await getSupabaseAdmin()
       .from('simulados')
       .select('id, status')
       .eq('id', id)
@@ -136,7 +133,7 @@ export async function PATCH(
     if (descricao !== undefined) updateData.descricao = descricao
     if (tempo_limite_minutos !== undefined) updateData.tempo_limite_minutos = tempo_limite_minutos
 
-    const { data: simulado, error: updateError } = await supabase
+    const { data: simulado, error: updateError } = await getSupabaseAdmin()
       .from('simulados')
       .update(updateData)
       .eq('id', id)
@@ -174,7 +171,7 @@ export async function DELETE(
     }
 
     // Verificar se o simulado pertence ao usuário
-    const { data: simuladoExistente, error: checkError } = await supabase
+    const { data: simuladoExistente, error: checkError } = await getSupabaseAdmin()
       .from('simulados')
       .select('id')
       .eq('id', id)
@@ -186,7 +183,7 @@ export async function DELETE(
     }
 
     // Deletar simulado (CASCADE vai deletar registros relacionados)
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await getSupabaseAdmin()
       .from('simulados')
       .delete()
       .eq('id', id)

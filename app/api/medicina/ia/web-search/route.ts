@@ -1,16 +1,13 @@
 // API Route - Web Search Médico PREPARAMED
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import Anthropic from '@anthropic-ai/sdk'
 import { PlanoIA, verificarLimiteIA, incrementarUsoIA, calcularCusto, CUSTO_WEB_SEARCH } from '@/lib/ai'
 import { SYSTEM_PROMPT_RESIDENCIA } from '@/lib/ai/prompts'
 import { MODELOS } from '@/lib/ai/config'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!
@@ -61,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano')
       .eq('id', user_id)
@@ -161,7 +158,7 @@ export async function POST(request: NextRequest) {
 
     // Se houver conversa_id, salvar como mensagem
     if (conversa_id) {
-      await supabase
+      await getSupabaseAdmin()
         .from('mensagens_ia_med')
         .insert({
           conversa_id,
@@ -169,7 +166,7 @@ export async function POST(request: NextRequest) {
           content: `[Busca Web] ${query}`
         })
 
-      await supabase
+      await getSupabaseAdmin()
         .from('mensagens_ia_med')
         .insert({
           conversa_id,
@@ -178,7 +175,7 @@ export async function POST(request: NextRequest) {
           tokens: tokensInput + tokensOutput
         })
 
-      await supabase
+      await getSupabaseAdmin()
         .from('conversas_ia_med')
         .update({
           tokens_usados: tokensInput + tokensOutput,

@@ -1,18 +1,5 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-
-// Lazy initialization para evitar erro durante build
-let _supabase: SupabaseClient | null = null
-
-function getSupabase(): SupabaseClient {
-  if (!_supabase) {
-    _supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-  }
-  return _supabase
-}
 
 // Mapeamento de termos para identificar disciplinas que devem ser separadas
 const TERMOS_SEPARACAO = [
@@ -29,25 +16,24 @@ interface QuestaoParaSeparar {
   novaDisciplina: string
 }
 
-// GET - Detectar questões que podem precisar ser separadas
+// GET - Detectar questoes que podem precisar ser separadas
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url)
     const disciplinaOrigem = url.searchParams.get('disciplina') || 'Direito Penal'
 
-    // Buscar questões da disciplina
-    const supabase = getSupabase()
-    const { data: questoes, error } = await supabase
+    // Buscar questoes da disciplina
+    const { data: questoes, error } = await getSupabaseAdmin()
       .from('questoes')
       .select('id, disciplina, assunto, enunciado')
       .eq('disciplina', disciplinaOrigem)
 
     if (error) {
-      console.error('Erro ao buscar questões:', error)
+      console.error('Erro ao buscar questoes:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Encontrar questões que contêm termos de outras disciplinas
+    // Encontrar questoes que contem termos de outras disciplinas
     const questoesParaSeparar: QuestaoParaSeparar[] = []
 
     for (const q of questoes || []) {
@@ -55,7 +41,7 @@ export async function GET(req: NextRequest) {
 
       for (const { termo, novaDisciplina } of TERMOS_SEPARACAO) {
         if (textoCompleto.includes(termo)) {
-          // Evitar duplicatas se já foi adicionado com outro termo
+          // Evitar duplicatas se ja foi adicionado com outro termo
           if (!questoesParaSeparar.some(qp => qp.id === q.id)) {
             questoesParaSeparar.push({
               id: q.id,
@@ -91,12 +77,12 @@ export async function GET(req: NextRequest) {
       }))
     })
   } catch (error) {
-    console.error('Erro ao detectar separações:', error)
+    console.error('Erro ao detectar separacoes:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
 
-// POST - Executar separação de disciplinas
+// POST - Executar separacao de disciplinas
 export async function POST(req: NextRequest) {
   try {
     const {
@@ -112,10 +98,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (!disciplinaOrigem || !novaDisciplina) {
-      return NextResponse.json({ error: 'Parâmetros obrigatórios' }, { status: 400 })
+      return NextResponse.json({ error: 'Parametros obrigatorios' }, { status: 400 })
     }
 
-    const supabase = getSupabase()
     const resultados = {
       disciplinaCriada: false,
       disciplinaId: null as string | null,
@@ -124,14 +109,14 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Verificar/criar disciplina destino
-    let { data: disciplinaExistente } = await supabase
+    let { data: disciplinaExistente } = await getSupabaseAdmin()
       .from('disciplinas')
       .select('id, nome')
       .ilike('nome', novaDisciplina)
       .single()
 
     if (!disciplinaExistente && criarDisciplina) {
-      const { data: novaDisciplinaData, error: errCriar } = await supabase
+      const { data: novaDisciplinaData, error: errCriar } = await getSupabaseAdmin()
         .from('disciplinas')
         .insert({ nome: novaDisciplina, qtd_questoes: 0 })
         .select('id, nome')
@@ -147,22 +132,22 @@ export async function POST(req: NextRequest) {
 
     if (!disciplinaExistente) {
       return NextResponse.json({
-        error: 'Disciplina destino não existe e não foi possível criar',
+        error: 'Disciplina destino nao existe e nao foi possivel criar',
         resultados
       }, { status: 400 })
     }
 
     resultados.disciplinaId = disciplinaExistente.id
 
-    // 2. Mover questões
+    // 2. Mover questoes
     let questoesParaMover: { id: string }[] = []
 
     if (questaoIds && questaoIds.length > 0) {
-      // Usar IDs específicos
+      // Usar IDs especificos
       questoesParaMover = questaoIds.map(id => ({ id }))
     } else {
       // Buscar automaticamente por termo
-      const { data: questoes } = await supabase
+      const { data: questoes } = await getSupabaseAdmin()
         .from('questoes')
         .select('id, assunto, enunciado')
         .eq('disciplina', disciplinaOrigem)
@@ -177,50 +162,50 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Atualizar disciplina das questões
+    // 3. Atualizar disciplina das questoes
     if (questoesParaMover.length > 0) {
       const ids = questoesParaMover.map(q => q.id)
 
-      const { error: errUpdate } = await supabase
+      const { error: errUpdate } = await getSupabaseAdmin()
         .from('questoes')
         .update({ disciplina: novaDisciplina })
         .in('id', ids)
 
       if (errUpdate) {
-        resultados.erros.push(`Erro ao mover questões: ${errUpdate.message}`)
+        resultados.erros.push(`Erro ao mover questoes: ${errUpdate.message}`)
       } else {
         resultados.questoesMovidas = ids.length
       }
     }
 
     // 4. Atualizar contagens
-    // Contar questões da disciplina origem
-    const { count: countOrigem } = await supabase
+    // Contar questoes da disciplina origem
+    const { count: countOrigem } = await getSupabaseAdmin()
       .from('questoes')
       .select('*', { count: 'exact', head: true })
       .eq('disciplina', disciplinaOrigem)
 
     // Atualizar contagem da origem
-    const { data: discOrigem } = await supabase
+    const { data: discOrigem } = await getSupabaseAdmin()
       .from('disciplinas')
       .select('id')
       .ilike('nome', disciplinaOrigem)
       .single()
 
     if (discOrigem) {
-      await supabase
+      await getSupabaseAdmin()
         .from('disciplinas')
         .update({ qtd_questoes: countOrigem || 0 })
         .eq('id', discOrigem.id)
     }
 
     // Contar e atualizar destino
-    const { count: countDestino } = await supabase
+    const { count: countDestino } = await getSupabaseAdmin()
       .from('questoes')
       .select('*', { count: 'exact', head: true })
       .eq('disciplina', novaDisciplina)
 
-    await supabase
+    await getSupabaseAdmin()
       .from('disciplinas')
       .update({ qtd_questoes: countDestino || 0 })
       .eq('id', disciplinaExistente.id)
@@ -241,13 +226,11 @@ export async function PUT(req: NextRequest) {
     const { nome } = await req.json() as { nome: string }
 
     if (!nome) {
-      return NextResponse.json({ error: 'Nome obrigatório' }, { status: 400 })
+      return NextResponse.json({ error: 'Nome obrigatorio' }, { status: 400 })
     }
 
-    const supabase = getSupabase()
-
-    // Verificar se já existe
-    const { data: existente } = await supabase
+    // Verificar se ja existe
+    const { data: existente } = await getSupabaseAdmin()
       .from('disciplinas')
       .select('id, nome')
       .ilike('nome', nome)
@@ -257,12 +240,12 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({
         sucesso: true,
         disciplina: existente,
-        mensagem: 'Disciplina já existe'
+        mensagem: 'Disciplina ja existe'
       })
     }
 
     // Criar nova
-    const { data: nova, error } = await supabase
+    const { data: nova, error } = await getSupabaseAdmin()
       .from('disciplinas')
       .insert({ nome, qtd_questoes: 0 })
       .select('id, nome')

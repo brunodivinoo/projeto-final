@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Buscar comentários de uma questão
 export async function GET(
@@ -15,7 +12,7 @@ export async function GET(
     const { id: questaoId } = await params
 
     // Buscar comentários (sem JOIN - buscar profiles separadamente)
-    const { data: comentarios, error } = await supabase
+    const { data: comentarios, error } = await getSupabaseAdmin()
       .from('questoes_comentarios')
       .select('id, conteudo, parent_id, likes_count, dislikes_count, created_at, user_id')
       .eq('questao_id', questaoId)
@@ -28,7 +25,7 @@ export async function GET(
     const profilesMap: Record<string, { nome: string; avatar_url: string | null }> = {}
 
     if (userIds.length > 0) {
-      const { data: profiles } = await supabase
+      const { data: profiles } = await getSupabaseAdmin()
         .from('profiles')
         .select('id, nome, avatar_url')
         .in('id', userIds)
@@ -50,10 +47,10 @@ export async function GET(
 
     if (authHeader) {
       const token = authHeader.replace('Bearer ', '')
-      const { data: { user } } = await supabase.auth.getUser(token)
+      const { data: { user } } = await getSupabaseAdmin().auth.getUser(token)
 
       if (user) {
-        const { data: likes } = await supabase
+        const { data: likes } = await getSupabaseAdmin()
           .from('questoes_comentarios_likes')
           .select('comentario_id, tipo')
           .eq('user_id', user.id)
@@ -116,7 +113,7 @@ export async function POST(
     }
 
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const { data: { user }, error: authError } = await getSupabaseAdmin().auth.getUser(token)
 
     if (authError || !user) {
       console.error('Auth error:', authError)
@@ -124,7 +121,7 @@ export async function POST(
     }
 
     // Criar comentário primeiro (sem join)
-    const { data: inserted, error: insertError } = await supabase
+    const { data: inserted, error: insertError } = await getSupabaseAdmin()
       .from('questoes_comentarios')
       .insert({
         questao_id: questaoId,
@@ -143,7 +140,7 @@ export async function POST(
     }
 
     // Buscar dados do profile separadamente
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
       .select('nome, avatar_url')
       .eq('id', user.id)
@@ -183,14 +180,14 @@ export async function DELETE(
     }
 
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const { data: { user }, error: authError } = await getSupabaseAdmin().auth.getUser(token)
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     // Verificar se o comentário pertence ao usuário
-    const { data: comentario } = await supabase
+    const { data: comentario } = await getSupabaseAdmin()
       .from('questoes_comentarios')
       .select('user_id')
       .eq('id', comentarioId)
@@ -201,7 +198,7 @@ export async function DELETE(
     }
 
     // Excluir comentário
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('questoes_comentarios')
       .delete()
       .eq('id', comentarioId)
@@ -235,14 +232,14 @@ export async function PATCH(
     }
 
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const { data: { user }, error: authError } = await getSupabaseAdmin().auth.getUser(token)
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     // Verificar se o comentário pertence ao usuário
-    const { data: comentario } = await supabase
+    const { data: comentario } = await getSupabaseAdmin()
       .from('questoes_comentarios')
       .select('user_id')
       .eq('id', comentario_id)
@@ -253,7 +250,7 @@ export async function PATCH(
     }
 
     // Atualizar comentário
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseAdmin()
       .from('questoes_comentarios')
       .update({ conteudo: conteudo.trim() })
       .eq('id', comentario_id)

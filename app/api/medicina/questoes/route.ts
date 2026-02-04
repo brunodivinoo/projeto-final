@@ -1,10 +1,7 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // GET - Listar questões com filtros
 export async function GET(request: NextRequest) {
@@ -33,7 +30,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('questoes_med')
       .select(`
         id,
@@ -102,7 +99,7 @@ export async function GET(request: NextRequest) {
 
     // Filtrar não respondidas ou erradas
     if (userId && (naoRespondidas || erradas)) {
-      const { data: respostas } = await supabase
+      const { data: respostas } = await getSupabaseAdmin()
         .from('respostas_med')
         .select('questao_id, acertou')
         .eq('user_id', userId)
@@ -163,7 +160,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar gabarito da questão
-    const { data: questao, error: questaoError } = await supabase
+    const { data: questao, error: questaoError } = await getSupabaseAdmin()
       .from('questoes_med')
       .select('gabarito, total_respostas, total_acertos')
       .eq('id', questaoId)
@@ -179,7 +176,7 @@ export async function POST(request: NextRequest) {
     const acertou = questao.gabarito === respostaSelecionada
 
     // Registrar resposta
-    const { data: resposta, error: respostaError } = await supabase
+    const { data: resposta, error: respostaError } = await getSupabaseAdmin()
       .from('respostas_med')
       .insert({
         user_id: userId,
@@ -195,14 +192,14 @@ export async function POST(request: NextRequest) {
 
     // Atualizar estatísticas da questão
     const questaoData = questao as { gabarito: string; total_respostas: number; total_acertos: number }
-    const { error: rpcError } = await supabase.rpc('incrementar_questao_med', {
+    const { error: rpcError } = await getSupabaseAdmin().rpc('incrementar_questao_med', {
       p_questao_id: questaoId,
       p_acertou: acertou
     })
 
     if (rpcError) {
       // Se a função não existir, usar update direto
-      await supabase
+      await getSupabaseAdmin()
         .from('questoes_med')
         .update({
           total_respostas: (questaoData.total_respostas || 0) + 1,
@@ -212,7 +209,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Atualizar profile
-    await supabase.rpc('atualizar_estatisticas_med', {
+    await getSupabaseAdmin().rpc('atualizar_estatisticas_med', {
       p_user_id: userId,
       p_acertou: acertou,
       p_tempo: tempoSegundos || 0
@@ -220,7 +217,7 @@ export async function POST(request: NextRequest) {
 
     // Atualizar estudo diário
     const hoje = new Date().toISOString().split('T')[0]
-    const { data: estudoHoje } = await supabase
+    const { data: estudoHoje } = await getSupabaseAdmin()
       .from('estudo_diario_med')
       .select('*')
       .eq('user_id', userId)
@@ -228,7 +225,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (estudoHoje) {
-      await supabase
+      await getSupabaseAdmin()
         .from('estudo_diario_med')
         .update({
           questoes_feitas: estudoHoje.questoes_feitas + 1,
@@ -237,7 +234,7 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', estudoHoje.id)
     } else {
-      await supabase
+      await getSupabaseAdmin()
         .from('estudo_diario_med')
         .insert({
           user_id: userId,
@@ -250,7 +247,7 @@ export async function POST(request: NextRequest) {
 
     // Atualizar limites de uso
     const mesRef = new Date().toISOString().slice(0, 7)
-    const { data: limiteExistente } = await supabase
+    const { data: limiteExistente } = await getSupabaseAdmin()
       .from('limites_uso_med')
       .select('*')
       .eq('user_id', userId)
@@ -258,7 +255,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (limiteExistente) {
-      await supabase
+      await getSupabaseAdmin()
         .from('limites_uso_med')
         .update({
           questoes_dia: limiteExistente.data_questoes === hoje
@@ -268,7 +265,7 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', limiteExistente.id)
     } else {
-      await supabase
+      await getSupabaseAdmin()
         .from('limites_uso_med')
         .insert({
           user_id: userId,

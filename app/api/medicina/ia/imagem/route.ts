@@ -2,14 +2,11 @@
 // Usa DALL-E 3 (GPT Image) para imagens de alta qualidade
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import OpenAI from 'openai'
 import { PlanoIA, verificarLimiteIA, incrementarUsoIA } from '@/lib/ai'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -98,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano')
       .eq('id', user_id)
@@ -170,7 +167,7 @@ REQUISITOS OBRIGATÓRIOS:
     console.log(`[DALL-E 3] Imagem gerada com sucesso!`)
 
     // Salvar no banco de dados
-    const { data: documento, error: saveError } = await supabase
+    const { data: documento, error: saveError } = await getSupabaseAdmin()
       .from('documentos_ia_med')
       .insert({
         user_id,
@@ -252,7 +249,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'user_id é obrigatório' }, { status: 400 })
     }
 
-    const { data: imagens } = await supabase
+    const { data: imagens } = await getSupabaseAdmin()
       .from('documentos_ia_med')
       .select('*')
       .eq('user_id', user_id)
@@ -284,7 +281,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    await supabase
+    await getSupabaseAdmin()
       .from('documentos_ia_med')
       .delete()
       .eq('id', documento_id)

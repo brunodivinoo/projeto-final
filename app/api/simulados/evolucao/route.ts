@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 interface PontoEvolucao {
   data: string
@@ -54,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar se usuário é PRO para dados avançados
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
       .select('plano')
       .eq('id', user_id)
@@ -67,7 +64,7 @@ export async function GET(request: NextRequest) {
     const dataInicio = calcularDataInicio(periodo)
 
     // Buscar simulados do período
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('simulados')
       .select(`
         id,

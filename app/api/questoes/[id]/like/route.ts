@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // POST - Dar like/dislike em um comentário
 export async function POST(
@@ -26,14 +23,14 @@ export async function POST(
     }
 
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const { data: { user }, error: authError } = await getSupabaseAdmin().auth.getUser(token)
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     // Verificar se o comentário pertence ao próprio usuário (não pode curtir próprio comentário)
-    const { data: comentarioData } = await supabase
+    const { data: comentarioData } = await getSupabaseAdmin()
       .from('questoes_comentarios')
       .select('user_id')
       .eq('id', comentario_id)
@@ -44,7 +41,7 @@ export async function POST(
     }
 
     // Verificar se já existe um like/dislike do usuário
-    const { data: existingLike } = await supabase
+    const { data: existingLike } = await getSupabaseAdmin()
       .from('questoes_comentarios_likes')
       .select('id, tipo')
       .eq('comentario_id', comentario_id)
@@ -56,14 +53,14 @@ export async function POST(
     if (existingLike) {
       if (existingLike.tipo === tipo) {
         // Remover like/dislike (toggle off)
-        await supabase
+        await getSupabaseAdmin()
           .from('questoes_comentarios_likes')
           .delete()
           .eq('id', existingLike.id)
 
         // Atualizar contador - buscar valor atual e decrementar
         const field = tipo === 'like' ? 'likes_count' : 'dislikes_count'
-        const { data: comentarioAtual } = await supabase
+        const { data: comentarioAtual } = await getSupabaseAdmin()
           .from('questoes_comentarios')
           .select(field)
           .eq('id', comentario_id)
@@ -71,7 +68,7 @@ export async function POST(
 
         if (comentarioAtual) {
           const currentCount = (comentarioAtual as Record<string, number>)[field] || 0
-          await supabase
+          await getSupabaseAdmin()
             .from('questoes_comentarios')
             .update({ [field]: Math.max(0, currentCount - 1) })
             .eq('id', comentario_id)
@@ -80,7 +77,7 @@ export async function POST(
         action = 'removed'
       } else {
         // Trocar like por dislike ou vice-versa
-        await supabase
+        await getSupabaseAdmin()
           .from('questoes_comentarios_likes')
           .update({ tipo })
           .eq('id', existingLike.id)
@@ -89,14 +86,14 @@ export async function POST(
         const oldField = existingLike.tipo === 'like' ? 'likes_count' : 'dislikes_count'
         const newField = tipo === 'like' ? 'likes_count' : 'dislikes_count'
 
-        const { data: comentario } = await supabase
+        const { data: comentario } = await getSupabaseAdmin()
           .from('questoes_comentarios')
           .select('likes_count, dislikes_count')
           .eq('id', comentario_id)
           .single()
 
         if (comentario) {
-          await supabase
+          await getSupabaseAdmin()
             .from('questoes_comentarios')
             .update({
               [oldField]: Math.max(0, (comentario[oldField as keyof typeof comentario] as number || 0) - 1),
@@ -109,7 +106,7 @@ export async function POST(
       }
     } else {
       // Criar novo like/dislike
-      await supabase
+      await getSupabaseAdmin()
         .from('questoes_comentarios_likes')
         .insert({
           comentario_id,
@@ -119,14 +116,14 @@ export async function POST(
 
       // Atualizar contador
       const field = tipo === 'like' ? 'likes_count' : 'dislikes_count'
-      const { data: comentario } = await supabase
+      const { data: comentario } = await getSupabaseAdmin()
         .from('questoes_comentarios')
         .select(field)
         .eq('id', comentario_id)
         .single()
 
       if (comentario) {
-        await supabase
+        await getSupabaseAdmin()
           .from('questoes_comentarios')
           .update({ [field]: ((comentario as Record<string, number>)[field] || 0) + 1 })
           .eq('id', comentario_id)
@@ -136,7 +133,7 @@ export async function POST(
     }
 
     // Buscar contadores atualizados
-    const { data: updatedComentario } = await supabase
+    const { data: updatedComentario } = await getSupabaseAdmin()
       .from('questoes_comentarios')
       .select('likes_count, dislikes_count')
       .eq('id', comentario_id)

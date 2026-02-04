@@ -3,14 +3,11 @@
 // TODAS as imagens incluem referências ABNT automaticamente
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { searchMedicalImages, type ResultadoBusca } from '@/lib/medical-images/service'
 import type { PlanoIA } from '@/lib/ai'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 // Rate limiting simples em memória (MVP)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
@@ -57,7 +54,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano')
       .eq('id', userId)
@@ -152,7 +149,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano')
       .eq('id', userId)

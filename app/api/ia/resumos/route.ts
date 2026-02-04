@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
@@ -21,7 +18,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (resumo_id) {
-      const { data: resumo, error } = await supabase
+      const { data: resumo, error } = await getSupabaseAdmin()
         .from('resumos_ia')
         .select('*')
         .eq('id', resumo_id)
@@ -32,7 +29,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ resumo })
     }
 
-    const { data: resumos, error } = await supabase
+    const { data: resumos, error } = await getSupabaseAdmin()
       .from('resumos_ia')
       .select('*')
       .eq('user_id', user_id)
@@ -67,7 +64,7 @@ export async function POST(req: NextRequest) {
     const mesRef = primeiroDiaMes.toISOString().split('T')[0]
 
     // Buscar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
       .select('plano')
       .eq('id', user_id)
@@ -76,7 +73,7 @@ export async function POST(req: NextRequest) {
     const planoNome = profile?.plano?.toUpperCase() === 'ESTUDA_PRO' ? 'ESTUDA_PRO' : 'FREE'
 
     // Buscar limites
-    const { data: plano } = await supabase
+    const { data: plano } = await getSupabaseAdmin()
       .from('planos')
       .select('limite_resumos_mes')
       .eq('nome', planoNome)
@@ -85,7 +82,7 @@ export async function POST(req: NextRequest) {
     const limiteResumos = plano?.limite_resumos_mes || 5
 
     // Verificar uso do mês
-    const { data: usoMes } = await supabase
+    const { data: usoMes } = await getSupabaseAdmin()
       .from('uso_mensal')
       .select('quantidade')
       .eq('user_id', user_id)
@@ -633,7 +630,7 @@ Retorne APENAS o título, sem aspas ou explicações.`
     }
 
     // Salvar resumo com métricas
-    const { data: resumo, error: errInsert } = await supabase
+    const { data: resumo, error: errInsert } = await getSupabaseAdmin()
       .from('resumos_ia')
       .insert({
         user_id,
@@ -654,14 +651,14 @@ Retorne APENAS o título, sem aspas ou explicações.`
 
     // Registrar uso mensal
     if (usoMes) {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_mensal')
         .update({ quantidade: usadoMes + 1 })
         .eq('user_id', user_id)
         .eq('mes_referencia', mesRef)
         .eq('tipo', 'resumos')
     } else {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_mensal')
         .insert({
           user_id,
@@ -672,7 +669,7 @@ Retorne APENAS o título, sem aspas ou explicações.`
     }
 
     // Registrar atividade
-    await supabase
+    await getSupabaseAdmin()
       .from('historico_atividades')
       .insert({
         user_id,
@@ -704,7 +701,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'resumo_id e user_id são obrigatórios' }, { status: 400 })
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('resumos_ia')
       .delete()
       .eq('id', resumo_id)

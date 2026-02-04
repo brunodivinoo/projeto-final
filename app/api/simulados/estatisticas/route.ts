@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Obter estatísticas gerais do usuário
 export async function GET(request: NextRequest) {
@@ -17,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar todos os simulados finalizados do usuário
-    const { data: simulados, error: simuladosError } = await supabase
+    const { data: simulados, error: simuladosError } = await getSupabaseAdmin()
       .from('simulados')
       .select(`
         id,
@@ -54,7 +51,7 @@ export async function GET(request: NextRequest) {
     })) || []
 
     // Buscar desempenho agregado por disciplina
-    const { data: desempenhoDisciplinas, error: discError } = await supabase
+    const { data: desempenhoDisciplinas, error: discError } = await getSupabaseAdmin()
       .from('simulado_desempenho')
       .select('area_nome, total_questoes, acertos, erros')
       .eq('user_id', user_id)
@@ -98,7 +95,7 @@ export async function GET(request: NextRequest) {
       .slice(0, 5)
 
     // Buscar sugestões não visualizadas
-    const { data: sugestoes, error: sugError } = await supabase
+    const { data: sugestoes, error: sugError } = await getSupabaseAdmin()
       .from('simulado_sugestoes')
       .select('*')
       .eq('user_id', user_id)
@@ -115,20 +112,20 @@ export async function GET(request: NextRequest) {
     inicioMes.setDate(1)
     inicioMes.setHours(0, 0, 0, 0)
 
-    const { count: simuladosMes } = await supabase
+    const { count: simuladosMes } = await getSupabaseAdmin()
       .from('simulados')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user_id)
       .gte('created_at', inicioMes.toISOString())
 
     // Buscar limite do plano
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
       .select('plano')
       .eq('id', user_id)
       .single()
 
-    const { data: plano } = await supabase
+    const { data: plano } = await getSupabaseAdmin()
       .from('planos')
       .select('limite_simulados_mes')
       .eq('nome', profile?.plano || 'gratuito')

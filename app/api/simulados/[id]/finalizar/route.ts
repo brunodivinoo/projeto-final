@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 interface QuestaoComResposta {
   id: string
@@ -30,7 +27,7 @@ export async function POST(
     }
 
     // Verificar se o simulado pertence ao usuário e está em andamento
-    const { data: simulado, error: checkError } = await supabase
+    const { data: simulado, error: checkError } = await getSupabaseAdmin()
       .from('simulados')
       .select(`
         id,
@@ -70,7 +67,7 @@ export async function POST(
 
     // Buscar detalhes das questões para análise de desempenho
     const questaoIds = simulado.simulado_questoes.map((sq: { questao_id: string }) => sq.questao_id)
-    const { data: questoesDetalhes } = await supabase
+    const { data: questoesDetalhes } = await getSupabaseAdmin()
       .from('questoes')
       .select('id, disciplina, assunto, subassunto')
       .in('id', questaoIds)
@@ -183,13 +180,13 @@ export async function POST(
 
     // Inserir desempenho
     if (desempenhoInserts.length > 0) {
-      await supabase
+      await getSupabaseAdmin()
         .from('simulado_desempenho')
         .insert(desempenhoInserts)
     }
 
     // Atualizar simulado como finalizado
-    const { data: simuladoFinalizado, error: updateError } = await supabase
+    const { data: simuladoFinalizado, error: updateError } = await getSupabaseAdmin()
       .from('simulados')
       .update({
         status: 'finalizado',
@@ -268,7 +265,7 @@ export async function POST(
     }
 
     if (sugestoesInserts.length > 0) {
-      await supabase
+      await getSupabaseAdmin()
         .from('simulado_sugestoes')
         .insert(sugestoesInserts)
     }

@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { isAdmin } from '@/lib/admin/auth'
 import { buildPromptQuestao, extrairJsonDaResposta, validarQuestaoGerada, TipoQuestao } from '@/lib/admin/questaoPrompts'
 import { delay } from '@/lib/admin/rateLimit'
 import { generateQuestionImage, extrairDescricaoSeguraParaImagem } from '@/lib/services/gptImageService'
 
 // Usar service role para operações admin
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!
@@ -92,7 +89,7 @@ export async function POST(req: NextRequest) {
     const tiposQuestaoInput = tipos_questao || (tipo_questao ? [tipo_questao] : ['multipla_escolha'])
 
     // Verificar se usuário é admin
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('email')
       .eq('id', user_id)
@@ -184,7 +181,7 @@ export async function POST(req: NextRequest) {
                     const tempoGeracao = Date.now() - inicioGeracao
 
                     // Salvar questão no banco
-                    const { data: questaoSalva, error: errQuestao } = await supabase
+                    const { data: questaoSalva, error: errQuestao } = await getSupabaseAdmin()
                       .from('questoes_med')
                       .insert({
                         disciplina_id: disciplina.id,
@@ -257,7 +254,7 @@ export async function POST(req: NextRequest) {
                           imagemUrl = imgResult.url
 
                           // Atualizar questão com a imagem
-                          await supabase
+                          await getSupabaseAdmin()
                             .from('questoes_med')
                             .update({
                               imagem_url: imgResult.url,
@@ -291,7 +288,7 @@ export async function POST(req: NextRequest) {
 
                     // Log de sucesso no banco (ignorar erros de log)
                     try {
-                      await supabase
+                      await getSupabaseAdmin()
                         .from('admin_geracao_logs_med')
                         .insert({
                           questao_id: questaoSalva.id,
@@ -325,7 +322,7 @@ export async function POST(req: NextRequest) {
 
                     // Log de erro no banco (ignorar erros de log)
                     try {
-                      await supabase
+                      await getSupabaseAdmin()
                         .from('admin_geracao_logs_med')
                         .insert({
                           disciplina_id: disciplina.id,

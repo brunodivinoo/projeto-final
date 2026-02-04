@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Listar simulados do usuário
 export async function GET(request: NextRequest) {
@@ -27,7 +24,7 @@ export async function GET(request: NextRequest) {
     const offset = (pagina - 1) * porPaginaValido
 
     // Construir query
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('simulados')
       .select(`
         *,
@@ -128,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar limite do plano
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await getSupabaseAdmin()
       .from('profiles')
       .select('plano')
       .eq('id', user_id)
@@ -140,7 +137,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar limite do plano
-    const { data: plano, error: planoError } = await supabase
+    const { data: plano, error: planoError } = await getSupabaseAdmin()
       .from('planos')
       .select('limite_simulados_mes')
       .eq('nome', profile.plano || 'gratuito')
@@ -157,7 +154,7 @@ export async function POST(request: NextRequest) {
     inicioMes.setDate(1)
     inicioMes.setHours(0, 0, 0, 0)
 
-    const { count: simuladosMes, error: countError } = await supabase
+    const { count: simuladosMes, error: countError } = await getSupabaseAdmin()
       .from('simulados')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user_id)
@@ -176,7 +173,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar questões disponíveis
-    let questoesQuery = supabase
+    let questoesQuery = getSupabaseAdmin()
       .from('questoes')
       .select('id, enunciado, alternativas, resposta_correta, disciplina, assunto, subassunto, dificuldade, modalidade')
 
@@ -242,7 +239,7 @@ export async function POST(request: NextRequest) {
       .slice(0, quantidade_questoes)
 
     // Criar simulado
-    const { data: simulado, error: simuladoError } = await supabase
+    const { data: simulado, error: simuladoError } = await getSupabaseAdmin()
       .from('simulados')
       .insert({
         user_id,
@@ -275,7 +272,7 @@ export async function POST(request: NextRequest) {
         disciplina_nome: d.nome
       }))
 
-      await supabase
+      await getSupabaseAdmin()
         .from('simulado_disciplinas')
         .insert(disciplinasInsert)
     }
@@ -288,7 +285,7 @@ export async function POST(request: NextRequest) {
         assunto_nome: a.nome
       }))
 
-      await supabase
+      await getSupabaseAdmin()
         .from('simulado_assuntos')
         .insert(assuntosInsert)
     }
@@ -301,7 +298,7 @@ export async function POST(request: NextRequest) {
         subassunto_nome: s.nome
       }))
 
-      await supabase
+      await getSupabaseAdmin()
         .from('simulado_subassuntos')
         .insert(subassuntosInsert)
     }
@@ -313,14 +310,14 @@ export async function POST(request: NextRequest) {
       ordem: index + 1
     }))
 
-    const { error: questoesInsertError } = await supabase
+    const { error: questoesInsertError } = await getSupabaseAdmin()
       .from('simulado_questoes')
       .insert(questoesInsert)
 
     if (questoesInsertError) {
       console.error('[SIMULADOS] Erro ao inserir questões:', questoesInsertError)
       // Deletar simulado criado em caso de erro
-      await supabase.from('simulados').delete().eq('id', simulado.id)
+      await getSupabaseAdmin().from('simulados').delete().eq('id', simulado.id)
       return NextResponse.json({ error: 'Erro ao adicionar questões ao simulado' }, { status: 500 })
     }
 

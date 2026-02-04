@@ -1,10 +1,7 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 // POST - Criar feedback
 export async function POST(request: NextRequest) {
@@ -19,7 +16,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: feedback, error } = await supabase
+    const { data: feedback, error } = await getSupabaseAdmin()
       .from('feedback_med')
       .insert({
         user_id: userId || null,
@@ -53,7 +50,7 @@ export async function GET(request: NextRequest) {
     const tipo = searchParams.get('tipo')
     const limit = parseInt(searchParams.get('limit') || '50')
 
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('feedback_med')
       .select(`
         *,
@@ -107,7 +104,7 @@ export async function PUT(request: NextRequest) {
     if (respostaAdmin !== undefined) updateData.resposta_admin = respostaAdmin
     if (respondidoPor) updateData.respondido_por = respondidoPor
 
-    const { data: feedback, error } = await supabase
+    const { data: feedback, error } = await getSupabaseAdmin()
       .from('feedback_med')
       .update(updateData)
       .eq('id', id)

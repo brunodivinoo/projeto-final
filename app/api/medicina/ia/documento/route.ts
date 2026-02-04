@@ -1,17 +1,14 @@
 // API Route - Geração de Documentos PREPARAMED
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { PlanoIA, verificarLimiteIA, incrementarUsoIA, calcularCusto } from '@/lib/ai'
 import { SYSTEM_PROMPT_PREMIUM, SYSTEM_PROMPT_RESIDENCIA } from '@/lib/ai/prompts'
 import { MODELOS } from '@/lib/ai/config'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!
@@ -240,7 +237,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano')
       .eq('id', user_id)
@@ -320,7 +317,7 @@ ${formato_saida === 'html' ? 'Formate a saída em HTML.' : 'Formate a saída em 
     }
 
     // Salvar no banco
-    const { data: savedDoc, error: saveError } = await supabase
+    const { data: savedDoc, error: saveError } = await getSupabaseAdmin()
       .from('resumos_ia_med')
       .insert({
         user_id,

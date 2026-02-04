@@ -1,12 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-// GET - Buscar questões geradas por IA
+// GET - Buscar questoes geradas por IA
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -17,8 +12,8 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
 
-    // Construir query - questões geradas por IA têm id_original começando com "ia-admin-"
-    let query = supabase
+    // Construir query - questoes geradas por IA tem id_original comecando com "ia-admin-"
+    let query = getSupabaseAdmin()
       .from('questoes')
       .select('*', { count: 'exact' })
       .like('id_original', 'ia-admin-%')
@@ -38,7 +33,7 @@ export async function GET(request: NextRequest) {
       query = query.eq('modalidade', modalidade)
     }
 
-    // Paginação
+    // Paginacao
     const offset = (page - 1) * limit
     query = query.range(offset, offset + limit - 1)
 
@@ -46,8 +41,8 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error
 
-    // Buscar filtros disponíveis (disciplinas únicas das questões geradas)
-    const { data: disciplinasData } = await supabase
+    // Buscar filtros disponiveis (disciplinas unicas das questoes geradas)
+    const { data: disciplinasData } = await getSupabaseAdmin()
       .from('questoes')
       .select('disciplina')
       .like('id_original', 'ia-admin-%')
@@ -68,31 +63,31 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Erro ao buscar questões geradas:', error)
+    console.error('Erro ao buscar questoes geradas:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
 
-// DELETE - Deletar questões geradas por IA
+// DELETE - Deletar questoes geradas por IA
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    const ids = searchParams.get('ids') // IDs separados por vírgula para deleção em massa
+    const ids = searchParams.get('ids') // IDs separados por virgula para delecao em massa
 
     if (!id && !ids) {
-      return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 })
+      return NextResponse.json({ error: 'ID obrigatorio' }, { status: 400 })
     }
 
     if (ids) {
-      // Deleção em massa
+      // Delecao em massa
       const idsArray = ids.split(',').filter(Boolean)
 
-      const { error, count } = await supabase
+      const { error, count } = await getSupabaseAdmin()
         .from('questoes')
         .delete()
         .in('id', idsArray)
-        .like('id_original', 'ia-admin-%') // Segurança: só deleta questões geradas por IA
+        .like('id_original', 'ia-admin-%') // Seguranca: so deleta questoes geradas por IA
 
       if (error) throw error
 
@@ -101,19 +96,19 @@ export async function DELETE(request: NextRequest) {
         deletadas: count || idsArray.length
       })
     } else {
-      // Deleção única
-      const { error } = await supabase
+      // Delecao unica
+      const { error } = await getSupabaseAdmin()
         .from('questoes')
         .delete()
         .eq('id', id)
-        .like('id_original', 'ia-admin-%') // Segurança: só deleta questões geradas por IA
+        .like('id_original', 'ia-admin-%') // Seguranca: so deleta questoes geradas por IA
 
       if (error) throw error
 
       return NextResponse.json({ sucesso: true })
     }
   } catch (error) {
-    console.error('Erro ao deletar questão:', error)
+    console.error('Erro ao deletar questao:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

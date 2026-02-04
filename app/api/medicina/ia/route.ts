@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 
@@ -23,14 +20,14 @@ export async function POST(request: NextRequest) {
 
     // Verificar limite de perguntas
     const mesRef = new Date().toISOString().slice(0, 7)
-    const { data: limiteData } = await supabase
+    const { data: limiteData } = await getSupabaseAdmin()
       .from('limites_uso_med')
       .select('perguntas_ia_mes')
       .eq('user_id', userId)
       .eq('mes_referencia', mesRef)
       .single()
 
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano')
       .eq('id', userId)
@@ -124,7 +121,7 @@ Retorne no formato JSON: { "flashcards": [{ "frente": "pergunta", "verso": "resp
     const resposta = response.text() || 'Desculpe, não consegui gerar uma resposta.'
 
     // Salvar no histórico
-    await supabase
+    await getSupabaseAdmin()
       .from('chat_ia_med')
       .insert({
         user_id: userId,
@@ -134,7 +131,7 @@ Retorne no formato JSON: { "flashcards": [{ "frente": "pergunta", "verso": "resp
       })
 
     // Atualizar contador
-    await supabase
+    await getSupabaseAdmin()
       .from('limites_uso_med')
       .upsert({
         user_id: userId,
@@ -146,7 +143,7 @@ Retorne no formato JSON: { "flashcards": [{ "frente": "pergunta", "verso": "resp
 
     // Atualizar estudo diário
     const hoje = new Date().toISOString().split('T')[0]
-    const { data: estudoHoje } = await supabase
+    const { data: estudoHoje } = await getSupabaseAdmin()
       .from('estudo_diario_med')
       .select('*')
       .eq('user_id', userId)
@@ -154,12 +151,12 @@ Retorne no formato JSON: { "flashcards": [{ "frente": "pergunta", "verso": "resp
       .single()
 
     if (estudoHoje) {
-      await supabase
+      await getSupabaseAdmin()
         .from('estudo_diario_med')
         .update({ perguntas_ia: estudoHoje.perguntas_ia + 1 })
         .eq('id', estudoHoje.id)
     } else {
-      await supabase
+      await getSupabaseAdmin()
         .from('estudo_diario_med')
         .insert({ user_id: userId, data: hoje, perguntas_ia: 1 })
     }
@@ -192,7 +189,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { data: historico, error } = await supabase
+    const { data: historico, error } = await getSupabaseAdmin()
       .from('chat_ia_med')
       .select('*')
       .eq('user_id', userId)

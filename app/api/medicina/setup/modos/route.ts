@@ -1,15 +1,10 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-// Cliente admin do Supabase
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-)
+// Usar getSupabaseAdmin() para lazy init
 
 /**
  * API para verificar e criar tabelas do sistema de modos
@@ -21,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // 1. Verificar/criar tabela sessoes_modo_med
     try {
-      const { error: checkError } = await supabaseAdmin
+      const { error: checkError } = await getSupabaseAdmin()
         .from('sessoes_modo_med')
         .select('id')
         .limit(1)
@@ -53,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Verificar/criar tabela casos_clinicos_med
     try {
-      const { error: checkError } = await supabaseAdmin
+      const { error: checkError } = await getSupabaseAdmin()
         .from('casos_clinicos_med')
         .select('id')
         .limit(1)
@@ -84,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     // 3. Verificar/criar tabela questoes_sessao_med
     try {
-      const { error: checkError } = await supabaseAdmin
+      const { error: checkError } = await getSupabaseAdmin()
         .from('questoes_sessao_med')
         .select('id')
         .limit(1)
@@ -115,7 +110,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Verificar coluna sessao_id em mensagens_ia_med
     try {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await getSupabaseAdmin()
         .from('mensagens_ia_med')
         .select('sessao_id')
         .limit(1)
@@ -140,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     // 5. Verificar coluna modo em conversas_ia_med
     try {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await getSupabaseAdmin()
         .from('conversas_ia_med')
         .select('modo')
         .limit(1)

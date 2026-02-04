@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
@@ -51,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se usuário é PRO
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
       .select('plano')
       .eq('id', user_id)
@@ -252,7 +249,7 @@ Retorne APENAS o JSON, sem markdown ou explicações.`
     }
 
     // Registrar atividade
-    await supabase
+    await getSupabaseAdmin()
       .from('historico_atividades')
       .insert({
         user_id,

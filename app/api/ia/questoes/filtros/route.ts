@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Buscar filtros disponíveis para o usuário
 export async function GET(req: NextRequest) {
@@ -17,7 +14,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Buscar disciplinas, assuntos, subassuntos e bancas das questões do usuário
-    const { data: questoes } = await supabase
+    const { data: questoes } = await getSupabaseAdmin()
       .from('questoes_ia_geradas')
       .select('disciplina, assunto, subassunto, banca, dificuldade, modalidade')
       .eq('user_id', user_id)
@@ -25,8 +22,8 @@ export async function GET(req: NextRequest) {
     if (!questoes || questoes.length === 0) {
       // Se não tem questões, buscar do banco geral de disciplinas/assuntos/bancas
       const [disciplinasResult, bancasResult] = await Promise.all([
-        supabase.from('disciplinas').select('nome').order('nome'),
-        supabase.from('bancas').select('nome').order('nome')
+        getSupabaseAdmin().from('disciplinas').select('nome').order('nome'),
+        getSupabaseAdmin().from('bancas').select('nome').order('nome')
       ])
 
       return NextResponse.json({
@@ -49,8 +46,8 @@ export async function GET(req: NextRequest) {
 
     // Buscar também do banco geral para sugestões
     const [disciplinasGerais, bancasGerais] = await Promise.all([
-      supabase.from('disciplinas').select('nome').order('nome').limit(50),
-      supabase.from('bancas').select('nome').order('nome').limit(20)
+      getSupabaseAdmin().from('disciplinas').select('nome').order('nome').limit(50),
+      getSupabaseAdmin().from('bancas').select('nome').order('nome').limit(20)
     ])
 
     // Merge sem duplicatas

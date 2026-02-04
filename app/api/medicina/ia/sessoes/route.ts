@@ -1,15 +1,8 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-// Cliente admin do Supabase
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-)
 
 // Tipos
 export type ChatMode = 'chat' | 'caso_clinico' | 'tutor' | 'questoes'
@@ -74,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Finalizar sessão anterior da mesma conversa (se houver)
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('sessoes_modo_med')
       .update({ 
         finalizado_em: new Date().toISOString(),
@@ -84,7 +77,7 @@ export async function POST(request: NextRequest) {
       .is('finalizado_em', null)
 
     // Criar nova sessão
-    const { data: novaSessao, error } = await supabaseAdmin
+    const { data: novaSessao, error } = await getSupabaseAdmin()
       .from('sessoes_modo_med')
       .insert({
         conversa_id,
@@ -105,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Atualizar modo da conversa
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('conversas_ia_med')
       .update({ modo })
       .eq('id', conversa_id)
@@ -144,7 +137,7 @@ export async function GET(request: NextRequest) {
 
     // Retornar sessão ativa de uma conversa
     if (tipo === 'ativa' && conversa_id) {
-      const { data: sessaoAtiva, error } = await supabaseAdmin
+      const { data: sessaoAtiva, error } = await getSupabaseAdmin()
         .from('sessoes_modo_med')
         .select('*')
         .eq('conversa_id', conversa_id)
@@ -166,7 +159,7 @@ export async function GET(request: NextRequest) {
     // Retornar estatísticas por modo
     if (tipo === 'estatisticas') {
       // Estatísticas de sessões por modo
-      const { data: sessoes, error: sessoesError } = await supabaseAdmin
+      const { data: sessoes, error: sessoesError } = await getSupabaseAdmin()
         .from('sessoes_modo_med')
         .select('modo, total_mensagens, total_tokens, metricas, iniciado_em, finalizado_em')
         .eq('user_id', user_id)
@@ -180,7 +173,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Estatísticas de questões
-      const { data: questoes, error: questoesError } = await supabaseAdmin
+      const { data: questoes, error: questoesError } = await getSupabaseAdmin()
         .from('questoes_sessao_med')
         .select('tema, acertou, tempo_resposta_segundos')
         .eq('user_id', user_id)
@@ -248,7 +241,7 @@ export async function GET(request: NextRequest) {
 
     // Retornar lista de sessões de uma conversa
     if (conversa_id) {
-      const { data: sessoes, error } = await supabaseAdmin
+      const { data: sessoes, error } = await getSupabaseAdmin()
         .from('sessoes_modo_med')
         .select('*')
         .eq('conversa_id', conversa_id)
@@ -269,7 +262,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Retornar todas as sessões do usuário (últimas 50)
-    const { data: sessoes, error } = await supabaseAdmin
+    const { data: sessoes, error } = await getSupabaseAdmin()
       .from('sessoes_modo_med')
       .select('*, conversas_ia_med(titulo)')
       .eq('user_id', user_id)
@@ -323,7 +316,7 @@ export async function PUT(request: NextRequest) {
 
     if (metricas) {
       // Buscar métricas atuais para fazer merge
-      const { data: sessaoAtual } = await supabaseAdmin
+      const { data: sessaoAtual } = await getSupabaseAdmin()
         .from('sessoes_modo_med')
         .select('metricas')
         .eq('id', sessao_id)
@@ -335,7 +328,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('sessoes_modo_med')
       .update(updateData)
       .eq('id', sessao_id)
@@ -381,7 +374,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const { error } = await supabaseAdmin
+    const { error } = await getSupabaseAdmin()
       .from('sessoes_modo_med')
       .delete()
       .eq('id', sessao_id)

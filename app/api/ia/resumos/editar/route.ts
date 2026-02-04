@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -23,7 +20,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Atualizar o conteúdo do resumo
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseAdmin()
       .from('resumos_ia')
       .update({ resumo })
       .eq('id', resumo_id)

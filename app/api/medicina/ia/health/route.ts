@@ -1,16 +1,13 @@
 // API Route - Health Check e Monitoramento de IA PREPARAMED
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { MODELOS } from '@/lib/ai/config'
 import { getEstatisticasCache } from '@/lib/ai/cache'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 // ==========================================
 // GET - Health Check
@@ -27,7 +24,7 @@ export async function GET(request: NextRequest) {
   // 1. Check Supabase
   try {
     const start = Date.now()
-    const { error } = await supabase.from('profiles_med').select('id').limit(1)
+    const { error } = await getSupabaseAdmin().from('profiles_med').select('id').limit(1)
     checks.supabase = {
       status: error ? 'error' : 'ok',
       latency: Date.now() - start,
@@ -99,7 +96,7 @@ export async function GET(request: NextRequest) {
 
     // Estatísticas de uso global
     try {
-      const { data: usoTotal } = await supabase
+      const { data: usoTotal } = await getSupabaseAdmin()
         .from('uso_ia_med')
         .select('tokens_input, tokens_output, custo_estimado')
 
@@ -119,19 +116,19 @@ export async function GET(request: NextRequest) {
 
     // Contagem de conversas e mensagens
     try {
-      const { count: totalConversas } = await supabase
+      const { count: totalConversas } = await getSupabaseAdmin()
         .from('conversas_ia_med')
         .select('id', { count: 'exact', head: true })
 
-      const { count: totalMensagens } = await supabase
+      const { count: totalMensagens } = await getSupabaseAdmin()
         .from('mensagens_ia_med')
         .select('id', { count: 'exact', head: true })
 
-      const { count: totalFlashcards } = await supabase
+      const { count: totalFlashcards } = await getSupabaseAdmin()
         .from('flashcards_ia_med')
         .select('id', { count: 'exact', head: true })
 
-      const { count: totalResumos } = await supabase
+      const { count: totalResumos } = await getSupabaseAdmin()
         .from('resumos_ia_med')
         .select('id', { count: 'exact', head: true })
 
@@ -226,7 +223,7 @@ export async function POST(request: NextRequest) {
           const start = Date.now()
 
           // Inserir e deletar um registro de teste
-          const { data, error } = await supabase
+          const { data, error } = await getSupabaseAdmin()
             .from('uso_ia_med')
             .insert({
               user_id: '00000000-0000-0000-0000-000000000000',
@@ -238,7 +235,7 @@ export async function POST(request: NextRequest) {
           if (error) throw error
 
           // Deletar imediatamente
-          await supabase
+          await getSupabaseAdmin()
             .from('uso_ia_med')
             .delete()
             .eq('id', data.id)

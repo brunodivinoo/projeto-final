@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generatePreparaMedImage, GenerateMedicalImageRequest } from '@/lib/services/gptImageService'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 // Timeout de 60 segundos para geração de imagem
 export const maxDuration = 60
 
 // Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se usuário existe e tem permissão
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('id, plano')
       .eq('id', user_id)
@@ -71,7 +68,7 @@ export async function POST(request: NextRequest) {
       residencia: 200,
     }
 
-    const { data: usoAtual } = await supabase
+    const { data: usoAtual } = await getSupabaseAdmin()
       .from('uso_ia_med')
       .select('imagens_geradas')
       .eq('user_id', user_id)
@@ -108,11 +105,11 @@ export async function POST(request: NextRequest) {
     const result = await generatePreparaMedImage(imageRequest)
 
     // Registrar uso
-    await supabase.rpc('incrementar_uso_imagens', { p_user_id: user_id })
+    await getSupabaseAdmin().rpc('incrementar_uso_imagens', { p_user_id: user_id })
 
     // Salvar no histórico de imagens geradas (opcional)
     try {
-      await supabase
+      await getSupabaseAdmin()
         .from('imagens_geradas_med')
         .insert({
           user_id,

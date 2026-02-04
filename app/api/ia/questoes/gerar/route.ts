@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
@@ -80,7 +77,7 @@ async function getOrCreateDisciplina(nome: string): Promise<{ id: string; nome: 
   const nomeNormalizado = normalizarTexto(nome)
 
   // Buscar existente
-  const { data: existing } = await supabase
+  const { data: existing } = await getSupabaseAdmin()
     .from('disciplinas')
     .select('id, nome')
     .eq('nome_normalizado', nomeNormalizado)
@@ -93,7 +90,7 @@ async function getOrCreateDisciplina(nome: string): Promise<{ id: string; nome: 
   const nomePadronizadoNorm = normalizarTexto(nomePadronizado)
 
   // Verificar se o nome padronizado já existe
-  const { data: existingPad } = await supabase
+  const { data: existingPad } = await getSupabaseAdmin()
     .from('disciplinas')
     .select('id, nome')
     .eq('nome_normalizado', nomePadronizadoNorm)
@@ -102,7 +99,7 @@ async function getOrCreateDisciplina(nome: string): Promise<{ id: string; nome: 
   if (existingPad) return existingPad
 
   // Criar nova
-  const { data: created } = await supabase
+  const { data: created } = await getSupabaseAdmin()
     .from('disciplinas')
     .insert({ nome: nomePadronizado, nome_normalizado: nomePadronizadoNorm })
     .select('id, nome')
@@ -116,7 +113,7 @@ async function getOrCreateAssunto(nome: string, disciplinaId: string, disciplina
   const nomeNormalizado = normalizarTexto(nome)
 
   // Buscar existente na mesma disciplina
-  const { data: existing } = await supabase
+  const { data: existing } = await getSupabaseAdmin()
     .from('assuntos')
     .select('id, nome')
     .eq('nome_normalizado', nomeNormalizado)
@@ -130,7 +127,7 @@ async function getOrCreateAssunto(nome: string, disciplinaId: string, disciplina
   const nomePadronizadoNorm = normalizarTexto(nomePadronizado)
 
   // Verificar se já existe
-  const { data: existingPad } = await supabase
+  const { data: existingPad } = await getSupabaseAdmin()
     .from('assuntos')
     .select('id, nome')
     .eq('nome_normalizado', nomePadronizadoNorm)
@@ -140,7 +137,7 @@ async function getOrCreateAssunto(nome: string, disciplinaId: string, disciplina
   if (existingPad) return existingPad
 
   // Criar novo
-  const { data: created } = await supabase
+  const { data: created } = await getSupabaseAdmin()
     .from('assuntos')
     .insert({ nome: nomePadronizado, nome_normalizado: nomePadronizadoNorm, disciplina_id: disciplinaId })
     .select('id, nome')
@@ -154,7 +151,7 @@ async function getOrCreateBanca(nome: string): Promise<{ id: string; nome: strin
   const nomeNormalizado = normalizarTexto(nome)
 
   // Buscar existente
-  const { data: existing } = await supabase
+  const { data: existing } = await getSupabaseAdmin()
     .from('bancas')
     .select('id, nome')
     .eq('nome_normalizado', nomeNormalizado)
@@ -167,7 +164,7 @@ async function getOrCreateBanca(nome: string): Promise<{ id: string; nome: strin
   const nomePadronizadoNorm = normalizarTexto(nomePadronizado)
 
   // Verificar se já existe
-  const { data: existingPad } = await supabase
+  const { data: existingPad } = await getSupabaseAdmin()
     .from('bancas')
     .select('id, nome')
     .eq('nome_normalizado', nomePadronizadoNorm)
@@ -176,7 +173,7 @@ async function getOrCreateBanca(nome: string): Promise<{ id: string; nome: strin
   if (existingPad) return existingPad
 
   // Criar nova
-  const { data: created } = await supabase
+  const { data: created } = await getSupabaseAdmin()
     .from('bancas')
     .insert({ nome: nomePadronizado, nome_normalizado: nomePadronizadoNorm })
     .select('id, nome')
@@ -281,7 +278,7 @@ export async function POST(req: NextRequest) {
     const hoje = new Date().toISOString().split('T')[0]
 
     // Buscar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
       .select('plano')
       .eq('id', user_id)
@@ -290,7 +287,7 @@ export async function POST(req: NextRequest) {
     const planoNome = profile?.plano?.toUpperCase() === 'ESTUDA_PRO' ? 'ESTUDA_PRO' : 'FREE'
 
     // Buscar limites
-    const { data: plano } = await supabase
+    const { data: plano } = await getSupabaseAdmin()
       .from('planos')
       .select('limite_questoes_ia_dia')
       .eq('nome', planoNome)
@@ -299,7 +296,7 @@ export async function POST(req: NextRequest) {
     const limiteQuestoes = plano?.limite_questoes_ia_dia || 5
 
     // Verificar uso de hoje
-    const { data: usoHoje } = await supabase
+    const { data: usoHoje } = await getSupabaseAdmin()
       .from('uso_diario')
       .select('quantidade')
       .eq('user_id', user_id)
@@ -524,7 +521,7 @@ Retorne APENAS o JSON, sem markdown ou explicações.`
       config_modalidade: q.config_modalidade
     }))
 
-    const { data: insertedQuestoes, error: insertError } = await supabase
+    const { data: insertedQuestoes, error: insertError } = await getSupabaseAdmin()
       .from('questoes_ia_geradas')
       .insert(questoesParaInserir)
       .select()
@@ -536,14 +533,14 @@ Retorne APENAS o JSON, sem markdown ou explicações.`
 
     // Registrar uso diário
     if (usoHoje) {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_diario')
         .update({ quantidade: usadoHoje + questoesGeradas.length })
         .eq('user_id', user_id)
         .eq('data', hoje)
         .eq('tipo', 'questoes_ia')
     } else {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_diario')
         .insert({
           user_id,
@@ -554,7 +551,7 @@ Retorne APENAS o JSON, sem markdown ou explicações.`
     }
 
     // Registrar atividade
-    await supabase
+    await getSupabaseAdmin()
       .from('historico_atividades')
       .insert({
         user_id,

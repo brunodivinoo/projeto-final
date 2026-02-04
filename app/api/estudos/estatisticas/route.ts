@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Estatísticas de estudo do usuário
 export async function GET(request: NextRequest) {
@@ -26,21 +23,21 @@ export async function GET(request: NextRequest) {
 
     if (tipo === 'hoje') {
       // Estatísticas de hoje
-      const { data: estudoHoje } = await supabase
+      const { data: estudoHoje } = await getSupabaseAdmin()
         .from('estudo_diario')
         .select('*')
         .eq('user_id', user_id)
         .eq('data', dataHoje)
         .single()
 
-      const { count: revisoesHoje } = await supabase
+      const { count: revisoesHoje } = await getSupabaseAdmin()
         .from('revisoes')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user_id)
         .in('status', ['pendente', 'atrasada'])
         .lte('proxima_revisao', dataHoje)
 
-      const { data: sessaoAtiva } = await supabase
+      const { data: sessaoAtiva } = await getSupabaseAdmin()
         .from('sessoes_estudo')
         .select('id, inicio, metodo, disciplina:disciplinas(nome)')
         .eq('user_id', user_id)
@@ -68,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     if (tipo === 'semanal') {
       // Estatísticas dos últimos 7 dias
-      const { data: estudoSemanal } = await supabase
+      const { data: estudoSemanal } = await getSupabaseAdmin()
         .from('estudo_diario')
         .select('*')
         .eq('user_id', user_id)
@@ -128,7 +125,7 @@ export async function GET(request: NextRequest) {
 
     if (tipo === 'ciclo') {
       // Estatísticas do ciclo atual
-      const { data: cicloAtual } = await supabase
+      const { data: cicloAtual } = await getSupabaseAdmin()
         .from('ciclos_estudo')
         .select(`
           *,
@@ -170,7 +167,7 @@ export async function GET(request: NextRequest) {
 
     if (tipo === 'disciplinas') {
       // Estatísticas por disciplina
-      const { data: sessoes } = await supabase
+      const { data: sessoes } = await getSupabaseAdmin()
         .from('sessoes_estudo')
         .select(`
           duracao_segundos,
@@ -232,30 +229,30 @@ export async function GET(request: NextRequest) {
       { data: cicloAtual },
       { count: totalSessoes }
     ] = await Promise.all([
-      supabase
+      getSupabaseAdmin()
         .from('estudo_diario')
         .select('*')
         .eq('user_id', user_id)
         .gte('data', dataInicioStr)
         .order('data', { ascending: true }),
-      supabase
+      getSupabaseAdmin()
         .from('revisoes')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user_id)
         .eq('status', 'pendente'),
-      supabase
+      getSupabaseAdmin()
         .from('revisoes')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user_id)
         .eq('status', 'atrasada'),
-      supabase
+      getSupabaseAdmin()
         .from('ciclos_estudo')
         .select('id, nome, status, horas_planejadas, horas_estudadas')
         .eq('user_id', user_id)
         .eq('status', 'em_progresso')
         .limit(1)
         .single(),
-      supabase
+      getSupabaseAdmin()
         .from('sessoes_estudo')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user_id)

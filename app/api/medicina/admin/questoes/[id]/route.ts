@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // GET - Buscar uma questão específica
 export async function GET(
@@ -14,7 +11,7 @@ export async function GET(
   try {
     const { id } = await params
 
-    const { data: questao, error } = await supabase
+    const { data: questao, error } = await getSupabaseAdmin()
       .from('questoes_med')
       .select(`
         id,
@@ -62,7 +59,7 @@ export async function DELETE(
   try {
     const { id } = await params
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('questoes_med')
       .delete()
       .eq('id', id)
@@ -89,7 +86,7 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
 
-    const { data: questao, error } = await supabase
+    const { data: questao, error } = await getSupabaseAdmin()
       .from('questoes_med')
       .update({
         enunciado: body.enunciado,

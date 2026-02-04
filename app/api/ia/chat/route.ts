@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
@@ -22,7 +19,7 @@ export async function GET(req: NextRequest) {
 
     // Se tem conversa_id, buscar mensagens dessa conversa
     if (conversa_id) {
-      const { data: mensagens, error } = await supabase
+      const { data: mensagens, error } = await getSupabaseAdmin()
         .from('chat_mensagens')
         .select('*')
         .eq('conversa_id', conversa_id)
@@ -34,7 +31,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Senão, buscar todas as conversas do usuário
-    const { data: conversas, error } = await supabase
+    const { data: conversas, error } = await getSupabaseAdmin()
       .from('chat_conversas')
       .select('*')
       .eq('user_id', user_id)
@@ -67,7 +64,7 @@ export async function POST(req: NextRequest) {
     const hoje = new Date().toISOString().split('T')[0]
 
     // Buscar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
       .select('plano')
       .eq('id', user_id)
@@ -76,7 +73,7 @@ export async function POST(req: NextRequest) {
     const planoNome = profile?.plano?.toUpperCase() === 'ESTUDA_PRO' ? 'ESTUDA_PRO' : 'FREE'
 
     // Buscar limites
-    const { data: plano } = await supabase
+    const { data: plano } = await getSupabaseAdmin()
       .from('planos')
       .select('limite_chat_mensagens_dia')
       .eq('nome', planoNome)
@@ -85,7 +82,7 @@ export async function POST(req: NextRequest) {
     const limiteMensagens = plano?.limite_chat_mensagens_dia || 10
 
     // Verificar uso de hoje
-    const { data: usoHoje } = await supabase
+    const { data: usoHoje } = await getSupabaseAdmin()
       .from('uso_diario')
       .select('quantidade')
       .eq('user_id', user_id)
@@ -110,7 +107,7 @@ export async function POST(req: NextRequest) {
       // Gerar título baseado na mensagem
       const titulo = mensagem.length > 50 ? mensagem.substring(0, 50) + '...' : mensagem
 
-      const { data: novaConversa, error: errConv } = await supabase
+      const { data: novaConversa, error: errConv } = await getSupabaseAdmin()
         .from('chat_conversas')
         .insert({
           user_id,
@@ -124,7 +121,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Salvar mensagem do usuário
-    const { error: errMsgUser } = await supabase
+    const { error: errMsgUser } = await getSupabaseAdmin()
       .from('chat_mensagens')
       .insert({
         conversa_id: conversaAtual,
@@ -136,7 +133,7 @@ export async function POST(req: NextRequest) {
     if (errMsgUser) throw errMsgUser
 
     // Buscar histórico da conversa para contexto
-    const { data: historico } = await supabase
+    const { data: historico } = await getSupabaseAdmin()
       .from('chat_mensagens')
       .select('tipo, conteudo')
       .eq('conversa_id', conversaAtual)
@@ -246,7 +243,7 @@ export async function POST(req: NextRequest) {
     const respostaIA = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Desculpe, não consegui processar sua mensagem.'
 
     // Salvar resposta da IA
-    const { data: msgIA, error: errMsgIA } = await supabase
+    const { data: msgIA, error: errMsgIA } = await getSupabaseAdmin()
       .from('chat_mensagens')
       .insert({
         conversa_id: conversaAtual,
@@ -260,12 +257,12 @@ export async function POST(req: NextRequest) {
     if (errMsgIA) throw errMsgIA
 
     // Atualizar conversa com última mensagem e contador
-    await supabase
+    await getSupabaseAdmin()
       .from('chat_conversas')
       .update({
         updated_at: new Date().toISOString(),
         ultima_mensagem: respostaIA.substring(0, 100),
-        total_mensagens: (await supabase
+        total_mensagens: (await getSupabaseAdmin()
           .from('chat_mensagens')
           .select('id', { count: 'exact', head: true })
           .eq('conversa_id', conversaAtual)
@@ -275,14 +272,14 @@ export async function POST(req: NextRequest) {
 
     // Registrar uso diário
     if (usoHoje) {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_diario')
         .update({ quantidade: usadoHoje + 1 })
         .eq('user_id', user_id)
         .eq('data', hoje)
         .eq('tipo', 'chat_mensagens')
     } else {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_diario')
         .insert({
           user_id,
@@ -317,13 +314,13 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Deletar mensagens primeiro
-    await supabase
+    await getSupabaseAdmin()
       .from('chat_mensagens')
       .delete()
       .eq('conversa_id', conversa_id)
 
     // Deletar conversa
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('chat_conversas')
       .delete()
       .eq('id', conversa_id)

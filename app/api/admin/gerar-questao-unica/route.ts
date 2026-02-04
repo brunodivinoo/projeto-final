@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
@@ -22,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Buscar item da fila
-    const { data: item, error: fetchError } = await supabase
+    const { data: item, error: fetchError } = await getSupabaseAdmin()
       .from('geracao_fila')
       .select('*')
       .eq('id', fila_id)
@@ -36,7 +33,7 @@ export async function POST(req: NextRequest) {
     // Verificar se ainda precisa gerar
     if (item.geradas >= item.quantidade) {
       // Marcar como concluído
-      await supabase
+      await getSupabaseAdmin()
         .from('geracao_fila')
         .update({ status: 'concluido', completed_at: new Date().toISOString() })
         .eq('id', fila_id)
@@ -51,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     // Atualizar status para processando
     if (item.status === 'pendente') {
-      await supabase
+      await getSupabaseAdmin()
         .from('geracao_fila')
         .update({ status: 'processando', started_at: new Date().toISOString() })
         .eq('id', fila_id)
@@ -142,7 +139,7 @@ Apenas JSON, sem markdown.`
 
     if (!response.ok) {
       // Incrementar erro
-      await supabase
+      await getSupabaseAdmin()
         .from('geracao_fila')
         .update({ erros: item.erros + 1 })
         .eq('id', fila_id)
@@ -172,7 +169,7 @@ Apenas JSON, sem markdown.`
 
     if (!questao || !questao.enunciado) {
       // Incrementar erro
-      await supabase
+      await getSupabaseAdmin()
         .from('geracao_fila')
         .update({ erros: item.erros + 1 })
         .eq('id', fila_id)
@@ -205,13 +202,13 @@ Apenas JSON, sem markdown.`
       id_original: `ia-admin-${user_id.slice(0, 8)}-${Date.now()}`
     }
 
-    const { error: insertError } = await supabase
+    const { error: insertError } = await getSupabaseAdmin()
       .from('questoes')
       .insert(questaoParaInserir)
 
     if (insertError) {
       console.error('Erro ao inserir questão:', insertError)
-      await supabase
+      await getSupabaseAdmin()
         .from('geracao_fila')
         .update({ erros: item.erros + 1 })
         .eq('id', fila_id)
@@ -225,21 +222,21 @@ Apenas JSON, sem markdown.`
 
     // Atualizar qtd_questoes nas tabelas de referência (incrementar)
     // 1. Disciplina - buscar ID e incrementar
-    const { data: discData } = await supabase
+    const { data: discData } = await getSupabaseAdmin()
       .from('disciplinas')
       .select('id, qtd_questoes')
       .eq('nome', item.disciplina)
       .single()
 
     if (discData) {
-      await supabase
+      await getSupabaseAdmin()
         .from('disciplinas')
         .update({ qtd_questoes: (discData.qtd_questoes || 0) + 1 })
         .eq('id', discData.id)
 
       // 2. Assunto - buscar ID e incrementar
       if (item.assunto) {
-        const { data: assData } = await supabase
+        const { data: assData } = await getSupabaseAdmin()
           .from('assuntos')
           .select('id, qtd_questoes')
           .eq('disciplina_id', discData.id)
@@ -247,14 +244,14 @@ Apenas JSON, sem markdown.`
           .single()
 
         if (assData) {
-          await supabase
+          await getSupabaseAdmin()
             .from('assuntos')
             .update({ qtd_questoes: (assData.qtd_questoes || 0) + 1 })
             .eq('id', assData.id)
 
           // 3. Subassunto - buscar ID e incrementar
           if (item.subassunto) {
-            const { data: subData } = await supabase
+            const { data: subData } = await getSupabaseAdmin()
               .from('subassuntos')
               .select('id, qtd_questoes')
               .eq('assunto_id', assData.id)
@@ -262,7 +259,7 @@ Apenas JSON, sem markdown.`
               .single()
 
             if (subData) {
-              await supabase
+              await getSupabaseAdmin()
                 .from('subassuntos')
                 .update({ qtd_questoes: (subData.qtd_questoes || 0) + 1 })
                 .eq('id', subData.id)
@@ -276,7 +273,7 @@ Apenas JSON, sem markdown.`
     const novasGeradas = item.geradas + 1
     const statusFinal = novasGeradas >= item.quantidade ? 'concluido' : 'processando'
 
-    await supabase
+    await getSupabaseAdmin()
       .from('geracao_fila')
       .update({
         geradas: novasGeradas,

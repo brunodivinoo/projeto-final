@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Buscar perfil do usuário
 export async function GET(request: NextRequest) {
@@ -17,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar perfil
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('*')
       .eq('id', user_id)
@@ -29,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar assinatura ativa
-    const { data: assinatura } = await supabase
+    const { data: assinatura } = await getSupabaseAdmin()
       .from('assinaturas_med')
       .select('*')
       .eq('user_id', user_id)
@@ -38,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     // Buscar limites de uso do mês atual
     const mesAtual = new Date().toISOString().slice(0, 7)
-    const { data: limites } = await supabase
+    const { data: limites } = await getSupabaseAdmin()
       .from('limites_uso_med')
       .select('*')
       .eq('user_id', user_id)
@@ -81,7 +78,7 @@ export async function PUT(request: NextRequest) {
     if (cidade !== undefined) updates.cidade = cidade
     if (avatar_url !== undefined) updates.avatar_url = avatar_url
 
-    const { data: profile, error } = await supabase
+    const { data: profile, error } = await getSupabaseAdmin()
       .from('profiles_med')
       .update(updates)
       .eq('id', finalUserId)
@@ -111,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se já existe
-    const { data: existente } = await supabase
+    const { data: existente } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('id')
       .eq('id', user_id)
@@ -122,7 +119,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar perfil
-    const { data: profile, error } = await supabase
+    const { data: profile, error } = await getSupabaseAdmin()
       .from('profiles_med')
       .insert({
         id: user_id,
@@ -144,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     // Criar limites de uso
     const mesAtual = new Date().toISOString().slice(0, 7)
-    await supabase
+    await getSupabaseAdmin()
       .from('limites_uso_med')
       .insert({
         user_id,

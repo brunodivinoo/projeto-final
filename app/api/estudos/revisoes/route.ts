@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Listar revisões do usuário
 export async function GET(request: NextRequest) {
@@ -25,14 +22,14 @@ export async function GET(request: NextRequest) {
 
     // Atualizar revisões atrasadas (ignorar erros se função não existir)
     try {
-      await supabase.rpc('atualizar_revisoes_atrasadas')
+      await getSupabaseAdmin().rpc('atualizar_revisoes_atrasadas')
     } catch {
       // Ignorar
     }
 
     // Buscar revisão específica
     if (id) {
-      const { data: revisao, error } = await supabase
+      const { data: revisao, error } = await getSupabaseAdmin()
         .from('revisoes')
         .select(`
           *,
@@ -57,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     // Buscar revisões para hoje
     if (hoje === 'true') {
-      const { data: revisoes, error } = await supabase
+      const { data: revisoes, error } = await getSupabaseAdmin()
         .from('revisoes')
         .select(`
           *,
@@ -82,7 +79,7 @@ export async function GET(request: NextRequest) {
 
     // Buscar pendentes
     if (pendentes === 'true') {
-      const { data: revisoes, error } = await supabase
+      const { data: revisoes, error } = await getSupabaseAdmin()
         .from('revisoes')
         .select(`
           *,
@@ -105,7 +102,7 @@ export async function GET(request: NextRequest) {
 
     // Buscar atrasadas
     if (atrasadas === 'true') {
-      const { data: revisoes, error } = await supabase
+      const { data: revisoes, error } = await getSupabaseAdmin()
         .from('revisoes')
         .select(`
           *,
@@ -127,7 +124,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Listar todas as revisões
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('revisoes')
       .select(`
         *,
@@ -181,7 +178,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar revisão
-    const { data: revisao, error: revisaoError } = await supabase
+    const { data: revisao, error: revisaoError } = await getSupabaseAdmin()
       .from('revisoes')
       .insert({
         user_id,
@@ -226,7 +223,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verificar propriedade
-    const { data: revisaoExistente } = await supabase
+    const { data: revisaoExistente } = await getSupabaseAdmin()
       .from('revisoes')
       .select('*')
       .eq('id', id)
@@ -239,7 +236,7 @@ export async function PUT(request: NextRequest) {
 
     // Arquivar revisão
     if (arquivar === true) {
-      const { error } = await supabase
+      const { error } = await getSupabaseAdmin()
         .from('revisoes')
         .update({ status: 'arquivada' })
         .eq('id', id)
@@ -254,7 +251,7 @@ export async function PUT(request: NextRequest) {
     // Registrar revisão com SM-2
     if (qualidade !== undefined && qualidade >= 0 && qualidade <= 5) {
       // Calcular próxima revisão usando SM-2
-      const { data: sm2Result } = await supabase.rpc('calcular_proxima_revisao', {
+      const { data: sm2Result } = await getSupabaseAdmin().rpc('calcular_proxima_revisao', {
         p_qualidade: qualidade,
         p_repeticoes: revisaoExistente.repeticoes || 0,
         p_fator_facilidade: revisaoExistente.fator_facilidade || 2.5,
@@ -269,7 +266,7 @@ export async function PUT(request: NextRequest) {
       }
 
       // Registrar histórico
-      await supabase.from('revisao_historico').insert({
+      await getSupabaseAdmin().from('revisao_historico').insert({
         revisao_id: id,
         data_revisao: new Date().toISOString().split('T')[0],
         qualidade,
@@ -282,7 +279,7 @@ export async function PUT(request: NextRequest) {
       })
 
       // Atualizar revisão
-      const { error: updateError } = await supabase
+      const { error: updateError } = await getSupabaseAdmin()
         .from('revisoes')
         .update({
           repeticoes: resultado.nova_repeticao,
@@ -300,7 +297,7 @@ export async function PUT(request: NextRequest) {
 
       // Atualizar estudo_diario (ignorar erros)
       try {
-        await supabase
+        await getSupabaseAdmin()
           .from('estudo_diario')
           .upsert({
             user_id,
@@ -315,7 +312,7 @@ export async function PUT(request: NextRequest) {
       }
 
       // Buscar revisão atualizada
-      const { data: revisaoAtualizada } = await supabase
+      const { data: revisaoAtualizada } = await getSupabaseAdmin()
         .from('revisoes')
         .select(`
           *,
@@ -350,7 +347,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID e user_id são obrigatórios' }, { status: 400 })
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('revisoes')
       .delete()
       .eq('id', id)

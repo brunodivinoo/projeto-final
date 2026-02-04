@@ -1,10 +1,7 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 // POST - Registrar erro
 export async function POST(request: NextRequest) {
@@ -19,7 +16,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('error_logs_med')
       .insert({
         user_id: userId || null,
@@ -54,7 +51,7 @@ export async function GET(request: NextRequest) {
     const errorType = searchParams.get('errorType')
     const periodo = searchParams.get('periodo') // hoje, semana, mes
 
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('error_logs_med')
       .select(`
         *,

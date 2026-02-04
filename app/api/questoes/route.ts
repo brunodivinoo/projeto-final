@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,7 +28,7 @@ export async function GET(request: NextRequest) {
     const offset = (pagina - 1) * porPaginaValido
 
     // Construir query base
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('questoes')
       .select('*', { count: 'exact' })
 

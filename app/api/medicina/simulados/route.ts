@@ -1,10 +1,7 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // GET - Listar simulados do usuário
 export async function GET(request: NextRequest) {
@@ -22,7 +19,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('simulados_med')
       .select('*', { count: 'exact' })
       .eq('user_id', userId)
@@ -79,14 +76,14 @@ export async function POST(request: NextRequest) {
 
     // Verificar limite de simulados
     const mesRef = new Date().toISOString().slice(0, 7)
-    const { data: limiteData } = await supabase
+    const { data: limiteData } = await getSupabaseAdmin()
       .from('limites_uso_med')
       .select('simulados_mes')
       .eq('user_id', userId)
       .eq('mes_referencia', mesRef)
       .single()
 
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano')
       .eq('id', userId)
@@ -110,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar questões aleatórias baseadas nos filtros
-    let queryQuestoes = supabase
+    let queryQuestoes = getSupabaseAdmin()
       .from('questoes_med')
       .select('id')
       .eq('ativo', true)
@@ -156,7 +153,7 @@ export async function POST(request: NextRequest) {
     const questoesIds = selecionadas.map(q => q.id)
 
     // Criar o simulado
-    const { data: simulado, error: simuladoError } = await supabase
+    const { data: simulado, error: simuladoError } = await getSupabaseAdmin()
       .from('simulados_med')
       .insert({
         user_id: userId,
@@ -185,12 +182,12 @@ export async function POST(request: NextRequest) {
       ordem: index + 1
     }))
 
-    await supabase
+    await getSupabaseAdmin()
       .from('simulado_respostas_med')
       .insert(respostasIniciais)
 
     // Atualizar contador de simulados do mês
-    await supabase
+    await getSupabaseAdmin()
       .from('limites_uso_med')
       .upsert({
         user_id: userId,
@@ -231,7 +228,7 @@ export async function PUT(request: NextRequest) {
     if (questoesCorretas !== undefined) updateData.questoes_corretas = questoesCorretas
     if (status === 'finalizado') updateData.data_fim = new Date().toISOString()
 
-    const { data: simulado, error } = await supabase
+    const { data: simulado, error } = await getSupabaseAdmin()
       .from('simulados_med')
       .update(updateData)
       .eq('id', id)
@@ -244,7 +241,7 @@ export async function PUT(request: NextRequest) {
     // Se finalizou, atualizar estudo diário
     if (status === 'finalizado') {
       const hoje = new Date().toISOString().split('T')[0]
-      const { data: estudoHoje } = await supabase
+      const { data: estudoHoje } = await getSupabaseAdmin()
         .from('estudo_diario_med')
         .select('*')
         .eq('user_id', userId)
@@ -252,7 +249,7 @@ export async function PUT(request: NextRequest) {
         .single()
 
       if (estudoHoje) {
-        await supabase
+        await getSupabaseAdmin()
           .from('estudo_diario_med')
           .update({
             simulados_feitos: estudoHoje.simulados_feitos + 1,
@@ -260,7 +257,7 @@ export async function PUT(request: NextRequest) {
           })
           .eq('id', estudoHoje.id)
       } else {
-        await supabase
+        await getSupabaseAdmin()
           .from('estudo_diario_med')
           .insert({
             user_id: userId,

@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
@@ -27,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Buscar assuntos existentes para padronização
-    const { data: assuntosExistentes } = await supabase
+    const { data: assuntosExistentes } = await getSupabaseAdmin()
       .from('assuntos')
       .select('nome, disciplinas(nome)')
       .limit(500)

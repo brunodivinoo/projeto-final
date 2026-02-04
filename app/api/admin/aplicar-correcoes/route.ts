@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 interface Correcao {
   questaoId: string
@@ -42,7 +39,7 @@ export async function POST(req: NextRequest) {
         continue
       }
 
-      const { error } = await supabase
+      const { error } = await getSupabaseAdmin()
         .from('questoes')
         .update(updateData)
         .eq('id', correcao.questaoId)

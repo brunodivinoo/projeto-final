@@ -7,13 +7,9 @@
  * - Revisoes de espacamento baseadas em performance
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
-// Cliente Supabase para operacoes server-side
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Usar getSupabaseAdmin() para lazy init
 
 export interface Suggestion {
   type: 'topic' | 'action' | 'review'
@@ -277,7 +273,7 @@ export async function updateUserLearning(
 ): Promise<void> {
   try {
     // Usar a funcao SQL que criamos
-    await supabase.rpc('atualizar_aprendizado_med', {
+    await getSupabaseAdmin().rpc('atualizar_aprendizado_med', {
       p_user_id: userId,
       p_disciplina: discipline || 'Geral',
       p_topico: topic,

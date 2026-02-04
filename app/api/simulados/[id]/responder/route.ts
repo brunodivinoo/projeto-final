@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // POST - Responder uma questão do simulado
 export async function POST(
@@ -28,7 +25,7 @@ export async function POST(
     }
 
     // Verificar se o simulado pertence ao usuário e está em andamento
-    const { data: simulado, error: checkError } = await supabase
+    const { data: simulado, error: checkError } = await getSupabaseAdmin()
       .from('simulados')
       .select('id, status, modalidade')
       .eq('id', id)
@@ -47,7 +44,7 @@ export async function POST(
     }
 
     // Verificar se a questão pertence ao simulado
-    const { data: simuladoQuestao, error: sqError } = await supabase
+    const { data: simuladoQuestao, error: sqError } = await getSupabaseAdmin()
       .from('simulado_questoes')
       .select('id, questao_id')
       .eq('simulado_id', id)
@@ -62,7 +59,7 @@ export async function POST(
     }
 
     // Buscar a resposta correta da questão
-    const { data: questao, error: questaoError } = await supabase
+    const { data: questao, error: questaoError } = await getSupabaseAdmin()
       .from('questoes')
       .select('resposta_correta, explicacao')
       .eq('id', questao_id)
@@ -95,7 +92,7 @@ export async function POST(
     }
 
     // Atualizar a resposta do usuário
-    const { error: updateError } = await supabase
+    const { error: updateError } = await getSupabaseAdmin()
       .from('simulado_questoes')
       .update({
         resposta_usuario: String(resposta).toUpperCase().trim(),
@@ -112,13 +109,13 @@ export async function POST(
     }
 
     // Atualizar contador de questões respondidas no simulado
-    const { count: totalRespondidas } = await supabase
+    const { count: totalRespondidas } = await getSupabaseAdmin()
       .from('simulado_questoes')
       .select('id', { count: 'exact', head: true })
       .eq('simulado_id', id)
       .not('resposta_usuario', 'is', null)
 
-    await supabase
+    await getSupabaseAdmin()
       .from('simulados')
       .update({
         questoes_respondidas: totalRespondidas || 0,
@@ -168,7 +165,7 @@ export async function PATCH(
     }
 
     // Verificar se o simulado pertence ao usuário
-    const { data: simulado, error: checkError } = await supabase
+    const { data: simulado, error: checkError } = await getSupabaseAdmin()
       .from('simulados')
       .select('id, status')
       .eq('id', id)
@@ -187,7 +184,7 @@ export async function PATCH(
     }
 
     // Atualizar marcação de revisão
-    const { error: updateError } = await supabase
+    const { error: updateError } = await getSupabaseAdmin()
       .from('simulado_questoes')
       .update({ marcada_revisao: !!marcada_revisao })
       .eq('simulado_id', id)

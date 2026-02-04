@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // GET - Buscar simulado específico com questões
 export async function GET(
@@ -24,7 +21,7 @@ export async function GET(
     }
 
     // Buscar simulado
-    const { data: simulado, error: simuladoError } = await supabase
+    const { data: simulado, error: simuladoError } = await getSupabaseAdmin()
       .from('simulados_med')
       .select('*')
       .eq('id', id)
@@ -39,14 +36,14 @@ export async function GET(
     }
 
     // Buscar respostas do simulado
-    const { data: respostas } = await supabase
+    const { data: respostas } = await getSupabaseAdmin()
       .from('simulado_respostas_med')
       .select('*')
       .eq('simulado_id', id)
       .order('ordem')
 
     // Buscar questões
-    const { data: questoes } = await supabase
+    const { data: questoes } = await getSupabaseAdmin()
       .from('questoes_med')
       .select(`
         *,
@@ -103,7 +100,7 @@ export async function POST(
     }
 
     // Verificar se o simulado pertence ao usuário
-    const { data: simulado } = await supabase
+    const { data: simulado } = await getSupabaseAdmin()
       .from('simulados_med')
       .select('id, status')
       .eq('id', id)
@@ -125,7 +122,7 @@ export async function POST(
     }
 
     // Buscar gabarito
-    const { data: questao } = await supabase
+    const { data: questao } = await getSupabaseAdmin()
       .from('questoes_med')
       .select('gabarito')
       .eq('id', questaoId)
@@ -141,7 +138,7 @@ export async function POST(
     const acertou = questao.gabarito === resposta
 
     // Atualizar resposta
-    const { error: updateError } = await supabase
+    const { error: updateError } = await getSupabaseAdmin()
       .from('simulado_respostas_med')
       .update({
         resposta,

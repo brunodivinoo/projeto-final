@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se o resumo existe
-    const { data: resumo, error: fetchError } = await supabase
+    const { data: resumo, error: fetchError } = await getSupabaseAdmin()
       .from('resumos_ia')
       .select('id, compartilhado')
       .eq('id', resumo_id)
@@ -27,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // Atualizar o status de compartilhado
     if (!resumo.compartilhado) {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await getSupabaseAdmin()
         .from('resumos_ia')
         .update({ compartilhado: true })
         .eq('id', resumo_id)

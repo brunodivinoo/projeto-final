@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
@@ -41,7 +38,7 @@ export async function POST(req: NextRequest) {
     const hoje = new Date().toISOString().split('T')[0]
 
     // Buscar plano do usuario
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
       .select('plano')
       .eq('id', user_id)
@@ -50,7 +47,7 @@ export async function POST(req: NextRequest) {
     const planoNome = profile?.plano?.toUpperCase() || 'FREE'
 
     // Buscar limites do plano
-    const { data: plano } = await supabase
+    const { data: plano } = await getSupabaseAdmin()
       .from('planos')
       .select('limite_geracoes_flashcards_dia, limite_flashcards')
       .eq('nome', planoNome)
@@ -60,7 +57,7 @@ export async function POST(req: NextRequest) {
     const limiteFlashcards = plano?.limite_flashcards || 50
 
     // Verificar uso de hoje
-    const { data: usoHoje } = await supabase
+    const { data: usoHoje } = await getSupabaseAdmin()
       .from('uso_diario')
       .select('quantidade')
       .eq('user_id', user_id)
@@ -79,7 +76,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verificar total de flashcards do usuario
-    const { count: totalFlashcards } = await supabase
+    const { count: totalFlashcards } = await getSupabaseAdmin()
       .from('flashcards')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user_id)
@@ -268,7 +265,7 @@ IMPORTANTE:
     }
 
     // Inserir flashcards no banco
-    const { data: insertedCards, error: insertError } = await supabase
+    const { data: insertedCards, error: insertError } = await getSupabaseAdmin()
       .from('flashcards')
       .insert(flashcardsValidos)
       .select()
@@ -279,12 +276,12 @@ IMPORTANTE:
     }
 
     // Atualizar contadores do deck
-    const { count: deckTotal } = await supabase
+    const { count: deckTotal } = await getSupabaseAdmin()
       .from('flashcards')
       .select('*', { count: 'exact', head: true })
       .eq('deck_id', deck_id)
 
-    await supabase
+    await getSupabaseAdmin()
       .from('flashcard_decks')
       .update({
         total_cards: deckTotal || 0,
@@ -294,14 +291,14 @@ IMPORTANTE:
 
     // Registrar uso diario
     if (usoHoje) {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_diario')
         .update({ quantidade: geracoesHoje + 1 })
         .eq('user_id', user_id)
         .eq('data', hoje)
         .eq('tipo', 'geracoes_flashcards')
     } else {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_diario')
         .insert({
           user_id,

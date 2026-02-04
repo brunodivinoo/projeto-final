@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Buscar estatísticas de uma questão
 export async function GET(
@@ -15,7 +12,7 @@ export async function GET(
     const { id: questaoId } = await params
 
     // Buscar todas as respostas da questão
-    const { data: respostas, error } = await supabase
+    const { data: respostas, error } = await getSupabaseAdmin()
       .from('respostas_usuario')
       .select('resposta_selecionada, acertou')
       .eq('questao_id', questaoId)
@@ -23,7 +20,7 @@ export async function GET(
     if (error) throw error
 
     // Buscar informações da questão (modalidade)
-    const { data: questao } = await supabase
+    const { data: questao } = await getSupabaseAdmin()
       .from('questoes')
       .select('modalidade, gabarito')
       .eq('id', questaoId)
@@ -97,21 +94,21 @@ export async function POST(
     }
 
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const { data: { user }, error: authError } = await getSupabaseAdmin().auth.getUser(token)
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     // Buscar dados da questão para registrar com contexto
-    const { data: questao } = await supabase
+    const { data: questao } = await getSupabaseAdmin()
       .from('questoes')
       .select('disciplina, assunto, subassunto, dificuldade')
       .eq('id', questaoId)
       .single()
 
     // Verificar se já respondeu esta questão
-    const { data: existingResposta } = await supabase
+    const { data: existingResposta } = await getSupabaseAdmin()
       .from('respostas_usuario')
       .select('id')
       .eq('questao_id', questaoId)
@@ -123,7 +120,7 @@ export async function POST(
     }
 
     // 1. Registrar resposta na tabela respostas_usuario
-    const { error: respostaError } = await supabase
+    const { error: respostaError } = await getSupabaseAdmin()
       .from('respostas_usuario')
       .insert({
         user_id: user.id,
@@ -146,7 +143,7 @@ export async function POST(
       ? `${questao.disciplina}${questao.assunto ? ` - ${questao.assunto}` : ''}`
       : 'Questão respondida'
 
-    await supabase
+    await getSupabaseAdmin()
       .from('historico_atividades')
       .insert({
         user_id: user.id,
@@ -167,7 +164,7 @@ export async function POST(
     const hoje = new Date().toISOString().split('T')[0]
 
     // Buscar ou criar estatísticas
-    const { data: statsExistentes } = await supabase
+    const { data: statsExistentes } = await getSupabaseAdmin()
       .from('estatisticas_usuario')
       .select('*')
       .eq('user_id', user.id)
@@ -175,7 +172,7 @@ export async function POST(
 
     if (statsExistentes) {
       // Atualizar estatísticas existentes
-      await supabase
+      await getSupabaseAdmin()
         .from('estatisticas_usuario')
         .update({
           questoes_respondidas: (statsExistentes.questoes_respondidas || 0) + 1,
@@ -187,7 +184,7 @@ export async function POST(
         .eq('user_id', user.id)
     } else {
       // Criar nova entrada de estatísticas
-      await supabase
+      await getSupabaseAdmin()
         .from('estatisticas_usuario')
         .insert({
           user_id: user.id,
@@ -200,7 +197,7 @@ export async function POST(
     }
 
     // 4. Atualizar uso diário (para controle de limites)
-    const { data: usoDiario } = await supabase
+    const { data: usoDiario } = await getSupabaseAdmin()
       .from('uso_diario')
       .select('id, quantidade')
       .eq('user_id', user.id)
@@ -209,12 +206,12 @@ export async function POST(
       .single()
 
     if (usoDiario) {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_diario')
         .update({ quantidade: usoDiario.quantidade + 1 })
         .eq('id', usoDiario.id)
     } else {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_diario')
         .insert({
           user_id: user.id,

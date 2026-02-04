@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
@@ -193,7 +190,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se usuário é PRO
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
       .select('plano')
       .eq('id', user_id)
@@ -212,7 +209,7 @@ export async function POST(request: NextRequest) {
     // Verificar limites
     const hoje = new Date().toISOString().split('T')[0]
 
-    const { data: usoHoje } = await supabase
+    const { data: usoHoje } = await getSupabaseAdmin()
       .from('uso_diario')
       .select('quantidade')
       .eq('user_id', user_id)
@@ -240,7 +237,7 @@ export async function POST(request: NextRequest) {
 
     if (config.foco_pontos_fracos || config.baseado_em_erros) {
       // Buscar desempenho do usuário
-      const { data: desempenho } = await supabase
+      const { data: desempenho } = await getSupabaseAdmin()
         .from('simulado_desempenho')
         .select('area_nome, tipo, total_questoes, acertos, erros')
         .eq('user_id', user_id)
@@ -387,7 +384,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar o simulado
-    const { data: simulado, error: simuladoError } = await supabase
+    const { data: simulado, error: simuladoError } = await getSupabaseAdmin()
       .from('simulados')
       .insert({
         user_id,
@@ -426,7 +423,7 @@ export async function POST(request: NextRequest) {
       ativo: true
     }))
 
-    const { data: questoesInseridas, error: questoesError } = await supabase
+    const { data: questoesInseridas, error: questoesError } = await getSupabaseAdmin()
       .from('questoes')
       .insert(questoesParaInserir)
       .select('id')
@@ -434,7 +431,7 @@ export async function POST(request: NextRequest) {
     if (questoesError) {
       console.error('[SIMULADO IA] Erro ao salvar questões:', questoesError)
       // Rollback - deletar simulado
-      await supabase.from('simulados').delete().eq('id', simulado.id)
+      await getSupabaseAdmin().from('simulados').delete().eq('id', simulado.id)
       return NextResponse.json({ error: 'Erro ao salvar questões' }, { status: 500 })
     }
 
@@ -445,7 +442,7 @@ export async function POST(request: NextRequest) {
       ordem: index + 1
     })) || []
 
-    const { error: vinculoError } = await supabase
+    const { error: vinculoError } = await getSupabaseAdmin()
       .from('simulado_questoes')
       .insert(simuladoQuestoes)
 
@@ -458,24 +455,24 @@ export async function POST(request: NextRequest) {
     const assuntosUnicos = [...new Set(questoesGeradas.map(q => q.assunto).filter(Boolean))]
 
     await Promise.all([
-      supabase.from('simulado_disciplinas').insert(
+      getSupabaseAdmin().from('simulado_disciplinas').insert(
         disciplinasUnicas.map(d => ({ simulado_id: simulado.id, disciplina_nome: d }))
       ),
-      assuntosUnicos.length > 0 && supabase.from('simulado_assuntos').insert(
+      assuntosUnicos.length > 0 && getSupabaseAdmin().from('simulado_assuntos').insert(
         assuntosUnicos.map(a => ({ simulado_id: simulado.id, assunto_nome: a }))
       )
     ])
 
     // Registrar uso diário
     if (usoHoje) {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_diario')
         .update({ quantidade: usadoHoje + 1 })
         .eq('user_id', user_id)
         .eq('data', hoje)
         .eq('tipo', 'simulado_ia')
     } else {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_diario')
         .insert({
           user_id,
@@ -486,7 +483,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Registrar atividade
-    await supabase
+    await getSupabaseAdmin()
       .from('historico_atividades')
       .insert({
         user_id,

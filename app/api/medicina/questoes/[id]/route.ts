@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // GET - Buscar questão específica
 export async function GET(
@@ -16,7 +13,7 @@ export async function GET(
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
 
-    const { data: questao, error } = await supabase
+    const { data: questao, error } = await getSupabaseAdmin()
       .from('questoes_med')
       .select(`
         *,
@@ -38,7 +35,7 @@ export async function GET(
     // Se tiver userId, buscar se já respondeu
     let respostaUsuario = null
     if (userId) {
-      const { data: resposta } = await supabase
+      const { data: resposta } = await getSupabaseAdmin()
         .from('respostas_med')
         .select('*')
         .eq('user_id', userId)

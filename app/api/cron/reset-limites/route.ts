@@ -1,31 +1,23 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
 // =============================================
-// CRON JOB: RESET AUTOMÁTICO DE LIMITES
+// CRON JOB: RESET AUTOMATICO DE LIMITES
 // =============================================
 // Este endpoint deve ser chamado:
-// - Diariamente à meia-noite para resetar limites diários
-// - No primeiro dia do mês para resetar limites mensais
+// - Diariamente a meia-noite para resetar limites diarios
+// - No primeiro dia do mes para resetar limites mensais
 //
 // Configure no vercel.json:
 // {
 //   "crons": [
 //     {
 //       "path": "/api/cron/reset-limites",
-//       "schedule": "0 0 * * *"  // Todo dia à meia-noite UTC
+//       "schedule": "0 0 * * *"  // Todo dia a meia-noite UTC
 //     }
 //   ]
 // }
 // =============================================
-
-// Função para criar cliente Supabase admin (lazy init)
-function getSupabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
 
 export async function GET(request: NextRequest) {
   const supabaseAdmin = getSupabaseAdmin()

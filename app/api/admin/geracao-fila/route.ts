@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Buscar status da fila do usuário
 export async function GET(req: NextRequest) {
@@ -17,7 +14,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Buscar itens pendentes/processando do usuário
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseAdmin()
       .from('geracao_fila')
       .select('*')
       .eq('user_id', userId)
@@ -77,7 +74,7 @@ export async function POST(req: NextRequest) {
       erros: 0
     }))
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseAdmin()
       .from('geracao_fila')
       .insert(itensParaInserir)
       .select()
@@ -108,7 +105,7 @@ export async function DELETE(req: NextRequest) {
 
     if (itemId) {
       // Cancelar item específico
-      const { error } = await supabase
+      const { error } = await getSupabaseAdmin()
         .from('geracao_fila')
         .update({ status: 'cancelado', completed_at: new Date().toISOString() })
         .eq('id', itemId)
@@ -118,7 +115,7 @@ export async function DELETE(req: NextRequest) {
       if (error) throw error
     } else {
       // Cancelar todos pendentes do usuário
-      const { error } = await supabase
+      const { error } = await getSupabaseAdmin()
         .from('geracao_fila')
         .update({ status: 'cancelado', completed_at: new Date().toISOString() })
         .eq('user_id', userId)

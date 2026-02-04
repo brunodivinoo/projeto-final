@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // Cache simples em memória para reduzir queries repetidas
 let cacheModalidades: { data: { nome: string; label: string; questoes: number }[]; timestamp: number } | null = null
@@ -24,7 +21,7 @@ export async function GET(request: NextRequest) {
     if (cacheModalidades && (Date.now() - cacheModalidades.timestamp) < CACHE_TTL) {
       modalidades = cacheModalidades.data
     } else {
-      const { data: modalidadesData } = await supabase
+      const { data: modalidadesData } = await getSupabaseAdmin()
         .from('questoes')
         .select('modalidade')
 
@@ -44,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar todas as questões com disciplina, assunto e filtrar por modalidade
-    let questoesQuery = supabase
+    let questoesQuery = getSupabaseAdmin()
       .from('questoes')
       .select('disciplina, assunto')
 
@@ -99,7 +96,7 @@ export async function GET(request: NextRequest) {
 
     // Buscar bancas, anos e dificuldades em paralelo
     const [bancasResult, anosResult, dificuldadesResult] = await Promise.all([
-      supabase
+      getSupabaseAdmin()
         .from('questoes')
         .select('banca')
         .not('banca', 'is', null)
@@ -116,7 +113,7 @@ export async function GET(request: NextRequest) {
             .sort((a, b) => b.questoes - a.questoes)
         }),
 
-      supabase
+      getSupabaseAdmin()
         .from('questoes')
         .select('ano')
         .not('ano', 'is', null)
@@ -132,7 +129,7 @@ export async function GET(request: NextRequest) {
             .sort((a, b) => b.ano - a.ano)
         }),
 
-      supabase
+      getSupabaseAdmin()
         .from('questoes')
         .select('dificuldade')
         .not('dificuldade', 'is', null)

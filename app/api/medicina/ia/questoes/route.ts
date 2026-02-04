@@ -1,12 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 
 // Criar cliente Supabase com service role para bypass de RLS
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 // Gerar hash único para identificar questão
 function gerarHashQuestao(enunciado: string): string {
@@ -24,7 +21,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('respostas_questoes_ia_med')
       .select('*')
       .eq('user_id', userId)
@@ -93,7 +90,7 @@ export async function POST(request: NextRequest) {
     const questaoHash = gerarHashQuestao(enunciado)
 
     // Verificar se já existe resposta para esta questão
-    const { data: existente } = await supabase
+    const { data: existente } = await getSupabaseAdmin()
       .from('respostas_questoes_ia_med')
       .select('id, tentativas')
       .eq('user_id', user_id)
@@ -103,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     if (existente) {
       // Atualizar resposta existente (nova tentativa)
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseAdmin()
         .from('respostas_questoes_ia_med')
         .update({
           resposta_usuario,
@@ -120,7 +117,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, data, atualizado: true })
     } else {
       // Inserir nova resposta
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseAdmin()
         .from('respostas_questoes_ia_med')
         .insert({
           user_id,

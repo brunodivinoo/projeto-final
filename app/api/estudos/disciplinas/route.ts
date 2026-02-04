@@ -1,12 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-// Função para normalizar nome (remover acentos e lowercase)
+// Funcao para normalizar nome (remover acentos e lowercase)
 function normalizarNome(nome: string): string {
   return nome
     .toLowerCase()
@@ -25,7 +20,7 @@ export async function GET(request: NextRequest) {
     const busca = searchParams.get('busca')
 
     if (tipo === 'disciplinas') {
-      let query = supabase
+      let query = getSupabaseAdmin()
         .from('disciplinas')
         .select('id, nome')
         .order('nome')
@@ -45,10 +40,10 @@ export async function GET(request: NextRequest) {
 
     if (tipo === 'assuntos') {
       if (!disciplina_id) {
-        return NextResponse.json({ error: 'disciplina_id é obrigatório' }, { status: 400 })
+        return NextResponse.json({ error: 'disciplina_id e obrigatorio' }, { status: 400 })
       }
 
-      let query = supabase
+      let query = getSupabaseAdmin()
         .from('assuntos')
         .select('id, nome, disciplina_id')
         .eq('disciplina_id', disciplina_id)
@@ -69,10 +64,10 @@ export async function GET(request: NextRequest) {
 
     if (tipo === 'subassuntos') {
       if (!assunto_id) {
-        return NextResponse.json({ error: 'assunto_id é obrigatório' }, { status: 400 })
+        return NextResponse.json({ error: 'assunto_id e obrigatorio' }, { status: 400 })
       }
 
-      let query = supabase
+      let query = getSupabaseAdmin()
         .from('subassuntos')
         .select('id, nome, assunto_id')
         .eq('assunto_id', assunto_id)
@@ -91,7 +86,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(data)
     }
 
-    return NextResponse.json({ error: 'Tipo inválido' }, { status: 400 })
+    return NextResponse.json({ error: 'Tipo invalido' }, { status: 400 })
   } catch (error) {
     console.error('Erro na API de disciplinas:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
@@ -105,14 +100,14 @@ export async function POST(request: NextRequest) {
     const { tipo, nome, disciplina_id, assunto_id } = body
 
     if (!nome || !tipo) {
-      return NextResponse.json({ error: 'Nome e tipo são obrigatórios' }, { status: 400 })
+      return NextResponse.json({ error: 'Nome e tipo sao obrigatorios' }, { status: 400 })
     }
 
     const nomeNormalizado = normalizarNome(nome)
 
     if (tipo === 'disciplina') {
-      // Verificar se já existe
-      const { data: existente } = await supabase
+      // Verificar se ja existe
+      const { data: existente } = await getSupabaseAdmin()
         .from('disciplinas')
         .select('id, nome')
         .eq('nome_normalizado', nomeNormalizado)
@@ -120,12 +115,12 @@ export async function POST(request: NextRequest) {
 
       if (existente) {
         return NextResponse.json({
-          error: 'Disciplina já existe',
+          error: 'Disciplina ja existe',
           existente
         }, { status: 409 })
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseAdmin()
         .from('disciplinas')
         .insert({
           nome: nome.trim(),
@@ -145,11 +140,11 @@ export async function POST(request: NextRequest) {
 
     if (tipo === 'assunto') {
       if (!disciplina_id) {
-        return NextResponse.json({ error: 'disciplina_id é obrigatório' }, { status: 400 })
+        return NextResponse.json({ error: 'disciplina_id e obrigatorio' }, { status: 400 })
       }
 
-      // Verificar se já existe
-      const { data: existente } = await supabase
+      // Verificar se ja existe
+      const { data: existente } = await getSupabaseAdmin()
         .from('assuntos')
         .select('id, nome')
         .eq('disciplina_id', disciplina_id)
@@ -158,12 +153,12 @@ export async function POST(request: NextRequest) {
 
       if (existente) {
         return NextResponse.json({
-          error: 'Assunto já existe nesta disciplina',
+          error: 'Assunto ja existe nesta disciplina',
           existente
         }, { status: 409 })
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseAdmin()
         .from('assuntos')
         .insert({
           disciplina_id,
@@ -184,11 +179,11 @@ export async function POST(request: NextRequest) {
 
     if (tipo === 'subassunto') {
       if (!assunto_id) {
-        return NextResponse.json({ error: 'assunto_id é obrigatório' }, { status: 400 })
+        return NextResponse.json({ error: 'assunto_id e obrigatorio' }, { status: 400 })
       }
 
-      // Verificar se já existe
-      const { data: existente } = await supabase
+      // Verificar se ja existe
+      const { data: existente } = await getSupabaseAdmin()
         .from('subassuntos')
         .select('id, nome')
         .eq('assunto_id', assunto_id)
@@ -197,12 +192,12 @@ export async function POST(request: NextRequest) {
 
       if (existente) {
         return NextResponse.json({
-          error: 'Subassunto já existe neste assunto',
+          error: 'Subassunto ja existe neste assunto',
           existente
         }, { status: 409 })
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseAdmin()
         .from('subassuntos')
         .insert({
           assunto_id,
@@ -221,7 +216,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(data, { status: 201 })
     }
 
-    return NextResponse.json({ error: 'Tipo inválido' }, { status: 400 })
+    return NextResponse.json({ error: 'Tipo invalido' }, { status: 400 })
   } catch (error) {
     console.error('Erro na API de disciplinas:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
@@ -236,16 +231,16 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id')
 
     if (!tipo || !id) {
-      return NextResponse.json({ error: 'Tipo e ID são obrigatórios' }, { status: 400 })
+      return NextResponse.json({ error: 'Tipo e ID sao obrigatorios' }, { status: 400 })
     }
 
     let tabela = ''
     if (tipo === 'disciplina') tabela = 'disciplinas'
     else if (tipo === 'assunto') tabela = 'assuntos'
     else if (tipo === 'subassunto') tabela = 'subassuntos'
-    else return NextResponse.json({ error: 'Tipo inválido' }, { status: 400 })
+    else return NextResponse.json({ error: 'Tipo invalido' }, { status: 400 })
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from(tabela)
       .delete()
       .eq('id', id)

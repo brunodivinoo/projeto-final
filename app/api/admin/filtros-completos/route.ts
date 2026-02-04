@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Buscar TODAS as disciplinas, assuntos, subassuntos e bancas
 // Diferente do /api/questoes/filtros que filtra por qtd_questoes > 0
@@ -16,21 +13,21 @@ export async function GET(request: NextRequest) {
     switch (tipo) {
       case 'estrutura': {
         // Buscar estrutura completa: disciplinas -> assuntos -> subassuntos
-        const { data: disciplinas, error: errDisc } = await supabase
+        const { data: disciplinas, error: errDisc } = await getSupabaseAdmin()
           .from('disciplinas')
           .select('id, nome')
           .order('nome')
 
         if (errDisc) throw errDisc
 
-        const { data: assuntos, error: errAss } = await supabase
+        const { data: assuntos, error: errAss } = await getSupabaseAdmin()
           .from('assuntos')
           .select('id, nome, disciplina_id')
           .order('nome')
 
         if (errAss) throw errAss
 
-        const { data: subassuntos, error: errSub } = await supabase
+        const { data: subassuntos, error: errSub } = await getSupabaseAdmin()
           .from('subassuntos')
           .select('id, nome, assunto_id')
           .order('nome')
@@ -60,7 +57,7 @@ export async function GET(request: NextRequest) {
 
       case 'bancas': {
         // Buscar bancas da tabela bancas (muito mais eficiente)
-        const { data: bancasData, error: errBancas } = await supabase
+        const { data: bancasData, error: errBancas } = await getSupabaseAdmin()
           .from('bancas')
           .select('nome, qtd_questoes')
           .order('nome')

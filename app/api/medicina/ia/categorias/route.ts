@@ -1,11 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Criar cliente Supabase com service role para bypass de RLS
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 // GET - Buscar categorias do usuário
 export async function GET(request: NextRequest) {
@@ -19,7 +16,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('categorias_questoes_ia_med')
       .select('*')
       .eq('user_id', userId)
@@ -47,7 +44,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar bancas também
-    const { data: bancas, error: bancasError } = await supabase
+    const { data: bancas, error: bancasError } = await getSupabaseAdmin()
       .from('bancas_questoes_ia_med')
       .select('*')
       .eq('user_id', userId)
@@ -80,7 +77,7 @@ export async function POST(request: NextRequest) {
     // Se é banca
     if (is_banca) {
       // Verificar se já existe
-      const { data: existente } = await supabase
+      const { data: existente } = await getSupabaseAdmin()
         .from('bancas_questoes_ia_med')
         .select('id')
         .eq('user_id', user_id)
@@ -91,7 +88,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, data: existente, exists: true })
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseAdmin()
         .from('bancas_questoes_ia_med')
         .insert({ user_id, nome: nome.trim() })
         .select()
@@ -113,7 +110,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se já existe
-    let checkQuery = supabase
+    let checkQuery = getSupabaseAdmin()
       .from('categorias_questoes_ia_med')
       .select('id')
       .eq('user_id', user_id)
@@ -142,7 +139,7 @@ export async function POST(request: NextRequest) {
       insertData.parent_id = parent_id
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseAdmin()
       .from('categorias_questoes_ia_med')
       .insert(insertData)
       .select()
@@ -176,7 +173,7 @@ export async function PUT(request: NextRequest) {
 
     // Salvar disciplina
     if (disciplina) {
-      const { data: discData } = await supabase
+      const { data: discData } = await getSupabaseAdmin()
         .from('categorias_questoes_ia_med')
         .upsert(
           { user_id, tipo: 'disciplina', nome: disciplina.trim(), parent_id: null },
@@ -189,7 +186,7 @@ export async function PUT(request: NextRequest) {
 
       // Se temos disciplina e assunto, salvar assunto vinculado
       if (assunto && discData) {
-        const { data: assuntoData } = await supabase
+        const { data: assuntoData } = await getSupabaseAdmin()
           .from('categorias_questoes_ia_med')
           .upsert(
             { user_id, tipo: 'assunto', nome: assunto.trim(), parent_id: discData.id },
@@ -202,7 +199,7 @@ export async function PUT(request: NextRequest) {
 
         // Se temos assunto e sub_assunto, salvar sub_assunto vinculado
         if (sub_assunto && assuntoData) {
-          const { data: subData } = await supabase
+          const { data: subData } = await getSupabaseAdmin()
             .from('categorias_questoes_ia_med')
             .upsert(
               { user_id, tipo: 'sub_assunto', nome: sub_assunto.trim(), parent_id: assuntoData.id },
@@ -218,7 +215,7 @@ export async function PUT(request: NextRequest) {
 
     // Salvar banca
     if (banca) {
-      await supabase
+      await getSupabaseAdmin()
         .from('bancas_questoes_ia_med')
         .upsert(
           { user_id, nome: banca.trim() },

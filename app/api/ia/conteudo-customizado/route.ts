@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Buscar itens customizados do usuário com contagem de questões
 export async function GET(req: NextRequest) {
@@ -18,7 +15,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Buscar itens customizados
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('conteudo_customizado')
       .select('*')
       .eq('user_id', user_id)
@@ -41,7 +38,7 @@ export async function GET(req: NextRequest) {
         let contagem = 0
 
         if (item.tipo === 'disciplina') {
-          const { count } = await supabase
+          const { count } = await getSupabaseAdmin()
             .from('questoes_ia_geradas')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', user_id)
@@ -49,7 +46,7 @@ export async function GET(req: NextRequest) {
 
           contagem = count || 0
         } else if (item.tipo === 'assunto') {
-          const { count } = await supabase
+          const { count } = await getSupabaseAdmin()
             .from('questoes_ia_geradas')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', user_id)
@@ -58,7 +55,7 @@ export async function GET(req: NextRequest) {
 
           contagem = count || 0
         } else if (item.tipo === 'subassunto') {
-          const { count } = await supabase
+          const { count } = await getSupabaseAdmin()
             .from('questoes_ia_geradas')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', user_id)
@@ -67,7 +64,7 @@ export async function GET(req: NextRequest) {
 
           contagem = count || 0
         } else if (item.tipo === 'banca') {
-          const { count } = await supabase
+          const { count } = await getSupabaseAdmin()
             .from('questoes_ia_geradas')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', user_id)
@@ -101,7 +98,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // Buscar o item atual
-    const { data: item, error: fetchError } = await supabase
+    const { data: item, error: fetchError } = await getSupabaseAdmin()
       .from('conteudo_customizado')
       .select('*')
       .eq('id', item_id)
@@ -116,7 +113,7 @@ export async function PUT(req: NextRequest) {
     const novoNomeNormalizado = novo_nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
 
     // Verificar se já existe outro item com o mesmo nome normalizado
-    const { data: existente } = await supabase
+    const { data: existente } = await getSupabaseAdmin()
       .from('conteudo_customizado')
       .select('id')
       .eq('user_id', user_id)
@@ -130,7 +127,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // Atualizar o item customizado
-    const { error: updateError } = await supabase
+    const { error: updateError } = await getSupabaseAdmin()
       .from('conteudo_customizado')
       .update({
         nome: novo_nome.trim(),
@@ -148,7 +145,7 @@ export async function PUT(req: NextRequest) {
     if (propagar_questoes) {
       if (item.tipo === 'disciplina') {
         // Contar questões afetadas
-        const { count } = await supabase
+        const { count } = await getSupabaseAdmin()
           .from('questoes_ia_geradas')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user_id)
@@ -158,7 +155,7 @@ export async function PUT(req: NextRequest) {
 
         // Atualizar disciplina em todas as questões
         if (questoesAtualizadas > 0) {
-          await supabase
+          await getSupabaseAdmin()
             .from('questoes_ia_geradas')
             .update({ disciplina: novo_nome.trim() })
             .eq('user_id', user_id)
@@ -166,7 +163,7 @@ export async function PUT(req: NextRequest) {
         }
 
         // Também atualizar os assuntos e subassuntos que referenciam essa disciplina
-        await supabase
+        await getSupabaseAdmin()
           .from('conteudo_customizado')
           .update({
             disciplina: novo_nome.trim(),
@@ -177,7 +174,7 @@ export async function PUT(req: NextRequest) {
 
       } else if (item.tipo === 'assunto') {
         // Contar questões afetadas
-        const { count } = await supabase
+        const { count } = await getSupabaseAdmin()
           .from('questoes_ia_geradas')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user_id)
@@ -188,7 +185,7 @@ export async function PUT(req: NextRequest) {
 
         // Atualizar assunto nas questões
         if (questoesAtualizadas > 0) {
-          await supabase
+          await getSupabaseAdmin()
             .from('questoes_ia_geradas')
             .update({ assunto: novo_nome.trim() })
             .eq('user_id', user_id)
@@ -197,7 +194,7 @@ export async function PUT(req: NextRequest) {
         }
 
         // Também atualizar os subassuntos que referenciam esse assunto
-        await supabase
+        await getSupabaseAdmin()
           .from('conteudo_customizado')
           .update({
             assunto: novo_nome.trim(),
@@ -209,7 +206,7 @@ export async function PUT(req: NextRequest) {
 
       } else if (item.tipo === 'subassunto') {
         // Contar questões afetadas
-        const { count } = await supabase
+        const { count } = await getSupabaseAdmin()
           .from('questoes_ia_geradas')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user_id)
@@ -220,7 +217,7 @@ export async function PUT(req: NextRequest) {
 
         // Atualizar subassunto nas questões
         if (questoesAtualizadas > 0) {
-          await supabase
+          await getSupabaseAdmin()
             .from('questoes_ia_geradas')
             .update({ subassunto: novo_nome.trim() })
             .eq('user_id', user_id)
@@ -230,7 +227,7 @@ export async function PUT(req: NextRequest) {
 
       } else if (item.tipo === 'banca') {
         // Contar questões afetadas
-        const { count } = await supabase
+        const { count } = await getSupabaseAdmin()
           .from('questoes_ia_geradas')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user_id)
@@ -240,7 +237,7 @@ export async function PUT(req: NextRequest) {
 
         // Atualizar banca nas questões
         if (questoesAtualizadas > 0) {
-          await supabase
+          await getSupabaseAdmin()
             .from('questoes_ia_geradas')
             .update({ banca: novo_nome.trim() })
             .eq('user_id', user_id)
@@ -273,7 +270,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Buscar o item
-    const { data: item, error: fetchError } = await supabase
+    const { data: item, error: fetchError } = await getSupabaseAdmin()
       .from('conteudo_customizado')
       .select('*')
       .eq('id', item_id)
@@ -290,7 +287,7 @@ export async function DELETE(req: NextRequest) {
     if (deletar_questoes) {
       if (item.tipo === 'disciplina') {
         // Contar primeiro
-        const { count } = await supabase
+        const { count } = await getSupabaseAdmin()
           .from('questoes_ia_geradas')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user_id)
@@ -300,7 +297,7 @@ export async function DELETE(req: NextRequest) {
 
         // Deletar questões
         if (questoesDeletadas > 0) {
-          await supabase
+          await getSupabaseAdmin()
             .from('questoes_ia_geradas')
             .delete()
             .eq('user_id', user_id)
@@ -308,7 +305,7 @@ export async function DELETE(req: NextRequest) {
         }
 
         // Deletar também assuntos e subassuntos dessa disciplina
-        await supabase
+        await getSupabaseAdmin()
           .from('conteudo_customizado')
           .delete()
           .eq('user_id', user_id)
@@ -317,7 +314,7 @@ export async function DELETE(req: NextRequest) {
 
       } else if (item.tipo === 'assunto') {
         // Contar primeiro
-        const { count } = await supabase
+        const { count } = await getSupabaseAdmin()
           .from('questoes_ia_geradas')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user_id)
@@ -328,7 +325,7 @@ export async function DELETE(req: NextRequest) {
 
         // Deletar questões
         if (questoesDeletadas > 0) {
-          await supabase
+          await getSupabaseAdmin()
             .from('questoes_ia_geradas')
             .delete()
             .eq('user_id', user_id)
@@ -337,7 +334,7 @@ export async function DELETE(req: NextRequest) {
         }
 
         // Deletar também subassuntos desse assunto
-        await supabase
+        await getSupabaseAdmin()
           .from('conteudo_customizado')
           .delete()
           .eq('user_id', user_id)
@@ -347,7 +344,7 @@ export async function DELETE(req: NextRequest) {
 
       } else if (item.tipo === 'subassunto') {
         // Contar primeiro
-        const { count } = await supabase
+        const { count } = await getSupabaseAdmin()
           .from('questoes_ia_geradas')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user_id)
@@ -358,7 +355,7 @@ export async function DELETE(req: NextRequest) {
 
         // Deletar questões
         if (questoesDeletadas > 0) {
-          await supabase
+          await getSupabaseAdmin()
             .from('questoes_ia_geradas')
             .delete()
             .eq('user_id', user_id)
@@ -368,7 +365,7 @@ export async function DELETE(req: NextRequest) {
 
       } else if (item.tipo === 'banca') {
         // Contar primeiro
-        const { count } = await supabase
+        const { count } = await getSupabaseAdmin()
           .from('questoes_ia_geradas')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user_id)
@@ -378,7 +375,7 @@ export async function DELETE(req: NextRequest) {
 
         // Deletar questões
         if (questoesDeletadas > 0) {
-          await supabase
+          await getSupabaseAdmin()
             .from('questoes_ia_geradas')
             .delete()
             .eq('user_id', user_id)
@@ -388,7 +385,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Deletar o item customizado
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await getSupabaseAdmin()
       .from('conteudo_customizado')
       .delete()
       .eq('id', item_id)

@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
@@ -21,7 +18,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (pdf_id) {
-      const { data: pdf, error } = await supabase
+      const { data: pdf, error } = await getSupabaseAdmin()
         .from('pdfs_analisados')
         .select('*')
         .eq('id', pdf_id)
@@ -32,7 +29,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ pdf })
     }
 
-    const { data: pdfs, error } = await supabase
+    const { data: pdfs, error } = await getSupabaseAdmin()
       .from('pdfs_analisados')
       .select('*')
       .eq('user_id', user_id)
@@ -70,7 +67,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Buscar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
       .select('plano')
       .eq('id', user_id)
@@ -79,7 +76,7 @@ export async function POST(req: NextRequest) {
     const planoNome = profile?.plano?.toUpperCase() === 'ESTUDA_PRO' ? 'ESTUDA_PRO' : 'FREE'
 
     // Buscar limites
-    const { data: plano } = await supabase
+    const { data: plano } = await getSupabaseAdmin()
       .from('planos')
       .select('limite_pdfs_mes, limite_pdf_tamanho_mb')
       .eq('nome', planoNome)
@@ -103,7 +100,7 @@ export async function POST(req: NextRequest) {
     primeiroDiaMes.setDate(1)
     const mesRef = primeiroDiaMes.toISOString().split('T')[0]
 
-    const { data: usoMes } = await supabase
+    const { data: usoMes } = await getSupabaseAdmin()
       .from('uso_mensal')
       .select('quantidade')
       .eq('user_id', user_id)
@@ -188,7 +185,7 @@ CONTEÚDO:
     const conteudo = conteudoMatch?.[1]?.trim() || textoExtraido
 
     // Salvar PDF no banco
-    const { data: pdfSalvo, error: errPdf } = await supabase
+    const { data: pdfSalvo, error: errPdf } = await getSupabaseAdmin()
       .from('pdfs_analisados')
       .insert({
         user_id,
@@ -242,7 +239,7 @@ Gere o resumo:`
 
         // Salvar resumo
         if (resultados.resumo) {
-          await supabase
+          await getSupabaseAdmin()
             .from('resumos_ia')
             .insert({
               user_id,
@@ -296,7 +293,7 @@ Retorne APENAS um JSON array no formato:
             resultados.flashcards = JSON.parse(jsonMatch[0])
 
             // Salvar flashcards no banco (buscar ou criar deck)
-            let { data: deck } = await supabase
+            let { data: deck } = await getSupabaseAdmin()
               .from('decks')
               .select('id')
               .eq('user_id', user_id)
@@ -304,7 +301,7 @@ Retorne APENAS um JSON array no formato:
               .maybeSingle()
 
             if (!deck) {
-              const { data: novoDeck } = await supabase
+              const { data: novoDeck } = await getSupabaseAdmin()
                 .from('decks')
                 .insert({
                   user_id,
@@ -325,7 +322,7 @@ Retorne APENAS um JSON array no formato:
                 origem: 'ia_pdf'
               }))
 
-              await supabase.from('flashcards').insert(cardsParaInserir)
+              await getSupabaseAdmin().from('flashcards').insert(cardsParaInserir)
             }
           }
         } catch (e) {
@@ -404,7 +401,7 @@ Retorne APENAS um JSON array no formato:
               pdf_origem_id: pdfSalvo.id
             }))
 
-            await supabase.from('questoes_ia_geradas').insert(questoesParaInserir)
+            await getSupabaseAdmin().from('questoes_ia_geradas').insert(questoesParaInserir)
 
             resultados.questoes = questoesParsed
           }
@@ -415,7 +412,7 @@ Retorne APENAS um JSON array no formato:
     }
 
     // Atualizar PDF com resultados
-    await supabase
+    await getSupabaseAdmin()
       .from('pdfs_analisados')
       .update({
         resumo_gerado: !!resultados.resumo,
@@ -426,14 +423,14 @@ Retorne APENAS um JSON array no formato:
 
     // Registrar uso mensal
     if (usoMes) {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_mensal')
         .update({ quantidade: usadoMes + 1 })
         .eq('user_id', user_id)
         .eq('mes_referencia', mesRef)
         .eq('tipo', 'pdfs')
     } else {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_mensal')
         .insert({
           user_id,
@@ -444,7 +441,7 @@ Retorne APENAS um JSON array no formato:
     }
 
     // Registrar atividade
-    await supabase
+    await getSupabaseAdmin()
       .from('historico_atividades')
       .insert({
         user_id,
@@ -482,7 +479,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'pdf_id e user_id são obrigatórios' }, { status: 400 })
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('pdfs_analisados')
       .delete()
       .eq('id', pdf_id)

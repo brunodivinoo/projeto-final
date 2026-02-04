@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Listar planos do usuário
 export async function GET(request: NextRequest) {
@@ -20,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     // Buscar plano específico
     if (id) {
-      const { data: plano, error } = await supabase
+      const { data: plano, error } = await getSupabaseAdmin()
         .from('planos_estudo')
         .select(`
           *,
@@ -44,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Listar planos
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('planos_estudo')
       .select(`
         *,
@@ -86,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar plano
-    const { data: plano, error: planoError } = await supabase
+    const { data: plano, error: planoError } = await getSupabaseAdmin()
       .from('planos_estudo')
       .insert({
         user_id,
@@ -119,7 +116,7 @@ export async function POST(request: NextRequest) {
         ordem: index
       }))
 
-      const { error: itensError } = await supabase
+      const { error: itensError } = await getSupabaseAdmin()
         .from('plano_itens')
         .insert(itensParaInserir)
 
@@ -138,7 +135,7 @@ export async function POST(request: NextRequest) {
         horas: d.horas || 3
       }))
 
-      const { error: dispError } = await supabase
+      const { error: dispError } = await getSupabaseAdmin()
         .from('plano_disponibilidade')
         .insert(dispParaInserir)
 
@@ -148,7 +145,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar plano completo
-    const { data: planoCompleto } = await supabase
+    const { data: planoCompleto } = await getSupabaseAdmin()
       .from('planos_estudo')
       .select(`
         *,
@@ -181,7 +178,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verificar propriedade
-    const { data: planoExistente } = await supabase
+    const { data: planoExistente } = await getSupabaseAdmin()
       .from('planos_estudo')
       .select('id')
       .eq('id', id)
@@ -203,7 +200,7 @@ export async function PUT(request: NextRequest) {
     if (ai_sugestoes !== undefined) updateData.ai_sugestoes = ai_sugestoes
     if (ativo !== undefined) updateData.ativo = ativo
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await getSupabaseAdmin()
       .from('planos_estudo')
       .update(updateData)
       .eq('id', id)
@@ -216,7 +213,7 @@ export async function PUT(request: NextRequest) {
     // Atualizar itens se fornecidos
     if (itens !== undefined) {
       // Remover itens antigos
-      await supabase
+      await getSupabaseAdmin()
         .from('plano_itens')
         .delete()
         .eq('plano_id', id)
@@ -234,13 +231,13 @@ export async function PUT(request: NextRequest) {
           ordem: index
         }))
 
-        await supabase.from('plano_itens').insert(itensParaInserir)
+        await getSupabaseAdmin().from('plano_itens').insert(itensParaInserir)
       }
     }
 
     // Atualizar disponibilidade se fornecida
     if (disponibilidade !== undefined) {
-      await supabase
+      await getSupabaseAdmin()
         .from('plano_disponibilidade')
         .delete()
         .eq('plano_id', id)
@@ -254,12 +251,12 @@ export async function PUT(request: NextRequest) {
           horas: d.horas || 3
         }))
 
-        await supabase.from('plano_disponibilidade').insert(dispParaInserir)
+        await getSupabaseAdmin().from('plano_disponibilidade').insert(dispParaInserir)
       }
     }
 
     // Buscar plano atualizado
-    const { data: planoAtualizado } = await supabase
+    const { data: planoAtualizado } = await getSupabaseAdmin()
       .from('planos_estudo')
       .select(`
         *,
@@ -293,7 +290,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar propriedade e deletar
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('planos_estudo')
       .delete()
       .eq('id', id)

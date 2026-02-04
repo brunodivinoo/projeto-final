@@ -1,13 +1,10 @@
 // API Route - Uso e Estatísticas de IA PREPARAMED
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { PlanoIA, LIMITES_IA } from '@/lib/ai'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 // ==========================================
 // GET - Obter Estatísticas de Uso
@@ -24,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano')
       .eq('id', user_id)
@@ -35,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     // Buscar uso do mês atual
     const mesAtual = new Date().toISOString().slice(0, 7)
-    const { data: usoMes } = await supabase
+    const { data: usoMes } = await getSupabaseAdmin()
       .from('uso_ia_med')
       .select('*')
       .eq('user_id', user_id)
@@ -77,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     // Se período for total, buscar histórico completo
     if (periodo === 'total') {
-      const { data: usoTotal } = await supabase
+      const { data: usoTotal } = await getSupabaseAdmin()
         .from('uso_ia_med')
         .select('*')
         .eq('user_id', user_id)
@@ -101,7 +98,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar estatísticas de conversas
-    const { data: conversas, count: totalConversas } = await supabase
+    const { data: conversas, count: totalConversas } = await getSupabaseAdmin()
       .from('conversas_ia_med')
       .select('id, titulo, tokens_usados, created_at', { count: 'exact' })
       .eq('user_id', user_id)
@@ -109,19 +106,19 @@ export async function GET(request: NextRequest) {
       .limit(10)
 
     // Buscar estatísticas de flashcards
-    const { count: totalFlashcards } = await supabase
+    const { count: totalFlashcards } = await getSupabaseAdmin()
       .from('flashcards_ia_med')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user_id)
 
-    const { count: flashcardsPendentes } = await supabase
+    const { count: flashcardsPendentes } = await getSupabaseAdmin()
       .from('flashcards_ia_med')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user_id)
       .or(`proxima_revisao.is.null,proxima_revisao.lte.${new Date().toISOString()}`)
 
     // Buscar estatísticas de resumos
-    const { count: totalResumos } = await supabase
+    const { count: totalResumos } = await getSupabaseAdmin()
       .from('resumos_ia_med')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user_id)
@@ -171,14 +168,14 @@ export async function POST(request: NextRequest) {
 
     if (campo) {
       // Resetar campo específico
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_ia_med')
         .update({ [campo]: 0 })
         .eq('user_id', user_id)
         .eq('mes_referencia', mesAtual)
     } else {
       // Resetar tudo
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_ia_med')
         .update({
           chats_usados: 0,

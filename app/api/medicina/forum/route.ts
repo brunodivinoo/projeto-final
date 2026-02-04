@@ -1,10 +1,7 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // GET - Listar tópicos do fórum
 export async function GET(request: NextRequest) {
@@ -16,7 +13,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('forum_topicos_med')
       .select(`
         *,
@@ -75,7 +72,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: topico, error } = await supabase
+    const { data: topico, error } = await getSupabaseAdmin()
       .from('forum_topicos_med')
       .insert({
         user_id: userId,
@@ -130,7 +127,7 @@ export async function PUT(request: NextRequest) {
     if (conteudo !== undefined) updateData.conteudo = conteudo
     if (resolvido !== undefined) updateData.resolvido = resolvido
 
-    const { data: topico, error } = await supabase
+    const { data: topico, error } = await getSupabaseAdmin()
       .from('forum_topicos_med')
       .update(updateData)
       .eq('id', id)
@@ -165,7 +162,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('forum_topicos_med')
       .delete()
       .eq('id', id)

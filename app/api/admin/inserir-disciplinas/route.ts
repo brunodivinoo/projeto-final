@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // Função para normalizar texto
 function normalizar(texto: string): string {
@@ -41,7 +38,7 @@ export async function POST(req: NextRequest) {
     for (const disc of disciplinas) {
       // Verificar se disciplina existe
       const nomeNormDisc = normalizar(disc.nome)
-      const { data: discExistente } = await supabase
+      const { data: discExistente } = await getSupabaseAdmin()
         .from('disciplinas')
         .select('id')
         .eq('nome_normalizado', nomeNormDisc)
@@ -51,7 +48,7 @@ export async function POST(req: NextRequest) {
 
       if (!discExistente) {
         // Criar disciplina
-        const { data: novaDisc, error: errDisc } = await supabase
+        const { data: novaDisc, error: errDisc } = await getSupabaseAdmin()
           .from('disciplinas')
           .insert({ nome: disc.nome, nome_normalizado: nomeNormDisc })
           .select('id')
@@ -59,7 +56,7 @@ export async function POST(req: NextRequest) {
 
         if (errDisc) {
           // Tentar buscar novamente (pode ter sido criada em paralelo)
-          const { data: discRetry } = await supabase
+          const { data: discRetry } = await getSupabaseAdmin()
             .from('disciplinas')
             .select('id')
             .eq('nome_normalizado', nomeNormDisc)
@@ -78,7 +75,7 @@ export async function POST(req: NextRequest) {
       // Processar assuntos
       for (const ass of disc.assuntos) {
         const nomeNormAss = normalizar(ass.nome)
-        const { data: assExistente } = await supabase
+        const { data: assExistente } = await getSupabaseAdmin()
           .from('assuntos')
           .select('id')
           .eq('disciplina_id', disciplinaId)
@@ -89,7 +86,7 @@ export async function POST(req: NextRequest) {
 
         if (!assExistente) {
           // Criar assunto
-          const { data: novoAss, error: errAss } = await supabase
+          const { data: novoAss, error: errAss } = await getSupabaseAdmin()
             .from('assuntos')
             .insert({
               disciplina_id: disciplinaId,
@@ -100,7 +97,7 @@ export async function POST(req: NextRequest) {
             .single()
 
           if (errAss) {
-            const { data: assRetry } = await supabase
+            const { data: assRetry } = await getSupabaseAdmin()
               .from('assuntos')
               .select('id')
               .eq('disciplina_id', disciplinaId)
@@ -121,7 +118,7 @@ export async function POST(req: NextRequest) {
         for (const sub of ass.subassuntos) {
           const nomeNormSub = normalizar(sub)
 
-          const { data: subExistente } = await supabase
+          const { data: subExistente } = await getSupabaseAdmin()
             .from('subassuntos')
             .select('id')
             .eq('assunto_id', assuntoId)
@@ -129,7 +126,7 @@ export async function POST(req: NextRequest) {
             .single()
 
           if (!subExistente) {
-            const { error: errSub } = await supabase
+            const { error: errSub } = await getSupabaseAdmin()
               .from('subassuntos')
               .insert({
                 assunto_id: assuntoId,

@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 interface ComparacaoSimulado {
   id: string
@@ -58,7 +55,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar se usuário é PRO
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
       .select('plano')
       .eq('id', user_id)
@@ -79,7 +76,7 @@ export async function GET(request: NextRequest) {
     if (ids) {
       simuladoIds = ids.split(',').filter(Boolean).slice(0, 10)
     } else {
-      const { data: ultimos } = await supabase
+      const { data: ultimos } = await getSupabaseAdmin()
         .from('simulados')
         .select('id')
         .eq('user_id', user_id)
@@ -97,7 +94,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar dados detalhados de cada simulado
-    const { data: simulados, error: simuladosError } = await supabase
+    const { data: simulados, error: simuladosError } = await getSupabaseAdmin()
       .from('simulados')
       .select(`
         id,

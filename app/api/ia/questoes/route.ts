@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Buscar questões do usuário com filtros
 export async function GET(req: NextRequest) {
@@ -26,7 +23,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'user_id é obrigatório' }, { status: 400 })
     }
 
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('questoes_ia_geradas')
       .select('*', { count: 'exact' })
       .eq('user_id', user_id)
@@ -77,7 +74,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Buscar a questão
-    const { data: questao, error: fetchError } = await supabase
+    const { data: questao, error: fetchError } = await getSupabaseAdmin()
       .from('questoes_ia_geradas')
       .select('gabarito')
       .eq('id', questao_id)
@@ -91,7 +88,7 @@ export async function POST(req: NextRequest) {
     const acertou = resposta.toUpperCase() === questao.gabarito.toUpperCase()
 
     // Atualizar a questão
-    const { error: updateError } = await supabase
+    const { error: updateError } = await getSupabaseAdmin()
       .from('questoes_ia_geradas')
       .update({
         respondida: true,
@@ -129,7 +126,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'questao_id e user_id são obrigatórios' }, { status: 400 })
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('questoes_ia_geradas')
       .delete()
       .eq('id', questao_id)

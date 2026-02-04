@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // Função para normalizar nome (remover acentos, lowercase)
 function normalizarNome(nome: string): string {
@@ -170,7 +167,7 @@ interface SugestaoMesclagem {
 export async function GET() {
   try {
     // Buscar todas as disciplinas
-    const { data: disciplinas, error } = await supabase
+    const { data: disciplinas, error } = await getSupabaseAdmin()
       .from('disciplinas')
       .select('id, nome, qtd_questoes')
       .order('nome')
@@ -217,7 +214,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Buscar disciplina principal
-    const { data: principal, error: errPrincipal } = await supabase
+    const { data: principal, error: errPrincipal } = await getSupabaseAdmin()
       .from('disciplinas')
       .select('id, nome')
       .eq('id', disciplinaPrincipalId)
@@ -228,7 +225,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Buscar disciplinas para mesclar
-    const { data: paraMesclar, error: errMesclar } = await supabase
+    const { data: paraMesclar, error: errMesclar } = await getSupabaseAdmin()
       .from('disciplinas')
       .select('id, nome')
       .in('id', disciplinasParaMesclarIds)
@@ -246,13 +243,13 @@ export async function POST(req: NextRequest) {
 
     for (const disc of paraMesclar) {
       // 1. Contar questões que serão atualizadas
-      const { count: qtdQuestoes } = await supabase
+      const { count: qtdQuestoes } = await getSupabaseAdmin()
         .from('questoes')
         .select('*', { count: 'exact', head: true })
         .eq('disciplina', disc.nome)
 
       // 2. Atualizar questões: trocar disciplina
-      const { error: errQuestoes } = await supabase
+      const { error: errQuestoes } = await getSupabaseAdmin()
         .from('questoes')
         .update({ disciplina: principal.nome })
         .eq('disciplina', disc.nome)
@@ -264,7 +261,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 3. Buscar assuntos da disciplina para mesclar
-      const { data: assuntos } = await supabase
+      const { data: assuntos } = await getSupabaseAdmin()
         .from('assuntos')
         .select('id, nome')
         .eq('disciplina_id', disc.id)
@@ -272,7 +269,7 @@ export async function POST(req: NextRequest) {
       if (assuntos?.length) {
         for (const assunto of assuntos) {
           // Verificar se já existe assunto com mesmo nome na disciplina principal
-          const { data: assuntoExistente } = await supabase
+          const { data: assuntoExistente } = await getSupabaseAdmin()
             .from('assuntos')
             .select('id')
             .eq('disciplina_id', principal.id)
@@ -281,19 +278,19 @@ export async function POST(req: NextRequest) {
 
           if (assuntoExistente) {
             // Mover subassuntos para o assunto existente
-            await supabase
+            await getSupabaseAdmin()
               .from('subassuntos')
               .update({ assunto_id: assuntoExistente.id })
               .eq('assunto_id', assunto.id)
 
             // Deletar assunto duplicado (subassuntos já foram movidos)
-            await supabase
+            await getSupabaseAdmin()
               .from('assuntos')
               .delete()
               .eq('id', assunto.id)
           } else {
             // Mover assunto para a disciplina principal
-            await supabase
+            await getSupabaseAdmin()
               .from('assuntos')
               .update({ disciplina_id: principal.id })
               .eq('id', assunto.id)
@@ -303,7 +300,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 3. Deletar disciplina mesclada
-      const { error: errDelete } = await supabase
+      const { error: errDelete } = await getSupabaseAdmin()
         .from('disciplinas')
         .delete()
         .eq('id', disc.id)
@@ -316,12 +313,12 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Atualizar contagem de questões da disciplina principal
-    const { count: novaQtd } = await supabase
+    const { count: novaQtd } = await getSupabaseAdmin()
       .from('questoes')
       .select('*', { count: 'exact', head: true })
       .eq('disciplina', principal.nome)
 
-    await supabase
+    await getSupabaseAdmin()
       .from('disciplinas')
       .update({ qtd_questoes: novaQtd || 0 })
       .eq('id', principal.id)

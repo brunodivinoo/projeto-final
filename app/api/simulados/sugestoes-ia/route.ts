@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
@@ -33,7 +30,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar se usuário é PRO
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
       .select('plano, nome')
       .eq('id', user_id)
@@ -56,7 +53,7 @@ export async function GET(request: NextRequest) {
       { data: ultimasQuestoes }
     ] = await Promise.all([
       // Últimos 20 simulados finalizados
-      supabase
+      getSupabaseAdmin()
         .from('simulados')
         .select('id, titulo, pontuacao, acertos, erros, quantidade_questoes, finalizado_em, tempo_gasto_segundos')
         .eq('user_id', user_id)
@@ -65,13 +62,13 @@ export async function GET(request: NextRequest) {
         .limit(20),
 
       // Desempenho por área
-      supabase
+      getSupabaseAdmin()
         .from('simulado_desempenho')
         .select('*')
         .eq('user_id', user_id),
 
       // Últimas 100 respostas
-      supabase
+      getSupabaseAdmin()
         .from('simulado_questoes')
         .select(`
           esta_correta,
@@ -179,7 +176,7 @@ export async function GET(request: NextRequest) {
     // Salvar sugestões no banco
     if (sugestoesIA.length > 0) {
       // Marcar sugestões antigas como visualizadas
-      await supabase
+      await getSupabaseAdmin()
         .from('simulado_sugestoes')
         .update({ visualizada: true })
         .eq('user_id', user_id)
@@ -199,7 +196,7 @@ export async function GET(request: NextRequest) {
         gerada_em: new Date().toISOString()
       }))
 
-      await supabase
+      await getSupabaseAdmin()
         .from('simulado_sugestoes')
         .insert(sugestoesParaInserir)
     }
@@ -440,7 +437,7 @@ export async function POST(request: NextRequest) {
       updateData.aplicada_em = new Date().toISOString()
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('simulado_sugestoes')
       .update(updateData)
       .eq('id', sugestao_id)

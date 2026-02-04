@@ -1,3 +1,4 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
 import { isAdmin } from '@/lib/admin/auth'
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient()
 
     // Verificar autenticação
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await getSupabaseAdmin().auth.getUser()
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     const { tipo, disciplina_id, contexto } = body
 
     // Buscar disciplinas existentes
-    const { data: disciplinasExistentes } = await supabase
+    const { data: disciplinasExistentes } = await getSupabaseAdmin()
       .from('disciplinas_med')
       .select('id, nome')
       .eq('ativo', true)
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
     // Buscar assuntos existentes (se tiver disciplina selecionada)
     let assuntosExistentes: { id: string; nome: string }[] = []
     if (disciplina_id) {
-      const { data } = await supabase
+      const { data } = await getSupabaseAdmin()
         .from('assuntos_med')
         .select('id, nome')
         .eq('disciplina_id', disciplina_id)
@@ -181,7 +182,7 @@ export async function PUT(req: NextRequest) {
     const supabase = await createClient()
 
     // Verificar autenticação
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await getSupabaseAdmin().auth.getUser()
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -205,7 +206,7 @@ export async function PUT(req: NextRequest) {
       for (const disciplina of itens as DisciplinaSugeridaItem[]) {
         try {
           // Verificar se já existe
-          const { data: existente } = await supabase
+          const { data: existente } = await getSupabaseAdmin()
             .from('disciplinas_med')
             .select('id')
             .ilike('nome', disciplina.nome)
@@ -217,7 +218,7 @@ export async function PUT(req: NextRequest) {
           }
 
           // Criar disciplina (nota: tabela não tem coluna descricao)
-          const { data: novaDisciplina, error: errDisciplina } = await supabase
+          const { data: novaDisciplina, error: errDisciplina } = await getSupabaseAdmin()
             .from('disciplinas_med')
             .insert({
               nome: disciplina.nome,
@@ -234,7 +235,7 @@ export async function PUT(req: NextRequest) {
           // Criar assuntos da disciplina
           if (disciplina.assuntos && novaDisciplina) {
             for (const assunto of disciplina.assuntos) {
-              const { data: novoAssunto, error: errAssunto } = await supabase
+              const { data: novoAssunto, error: errAssunto } = await getSupabaseAdmin()
                 .from('assuntos_med')
                 .insert({
                   nome: assunto.nome,
@@ -249,7 +250,7 @@ export async function PUT(req: NextRequest) {
               // Criar subassuntos
               if (assunto.subassuntos && novoAssunto) {
                 for (const subNome of assunto.subassuntos) {
-                  await supabase
+                  await getSupabaseAdmin()
                     .from('subassuntos_med')
                     .insert({
                       nome: subNome,
@@ -275,7 +276,7 @@ export async function PUT(req: NextRequest) {
       for (const assunto of itens as AssuntoSugerido[]) {
         try {
           // Verificar se já existe
-          const { data: existente } = await supabase
+          const { data: existente } = await getSupabaseAdmin()
             .from('assuntos_med')
             .select('id')
             .eq('disciplina_id', disciplina_id)
@@ -288,7 +289,7 @@ export async function PUT(req: NextRequest) {
           }
 
           // Criar assunto (nota: tabela não tem coluna descricao)
-          const { data: novoAssunto, error: errAssunto } = await supabase
+          const { data: novoAssunto, error: errAssunto } = await getSupabaseAdmin()
             .from('assuntos_med')
             .insert({
               nome: assunto.nome,
@@ -303,7 +304,7 @@ export async function PUT(req: NextRequest) {
           // Criar subassuntos
           if (assunto.subassuntos && novoAssunto) {
             for (const subNome of assunto.subassuntos) {
-              await supabase
+              await getSupabaseAdmin()
                 .from('subassuntos_med')
                 .insert({
                   nome: subNome,

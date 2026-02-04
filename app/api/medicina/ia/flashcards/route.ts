@@ -1,7 +1,7 @@
 // API Route - Geração de Flashcards IA PREPARAMED
 
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { PlanoIA, verificarLimiteIA, incrementarUsoIA, calcularCusto } from '@/lib/ai'
@@ -9,10 +9,7 @@ import { PROMPT_GERAR_FLASHCARDS, SYSTEM_PROMPT_PREMIUM, SYSTEM_PROMPT_RESIDENCI
 import { MODELOS } from '@/lib/ai/config'
 import { TOOL_GERAR_FLASHCARDS } from '@/lib/ai/tools'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase - usar getSupabaseAdmin() dentro das funções
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!
@@ -51,7 +48,7 @@ export async function POST(request: NextRequest) {
     const qtd = Math.min(Math.max(parseInt(quantidade) || 10, 1), 30) // Entre 1 e 30
 
     // Buscar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano')
       .eq('id', user_id)
@@ -161,7 +158,7 @@ Retorne em formato JSON com a estrutura: { "flashcards": [{ "frente": "...", "ve
         tags: f.tags || [temaFinal, ...(assunto ? [assunto] : [])]
       }))
 
-      const { data, error: saveError } = await supabase
+      const { data, error: saveError } = await getSupabaseAdmin()
         .from('flashcards_ia_med')
         .insert(flashcardsParaSalvar)
         .select()
@@ -208,7 +205,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'user_id é obrigatório' }, { status: 400 })
     }
 
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('flashcards_ia_med')
       .select('*')
       .eq('user_id', user_id)
@@ -253,7 +250,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Buscar flashcard atual
-    const { data: flashcard } = await supabase
+    const { data: flashcard } = await getSupabaseAdmin()
       .from('flashcards_ia_med')
       .select('*')
       .eq('id', flashcard_id)
@@ -280,7 +277,7 @@ export async function PUT(request: NextRequest) {
     proximaRevisao.setDate(proximaRevisao.getDate() + diasAteProximaRevisao)
 
     // Atualizar flashcard
-    const { data: updated } = await supabase
+    const { data: updated } = await getSupabaseAdmin()
       .from('flashcards_ia_med')
       .update({
         revisoes,
@@ -319,14 +316,14 @@ export async function DELETE(request: NextRequest) {
 
     if (flashcard_id) {
       // Deletar um flashcard específico
-      await supabase
+      await getSupabaseAdmin()
         .from('flashcards_ia_med')
         .delete()
         .eq('id', flashcard_id)
         .eq('user_id', user_id)
     } else if (tema) {
       // Deletar todos de um tema
-      await supabase
+      await getSupabaseAdmin()
         .from('flashcards_ia_med')
         .delete()
         .eq('tema', tema)

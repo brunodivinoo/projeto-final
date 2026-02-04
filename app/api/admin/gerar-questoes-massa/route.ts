@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
@@ -32,7 +29,7 @@ function normalizar(texto: string): string {
 async function getOrCreateDisciplina(nome: string): Promise<string> {
   const nomeNormalizado = normalizar(nome)
 
-  const { data: existing } = await supabase
+  const { data: existing } = await getSupabaseAdmin()
     .from('disciplinas')
     .select('id')
     .eq('nome_normalizado', nomeNormalizado)
@@ -40,7 +37,7 @@ async function getOrCreateDisciplina(nome: string): Promise<string> {
 
   if (existing) return existing.id
 
-  const { data: created } = await supabase
+  const { data: created } = await getSupabaseAdmin()
     .from('disciplinas')
     .insert({ nome, nome_normalizado: nomeNormalizado })
     .select('id')
@@ -55,7 +52,7 @@ async function getOrCreateAssunto(disciplinaId: string, nome: string): Promise<s
 
   const nomeNormalizado = normalizar(nome)
 
-  const { data: existing } = await supabase
+  const { data: existing } = await getSupabaseAdmin()
     .from('assuntos')
     .select('id')
     .eq('disciplina_id', disciplinaId)
@@ -64,7 +61,7 @@ async function getOrCreateAssunto(disciplinaId: string, nome: string): Promise<s
 
   if (existing) return existing.id
 
-  const { data: created } = await supabase
+  const { data: created } = await getSupabaseAdmin()
     .from('assuntos')
     .insert({ disciplina_id: disciplinaId, nome, nome_normalizado: nomeNormalizado })
     .select('id')
@@ -229,7 +226,7 @@ Retorne APENAS o JSON, sem markdown.`
       id_original: `admin-${Date.now()}-${index}`
     }))
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('questoes')
       .insert(questoesParaInserir)
 

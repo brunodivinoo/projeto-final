@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 interface ItemFila {
   disciplina: string
@@ -28,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     // Se simulado_id fornecido, buscar status específico
     if (simulado_id) {
-      const { data: itens, error } = await supabase
+      const { data: itens, error } = await getSupabaseAdmin()
         .from('simulado_ia_fila')
         .select('*')
         .eq('simulado_id', simulado_id)
@@ -47,7 +44,7 @@ export async function GET(request: NextRequest) {
       const processando = itens?.find(i => i.status === 'processando')
 
       // Buscar info do simulado
-      const { data: simulado } = await supabase
+      const { data: simulado } = await getSupabaseAdmin()
         .from('simulados')
         .select('titulo, status')
         .eq('id', simulado_id)
@@ -71,7 +68,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar todas as gerações pendentes do usuário
-    const { data: simuladosPendentes, error } = await supabase
+    const { data: simuladosPendentes, error } = await getSupabaseAdmin()
       .from('simulados')
       .select('id, titulo, status, quantidade_questoes')
       .eq('user_id', user_id)
@@ -86,7 +83,7 @@ export async function GET(request: NextRequest) {
     // Para cada simulado pendente, buscar progresso
     const simuladosComProgresso = await Promise.all(
       (simuladosPendentes || []).map(async (sim) => {
-        const { data: itens } = await supabase
+        const { data: itens } = await getSupabaseAdmin()
           .from('simulado_ia_fila')
           .select('status')
           .eq('simulado_id', sim.id)
@@ -160,7 +157,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se usuário é PRO
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles')
       .select('plano')
       .eq('id', user_id)
@@ -178,7 +175,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar limite diário
     const hoje = new Date().toISOString().split('T')[0]
-    const { data: usoHoje } = await supabase
+    const { data: usoHoje } = await getSupabaseAdmin()
       .from('uso_diario')
       .select('quantidade')
       .eq('user_id', user_id)
@@ -200,7 +197,7 @@ export async function POST(request: NextRequest) {
     console.log(`[FILA IA] Criando simulado com ${quantidade_questoes} questões`)
 
     // Criar o simulado com status "gerando"
-    const { data: simulado, error: simuladoError } = await supabase
+    const { data: simulado, error: simuladoError } = await getSupabaseAdmin()
       .from('simulados')
       .insert({
         user_id,
@@ -240,33 +237,33 @@ export async function POST(request: NextRequest) {
       status: 'pendente'
     }))
 
-    const { error: filaError } = await supabase
+    const { error: filaError } = await getSupabaseAdmin()
       .from('simulado_ia_fila')
       .insert(itensParaInserir)
 
     if (filaError) {
       console.error('[FILA IA] Erro ao popular fila:', filaError)
       // Rollback - deletar simulado
-      await supabase.from('simulados').delete().eq('id', simulado.id)
+      await getSupabaseAdmin().from('simulados').delete().eq('id', simulado.id)
       return NextResponse.json({ error: 'Erro ao criar fila de geração' }, { status: 500 })
     }
 
     // Salvar disciplinas do simulado
     const disciplinasUnicas = [...new Set(itens.map(i => i.disciplina))]
-    await supabase.from('simulado_disciplinas').insert(
+    await getSupabaseAdmin().from('simulado_disciplinas').insert(
       disciplinasUnicas.map(d => ({ simulado_id: simulado.id, disciplina_nome: d }))
     )
 
     // Registrar uso diário
     if (usoHoje) {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_diario')
         .update({ quantidade: usadoHoje + 1 })
         .eq('user_id', user_id)
         .eq('data', hoje)
         .eq('tipo', 'simulado_ia')
     } else {
-      await supabase
+      await getSupabaseAdmin()
         .from('uso_diario')
         .insert({
           user_id,
@@ -277,7 +274,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Registrar atividade
-    await supabase
+    await getSupabaseAdmin()
       .from('historico_atividades')
       .insert({
         user_id,
@@ -320,7 +317,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar se simulado pertence ao usuário
-    const { data: simulado } = await supabase
+    const { data: simulado } = await getSupabaseAdmin()
       .from('simulados')
       .select('id, status')
       .eq('id', simulado_id)
@@ -332,14 +329,14 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Marcar itens pendentes como cancelados
-    await supabase
+    await getSupabaseAdmin()
       .from('simulado_ia_fila')
       .update({ status: 'cancelado' })
       .eq('simulado_id', simulado_id)
       .in('status', ['pendente', 'processando'])
 
     // Contar questões geradas
-    const { count: questoesGeradas } = await supabase
+    const { count: questoesGeradas } = await getSupabaseAdmin()
       .from('simulado_ia_fila')
       .select('*', { count: 'exact', head: true })
       .eq('simulado_id', simulado_id)
@@ -348,7 +345,7 @@ export async function DELETE(request: NextRequest) {
     // Se tem questões geradas, manter simulado como pendente
     // Se não tem, deletar simulado
     if (questoesGeradas && questoesGeradas > 0) {
-      await supabase
+      await getSupabaseAdmin()
         .from('simulados')
         .update({
           status: 'pendente',
@@ -363,9 +360,9 @@ export async function DELETE(request: NextRequest) {
       })
     } else {
       // Deletar tudo
-      await supabase.from('simulado_ia_fila').delete().eq('simulado_id', simulado_id)
-      await supabase.from('simulado_disciplinas').delete().eq('simulado_id', simulado_id)
-      await supabase.from('simulados').delete().eq('id', simulado_id)
+      await getSupabaseAdmin().from('simulado_ia_fila').delete().eq('simulado_id', simulado_id)
+      await getSupabaseAdmin().from('simulado_disciplinas').delete().eq('simulado_id', simulado_id)
+      await getSupabaseAdmin().from('simulados').delete().eq('id', simulado_id)
 
       return NextResponse.json({
         success: true,

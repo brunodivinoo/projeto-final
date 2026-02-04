@@ -1,15 +1,8 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-// Cliente admin do Supabase
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-)
 
 /**
  * POST - Registrar resposta de questão na sessão
@@ -38,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Registrar questão respondida
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('questoes_sessao_med')
       .insert({
         sessao_id,
@@ -66,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     // Atualizar métricas da sessão se houver sessao_id
     if (sessao_id) {
-      const { data: sessao } = await supabaseAdmin
+      const { data: sessao } = await getSupabaseAdmin()
         .from('sessoes_modo_med')
         .select('metricas')
         .eq('id', sessao_id)
@@ -88,7 +81,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from('sessoes_modo_med')
         .update({
           metricas: novasMetricas,
@@ -130,7 +123,7 @@ export async function GET(request: NextRequest) {
 
     // Retornar questões erradas (para revisão)
     if (tipo === 'erros') {
-      const { data: questoesErradas, error } = await supabaseAdmin
+      const { data: questoesErradas, error } = await getSupabaseAdmin()
         .from('questoes_sessao_med')
         .select('*')
         .eq('user_id', user_id)
@@ -154,7 +147,7 @@ export async function GET(request: NextRequest) {
 
     // Retornar estatísticas por tema
     if (tipo === 'estatisticas') {
-      const { data: questoes, error } = await supabaseAdmin
+      const { data: questoes, error } = await getSupabaseAdmin()
         .from('questoes_sessao_med')
         .select('tema, acertou, tempo_resposta_segundos')
         .eq('user_id', user_id)
@@ -214,7 +207,7 @@ export async function GET(request: NextRequest) {
 
     // Retornar questões de uma sessão específica
     if (sessao_id) {
-      const { data: questoes, error } = await supabaseAdmin
+      const { data: questoes, error } = await getSupabaseAdmin()
         .from('questoes_sessao_med')
         .select('*')
         .eq('sessao_id', sessao_id)
@@ -235,7 +228,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Retornar últimas questões do usuário
-    const { data: questoes, error } = await supabaseAdmin
+    const { data: questoes, error } = await getSupabaseAdmin()
       .from('questoes_sessao_med')
       .select('*')
       .eq('user_id', user_id)
@@ -283,7 +276,7 @@ export async function PUT(request: NextRequest) {
     if (viu_gabarito !== undefined) updateData.viu_gabarito = viu_gabarito
     if (feedback_lido !== undefined) updateData.feedback_lido = feedback_lido
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('questoes_sessao_med')
       .update(updateData)
       .eq('id', questao_id)

@@ -1,10 +1,7 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // GET - Listar anotações do usuário
 export async function GET(request: NextRequest) {
@@ -24,7 +21,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('anotacoes_med')
       .select(`
         *,
@@ -53,7 +50,7 @@ export async function GET(request: NextRequest) {
     if (error) throw error
 
     // Buscar pastas distintas
-    const { data: pastasData } = await supabase
+    const { data: pastasData } = await getSupabaseAdmin()
       .from('anotacoes_med')
       .select('pasta')
       .eq('user_id', userId)
@@ -90,13 +87,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar limite de anotações
-    const { count } = await supabase
+    const { count } = await getSupabaseAdmin()
       .from('anotacoes_med')
       .select('id', { count: 'exact' })
       .eq('user_id', userId)
 
     // Buscar plano do usuário
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano')
       .eq('id', userId)
@@ -117,7 +114,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: anotacao, error } = await supabase
+    const { data: anotacao, error } = await getSupabaseAdmin()
       .from('anotacoes_med')
       .insert({
         user_id: userId,
@@ -138,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     // Atualizar contador no limites_uso
     const mesRef = new Date().toISOString().slice(0, 7)
-    await supabase
+    await getSupabaseAdmin()
       .from('limites_uso_med')
       .upsert({
         user_id: userId,
@@ -183,7 +180,7 @@ export async function PUT(request: NextRequest) {
     if (favorito !== undefined) updateData.favorito = favorito
     if (destaques !== undefined) updateData.destaques = destaques
 
-    const { data: anotacao, error } = await supabase
+    const { data: anotacao, error } = await getSupabaseAdmin()
       .from('anotacoes_med')
       .update(updateData)
       .eq('id', id)
@@ -218,7 +215,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('anotacoes_med')
       .delete()
       .eq('id', id)

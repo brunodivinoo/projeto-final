@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // GET - Buscar tópico com respostas
 export async function GET(
@@ -15,7 +12,7 @@ export async function GET(
     const { id } = await params
 
     // Buscar tópico
-    const { data: topico, error: topicoError } = await supabase
+    const { data: topico, error: topicoError } = await getSupabaseAdmin()
       .from('forum_topicos_med')
       .select(`
         *,
@@ -35,13 +32,13 @@ export async function GET(
     }
 
     // Incrementar visualizações
-    await supabase
+    await getSupabaseAdmin()
       .from('forum_topicos_med')
       .update({ visualizacoes: (topico.visualizacoes || 0) + 1 })
       .eq('id', id)
 
     // Buscar respostas
-    const { data: respostas } = await supabase
+    const { data: respostas } = await getSupabaseAdmin()
       .from('forum_respostas_med')
       .select(`
         *,
@@ -84,7 +81,7 @@ export async function POST(
     }
 
     // Criar resposta
-    const { data: resposta, error } = await supabase
+    const { data: resposta, error } = await getSupabaseAdmin()
       .from('forum_respostas_med')
       .insert({
         topico_id: id,
@@ -101,13 +98,13 @@ export async function POST(
     if (error) throw error
 
     // Atualizar contador de respostas no tópico
-    const { data: topico } = await supabase
+    const { data: topico } = await getSupabaseAdmin()
       .from('forum_topicos_med')
       .select('total_respostas')
       .eq('id', id)
       .single()
 
-    await supabase
+    await getSupabaseAdmin()
       .from('forum_topicos_med')
       .update({
         total_respostas: (topico?.total_respostas || 0) + 1,
@@ -146,7 +143,7 @@ export async function PUT(
     // Votar
     if (acao === 'votar' && respostaId && voto) {
       // Verificar se já votou
-      const { data: votoExistente } = await supabase
+      const { data: votoExistente } = await getSupabaseAdmin()
         .from('forum_votos_med')
         .select('*')
         .eq('user_id', userId)
@@ -157,14 +154,14 @@ export async function PUT(
         // Atualizar ou remover voto
         if (votoExistente.tipo === voto) {
           // Remover voto
-          await supabase
+          await getSupabaseAdmin()
             .from('forum_votos_med')
             .delete()
             .eq('user_id', userId)
             .eq('resposta_id', respostaId)
         } else {
           // Atualizar voto
-          await supabase
+          await getSupabaseAdmin()
             .from('forum_votos_med')
             .update({ tipo: voto })
             .eq('user_id', userId)
@@ -172,7 +169,7 @@ export async function PUT(
         }
       } else {
         // Criar voto
-        await supabase
+        await getSupabaseAdmin()
           .from('forum_votos_med')
           .insert({
             user_id: userId,
@@ -182,19 +179,19 @@ export async function PUT(
       }
 
       // Recontar votos
-      const { count: positivos } = await supabase
+      const { count: positivos } = await getSupabaseAdmin()
         .from('forum_votos_med')
         .select('*', { count: 'exact' })
         .eq('resposta_id', respostaId)
         .eq('tipo', 'positivo')
 
-      const { count: negativos } = await supabase
+      const { count: negativos } = await getSupabaseAdmin()
         .from('forum_votos_med')
         .select('*', { count: 'exact' })
         .eq('resposta_id', respostaId)
         .eq('tipo', 'negativo')
 
-      await supabase
+      await getSupabaseAdmin()
         .from('forum_respostas_med')
         .update({
           votos_positivos: positivos || 0,
@@ -208,7 +205,7 @@ export async function PUT(
     // Marcar como melhor resposta
     if (acao === 'melhor_resposta' && respostaId) {
       // Verificar se é o autor do tópico
-      const { data: topico } = await supabase
+      const { data: topico } = await getSupabaseAdmin()
         .from('forum_topicos_med')
         .select('user_id')
         .eq('id', topicoId)
@@ -222,19 +219,19 @@ export async function PUT(
       }
 
       // Desmarcar melhor resposta anterior
-      await supabase
+      await getSupabaseAdmin()
         .from('forum_respostas_med')
         .update({ melhor_resposta: false })
         .eq('topico_id', topicoId)
 
       // Marcar nova melhor resposta
-      await supabase
+      await getSupabaseAdmin()
         .from('forum_respostas_med')
         .update({ melhor_resposta: true })
         .eq('id', respostaId)
 
       // Marcar tópico como resolvido
-      await supabase
+      await getSupabaseAdmin()
         .from('forum_topicos_med')
         .update({ resolvido: true })
         .eq('id', topicoId)

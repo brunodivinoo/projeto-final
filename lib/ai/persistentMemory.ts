@@ -257,50 +257,210 @@ export async function getContextForPrompt(userId: string): Promise<string> {
 
 /**
  * Detecta e extrai entidades da mensagem
+ * Sistema aprimorado com mais categorias e padroes
  */
-export function detectEntities(message: string): Array<{ type: string; value: string }> {
-  const entities: Array<{ type: string; value: string }> = []
+export function detectEntities(message: string): Array<{ type: string; value: string; confidence?: number }> {
+  const entities: Array<{ type: string; value: string; confidence?: number }> = []
   const msgLower = message.toLowerCase()
 
-  // Detectar provas alvo
+  // ==========================================
+  // 1. PROVAS E CONCURSOS
+  // ==========================================
   const provas = [
-    { pattern: /residencia|residência/, value: 'Residência Médica' },
-    { pattern: /revalida/, value: 'REVALIDA' },
-    { pattern: /enade/, value: 'ENADE' },
-    { pattern: /usp/, value: 'USP' },
-    { pattern: /unicamp/, value: 'UNICAMP' },
-    { pattern: /unifesp/, value: 'UNIFESP' }
+    { pattern: /residencia|residência/, value: 'Residencia Medica', confidence: 0.9 },
+    { pattern: /revalida/, value: 'REVALIDA', confidence: 0.95 },
+    { pattern: /enade/, value: 'ENADE', confidence: 0.95 },
+    { pattern: /enare/, value: 'ENARE', confidence: 0.95 },
+    { pattern: /\busp\b/, value: 'USP', confidence: 0.9 },
+    { pattern: /\bunicamp\b/, value: 'UNICAMP', confidence: 0.9 },
+    { pattern: /\bunifesp\b/, value: 'UNIFESP', confidence: 0.9 },
+    { pattern: /santa\s*casa/, value: 'Santa Casa', confidence: 0.9 },
+    { pattern: /\bfmusp\b/, value: 'FMUSP', confidence: 0.9 },
+    { pattern: /\bsus\b.*prova|prova.*\bsus\b/, value: 'Prova SUS', confidence: 0.85 },
+    { pattern: /einstein/, value: 'Hospital Albert Einstein', confidence: 0.85 },
+    { pattern: /sirio.*libanes|sirio-libanes/, value: 'Sirio-Libanes', confidence: 0.85 },
+    { pattern: /\bac\b.*camargo|a\.c\..*camargo/, value: 'A.C. Camargo', confidence: 0.85 },
+    { pattern: /inep/, value: 'INEP', confidence: 0.9 },
+    { pattern: /crm|conselho.*medicina/, value: 'CRM', confidence: 0.8 }
   ]
 
   for (const prova of provas) {
     if (prova.pattern.test(msgLower)) {
-      entities.push({ type: 'prova_alvo', value: prova.value })
+      entities.push({ type: 'prova_alvo', value: prova.value, confidence: prova.confidence })
       break
     }
   }
 
-  // Detectar especialidades
+  // ==========================================
+  // 2. ESPECIALIDADES MEDICAS (lista expandida)
+  // ==========================================
   const especialidades = [
-    'cardiologia', 'neurologia', 'pediatria', 'ginecologia', 'cirurgia',
-    'clinica medica', 'clínica médica', 'ortopedia', 'dermatologia',
-    'psiquiatria', 'oftalmologia', 'urologia', 'nefrologia', 'pneumologia',
-    'gastroenterologia', 'endocrinologia', 'reumatologia', 'infectologia',
-    'oncologia', 'hematologia', 'geriatria', 'medicina intensiva'
+    // Clinicas
+    'cardiologia', 'neurologia', 'pneumologia', 'gastroenterologia',
+    'nefrologia', 'endocrinologia', 'reumatologia', 'infectologia',
+    'hematologia', 'oncologia', 'geriatria', 'medicina intensiva',
+    'emergencia', 'urgencia', 'clinica medica', 'clinica geral',
+    // Cirurgicas
+    'cirurgia geral', 'cirurgia cardiaca', 'cirurgia toracica',
+    'cirurgia vascular', 'cirurgia plastica', 'neurocirurgia',
+    'cirurgia pediatrica', 'cirurgia oncologica', 'cirurgia de cabeca e pescoco',
+    // Pediatria
+    'pediatria', 'neonatologia', 'pediatria geral',
+    // Ginecologia e Obstetricia
+    'ginecologia', 'obstetricia', 'ginecologia e obstetricia', 'mastologia',
+    // Outras
+    'ortopedia', 'traumatologia', 'dermatologia', 'psiquiatria',
+    'oftalmologia', 'otorrinolaringologia', 'urologia', 'anestesiologia',
+    'radiologia', 'patologia', 'medicina nuclear', 'medicina do trabalho',
+    'medicina esportiva', 'medicina de familia', 'medicina preventiva',
+    'alergia', 'imunologia', 'coloproctologia', 'angiologia',
+    'medicina legal', 'genetica medica', 'nutrologia', 'acupuntura',
+    'homeopatia', 'medicina fisica', 'reabilitacao', 'terapia intensiva'
   ]
 
   for (const esp of especialidades) {
     if (msgLower.includes(esp)) {
-      entities.push({ type: 'especialidade_interesse', value: esp })
+      entities.push({ type: 'especialidade_interesse', value: esp, confidence: 0.85 })
     }
   }
 
-  // Detectar nivel de estudo
+  // ==========================================
+  // 3. NIVEL DE ESTUDO/CARREIRA
+  // ==========================================
   if (msgLower.includes('interno') || msgLower.includes('internato')) {
-    entities.push({ type: 'nivel_estudo', value: 'Internato' })
-  } else if (msgLower.includes('residente') || msgLower.includes('r1') || msgLower.includes('r2')) {
-    entities.push({ type: 'nivel_estudo', value: 'Residência' })
+    entities.push({ type: 'nivel_estudo', value: 'Internato', confidence: 0.9 })
+  } else if (/\br[1-5]\b/.test(msgLower) || msgLower.includes('residente')) {
+    const match = msgLower.match(/\br([1-5])\b/)
+    const ano = match ? match[1] : ''
+    entities.push({ type: 'nivel_estudo', value: ano ? `R${ano}` : 'Residencia', confidence: 0.9 })
   } else if (msgLower.includes('graduacao') || msgLower.includes('graduação') || msgLower.includes('academico') || msgLower.includes('acadêmico')) {
-    entities.push({ type: 'nivel_estudo', value: 'Graduação' })
+    entities.push({ type: 'nivel_estudo', value: 'Graduacao', confidence: 0.85 })
+  } else if (msgLower.includes('medico') || msgLower.includes('médico')) {
+    if (msgLower.includes('formado') || msgLower.includes('formada')) {
+      entities.push({ type: 'nivel_estudo', value: 'Medico Formado', confidence: 0.8 })
+    }
+  }
+
+  // Detectar ano do curso
+  const anoMatch = msgLower.match(/(\d)[oº°]?\s*ano/i)
+  if (anoMatch) {
+    entities.push({ type: 'ano_curso', value: `${anoMatch[1]}o ano`, confidence: 0.9 })
+  }
+
+  // ==========================================
+  // 4. DISPONIBILIDADE DE TEMPO
+  // ==========================================
+  const horasMatch = msgLower.match(/(\d+)\s*hora[s]?\s*(por\s*dia|diaria|\/dia)?/i)
+  if (horasMatch) {
+    entities.push({ type: 'horas_estudo_diarias', value: `${horasMatch[1]} horas`, confidence: 0.85 })
+  }
+
+  // Dias ate a prova
+  const diasProvaMatch = msgLower.match(/(\d+)\s*(dias?|semanas?|mes(?:es)?)\s*(para|ate|até|faltam?)/i)
+  if (diasProvaMatch) {
+    entities.push({ type: 'tempo_ate_prova', value: `${diasProvaMatch[1]} ${diasProvaMatch[2]}`, confidence: 0.8 })
+  }
+
+  // ==========================================
+  // 5. DOENCAS E CONDICOES (para contexto de estudo)
+  // ==========================================
+  const doencas = [
+    // Cardiovasculares
+    'infarto', 'icc', 'insuficiencia cardiaca', 'hipertensao', 'arritmia',
+    'fibrilacao atrial', 'endocardite', 'pericardite', 'miocardite',
+    // Respiratorias
+    'pneumonia', 'dpoc', 'asma', 'tuberculose', 'covid', 'embolia pulmonar',
+    // Neurologicas
+    'avc', 'meningite', 'encefalite', 'parkinson', 'alzheimer', 'epilepsia',
+    'esclerose multipla', 'guillain-barre', 'cefaleia', 'enxaqueca',
+    // Gastro
+    'cirrose', 'hepatite', 'pancreatite', 'colecistite', 'apendicite',
+    'doenca de crohn', 'retocolite', 'ulcera peptica', 'refluxo',
+    // Endocrinas
+    'diabetes', 'hipotireoidismo', 'hipertireoidismo', 'cushing',
+    'addison', 'feocromocitoma', 'cetoacidose',
+    // Renais
+    'insuficiencia renal', 'glomerulonefrite', 'nefrite', 'calculo renal',
+    // Infecciosas
+    'sepse', 'meningite', 'endocardite', 'osteomielite', 'celulite',
+    'dengue', 'leishmaniose', 'malaria', 'chagas', 'toxoplasmose',
+    // Oncologicas
+    'leucemia', 'linfoma', 'mieloma', 'cancer de mama', 'cancer de pulmao',
+    // Reumatologicas
+    'lupus', 'artrite reumatoide', 'esclerodermia', 'vasculite', 'gota',
+    // Emergencias
+    'choque', 'trauma', 'politrauma', 'queimadura', 'intoxicacao', 'overdose'
+  ]
+
+  for (const doenca of doencas) {
+    if (msgLower.includes(doenca)) {
+      entities.push({ type: 'topico_medico', value: doenca, confidence: 0.9 })
+    }
+  }
+
+  // ==========================================
+  // 6. MEDICAMENTOS (contexto de estudo)
+  // ==========================================
+  const medicamentos = [
+    'anticoagulante', 'warfarina', 'heparina', 'rivaroxabana',
+    'antibiotico', 'amoxicilina', 'azitromicina', 'ciprofloxacino',
+    'antihipertensivo', 'losartana', 'enalapril', 'anlodipino',
+    'insulina', 'metformina', 'glibenclamida',
+    'corticoide', 'prednisona', 'dexametasona',
+    'analgesico', 'dipirona', 'paracetamol', 'morfina', 'tramadol',
+    'antiinflamatorio', 'ibuprofeno', 'diclofenaco', 'nimesulida',
+    'diuretico', 'furosemida', 'hidroclorotiazida', 'espironolactona',
+    'antidepressivo', 'fluoxetina', 'sertralina', 'escitalopram',
+    'broncodilatador', 'salbutamol', 'formoterol'
+  ]
+
+  for (const med of medicamentos) {
+    if (msgLower.includes(med)) {
+      entities.push({ type: 'medicamento_estudo', value: med, confidence: 0.85 })
+    }
+  }
+
+  // ==========================================
+  // 7. TIPO DE CONTEUDO PREFERIDO
+  // ==========================================
+  if (msgLower.includes('questao') || msgLower.includes('questoes') || msgLower.includes('questões')) {
+    entities.push({ type: 'preferencia_conteudo', value: 'questoes', confidence: 0.9 })
+  }
+  if (msgLower.includes('flashcard') || msgLower.includes('flashcards')) {
+    entities.push({ type: 'preferencia_conteudo', value: 'flashcards', confidence: 0.9 })
+  }
+  if (msgLower.includes('resumo') || msgLower.includes('resumos')) {
+    entities.push({ type: 'preferencia_conteudo', value: 'resumos', confidence: 0.9 })
+  }
+  if (msgLower.includes('mapa mental') || msgLower.includes('mapas mentais')) {
+    entities.push({ type: 'preferencia_conteudo', value: 'mapas_mentais', confidence: 0.9 })
+  }
+  if (msgLower.includes('video') || msgLower.includes('videos') || msgLower.includes('vídeos')) {
+    entities.push({ type: 'preferencia_conteudo', value: 'videos', confidence: 0.85 })
+  }
+
+  // ==========================================
+  // 8. DIFICULDADE/NIVEL
+  // ==========================================
+  if (msgLower.includes('facil') || msgLower.includes('fácil') || msgLower.includes('basico') || msgLower.includes('básico')) {
+    entities.push({ type: 'nivel_dificuldade', value: 'facil', confidence: 0.85 })
+  } else if (msgLower.includes('dificil') || msgLower.includes('difícil') || msgLower.includes('avancado') || msgLower.includes('avançado')) {
+    entities.push({ type: 'nivel_dificuldade', value: 'dificil', confidence: 0.85 })
+  } else if (msgLower.includes('medio') || msgLower.includes('médio') || msgLower.includes('intermediario') || msgLower.includes('intermediário')) {
+    entities.push({ type: 'nivel_dificuldade', value: 'medio', confidence: 0.85 })
+  }
+
+  // ==========================================
+  // 9. OBJETIVOS
+  // ==========================================
+  if (msgLower.includes('revisar') || msgLower.includes('revisao') || msgLower.includes('revisão')) {
+    entities.push({ type: 'objetivo', value: 'revisao', confidence: 0.85 })
+  }
+  if (msgLower.includes('aprender') || msgLower.includes('entender') || msgLower.includes('compreender')) {
+    entities.push({ type: 'objetivo', value: 'aprendizado', confidence: 0.8 })
+  }
+  if (msgLower.includes('praticar') || msgLower.includes('treinar') || msgLower.includes('exercitar')) {
+    entities.push({ type: 'objetivo', value: 'pratica', confidence: 0.85 })
   }
 
   return entities

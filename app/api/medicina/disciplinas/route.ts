@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Listar disciplinas, assuntos ou subassuntos
 export async function GET(request: NextRequest) {
@@ -16,7 +13,7 @@ export async function GET(request: NextRequest) {
     const busca = searchParams.get('busca')
 
     if (tipo === 'disciplinas') {
-      let query = supabase
+      let query = getSupabaseAdmin()
         .from('disciplinas_med')
         .select('id, nome, nome_normalizado, icone, cor, ordem')
         .eq('ativo', true)
@@ -41,7 +38,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'disciplina_id é obrigatório' }, { status: 400 })
       }
 
-      let query = supabase
+      let query = getSupabaseAdmin()
         .from('assuntos_med')
         .select('id, nome, nome_normalizado, disciplina_id, ordem')
         .eq('disciplina_id', disciplina_id)
@@ -66,7 +63,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'assunto_id é obrigatório' }, { status: 400 })
       }
 
-      let query = supabase
+      let query = getSupabaseAdmin()
         .from('subassuntos_med')
         .select('id, nome, nome_normalizado, assunto_id')
         .eq('assunto_id', assunto_id)
@@ -111,7 +108,7 @@ export async function POST(request: NextRequest) {
       .replace(/\s+/g, '_')
 
     if (tipo === 'disciplina') {
-      const { data: existente } = await supabase
+      const { data: existente } = await getSupabaseAdmin()
         .from('disciplinas_med')
         .select('id, nome')
         .eq('nome_normalizado', nomeNormalizado)
@@ -124,7 +121,7 @@ export async function POST(request: NextRequest) {
         }, { status: 409 })
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseAdmin()
         .from('disciplinas_med')
         .insert({
           nome: nome.trim(),
@@ -147,7 +144,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'disciplina_id é obrigatório' }, { status: 400 })
       }
 
-      const { data: existente } = await supabase
+      const { data: existente } = await getSupabaseAdmin()
         .from('assuntos_med')
         .select('id, nome')
         .eq('disciplina_id', disciplina_id)
@@ -161,7 +158,7 @@ export async function POST(request: NextRequest) {
         }, { status: 409 })
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseAdmin()
         .from('assuntos_med')
         .insert({
           disciplina_id,
@@ -185,7 +182,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'assunto_id é obrigatório' }, { status: 400 })
       }
 
-      const { data: existente } = await supabase
+      const { data: existente } = await getSupabaseAdmin()
         .from('subassuntos_med')
         .select('id, nome')
         .eq('assunto_id', assunto_id)
@@ -199,7 +196,7 @@ export async function POST(request: NextRequest) {
         }, { status: 409 })
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseAdmin()
         .from('subassuntos_med')
         .insert({
           assunto_id,

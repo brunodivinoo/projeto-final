@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // GET - Listar sessões do usuário
 export async function GET(request: NextRequest) {
@@ -24,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     // Buscar sessão específica
     if (id) {
-      const { data: sessao, error } = await supabase
+      const { data: sessao, error } = await getSupabaseAdmin()
         .from('sessoes_estudo')
         .select(`
           *,
@@ -47,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     // Buscar sessão ativa (em andamento)
     if (ativa === 'true') {
-      const { data: sessao } = await supabase
+      const { data: sessao } = await getSupabaseAdmin()
         .from('sessoes_estudo')
         .select(`
           *,
@@ -67,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Listar sessões
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('sessoes_estudo')
       .select(`
         *,
@@ -122,7 +119,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se já existe sessão ativa
-    const { data: sessaoAtiva } = await supabase
+    const { data: sessaoAtiva } = await getSupabaseAdmin()
       .from('sessoes_estudo')
       .select('id')
       .eq('user_id', user_id)
@@ -138,7 +135,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar sessão
-    const { data: sessao, error: sessaoError } = await supabase
+    const { data: sessao, error: sessaoError } = await getSupabaseAdmin()
       .from('sessoes_estudo')
       .insert({
         user_id,
@@ -197,7 +194,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verificar propriedade
-    const { data: sessaoExistente } = await supabase
+    const { data: sessaoExistente } = await getSupabaseAdmin()
       .from('sessoes_estudo')
       .select('*')
       .eq('id', id)
@@ -235,7 +232,7 @@ export async function PUT(request: NextRequest) {
     if (criar_revisao !== undefined) updateData.criar_revisao = criar_revisao
     if (prioridade_revisao !== undefined) updateData.prioridade_revisao = prioridade_revisao
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await getSupabaseAdmin()
       .from('sessoes_estudo')
       .update(updateData)
       .eq('id', id)
@@ -254,7 +251,7 @@ export async function PUT(request: NextRequest) {
 
       // Atualizar XP do usuário (ignorar erros se função não existir)
       try {
-        await supabase.rpc('incrementar_xp', {
+        await getSupabaseAdmin().rpc('incrementar_xp', {
           p_user_id: user_id,
           p_xp: xpTotal
         })
@@ -264,7 +261,7 @@ export async function PUT(request: NextRequest) {
 
       // Atualizar estudo_diario com XP (ignorar erros)
       try {
-        await supabase
+        await getSupabaseAdmin()
           .from('estudo_diario')
           .update({ xp_ganho: xpTotal })
           .eq('user_id', user_id)
@@ -275,7 +272,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Buscar sessão atualizada
-    const { data: sessaoAtualizada } = await supabase
+    const { data: sessaoAtualizada } = await getSupabaseAdmin()
       .from('sessoes_estudo')
       .select(`
         *,
@@ -304,7 +301,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID e user_id são obrigatórios' }, { status: 400 })
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('sessoes_estudo')
       .delete()
       .eq('id', id)

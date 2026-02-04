@@ -1,11 +1,7 @@
-// Funções para gerenciar uploads no Supabase Storage
-import { createClient } from '@supabase/supabase-js'
+// Funcoes para gerenciar uploads no Supabase Storage
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
-// Cliente com service role para operações de storage no servidor
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Usar getSupabaseAdmin() para lazy init
 
 const BUCKET_NAME = 'ia-images'
 
@@ -34,7 +30,7 @@ export async function uploadImageToStorage(
     const fileName = `${userId}/${conversaId}/${timestamp}-${randomId}.png`
 
     // Fazer upload
-    const { data, error } = await supabaseAdmin.storage
+    const { data, error } = await getSupabaseAdmin().storage
       .from(BUCKET_NAME)
       .upload(fileName, buffer, {
         contentType: 'image/png',
@@ -48,7 +44,7 @@ export async function uploadImageToStorage(
     }
 
     // Obter URL pública
-    const { data: publicUrlData } = supabaseAdmin.storage
+    const { data: publicUrlData } = getSupabaseAdmin().storage
       .from(BUCKET_NAME)
       .getPublicUrl(fileName)
 
@@ -73,7 +69,7 @@ export async function deleteImageFromStorage(imageUrl: string): Promise<boolean>
 
     const filePath = pathParts[1]
 
-    const { error } = await supabaseAdmin.storage
+    const { error } = await getSupabaseAdmin().storage
       .from(BUCKET_NAME)
       .remove([filePath])
 

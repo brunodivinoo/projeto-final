@@ -1,10 +1,7 @@
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // GET - Listar flashcards do usuário
 export async function GET(request: NextRequest) {
@@ -22,7 +19,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('flashcards_med')
       .select(`
         *,
@@ -76,12 +73,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar limite
-    const { count } = await supabase
+    const { count } = await getSupabaseAdmin()
       .from('flashcards_med')
       .select('id', { count: 'exact' })
       .eq('user_id', userId)
 
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabaseAdmin()
       .from('profiles_med')
       .select('plano')
       .eq('id', userId)
@@ -102,7 +99,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: flashcard, error } = await supabase
+    const { data: flashcard, error } = await getSupabaseAdmin()
       .from('flashcards_med')
       .insert({
         user_id: userId,
@@ -144,7 +141,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Buscar flashcard atual
-    const { data: flashcard, error: fetchError } = await supabase
+    const { data: flashcard, error: fetchError } = await getSupabaseAdmin()
       .from('flashcards_med')
       .select('*')
       .eq('id', id)
@@ -186,7 +183,7 @@ export async function PUT(request: NextRequest) {
     const proximaRevisao = new Date()
     proximaRevisao.setDate(proximaRevisao.getDate() + intervalo)
 
-    const { data: updated, error } = await supabase
+    const { data: updated, error } = await getSupabaseAdmin()
       .from('flashcards_med')
       .update({
         repeticoes,
@@ -226,7 +223,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('flashcards_med')
       .delete()
       .eq('id', id)

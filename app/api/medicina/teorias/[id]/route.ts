@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // GET - Buscar teoria específica com conteúdo
 export async function GET(
@@ -17,7 +14,7 @@ export async function GET(
     const userId = searchParams.get('userId')
     const nivelAcesso = searchParams.get('nivel') || 'basico' // basico, avancado, expert
 
-    const { data: teoria, error } = await supabase
+    const { data: teoria, error } = await getSupabaseAdmin()
       .from('teorias_med')
       .select(`
         *,
@@ -47,7 +44,7 @@ export async function GET(
     // Buscar progresso do usuário
     let progresso = null
     if (userId) {
-      const { data: progressoData } = await supabase
+      const { data: progressoData } = await getSupabaseAdmin()
         .from('progresso_leitura_med')
         .select('*')
         .eq('user_id', userId)
@@ -58,7 +55,7 @@ export async function GET(
     }
 
     // Buscar questões relacionadas
-    const { data: questoesRelacionadas } = await supabase
+    const { data: questoesRelacionadas } = await getSupabaseAdmin()
       .from('questoes_med')
       .select('id, enunciado, dificuldade')
       .eq('teoria_id', id)
@@ -66,7 +63,7 @@ export async function GET(
       .limit(5)
 
     // Buscar artigos relacionados
-    const { data: artigosRelacionados } = await supabase
+    const { data: artigosRelacionados } = await getSupabaseAdmin()
       .from('teoria_artigos_med')
       .select(`
         artigo:artigos_med(id, titulo, autores, ano, journal, resumo_ia)

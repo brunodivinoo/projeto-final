@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 // POST - Iniciar simulado
 export async function POST(
@@ -21,7 +18,7 @@ export async function POST(
     }
 
     // Verificar se o simulado pertence ao usuário e está pendente
-    const { data: simulado, error: checkError } = await supabase
+    const { data: simulado, error: checkError } = await getSupabaseAdmin()
       .from('simulados')
       .select(`
         id,
@@ -60,7 +57,7 @@ export async function POST(
     // Buscar detalhes das questões
     const questaoIds = simulado.simulado_questoes.map((sq: { questao_id: string }) => sq.questao_id)
 
-    const { data: questoesDetalhes, error: questoesError } = await supabase
+    const { data: questoesDetalhes, error: questoesError } = await getSupabaseAdmin()
       .from('questoes')
       .select('id, enunciado, alternativas, resposta_correta, disciplina, assunto, subassunto, dificuldade, modalidade')
       .in('id', questaoIds)
@@ -71,7 +68,7 @@ export async function POST(
     }
 
     // Atualizar status para em_andamento
-    const { data: simuladoAtualizado, error: updateError } = await supabase
+    const { data: simuladoAtualizado, error: updateError } = await getSupabaseAdmin()
       .from('simulados')
       .update({
         status: 'em_andamento',

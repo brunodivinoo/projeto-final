@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// supabase client - usar getSupabaseAdmin() dentro das funções
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     switch (tipo) {
       case 'disciplinas': {
-        const { data, error } = await supabase
+        const { data, error } = await getSupabaseAdmin()
           .from('disciplinas')
           .select('id, nome, qtd_questoes')
           .gt('qtd_questoes', 0)
@@ -30,7 +27,7 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ assuntos: [] })
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await getSupabaseAdmin()
           .from('assuntos')
           .select('id, nome, qtd_questoes, disciplina_id, disciplinas(nome)')
           .in('disciplina_id', disciplinaIds)
@@ -72,7 +69,7 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ subassuntos: [] })
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await getSupabaseAdmin()
           .from('subassuntos')
           .select('id, nome, qtd_questoes, assunto_id, assuntos(nome, disciplinas(nome))')
           .in('assunto_id', assuntoIds)
@@ -118,7 +115,7 @@ export async function GET(request: NextRequest) {
         let hasMore = true
 
         while (hasMore) {
-          const { data, error } = await supabase
+          const { data, error } = await getSupabaseAdmin()
             .from('questoes')
             .select('banca')
             .not('banca', 'is', null)
@@ -154,7 +151,7 @@ export async function GET(request: NextRequest) {
         let hasMore = true
 
         while (hasMore) {
-          const { data, error } = await supabase
+          const { data, error } = await getSupabaseAdmin()
             .from('questoes')
             .select('ano')
             .not('ano', 'is', null)
@@ -190,7 +187,7 @@ export async function GET(request: NextRequest) {
         let hasMore = true
 
         while (hasMore) {
-          const { data, error } = await supabase
+          const { data, error } = await getSupabaseAdmin()
             .from('questoes')
             .select('dificuldade')
             .not('dificuldade', 'is', null)
@@ -226,7 +223,7 @@ export async function GET(request: NextRequest) {
         let hasMore = true
 
         while (hasMore) {
-          const { data, error } = await supabase
+          const { data, error } = await getSupabaseAdmin()
             .from('questoes')
             .select('modalidade')
             .not('modalidade', 'is', null)

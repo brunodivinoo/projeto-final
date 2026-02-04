@@ -2,17 +2,8 @@
 // Busca questoes e conteudo no Supabase
 
 import { Tool } from '@langchain/core/tools'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { z } from 'zod'
-
-// ==========================================
-// CONFIGURACAO
-// ==========================================
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 // ==========================================
 // TIPOS
@@ -84,7 +75,6 @@ Input: JSON com filtros (tema, disciplina, banca, ano) ou string com tema`
       try {
         options = JSON.parse(input)
       } catch {
-        // Se nao for JSON, usar como tema
         options = { tema: input }
       }
     } else {
@@ -106,7 +96,7 @@ Input: JSON com filtros (tema, disciplina, banca, ano) ou string com tema`
   async buscarQuestoes(options: SearchOptions): Promise<QuestaoResult[]> {
     const { tema, disciplina, banca, anoMin, anoMax, limit = 10 } = options
 
-    let query = supabase
+    let query = getSupabaseAdmin()
       .from('questoes_med')
       .select(`
         id,
@@ -127,7 +117,7 @@ Input: JSON com filtros (tema, disciplina, banca, ano) ou string com tema`
 
     if (disciplina) {
       // Buscar ID da disciplina primeiro
-      const { data: disc } = await supabase
+      const { data: disc } = await getSupabaseAdmin()
         .from('disciplinas_med')
         .select('id')
         .ilike('nome', `%${disciplina}%`)
@@ -140,7 +130,7 @@ Input: JSON com filtros (tema, disciplina, banca, ano) ou string com tema`
 
     if (banca) {
       // Buscar ID da banca
-      const { data: bancaData } = await supabase
+      const { data: bancaData } = await getSupabaseAdmin()
         .from('bancas_med')
         .select('id')
         .ilike('nome', `%${banca}%`)
@@ -224,7 +214,7 @@ Input: JSON com userId, categoria (opcional), limit (opcional)`
     }
 
     try {
-      let query = supabase
+      let query = getSupabaseAdmin()
         .from('flashcards_med')
         .select('*')
         .eq('user_id', params.userId)
@@ -273,13 +263,13 @@ Input: userId (string)`
 
     try {
       // Buscar estatisticas de questoes
-      const { data: questoes } = await supabase
+      const { data: questoes } = await getSupabaseAdmin()
         .from('respostas_questoes_med')
         .select('correta, disciplina_id')
         .eq('user_id', userId)
 
       // Buscar flashcards
-      const { data: flashcards } = await supabase
+      const { data: flashcards } = await getSupabaseAdmin()
         .from('flashcards_med')
         .select('id')
         .eq('user_id', userId)
