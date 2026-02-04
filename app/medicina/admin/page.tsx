@@ -102,7 +102,7 @@ export default function AdminDashboardPage() {
       } else if (feedbacksData) {
         // Transformar dados do Supabase para o formato esperado
         // O join retorna array, precisamos extrair o primeiro elemento
-        const feedbacksFormatados = feedbacksData.map(f => ({
+        const feedbacksFormatados = feedbacksData.map((f: { id: string; tipo: string; titulo: string; descricao: string; status: string; created_at: string; usuario?: { nome: string; email: string } | { nome: string; email: string }[] | null }) => ({
           ...f,
           usuario: Array.isArray(f.usuario) ? (f.usuario[0] || null) : f.usuario
         }))
@@ -199,7 +199,7 @@ export default function AdminDashboardPage() {
             .select('id, nome')
             .in('id', disciplinaIds)
 
-          disciplinas?.forEach(d => {
+          disciplinas?.forEach((d: { id: string; nome: string }) => {
             disciplinasMap[d.id] = d.nome
           })
         } catch {

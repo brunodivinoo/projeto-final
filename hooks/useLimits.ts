@@ -99,11 +99,12 @@ export function useLimits(): LimitsData {
       }
 
       // Mapear uso para acesso facil
+      type UsoItem = { tipo: string; quantidade: number }
       const usoDiarioMap: Record<string, number> = {}
-      usoDiario?.forEach(u => { usoDiarioMap[u.tipo] = u.quantidade })
+      usoDiario?.forEach((u: UsoItem) => { usoDiarioMap[u.tipo] = u.quantidade })
 
       const usoMensalMap: Record<string, number> = {}
-      usoMensal?.forEach(u => { usoMensalMap[u.tipo] = u.quantidade })
+      usoMensal?.forEach((u: UsoItem) => { usoMensalMap[u.tipo] = u.quantidade })
 
       // Montar lista de limites
       const limitesData: LimitItem[] = [

@@ -108,7 +108,7 @@ export default function AdminDisciplinasPage() {
     if (data) {
       // Contar subassuntos
       const assuntosComContagem = await Promise.all(
-        data.map(async (a) => {
+        data.map(async (a: { id: string; nome: string; disciplina_id: string; ativo?: boolean }) => {
           const { count } = await supabase
             .from('subassuntos_med')
             .select('*', { count: 'exact', head: true })

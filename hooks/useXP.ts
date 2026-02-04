@@ -167,7 +167,7 @@ export function useXP(): XPData {
       }
 
       // Processar XP de hoje
-      const xpHojeTotal = historicoHoje?.reduce((acc, h) => acc + (h.xp_ganho || 0), 0) || 0
+      const xpHojeTotal = historicoHoje?.reduce((acc: number, h: { xp_ganho?: number }) => acc + (h.xp_ganho || 0), 0) || 0
       setXpHoje(xpHojeTotal)
 
       setLoading(false)

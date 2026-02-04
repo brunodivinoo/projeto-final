@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react'
-import { User } from '@supabase/supabase-js'
+import { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
 // Tipos específicos do PREPARAMED
@@ -379,7 +379,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
             })
             .select()
             .single()
-            .then(({ data }) => {
+            .then(({ data }: { data: LimitesUsoMED | null }) => {
               if (data) setLimites(data as LimitesUsoMED)
             })
         } else if (limitesData) {
@@ -549,7 +549,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     getSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: AuthChangeEvent, session: Session | null) => {
         if (!mounted) return
 
         if (session?.user) {

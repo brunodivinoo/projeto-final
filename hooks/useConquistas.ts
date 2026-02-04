@@ -85,7 +85,7 @@ export function useConquistas(): ConquistasData {
 
       // Mapear conquistas conquistadas
       const conquistadasMap = new Map(
-        userConquistas?.map(uc => [uc.conquista_id, uc.desbloqueada_em]) || []
+        userConquistas?.map((uc: { conquista_id: string; desbloqueada_em: string }) => [uc.conquista_id, uc.desbloqueada_em]) || []
       )
 
       // Calcular progresso baseado no tipo de requisito

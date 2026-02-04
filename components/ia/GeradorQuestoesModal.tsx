@@ -31,7 +31,7 @@ interface Disciplina {
 interface Assunto {
   id: string
   nome: string
-  disciplina_id: string
+  disciplina_id?: string
   disciplina_nome?: string
   isCustom?: boolean
 }
@@ -39,7 +39,7 @@ interface Assunto {
 interface Subassunto {
   id: string
   nome: string
-  assunto_id: string
+  assunto_id?: string
   assunto_nome?: string
   disciplina_nome?: string
   isCustom?: boolean
@@ -729,16 +729,25 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
           supabase.from('bancas').select('id, nome, nome_normalizado').order('nome')
         ])
 
-        let disciplinasCombinadas: Disciplina[] = (discRes.data || [])
-        let assuntosCombinados: Assunto[] = (assRes.data || []).map(a => ({
-          ...a,
-          disciplina_nome: (a.disciplinas as { nome?: string } | null)?.nome
+        let disciplinasCombinadas: Disciplina[] = (discRes.data || []) as Disciplina[]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let assuntosCombinados: Assunto[] = ((assRes.data || []) as any[]).map((a: any) => ({
+          id: a.id,
+          nome: a.nome,
+          disciplina_id: a.disciplina_id,
+          disciplina_nome: Array.isArray(a.disciplinas) ? a.disciplinas[0]?.nome : a.disciplinas?.nome
         }))
-        let subassuntosCombinados: Subassunto[] = (subRes.data || []).map(s => ({
-          ...s,
-          assunto_nome: (s.assuntos as { nome?: string; disciplinas?: { nome?: string } } | null)?.nome,
-          disciplina_nome: (s.assuntos as { nome?: string; disciplinas?: { nome?: string } } | null)?.disciplinas?.nome
-        }))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let subassuntosCombinados: Subassunto[] = ((subRes.data || []) as any[]).map((s: any) => {
+          const assuntoData = Array.isArray(s.assuntos) ? s.assuntos[0] : s.assuntos
+          return {
+            id: s.id,
+            nome: s.nome,
+            assunto_id: s.assunto_id,
+            assunto_nome: assuntoData?.nome,
+            disciplina_nome: Array.isArray(assuntoData?.disciplinas) ? assuntoData?.disciplinas[0]?.nome : assuntoData?.disciplinas?.nome
+          }
+        })
 
         // Carregar itens customizados do usuário
         if (user) {
@@ -748,16 +757,17 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
             .eq('user_id', user.id)
 
           if (customData) {
+            type CustomItem = { id: string; tipo: string; nome: string; disciplina?: string; assunto?: string }
             // Adicionar disciplinas customizadas
-            const discsCustom = customData
-              .filter(c => c.tipo === 'disciplina')
-              .map(c => ({ id: `custom-${c.id}`, nome: c.nome, isCustom: true }))
+            const discsCustom = (customData as CustomItem[])
+              .filter((c: CustomItem) => c.tipo === 'disciplina')
+              .map((c: CustomItem) => ({ id: `custom-${c.id}`, nome: c.nome, isCustom: true }))
             disciplinasCombinadas = [...disciplinasCombinadas, ...discsCustom]
 
             // Adicionar assuntos customizados
-            const assuntosCustom = customData
-              .filter(c => c.tipo === 'assunto')
-              .map(c => ({
+            const assuntosCustom = (customData as CustomItem[])
+              .filter((c: CustomItem) => c.tipo === 'assunto')
+              .map((c: CustomItem) => ({
                 id: `custom-${c.id}`,
                 nome: c.nome,
                 disciplina_id: '',
@@ -767,9 +777,9 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
             assuntosCombinados = [...assuntosCombinados, ...assuntosCustom]
 
             // Adicionar subassuntos customizados
-            const subassuntosCustom = customData
-              .filter(c => c.tipo === 'subassunto')
-              .map(c => ({
+            const subassuntosCustom = (customData as CustomItem[])
+              .filter((c: CustomItem) => c.tipo === 'subassunto')
+              .map((c: CustomItem) => ({
                 id: `custom-${c.id}`,
                 nome: c.nome,
                 assunto_id: '',
@@ -780,9 +790,9 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
             subassuntosCombinados = [...subassuntosCombinados, ...subassuntosCustom]
 
             // Carregar bancas customizadas
-            const bancasCustom = customData
-              .filter(c => c.tipo === 'banca')
-              .map(c => c.nome)
+            const bancasCustom = (customData as CustomItem[])
+              .filter((c: CustomItem) => c.tipo === 'banca')
+              .map((c: CustomItem) => c.nome)
             setBancasCustomizadas(bancasCustom)
           }
         }
@@ -1398,15 +1408,16 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
               .eq('user_id', user.id)
 
             if (customData) {
+              type CustomItem = { id: string; tipo: string; nome: string; disciplina?: string; assunto?: string }
               // Reconstruir disciplinas customizadas
-              const discsCustom = customData
-                .filter(c => c.tipo === 'disciplina')
-                .map(c => ({ id: `custom-${c.id}`, nome: c.nome, isCustom: true }))
+              const discsCustom = (customData as CustomItem[])
+                .filter((c: CustomItem) => c.tipo === 'disciplina')
+                .map((c: CustomItem) => ({ id: `custom-${c.id}`, nome: c.nome, isCustom: true }))
 
               // Reconstruir assuntos customizados
-              const assuntosCustom = customData
-                .filter(c => c.tipo === 'assunto')
-                .map(c => ({
+              const assuntosCustom = (customData as CustomItem[])
+                .filter((c: CustomItem) => c.tipo === 'assunto')
+                .map((c: CustomItem) => ({
                   id: `custom-${c.id}`,
                   nome: c.nome,
                   disciplina_id: '',
@@ -1415,9 +1426,9 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
                 }))
 
               // Reconstruir subassuntos customizados
-              const subassuntosCustom = customData
-                .filter(c => c.tipo === 'subassunto')
-                .map(c => ({
+              const subassuntosCustom = (customData as CustomItem[])
+                .filter((c: CustomItem) => c.tipo === 'subassunto')
+                .map((c: CustomItem) => ({
                   id: `custom-${c.id}`,
                   nome: c.nome,
                   assunto_id: '',
@@ -1427,9 +1438,9 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
                 }))
 
               // Atualizar bancas customizadas
-              const bancasCustom = customData
-                .filter(c => c.tipo === 'banca')
-                .map(c => c.nome)
+              const bancasCustom = (customData as CustomItem[])
+                .filter((c: CustomItem) => c.tipo === 'banca')
+                .map((c: CustomItem) => c.nome)
               setBancasCustomizadas(bancasCustom)
 
               // Recarregar do banco para manter items do sistema
@@ -1439,22 +1450,27 @@ export function GeradorQuestoesModal({ isOpen, onClose, onSuccess }: Props) {
                 supabase.from('subassuntos').select('id, nome, assunto_id, assuntos(nome, disciplinas(nome))').order('nome')
               ])
 
-              setTodasDisciplinas([...(discRes.data || []), ...discsCustom])
-              setTodosAssuntos([
-                ...(assRes.data || []).map(a => ({
-                  ...a,
-                  disciplina_nome: (a.disciplinas as { nome?: string } | null)?.nome
-                })),
-                ...assuntosCustom
-              ])
-              setTodosSubassuntos([
-                ...(subRes.data || []).map(s => ({
-                  ...s,
-                  assunto_nome: (s.assuntos as { nome?: string; disciplinas?: { nome?: string } } | null)?.nome,
-                  disciplina_nome: (s.assuntos as { nome?: string; disciplinas?: { nome?: string } } | null)?.disciplinas?.nome
-                })),
-                ...subassuntosCustom
-              ])
+              setTodasDisciplinas([...(discRes.data || []) as Disciplina[], ...discsCustom])
+              /* eslint-disable @typescript-eslint/no-explicit-any */
+              const mappedAssuntos = ((assRes.data || []) as any[]).map((a: any) => ({
+                id: a.id,
+                nome: a.nome,
+                disciplina_id: a.disciplina_id,
+                disciplina_nome: Array.isArray(a.disciplinas) ? a.disciplinas[0]?.nome : a.disciplinas?.nome
+              }))
+              setTodosAssuntos([...mappedAssuntos, ...assuntosCustom])
+              const mappedSubassuntos = ((subRes.data || []) as any[]).map((s: any) => {
+                const assuntoData = Array.isArray(s.assuntos) ? s.assuntos[0] : s.assuntos
+                return {
+                  id: s.id,
+                  nome: s.nome,
+                  assunto_id: s.assunto_id,
+                  assunto_nome: assuntoData?.nome,
+                  disciplina_nome: Array.isArray(assuntoData?.disciplinas) ? assuntoData?.disciplinas[0]?.nome : assuntoData?.disciplinas?.nome
+                }
+              })
+              /* eslint-enable @typescript-eslint/no-explicit-any */
+              setTodosSubassuntos([...mappedSubassuntos, ...subassuntosCustom])
             }
           } catch (err) {
             console.error('Erro ao recarregar dados:', err)

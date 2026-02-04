@@ -83,7 +83,23 @@ export default function EstatisticasPage() {
         .order('data', { ascending: true })
 
       if (estudoDiario) {
-        const estatsDia = estudoDiario.map(d => ({
+        type EstudoDiarioType = {
+          data: string
+          questoes_feitas: number
+          questoes_corretas: number
+          tempo_total_segundos: number
+          simulados_feitos?: number
+          flashcards_revisados?: number
+          teorias_lidas?: number
+        }
+        type TotaisType = {
+          totalQuestoes: number
+          totalCorretas: number
+          tempoTotal: number
+          simuladosFeitos: number
+          teoriasLidas: number
+        }
+        const estatsDia = estudoDiario.map((d: EstudoDiarioType) => ({
           data: d.data,
           questoes: d.questoes_feitas,
           corretas: d.questoes_corretas,
@@ -92,7 +108,7 @@ export default function EstatisticasPage() {
         setEstatisticasDia(estatsDia)
 
         // Calcular totais
-        const totais = estudoDiario.reduce((acc, d) => ({
+        const totais = estudoDiario.reduce((acc: TotaisType, d: EstudoDiarioType) => ({
           totalQuestoes: acc.totalQuestoes + (d.questoes_feitas || 0),
           totalCorretas: acc.totalCorretas + (d.questoes_corretas || 0),
           tempoTotal: acc.tempoTotal + (d.tempo_total_segundos || 0),
@@ -124,9 +140,14 @@ export default function EstatisticasPage() {
       if (respostas && respostas.length > 0) {
         const porDisciplina: Record<string, { nome: string, questoes: number, corretas: number }> = {}
 
-        respostas.forEach((r) => {
-          const resposta = r as { acertou: boolean; questao?: { disciplina?: { id: string; nome: string } | null } | null }
-          const disc = resposta.questao?.disciplina
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(respostas as any[]).forEach((r: any) => {
+          const resposta = r
+          // questao pode ser array ou objeto único
+          const questaoData = Array.isArray(resposta.questao) ? resposta.questao[0] : resposta.questao
+          // disciplina pode ser array ou objeto único
+          const discData = questaoData?.disciplina
+          const disc = Array.isArray(discData) ? discData[0] : discData
           if (disc) {
             if (!porDisciplina[disc.id]) {
               porDisciplina[disc.id] = { nome: disc.nome, questoes: 0, corretas: 0 }

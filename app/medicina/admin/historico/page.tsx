@@ -42,7 +42,7 @@ interface LogGeracao {
   created_at: string
   quantidade: number
   status: 'iniciado' | 'concluido' | 'erro' | 'parcial'
-  disciplina_id: string
+  disciplina_id?: string
   assunto_id?: string
   periodo?: number
   modelo_ia?: string
@@ -152,8 +152,8 @@ export default function AdminHistoricoPage() {
       }
 
       // Buscar nomes das disciplinas e assuntos
-      const disciplinaIds = [...new Set((data || []).map(l => l.disciplina_id).filter(Boolean))]
-      const assuntoIds = [...new Set((data || []).map(l => l.assunto_id).filter(Boolean))]
+      const disciplinaIds = [...new Set((data || []).map((l: { disciplina_id?: string }) => l.disciplina_id).filter(Boolean))]
+      const assuntoIds = [...new Set((data || []).map((l: { assunto_id?: string }) => l.assunto_id).filter(Boolean))]
 
       const disciplinasMap: Record<string, string> = {}
       const assuntosMap: Record<string, string> = {}
@@ -165,7 +165,7 @@ export default function AdminHistoricoPage() {
             .select('id, nome')
             .in('id', disciplinaIds)
 
-          disciplinas?.forEach(d => {
+          disciplinas?.forEach((d: { id: string; nome: string }) => {
             disciplinasMap[d.id] = d.nome
           })
         } catch {
@@ -180,7 +180,7 @@ export default function AdminHistoricoPage() {
             .select('id, nome')
             .in('id', assuntoIds)
 
-          assuntos?.forEach(a => {
+          assuntos?.forEach((a: { id: string; nome: string }) => {
             assuntosMap[a.id] = a.nome
           })
         } catch {
@@ -188,8 +188,9 @@ export default function AdminHistoricoPage() {
         }
       }
 
-      const logsComNomes = (data || []).map(log => ({
+      const logsComNomes: LogGeracao[] = (data || []).map((log: { id: string; created_at: string; quantidade: number; status: string; disciplina_id?: string; assunto_id?: string; periodo?: number; modelo_ia?: string; erro?: string; tempo_total_ms?: number; questoes_sucesso?: number; questoes_erro?: number }) => ({
         ...log,
+        status: log.status as 'iniciado' | 'concluido' | 'erro' | 'parcial',
         disciplina_nome: log.disciplina_id ? disciplinasMap[log.disciplina_id] : undefined,
         assunto_nome: log.assunto_id ? assuntosMap[log.assunto_id] : undefined
       }))
@@ -198,9 +199,9 @@ export default function AdminHistoricoPage() {
 
       // Calcular estatísticas
       const totalLogs = logsComNomes.length
-      const sucesso = logsComNomes.filter(l => l.status === 'concluido').length
-      const erroCount = logsComNomes.filter(l => l.status === 'erro').length
-      const questoesGeradas = logsComNomes.reduce((acc, l) => acc + (l.questoes_sucesso || l.quantidade || 0), 0)
+      const sucesso = logsComNomes.filter((l: LogGeracao) => l.status === 'concluido').length
+      const erroCount = logsComNomes.filter((l: LogGeracao) => l.status === 'erro').length
+      const questoesGeradas = logsComNomes.reduce((acc: number, l: LogGeracao) => acc + (l.questoes_sucesso || l.quantidade || 0), 0)
 
       setStats({
         total: totalLogs,
