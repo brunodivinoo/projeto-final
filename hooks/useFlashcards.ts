@@ -209,7 +209,7 @@ export function useFlashcards(): FlashcardsData {
 
       // Processar limites do plano imediatamente (sem query adicional)
       const planoNome = limitsResult.data?.plano?.toUpperCase() || 'FREE'
-      const planoData = planosResult.data?.find(p => p.nome === planoNome)
+      const planoData = planosResult.data?.find((p: { nome: string; limite_baralhos?: number; limite_flashcards?: number; limite_geracoes_flashcards_dia?: number }) => p.nome === planoNome)
 
       if (planoData) {
         setLimiteBaralhos(planoData.limite_baralhos ?? 2)

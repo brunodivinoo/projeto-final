@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react'
-import { User } from '@supabase/supabase-js'
+import { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
 import { supabase, Profile, Estatisticas } from '@/lib/supabase'
 
 type AuthContextType = {
@@ -171,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     getSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: AuthChangeEvent, session: Session | null) => {
         if (!mounted) return
 
         if (session?.user) {

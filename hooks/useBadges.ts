@@ -89,9 +89,10 @@ export function useBadges() {
       }
 
       if (conquistadosRes.data) {
+        type ConquistaItem = { badges_med: unknown; conquistado_em: string }
         const badgesConquistados = conquistadosRes.data
-          .filter(c => c.badges_med && !Array.isArray(c.badges_med))
-          .map(c => ({
+          .filter((c: ConquistaItem) => c.badges_med && !Array.isArray(c.badges_med))
+          .map((c: ConquistaItem) => ({
             ...(c.badges_med as unknown as Badge),
             conquistado_em: c.conquistado_em
           }))
@@ -176,7 +177,7 @@ export function useBadges() {
         .select('badge_id')
         .eq('user_id', user.id)
 
-      const idsConquistados = new Set(jaConquistados?.map(b => b.badge_id))
+      const idsConquistados = new Set(jaConquistados?.map((b: { badge_id: string }) => b.badge_id))
       const novosConquistados: Badge[] = []
 
       for (const badge of todosBadges || []) {

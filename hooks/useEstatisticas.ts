@@ -176,17 +176,18 @@ export function useEstatisticas(): EstatisticasData {
       ])
 
       // Processar respostas
-      const respostas = respostasResult.data || []
+      type RespostaItem = { acertou: boolean; created_at: string; questoes: unknown }
+      const respostas: RespostaItem[] = respostasResult.data || []
       const stats = statsResult.data
       const atividadesData = atividadesResult.data || []
 
       const total = respostas.length
-      const acertos = respostas.filter(r => r.acertou).length
+      const acertos = respostas.filter((r: RespostaItem) => r.acertou).length
 
       // Questoes por periodo
-      const respostasHoje = respostas.filter(r => r.created_at >= inicioHoje)
-      const respostasSemana = respostas.filter(r => r.created_at >= inicioSemana)
-      const respostasMes = respostas.filter(r => r.created_at >= inicioMes)
+      const respostasHoje = respostas.filter((r: RespostaItem) => r.created_at >= inicioHoje)
+      const respostasSemana = respostas.filter((r: RespostaItem) => r.created_at >= inicioSemana)
+      const respostasMes = respostas.filter((r: RespostaItem) => r.created_at >= inicioMes)
 
       // Processar desempenho por disciplina
       const disciplinasMap = new Map<string, {
@@ -199,7 +200,7 @@ export function useEstatisticas(): EstatisticasData {
         }>
       }>()
 
-      respostas.forEach(r => {
+      respostas.forEach((r: RespostaItem) => {
         const questao = r.questoes as { disciplina?: string; assunto?: string; subassunto?: string; dificuldade?: string } | null
         if (!questao) return
 
