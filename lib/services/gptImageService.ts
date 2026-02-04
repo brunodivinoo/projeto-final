@@ -1,9 +1,19 @@
 import OpenAI from 'openai'
 
-// Inicializar cliente OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Lazy initialization para evitar erros durante build
+let _openai: OpenAI | null = null
+
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY não configurada')
+    }
+    _openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  }
+  return _openai
+}
 
 // Flag para debug
 const DEBUG_IMAGE_GENERATION = true
@@ -1547,7 +1557,7 @@ PROIBIDO: Texto, legendas, números, letras, setas com texto, watermarks. Anatom
   try {
     console.log('[GPT Image] Chamando API OpenAI DALL-E 3...')
 
-    const response = await openai.images.generate({
+    const response = await getOpenAI().images.generate({
       model,
       prompt: enhancedPrompt,
       size,

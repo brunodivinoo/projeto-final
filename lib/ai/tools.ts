@@ -1,7 +1,7 @@
 // Tools Customizadas para PREPARAMED IA
 
 import Anthropic from '@anthropic-ai/sdk'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 // ==========================================
 // DEFINIÇÕES DE TOOLS
@@ -334,7 +334,7 @@ export async function executarTool(
 async function handleBuscarQuestoes(input: Record<string, unknown>): Promise<LocalToolResult> {
   const { tema, banca, ano, dificuldade, limite = 5 } = input
 
-  let query = supabase
+  let query = getSupabaseAdmin()
     .from('questoes_med')
     .select(`
       id,
@@ -426,7 +426,7 @@ async function handleCriarPlanoEstudos(input: Record<string, unknown>): Promise<
 async function handleExplicarQuestao(input: Record<string, unknown>): Promise<LocalToolResult> {
   const { questao_id, nivel_detalhe = 'intermediario' } = input
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseAdmin()
     .from('questoes_med')
     .select(`
       *,

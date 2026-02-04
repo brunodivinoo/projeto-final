@@ -32,7 +32,7 @@ export * from './multi-provider'
 import { PlanoIA, MensagemIA, ChatResponse, LIMITES_IA } from './types'
 import { chatComClaudeStream, chatComClaude, analisarImagemComClaude, analisarPDFComClaude } from './anthropic'
 import { chatComGeminiStream, chatComGemini, analisarImagemComGemini, gerarImagemComGemini } from './gemini'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 // ==========================================
 // VERIFICAR E INCREMENTAR USO
@@ -47,7 +47,7 @@ export async function verificarLimiteIA(
   const mesAtual = new Date().toISOString().slice(0, 7)
 
   // Buscar ou criar registro de uso
-  let { data: uso } = await supabase
+  let { data: uso } = await getSupabaseAdmin()
     .from('uso_ia_med')
     .select('*')
     .eq('user_id', userId)
@@ -55,7 +55,7 @@ export async function verificarLimiteIA(
     .single()
 
   if (!uso) {
-    const { data: novoUso } = await supabase
+    const { data: novoUso } = await getSupabaseAdmin()
       .from('uso_ia_med')
       .insert({
         user_id: userId,
@@ -126,7 +126,7 @@ export async function incrementarUsoIA(
   if (!campo) return
 
   // Buscar uso atual
-  const { data: uso } = await supabase
+  const { data: uso } = await getSupabaseAdmin()
     .from('uso_ia_med')
     .select('*')
     .eq('user_id', userId)
@@ -135,7 +135,7 @@ export async function incrementarUsoIA(
 
   if (uso) {
     // Atualizar existente
-    await supabase
+    await getSupabaseAdmin()
       .from('uso_ia_med')
       .update({
         [campo]: (uso[campo] || 0) + quantidade,
@@ -146,7 +146,7 @@ export async function incrementarUsoIA(
       .eq('id', uso.id)
   } else {
     // Criar novo
-    await supabase
+    await getSupabaseAdmin()
       .from('uso_ia_med')
       .insert({
         user_id: userId,

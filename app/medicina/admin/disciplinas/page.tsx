@@ -72,7 +72,7 @@ export default function AdminDisciplinasPage() {
       } else {
         // Contar assuntos por disciplina
         const disciplinasComContagem = await Promise.all(
-          (disciplinasData || []).map(async (d) => {
+          (disciplinasData || []).map(async (d: { id: string; nome: string; descricao?: string; ativo?: boolean }) => {
             try {
               const { count } = await supabase
                 .from('assuntos_med')

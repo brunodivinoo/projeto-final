@@ -68,7 +68,8 @@ export default function MedicinaDashboardPage() {
         .limit(5)
 
       if (conversas) {
-        const formatted: Conversation[] = conversas.map(c => ({
+        type ConversaType = { id: string; titulo: string | null; ultima_mensagem: string | null; updated_at: string }
+        const formatted: Conversation[] = conversas.map((c: ConversaType) => ({
           id: c.id,
           title: c.titulo || 'Conversa sem título',
           lastMessage: c.ultima_mensagem || '',
@@ -80,7 +81,7 @@ export default function MedicinaDashboardPage() {
 
         // Extrair tópicos das conversas para personalizar sugestões
         const topics = conversas
-          .map(c => c.titulo)
+          .map((c: ConversaType) => c.titulo)
           .filter(Boolean)
           .slice(0, 5) as string[]
         setUserTopics(topics)

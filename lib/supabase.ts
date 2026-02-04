@@ -1,13 +1,36 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient, SupabaseClient } from '@supabase/ssr'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Lazy initialization para evitar erros durante SSG/SSR
+let _supabase: SupabaseClient | null = null
 
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
+function getSupabaseBrowser(): SupabaseClient {
+  if (!_supabase) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Supabase URL and Anon Key must be configured')
+    }
+
+    _supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    })
+  }
+  return _supabase
+}
+
+// Export getter function for use in components
+export { getSupabaseBrowser }
+
+// Export supabase as a getter-backed object for backwards compatibility
+// This will be lazily initialized when first accessed
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_, prop) {
+    return Reflect.get(getSupabaseBrowser(), prop)
   }
 })
 

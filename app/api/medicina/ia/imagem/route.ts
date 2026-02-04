@@ -6,11 +6,20 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import OpenAI from 'openai'
 import { PlanoIA, verificarLimiteIA, incrementarUsoIA } from '@/lib/ai'
 
-// supabase - usar getSupabaseAdmin() dentro das funções
+// Lazy initialization para evitar erros durante build
+let _openai: OpenAI | null = null
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-})
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY não configurada')
+    }
+    _openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  }
+  return _openai
+}
 
 // Estilos disponíveis para geração (otimizados para DALL-E 3)
 const ESTILOS_IMAGEM = {
@@ -143,7 +152,7 @@ REQUISITOS OBRIGATÓRIOS:
     console.log(`[DALL-E 3] Estilo: ${estilo}, Qualidade: ${quality}`)
 
     // Gerar imagem com DALL-E 3
-    const response = await openai.images.generate({
+    const response = await getOpenAI().images.generate({
       model: 'dall-e-3',
       prompt: promptCompleto,
       n: 1,

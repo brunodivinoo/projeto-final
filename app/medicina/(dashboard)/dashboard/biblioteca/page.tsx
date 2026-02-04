@@ -179,7 +179,7 @@ export default function BibliotecaPage() {
 
       // Criar mapa de assuntos por disciplina
       const assuntosPorDisciplina: Record<string, Array<{ id: string; nome: string; disciplina_id: string }>> = {}
-      assuntosData?.forEach(a => {
+      assuntosData?.forEach((a: { id: string; nome: string; disciplina_id: string }) => {
         if (!assuntosPorDisciplina[a.disciplina_id]) {
           assuntosPorDisciplina[a.disciplina_id] = []
         }
@@ -188,7 +188,7 @@ export default function BibliotecaPage() {
 
       // Criar mapa de subassuntos por assunto
       const subassuntosPorAssunto: Record<string, Array<{ id: string; nome: string; assunto_id: string }>> = {}
-      subassuntosData?.forEach(s => {
+      subassuntosData?.forEach((s: { id: string; nome: string; assunto_id: string }) => {
         if (!subassuntosPorAssunto[s.assunto_id]) {
           subassuntosPorAssunto[s.assunto_id] = []
         }
@@ -198,7 +198,7 @@ export default function BibliotecaPage() {
       // Construir estrutura hierárquica
       const disciplinasMap: Record<string, Disciplina> = {}
 
-      discsData?.forEach(d => {
+      discsData?.forEach((d: { id: string; nome: string }) => {
         const cor = getCorDisciplina(d.nome)
         disciplinasMap[d.id] = {
           ...d,
@@ -210,7 +210,7 @@ export default function BibliotecaPage() {
         }
 
         // Adicionar assuntos
-        assuntosPorDisciplina[d.id]?.forEach(a => {
+        assuntosPorDisciplina[d.id]?.forEach((a: { id: string; nome: string; disciplina_id: string }) => {
           const assunto: Assunto = {
             id: a.id,
             nome: a.nome,
@@ -220,7 +220,7 @@ export default function BibliotecaPage() {
           }
 
           // Adicionar subassuntos
-          subassuntosPorAssunto[a.id]?.forEach(s => {
+          subassuntosPorAssunto[a.id]?.forEach((s: { id: string; nome: string; assunto_id: string }) => {
             assunto.subassuntos.set(s.id, {
               nome: s.nome,
               teorias: []

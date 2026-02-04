@@ -121,7 +121,7 @@ const DISCIPLINAS_MEDICAS = [
  */
 async function getUserLearningData(userId: string): Promise<UserLearningData | null> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseAdmin()
       .from('aprendizado_usuario_med')
       .select('topicos_frequentes, termos_recentes, disciplinas_preferidas, performance_por_disciplina')
       .eq('user_id', userId)
@@ -314,7 +314,7 @@ export async function getSuggestedDisciplines(userId: string): Promise<string[]>
 export async function getTopicsForReview(userId: string): Promise<Suggestion[]> {
   try {
     // Buscar artefatos que precisam de revisao
-    const { data: artefatos } = await supabase
+    const { data: artefatos } = await getSupabaseAdmin()
       .from('artefatos_med')
       .select('titulo, topico, disciplina, proxima_revisao')
       .eq('user_id', userId)

@@ -77,7 +77,7 @@ export default function NovoSimuladoPage() {
         .not('banca', 'is', null)
 
       if (bancasData) {
-        const unique = [...new Set(bancasData.map(b => b.banca).filter(Boolean))]
+        const unique = [...new Set(bancasData.map((b: { banca: string | null }) => b.banca).filter(Boolean))]
         setBancas(unique as string[])
       }
     }

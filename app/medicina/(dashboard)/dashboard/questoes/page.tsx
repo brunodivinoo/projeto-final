@@ -329,7 +329,7 @@ export default function QuestoesPage() {
         .not('banca', 'is', null)
 
       if (bancasData) {
-        const unique = [...new Set(bancasData.map(b => b.banca).filter(Boolean))]
+        const unique = [...new Set(bancasData.map((b: { banca: string | null }) => b.banca).filter(Boolean))]
         setBancasDisponiveis(unique as string[])
       }
     }
@@ -414,7 +414,7 @@ export default function QuestoesPage() {
         if (respostas) {
           const respostasMap: Record<string, RespostaUsuario> = {}
           const respondidas = new Set<string>()
-          respostas.forEach(r => {
+          respostas.forEach((r: RespostaUsuario) => {
             respostasMap[r.questao_id] = r
             respondidas.add(r.questao_id)
           })
