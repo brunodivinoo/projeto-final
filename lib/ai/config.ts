@@ -35,13 +35,13 @@ export const MODELO_PROVIDER_MAP: Record<string, 'claude' | 'openai' | 'gemini'>
 }
 
 // Selecionar modelo baseado no plano
-// Premium = Sonnet | Residência = Opus
+// Todos usam Sonnet 4.5 - excelente qualidade com custo 5x menor que Opus
 export function getModeloParaPlano(plano: PlanoIA): string {
   switch (plano) {
     case 'residencia':
-      return MODELOS.claude.opus
+      return MODELOS.claude.sonnet // Sonnet 4.5 - muito capaz e econômico
     case 'premium':
-      return MODELOS.claude.sonnet // Sonnet para Premium
+      return MODELOS.claude.sonnet
     default:
       return MODELOS.claude.sonnet
   }

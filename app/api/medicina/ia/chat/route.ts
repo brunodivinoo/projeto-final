@@ -924,8 +924,8 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
         )
 
         try {
-          // Fallback para Claude
-          const modeloSelecionado = plano === 'residencia' ? MODELOS.claude.opus : MODELOS.claude.sonnet
+          // Fallback para Claude - usando Sonnet 4.5 para todos os planos (excelente qualidade, 5x mais barato que Opus)
+          const modeloSelecionado = MODELOS.claude.sonnet
           const systemPrompt = plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
 
           const messages = historico.map(m => ({
@@ -937,7 +937,11 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
           const stream = await anthropic.messages.stream({
             model: modeloSelecionado,
             max_tokens: 8192,
-            system: systemPrompt,
+            system: [{
+              type: 'text',
+              text: systemPrompt,
+              cache_control: { type: 'ephemeral' }
+            }],
             messages: messages as Anthropic.MessageParam[],
             stream: true
           })
@@ -1256,9 +1260,9 @@ async function streamClaude(params: StreamClaudeParams) {
     })
   }
 
-  // Selecionar modelo baseado no plano
-  // Premium = Sonnet (mais barato), Residência = Opus (mais capaz)
-  const modeloSelecionado = params.plano === 'residencia' ? MODELOS.claude.opus : MODELOS.claude.sonnet
+  // Selecionar modelo - Sonnet 4.5 para todos os planos
+  // Sonnet oferece excelente qualidade com custo 5x menor que Opus
+  const modeloSelecionado = MODELOS.claude.sonnet
   let systemPrompt = params.plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
 
   // ========== SISTEMA DE VARIABILIDADE ==========
@@ -1318,10 +1322,15 @@ async function streamClaude(params: StreamClaudeParams) {
   // Configurar parâmetros
   // max_tokens aumentado para respostas mais completas
   // A auto-continuação vai pedir mais se necessário
+  // Prompt caching habilitado para economizar tokens (system prompt cacheado por 5 min)
   const streamParams: Record<string, unknown> = {
     model: modeloSelecionado,
     max_tokens: canUseExtendedThinking ? 16000 : 12000, // Aumentado para evitar cortes
-    system: systemPrompt,
+    system: [{
+      type: 'text',
+      text: systemPrompt,
+      cache_control: { type: 'ephemeral' }
+    }],
     messages,
     stream: true,
     tools: hasTools ? tools : undefined
