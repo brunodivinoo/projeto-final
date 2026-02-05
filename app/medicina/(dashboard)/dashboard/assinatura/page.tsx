@@ -84,14 +84,14 @@ const planos = [
   {
     id: 'residencia',
     nome: 'Residência',
-    preco: 149.90,
-    precoOriginal: 249.90,
+    preco: 199.90,
+    precoOriginal: 299.90,
     periodo: '/mês',
     destaque: false,
     cor: 'amber',
     badge: '👑 COMPLETO',
     badgeCor: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white',
-    desconto: '-40%',
+    desconto: '-33%',
     descricao: 'Pacote definitivo para aprovação',
     economia: 'R$1.200/ano',
     recursos: [
@@ -99,9 +99,9 @@ const planos = [
       { texto: 'Simulados ilimitados', disponivel: true, destaque: true },
       { texto: 'Teoria nível expert', disponivel: true, destaque: false },
       { texto: 'Estatísticas avançadas', disponivel: true, destaque: false },
-      { texto: 'IA Tutora ilimitada', disponivel: true, destaque: true },
-      { texto: 'Flashcards ilimitados', disponivel: true, destaque: false },
-      { texto: 'Resumos ilimitados', disponivel: true, destaque: false },
+      { texto: '1.500 perguntas IA/mês', disponivel: true, destaque: true },
+      { texto: '500 flashcards/mês', disponivel: true, destaque: false },
+      { texto: '50 resumos IA/mês', disponivel: true, destaque: false },
       { texto: 'Suporte prioritário 24h', disponivel: true, destaque: true },
     ]
   }
@@ -513,9 +513,9 @@ export default function AssinaturaPage() {
               {[
                 { recurso: 'Questões por dia', gratuito: '10', premium: '∞ Ilimitadas', residencia: '∞ Ilimitadas' },
                 { recurso: 'Simulados por mês', gratuito: '—', premium: '5', residencia: '∞ Ilimitados' },
-                { recurso: 'Perguntas IA', gratuito: '—', premium: '100/mês', residencia: '∞ Ilimitadas' },
-                { recurso: 'Resumos IA', gratuito: '—', premium: '15/mês', residencia: '∞ Ilimitados' },
-                { recurso: 'Flashcards', gratuito: '—', premium: '50', residencia: '∞ Ilimitados' },
+                { recurso: 'Perguntas IA', gratuito: '—', premium: '100/mês', residencia: '1.500/mês' },
+                { recurso: 'Resumos IA', gratuito: '—', premium: '15/mês', residencia: '50/mês' },
+                { recurso: 'Flashcards', gratuito: '—', premium: '50', residencia: '500/mês' },
                 { recurso: 'Anotações', gratuito: '10', premium: '100', residencia: '∞ Ilimitadas' },
                 { recurso: 'Nível de teoria', gratuito: 'Básico', premium: 'Avançado', residencia: 'Expert' },
                 { recurso: 'Suporte', gratuito: '—', premium: 'E-mail', residencia: 'Prioritário 24h' },

@@ -43,15 +43,15 @@ export interface LimitesUsoMED {
 // =============================================
 // LIMITES POR PLANO - PREPARAMED 2026
 // =============================================
-// FREE: R$0 - Trial 4h + 10 questões/dia
+// FREE: R$0 - Trial 1h + 10 questões/dia
 // PREMIUM: R$60/mês - Sonnet + limites generosos
-// RESIDÊNCIA: R$150/mês - Opus + ilimitado
+// RESIDÊNCIA: R$200/mês - Smart Router (OpenAI + Claude)
 // =============================================
 
 export const LIMITES_PLANO = {
   gratuito: {
-    // Trial de 4 horas com acesso total
-    trial_horas: 4,
+    // Trial de 1 hora com acesso total
+    trial_horas: 1,
     // Após trial
     questoes_dia: 10,
     gabarito_percentual: 50, // 50% blur
@@ -213,7 +213,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
   // Calcular status do trial - BASEADO EM TEMPO ATIVO
   const calcularTrialStatus = useCallback((): TrialStatus => {
-    const DURACAO_TRIAL_SEGUNDOS = 4 * 60 * 60 // 4 horas em segundos
+    const DURACAO_TRIAL_SEGUNDOS = 1 * 60 * 60 // 1 hora em segundos
 
     if (!profile || plano !== 'gratuito') {
       return { ativo: false, tempoRestante: 0, tempoRestanteFormatado: '0h 0min', percentualUsado: 100, expirado: true, tempoUsadoSegundos: 0 }
@@ -221,7 +221,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
     // Ainda não iniciou o trial
     if (!profile.trial_started_at) {
-      return { ativo: false, tempoRestante: DURACAO_TRIAL_SEGUNDOS * 1000, tempoRestanteFormatado: '4h 0min', percentualUsado: 0, expirado: false, tempoUsadoSegundos: 0 }
+      return { ativo: false, tempoRestante: DURACAO_TRIAL_SEGUNDOS * 1000, tempoRestanteFormatado: '1h 0min', percentualUsado: 0, expirado: false, tempoUsadoSegundos: 0 }
     }
 
     // Já usou todo o trial

@@ -29,8 +29,8 @@ export interface TrialTimerData {
   mostrarUrgencia: boolean
 }
 
-// Duração total do trial em segundos (4 horas)
-const DURACAO_TRIAL_SEGUNDOS = 4 * 60 * 60
+// Duração total do trial em segundos (1 hora)
+const DURACAO_TRIAL_SEGUNDOS = 1 * 60 * 60
 
 export function useTrialTimer(): TrialTimerData {
   const { profile, plano, trialStatus, iniciarTrial } = useMedAuth()
@@ -52,8 +52,8 @@ export function useTrialTimer(): TrialTimerData {
     // Se não iniciou ou já usou todo o trial
     if (!profile?.trial_started_at || profile.trial_used) {
       if (!profile?.trial_started_at) {
-        // Ainda pode iniciar - mostrar 4h completas
-        return { ms: DURACAO_TRIAL_SEGUNDOS * 1000, h: 4, m: 0, s: 0 }
+        // Ainda pode iniciar - mostrar 1h completa
+        return { ms: DURACAO_TRIAL_SEGUNDOS * 1000, h: 1, m: 0, s: 0 }
       }
       return { ms: 0, h: 0, m: 0, s: 0 }
     }

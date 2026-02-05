@@ -163,14 +163,14 @@ export function UpgradeModal({ tipo, feature, conquista, onClose }: UpgradeModal
               <span className="font-medium text-white">Experimente grátis!</span>
             </div>
             <p className="text-slate-600 text-sm mb-3">
-              Teste todas as funcionalidades premium por 4 horas, sem compromisso.
+              Teste todas as funcionalidades premium por 1 hora, sem compromisso.
             </p>
             <button
               onClick={handleIniciarTrial}
               disabled={iniciandoTrial}
               className="w-full py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white rounded-lg font-medium transition-all disabled:opacity-50"
             >
-              {iniciandoTrial ? 'Ativando...' : 'Ativar Trial de 4h'}
+              {iniciandoTrial ? 'Ativando...' : 'Ativar Trial de 1h'}
             </button>
           </div>
         )}

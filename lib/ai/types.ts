@@ -27,11 +27,11 @@ export interface LimitesPlanoIA {
   prompt_cache_ttl: number // em segundos
 }
 
-// LIMITES ATUALIZADOS - Janeiro 2026
-// FREE: R$0 (só trial 4h) | PREMIUM: R$60 (Sonnet) | RESIDÊNCIA: R$150 (Opus)
+// LIMITES ATUALIZADOS - Fevereiro 2026
+// FREE: R$0 (só trial 1h) | PREMIUM: R$60 (Sonnet) | RESIDÊNCIA: R$200 (Opus + OpenAI)
 export const LIMITES_IA: Record<PlanoIA, LimitesPlanoIA> = {
   gratuito: {
-    chats_mes: 0, // Apenas no trial de 4h
+    chats_mes: 0, // Apenas no trial de 1h
     resumos_mes: 0,
     flashcards_mes: 0,
     imagens_mes: 0,
@@ -59,16 +59,16 @@ export const LIMITES_IA: Record<PlanoIA, LimitesPlanoIA> = {
     prompt_cache_ttl: 300
   },
   residencia: {
-    chats_mes: -1, // Opus - ilimitado
-    resumos_mes: -1,
-    flashcards_mes: -1,
-    imagens_mes: -1,
+    chats_mes: 1500, // 1.500 interações/mês (suficiente para 60/dia)
+    resumos_mes: 50,
+    flashcards_mes: 500,
+    imagens_mes: 100,
     web_search: true,
     vision: true,
     pdf_support: true,
     extended_thinking: true,
     max_tokens_resposta: 16384,
-    modelo: 'claude', // Opus
+    modelo: 'openai', // Smart Router (OpenAI + Claude)
     context_window: 1000000,
     prompt_cache_ttl: 3600
   }
