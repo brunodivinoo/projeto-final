@@ -438,6 +438,7 @@ export async function POST(request: NextRequest) {
 
     const deveUsarClaude = use_web_search || // Web search só com Claude
                           use_extended_thinking || // Extended thinking só com Claude
+                          imagem_base64 || // Imagens só com Claude (vision)
                           pdf_base64 || // PDFs melhor com Claude
                           (plano === 'residencia' && complexityAnalysis.nivel === 'especializada') // Tarefas especializadas
 

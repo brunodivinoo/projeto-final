@@ -1010,35 +1010,61 @@ export default function IAPage() {
 
   // Processar imagem colada (Ctrl+V / paste)
   const handlePaste = useCallback((e: ClipboardEvent) => {
-    if (!isResidencia) return // Apenas plano Residência pode usar imagens
+    // Verificar se plano permite imagens (residência)
+    if (!isResidencia) {
+      console.log('[Paste] Plano não suporta imagens:', plano)
+      return
+    }
 
+    // Tentar obter itens do clipboard
     const items = e.clipboardData?.items
-    if (!items) return
+    if (!items || items.length === 0) {
+      console.log('[Paste] Nenhum item no clipboard')
+      return
+    }
 
+    // Procurar por imagem nos itens
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
+      console.log('[Paste] Item encontrado:', item.type)
+
       if (item.type.startsWith('image/')) {
         e.preventDefault()
+        e.stopPropagation()
+
         const file = item.getAsFile()
-        if (!file) continue
+        if (!file) {
+          console.log('[Paste] Não foi possível obter arquivo')
+          continue
+        }
+
+        console.log('[Paste] Processando imagem:', file.type, file.size)
 
         const reader = new FileReader()
         reader.onloadend = () => {
-          const base64 = (reader.result as string).split(',')[1]
-          setImagemBase64(base64)
-          setImagemTipo(file.type)
+          const result = reader.result as string
+          if (result && result.includes(',')) {
+            const base64 = result.split(',')[1]
+            console.log('[Paste] Imagem carregada, tamanho base64:', base64.length)
+            setImagemBase64(base64)
+            setImagemTipo(file.type)
+          }
+        }
+        reader.onerror = () => {
+          console.error('[Paste] Erro ao ler arquivo')
         }
         reader.readAsDataURL(file)
         break
       }
     }
-  }, [isResidencia])
+  }, [isResidencia, plano])
 
   // Adicionar listener de paste ao documento
   useEffect(() => {
+    console.log('[Paste] Registrando listener, isResidencia:', isResidencia)
     document.addEventListener('paste', handlePaste)
     return () => document.removeEventListener('paste', handlePaste)
-  }, [handlePaste])
+  }, [handlePaste, isResidencia])
 
   // Processar PDF
   const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
