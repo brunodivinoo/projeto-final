@@ -62,7 +62,7 @@ export default function MedicinaDashboardPage() {
       // Buscar conversas
       const { data: conversas } = await supabase
         .from('conversas_ia_med')
-        .select('id, titulo, ultima_mensagem, updated_at')
+        .select('id, titulo, updated_at')
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
         .limit(5)
@@ -71,10 +71,10 @@ export default function MedicinaDashboardPage() {
         const formatted: Conversation[] = conversas.map(c => ({
           id: c.id,
           title: c.titulo || 'Conversa sem título',
-          lastMessage: c.ultima_mensagem || '',
+          lastMessage: '',
           updatedAt: new Date(c.updated_at),
           artifactCount: 0,
-          category: categorizeConversation(c.titulo || '', c.ultima_mensagem || '')
+          category: categorizeConversation(c.titulo || '', '')
         }))
         setRecentConversations(formatted)
 
