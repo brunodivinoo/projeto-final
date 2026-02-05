@@ -206,7 +206,7 @@ export default function MedicinaLandingPage() {
                     'Teoria básica',
                     '10 anotações',
                     'Estatísticas básicas',
-                    'Trial de 4h completo'
+                    'Trial de 1h completo'
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-emerald-200/70 text-sm">
                       <Check className="w-5 h-5 text-emerald-500/50 flex-shrink-0" />
