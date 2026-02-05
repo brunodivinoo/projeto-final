@@ -193,7 +193,7 @@ export function LimitsModal({ isOpen, onClose }: LimitsModalProps) {
                   Fazer Upgrade
                 </Link>
                 <p className="text-xs text-slate-400 text-center">
-                  A partir de R$ 29,90/mês
+                  A partir de R$ 59,90/mês
                 </p>
               </div>
             )}

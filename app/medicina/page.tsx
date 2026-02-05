@@ -291,7 +291,7 @@ export default function MedicinaLandingPage() {
                 </div>
                 <div className="absolute -right-2 top-8 rotate-12">
                   <span className="px-3 py-1 bg-red-500 rounded-full text-white text-xs font-bold shadow-lg">
-                    -40%
+                    -33%
                   </span>
                 </div>
 
@@ -302,11 +302,11 @@ export default function MedicinaLandingPage() {
                   <h3 className="text-2xl font-bold text-white mb-2">Residência</h3>
                   {/* Preço com desconto */}
                   <div className="mb-2">
-                    <span className="text-slate-500 line-through text-lg">R$249,90</span>
+                    <span className="text-slate-500 line-through text-lg">R$299,90</span>
                   </div>
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-slate-600 text-xl">R$</span>
-                    <span className="text-5xl font-black text-white">149</span>
+                    <span className="text-5xl font-black text-white">199</span>
                     <span className="text-slate-600 text-xl">,90</span>
                     <span className="text-amber-300 text-sm">/mês</span>
                   </div>
@@ -324,7 +324,7 @@ export default function MedicinaLandingPage() {
                   {[
                     { text: 'Tudo do Premium +', highlight: true },
                     { text: 'Simulados ilimitados', highlight: true },
-                    { text: 'IA Tutora ilimitada', highlight: true },
+                    { text: '1.500 perguntas IA/mês', highlight: true },
                     { text: 'Teoria nível Expert', highlight: false },
                     { text: 'Anotações ilimitadas', highlight: false },
                     { text: 'Flashcards ilimitados', highlight: false },

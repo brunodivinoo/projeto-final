@@ -93,12 +93,12 @@ const mensagens = {
 const planoRecomendado = {
   gratuito: {
     nome: 'Premium',
-    preco: 'R$ 49,90/mes',
+    preco: 'R$ 59,90/mês',
     destaque: 'Mais Popular'
   },
   premium: {
-    nome: 'Residencia',
-    preco: 'R$ 79,90/mes',
+    nome: 'Residência',
+    preco: 'R$ 199,90/mês',
     destaque: 'Completo'
   },
   residencia: null
