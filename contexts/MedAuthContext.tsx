@@ -540,11 +540,20 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
         console.error('Erro ao buscar sessão:', error)
         setProfileLoading(false)
       } finally {
-        if (mounted) {
-          setLoading(false)
-        }
+        // SEMPRE definir loading como false, mesmo se unmounted
+        // Isso evita que a página fique travada em loading infinito
+        setLoading(false)
       }
     }
+
+    // Timeout de segurança: se auth demorar mais de 8 segundos, liberar a página
+    const safetyTimeout = setTimeout(() => {
+      if (mounted) {
+        console.warn('[Auth] Timeout de segurança atingido, liberando loading')
+        setLoading(false)
+        setProfileLoading(false)
+      }
+    }, 8000)
 
     getSession()
 
@@ -574,6 +583,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false
+      clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
   }, [fetchProfile])
