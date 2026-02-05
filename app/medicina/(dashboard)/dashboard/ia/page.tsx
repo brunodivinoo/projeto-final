@@ -385,6 +385,7 @@ export default function IAPage() {
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false)
   const [mobileArtifactsOpen, setMobileArtifactsOpen] = useState(false)
   const [showMobileAttachMenu, setShowMobileAttachMenu] = useState(false)
+  const [showDesktopAttachMenu, setShowDesktopAttachMenu] = useState(false)
 
   // Estado para menu de 3 pontinhos (renomear/excluir conversa)
   const [menuConversaAberto, setMenuConversaAberto] = useState<string | null>(null)
@@ -2067,51 +2068,63 @@ export default function IAPage() {
                   )}
                 </div>
 
-                {/* Botões desktop - apenas visíveis no desktop */}
-                <div className="hidden lg:flex items-center gap-1 flex-shrink-0">
+                {/* Botão + (abre menu de anexos) - Desktop */}
+                <div className="hidden lg:flex items-center gap-1 flex-shrink-0 relative">
                   {isResidencia && (
                     <>
                       <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
-                        title="Anexar imagem"
+                        onClick={() => setShowDesktopAttachMenu(!showDesktopAttachMenu)}
+                        className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 transition-colors"
+                        title="Mais opções"
                       >
-                        <ImageIcon className="w-4 h-4" />
+                        <Plus className={`w-5 h-5 transition-transform ${showDesktopAttachMenu ? 'rotate-45' : ''}`} />
                       </button>
-                      <button
-                        onClick={() => pdfInputRef.current?.click()}
-                        className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
-                        title="Anexar PDF"
-                      >
-                        <FileUp className="w-4 h-4" />
-                      </button>
-                      <div className="w-px h-5 bg-slate-300 mx-1" />
-                      <button
-                        onClick={() => setUseWebSearch(!useWebSearch)}
-                        className={`p-2 rounded-lg transition-colors ${useWebSearch ? 'bg-blue-100 text-blue-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
-                        title="Busca na Web"
-                      >
-                        <Search className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setUseExtendedThinking(!useExtendedThinking)}
-                        className={`p-2 rounded-lg transition-colors ${useExtendedThinking ? 'bg-amber-100 text-amber-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'}`}
-                        title="Extended Thinking"
-                      >
-                        <Zap className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setShowExamAnalyzer(true)}
-                        className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
-                        title="Analisar Exame"
-                      >
-                        <Stethoscope className="w-4 h-4" />
-                      </button>
+
+                      {/* Menu de anexos desktop */}
+                      {showDesktopAttachMenu && (
+                        <div className="absolute bottom-12 left-0 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 min-w-[200px] z-[100]">
+                          <button
+                            onClick={() => { fileInputRef.current?.click(); setShowDesktopAttachMenu(false) }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-slate-700 text-sm"
+                          >
+                            <ImageIcon className="w-4 h-4 text-blue-500" />
+                            Enviar imagem
+                          </button>
+                          <button
+                            onClick={() => { pdfInputRef.current?.click(); setShowDesktopAttachMenu(false) }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-slate-700 text-sm"
+                          >
+                            <FileUp className="w-4 h-4 text-red-500" />
+                            Enviar PDF
+                          </button>
+                          <button
+                            onClick={() => { setShowExamAnalyzer(true); setShowDesktopAttachMenu(false) }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-slate-700 text-sm"
+                          >
+                            <Stethoscope className="w-4 h-4 text-emerald-500" />
+                            Analisar exame
+                          </button>
+                          <div className="border-t border-slate-100 my-1" />
+                          <button
+                            onClick={() => { setUseWebSearch(!useWebSearch); setShowDesktopAttachMenu(false) }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-sm ${useWebSearch ? 'text-blue-600 bg-blue-50' : 'text-slate-700'}`}
+                          >
+                            <Search className="w-4 h-4" />
+                            Busca web {useWebSearch && '✓'}
+                          </button>
+                          <button
+                            onClick={() => { setUseExtendedThinking(!useExtendedThinking); setShowDesktopAttachMenu(false) }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-sm ${useExtendedThinking ? 'text-amber-600 bg-amber-50' : 'text-slate-700'}`}
+                          >
+                            <Zap className="w-4 h-4" />
+                            Pensamento estendido {useExtendedThinking && '✓'}
+                          </button>
+                        </div>
+                      )}
                       <VoiceButton
                         onTranscription={(text) => setInput(prev => prev + ' ' + text)}
                         variant="compact"
                       />
-                      <div className="w-px h-5 bg-slate-300 mx-1" />
                     </>
                   )}
                 </div>
