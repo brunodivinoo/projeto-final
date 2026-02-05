@@ -94,6 +94,16 @@ import {
 } from '@/lib/ai/multiAgentIntegration'
 // ========== FIM INTEGRACAO MULTI-AGENTES ==========
 
+// ========== SMART ROUTER - ROTEAMENTO INTELIGENTE ==========
+import {
+  selecionarModelo,
+  streamInteligente,
+  registrarRoteamento,
+  SmartStreamChunk
+} from '@/lib/ai/smart-router'
+import { analisarComplexidade } from '@/lib/ai/complexity-detector'
+// ========== FIM SMART ROUTER ==========
+
 // Formatar resposta de tool para exibição
 function formatToolResponse(toolName: string, data: unknown): string {
   const resultado = data as Record<string, unknown>
@@ -403,21 +413,64 @@ export async function POST(request: NextRequest) {
     }
     // ========== FIM VERIFICAÇÃO MULTI-AGENTES ==========
 
-    // Escolher modelo e fazer streaming normal
-    // Premium = Sonnet | Residência = Opus (ambos Claude)
-    return await streamClaude({
+    // ========== ROTEAMENTO INTELIGENTE COM SMART ROUTER ==========
+    // Analisar complexidade da mensagem para decidir modelo
+    const complexityAnalysis = analisarComplexidade(mensagem, {
+      historicoMensagens: historico.length,
+      temImagem: !!imagem_base64,
+      temPdf: !!pdf_base64,
+      plano: plano === 'gratuito' ? 'premium' : plano
+    })
+
+    console.log(`[Smart Router] Complexidade: ${complexityAnalysis.nivel} (score: ${complexityAnalysis.score})`)
+    console.log(`[Smart Router] Modelo recomendado: ${complexityAnalysis.modeloRecomendado}`)
+    console.log(`[Smart Router] Motivo: ${complexityAnalysis.motivo}`)
+
+    // Decidir se usa OpenAI (mais economico) ou Claude (mais capaz)
+    // Usar OpenAI para:
+    // - Perguntas simples e moderadas (o4-mini)
+    // - Perguntas complexas sem web search (gpt-5.2)
+    // Manter Claude para:
+    // - Web search (somente Opus suporta)
+    // - Extended thinking
+    // - PDFs (melhor suporte)
+    // - Plano Residência com tarefas especializadas
+
+    const deveUsarClaude = use_web_search || // Web search só com Claude
+                          use_extended_thinking || // Extended thinking só com Claude
+                          pdf_base64 || // PDFs melhor com Claude
+                          (plano === 'residencia' && complexityAnalysis.nivel === 'especializada') // Tarefas especializadas
+
+    if (deveUsarClaude) {
+      console.log('[Smart Router] Usando Claude (funcionalidade exclusiva)')
+      return await streamClaude({
+        historico,
+        mensagem,
+        conversa_id: conversaAtual,
+        user_id,
+        plano,
+        imagem_base64,
+        imagem_tipo,
+        pdf_base64,
+        use_web_search,
+        use_extended_thinking,
+        thinking_budget
+      })
+    }
+
+    // Usar Smart Router para roteamento OpenAI
+    console.log('[Smart Router] Usando roteamento inteligente OpenAI')
+    return await streamComSmartRouter({
       historico,
       mensagem,
       conversa_id: conversaAtual,
       user_id,
-      plano, // Passar plano para escolher modelo
+      plano,
       imagem_base64,
       imagem_tipo,
-      pdf_base64,
-      use_web_search,
-      use_extended_thinking,
-      thinking_budget
+      complexityAnalysis
     })
+    // ========== FIM ROTEAMENTO INTELIGENTE ==========
   } catch (error) {
     console.error('Erro na API de chat:', error)
     return NextResponse.json(
@@ -660,6 +713,317 @@ function chunkResponse(text: string, chunkSize: number): string[] {
   }
 
   return chunks
+}
+
+// ==========================================
+// STREAMING COM SMART ROUTER (OpenAI)
+// ==========================================
+
+interface StreamSmartRouterParams {
+  historico: Array<{ role: 'user' | 'assistant'; content: string }>
+  mensagem: string
+  conversa_id: string
+  user_id: string
+  plano?: string
+  imagem_base64?: string
+  imagem_tipo?: string
+  complexityAnalysis: ReturnType<typeof analisarComplexidade>
+}
+
+async function streamComSmartRouter(params: StreamSmartRouterParams) {
+  const {
+    historico,
+    mensagem,
+    conversa_id,
+    user_id,
+    plano = 'premium',
+    imagem_base64,
+    imagem_tipo,
+    complexityAnalysis
+  } = params
+
+  const encoder = new TextEncoder()
+
+  const readableStream = new ReadableStream({
+    async start(controller) {
+      let fullResponse = ''
+      let tokensInput = 0
+      let tokensOutput = 0
+
+      // Criar registro de resposta ANTES de iniciar streaming
+      const { data: assistantMsg, error: createMsgError } = await supabase
+        .from('mensagens_ia_med')
+        .insert({
+          conversa_id,
+          role: 'assistant',
+          content: '[Gerando resposta...]',
+          tokens: 0
+        })
+        .select('id')
+        .single()
+
+      if (createMsgError) {
+        console.error('[Smart Router] Erro ao criar mensagem assistant:', createMsgError)
+      }
+
+      const assistantMsgId = assistantMsg?.id
+      console.log('[Smart Router] Mensagem criada com ID:', assistantMsgId)
+
+      // Enviar conversa_id imediatamente
+      controller.enqueue(
+        encoder.encode(`data: ${JSON.stringify({
+          type: 'conversa_created',
+          conversa_id,
+          titulo: mensagem.substring(0, 50) + (mensagem.length > 50 ? '...' : ''),
+          modelo: complexityAnalysis.modeloRecomendado
+        })}\n\n`)
+      )
+
+      // Variável para controlar atualizações
+      let lastUpdateTime = Date.now()
+      const UPDATE_INTERVAL = 10000
+
+      const updateResponse = async (final = false) => {
+        const now = Date.now()
+        if (!final && now - lastUpdateTime < UPDATE_INTERVAL) return
+        if (!assistantMsgId) return
+
+        lastUpdateTime = now
+        const { error } = await supabase
+          .from('mensagens_ia_med')
+          .update({
+            content: fullResponse || '[Resposta vazia]',
+            tokens: tokensInput + tokensOutput
+          })
+          .eq('id', assistantMsgId)
+
+        if (error) {
+          console.error('[Smart Router] Erro ao atualizar resposta:', error)
+        } else if (final) {
+          console.log('[Smart Router] Resposta final salva, tamanho:', fullResponse.length)
+        }
+      }
+
+      // Heartbeat para manter conexão
+      const heartbeatInterval = setInterval(async () => {
+        try {
+          controller.enqueue(encoder.encode(`: heartbeat\n\n`))
+          await updateResponse()
+        } catch {
+          // Controller já fechado
+        }
+      }, 25000)
+
+      try {
+        // Usar streaming inteligente
+        const streamGenerator = streamInteligente({
+          plano: plano as 'premium' | 'residencia' | 'gratuito',
+          mensagem,
+          historico: historico.map(h => ({
+            role: h.role,
+            content: h.content
+          })),
+          temImagem: !!imagem_base64,
+          imagemBase64: imagem_base64,
+          imagemMediaType: imagem_tipo,
+          onModelSelected: (model, analysis) => {
+            console.log(`[Smart Router] Modelo final: ${model}`)
+            // Notificar frontend sobre modelo selecionado
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({
+                type: 'model_selected',
+                model,
+                complexity: analysis.nivel,
+                reason: analysis.motivo
+              })}\n\n`)
+            )
+          }
+        })
+
+        // Processar chunks do stream
+        for await (const chunk of streamGenerator) {
+          if (chunk.type === 'text' && chunk.content) {
+            fullResponse += chunk.content
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: 'text', content: chunk.content })}\n\n`)
+            )
+          } else if (chunk.type === 'reasoning' && chunk.reasoning) {
+            // Tokens de raciocínio do gpt-5.2
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: 'thinking', content: chunk.reasoning })}\n\n`)
+            )
+          } else if (chunk.type === 'done') {
+            // Capturar tokens
+            if (chunk.tokens) {
+              tokensInput = chunk.tokens.input || 0
+              tokensOutput = chunk.tokens.output || 0
+            }
+          } else if (chunk.type === 'error') {
+            console.error('[Smart Router] Erro no stream:', chunk.error)
+            throw new Error(chunk.error || 'Erro desconhecido')
+          }
+        }
+
+        // Atualizar resposta final
+        await updateResponse(true)
+
+        // Atualizar conversa
+        await supabase
+          .from('conversas_ia_med')
+          .update({
+            tokens_usados: tokensInput + tokensOutput,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', conversa_id)
+
+        // Incrementar uso e registrar roteamento
+        const custo = calcularCusto(complexityAnalysis.modeloRecomendado, tokensInput, tokensOutput)
+        await incrementarUsoIA(user_id, 'chats', 1, tokensInput, tokensOutput, custo)
+        registrarRoteamento(complexityAnalysis.modeloRecomendado, complexityAnalysis.nivel, custo)
+
+        // Atualizar aprendizado
+        try {
+          const topicoEstudado = extractTopic(mensagem)
+          if (topicoEstudado && topicoEstudado !== 'medicina') {
+            await updateUserLearning(user_id, topicoEstudado)
+          }
+        } catch (e) {
+          console.error('[Smart Router] Erro ao atualizar aprendizado:', e)
+        }
+
+        // Enviar conclusão
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({
+            type: 'done',
+            conversa_id,
+            tokens: { input: tokensInput, output: tokensOutput },
+            provider: 'openai',
+            model: complexityAnalysis.modeloRecomendado,
+            complexity: complexityAnalysis.nivel
+          })}\n\n`)
+        )
+
+        clearInterval(heartbeatInterval)
+        controller.close()
+
+      } catch (error) {
+        clearInterval(heartbeatInterval)
+        console.error('[Smart Router] Erro:', error)
+
+        // Tentar fallback para Claude
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+        console.log('[Smart Router] Fazendo fallback para Claude devido a:', errorMessage)
+
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({
+            type: 'provider_switch',
+            from: 'openai',
+            to: 'claude',
+            message: 'Alternando para servidor secundário...'
+          })}\n\n`)
+        )
+
+        try {
+          // Fallback para Claude
+          const modeloSelecionado = plano === 'residencia' ? MODELOS.claude.opus : MODELOS.claude.sonnet
+          const systemPrompt = plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
+
+          const messages = historico.map(m => ({
+            role: m.role,
+            content: m.content
+          }))
+          messages.push({ role: 'user', content: mensagem })
+
+          const stream = await anthropic.messages.stream({
+            model: modeloSelecionado,
+            max_tokens: 8192,
+            system: systemPrompt,
+            messages: messages as Anthropic.MessageParam[],
+            stream: true
+          })
+
+          for await (const event of stream) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const evt = event as any
+            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+              fullResponse += evt.delta.text
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: evt.delta.text })}\n\n`)
+              )
+            }
+            if (evt.type === 'message_start' && evt.message?.usage) {
+              tokensInput = evt.message.usage.input_tokens
+            }
+            if (evt.type === 'message_delta' && evt.usage) {
+              tokensOutput = evt.usage.output_tokens
+            }
+          }
+
+          await updateResponse(true)
+
+          await supabase
+            .from('conversas_ia_med')
+            .update({
+              tokens_usados: tokensInput + tokensOutput,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', conversa_id)
+
+          const custoClaude = calcularCusto(modeloSelecionado, tokensInput, tokensOutput)
+          await incrementarUsoIA(user_id, 'chats', 1, tokensInput, tokensOutput, custoClaude)
+
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({
+              type: 'done',
+              conversa_id,
+              tokens: { input: tokensInput, output: tokensOutput },
+              provider: 'claude',
+              fallback: true
+            })}\n\n`)
+          )
+
+          controller.close()
+          return
+
+        } catch (claudeError) {
+          console.error('[Smart Router] Fallback Claude também falhou:', claudeError)
+
+          const fallbackMessage = fullResponse.length > 100
+            ? '\n\n---\n*Resposta pode estar incompleta.*'
+            : 'Nossos servidores estão processando muitas solicitações. Por favor, tente novamente.'
+
+          if (fullResponse) {
+            fullResponse += fallbackMessage
+          } else {
+            fullResponse = fallbackMessage
+          }
+
+          await updateResponse(true)
+
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: 'text', content: fallbackMessage })}\n\n`)
+          )
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({
+              type: 'done',
+              conversa_id,
+              error: true
+            })}\n\n`)
+          )
+
+          controller.close()
+        }
+      }
+    }
+  })
+
+  return new Response(readableStream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive'
+    }
+  })
 }
 
 // ==========================================

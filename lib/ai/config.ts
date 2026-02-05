@@ -13,7 +13,25 @@ export const MODELOS = {
     flash: 'gemini-2.0-flash',
     pro: 'gemini-1.5-pro',
     image: 'gemini-2.0-flash-exp' // para geração de imagens
+  },
+  openai: {
+    o4Mini: 'o4-mini',         // Rapido e economico - tarefas simples
+    gpt52: 'gpt-5.2',          // Raciocinio avancado - tarefas complexas
+    gpt4o: 'gpt-4o',           // Multimodal - vision
+    embedding: 'text-embedding-3-small'
   }
+}
+
+// Mapeamento de modelo para provider
+export const MODELO_PROVIDER_MAP: Record<string, 'claude' | 'openai' | 'gemini'> = {
+  'claude-opus-4-5-20251101': 'claude',
+  'claude-sonnet-4-20250514': 'claude',
+  'claude-haiku-4-5-20251001': 'claude',
+  'o4-mini': 'openai',
+  'gpt-5.2': 'openai',
+  'gpt-4o': 'openai',
+  'gemini-2.0-flash': 'gemini',
+  'gemini-1.5-pro': 'gemini'
 }
 
 // Selecionar modelo baseado no plano
@@ -127,7 +145,8 @@ export function calcularCusto(
   tokensOutput: number,
   cacheRead: number = 0,
   cacheWrite: number = 0,
-  webSearches: number = 0
+  webSearches: number = 0,
+  tokensReasoning: number = 0
 ): number {
   let custoBase = 0
 
@@ -147,6 +166,25 @@ export function calcularCusto(
     custoBase =
       (tokensInput / 1_000_000) * 0.075 +
       (tokensOutput / 1_000_000) * 0.30
+  } else if (modelo === 'o4-mini') {
+    // o4-mini: input $1.10, output $4.40, cached $0.275
+    custoBase =
+      ((tokensInput - cacheRead) / 1_000_000) * 1.10 +
+      (tokensOutput / 1_000_000) * 4.40 +
+      (cacheRead / 1_000_000) * 0.275
+  } else if (modelo === 'gpt-5.2') {
+    // gpt-5.2: input $2.50, output $10.00, cached $0.625, reasoning $15.00
+    custoBase =
+      ((tokensInput - cacheRead) / 1_000_000) * 2.50 +
+      (tokensOutput / 1_000_000) * 10.00 +
+      (cacheRead / 1_000_000) * 0.625 +
+      (tokensReasoning / 1_000_000) * 15.00
+  } else if (modelo === 'gpt-4o') {
+    // gpt-4o: input $2.50, output $10.00, cached $1.25
+    custoBase =
+      ((tokensInput - cacheRead) / 1_000_000) * 2.50 +
+      (tokensOutput / 1_000_000) * 10.00 +
+      (cacheRead / 1_000_000) * 1.25
   }
 
   // Adicionar custo de web search

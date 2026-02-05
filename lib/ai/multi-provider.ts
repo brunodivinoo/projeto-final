@@ -408,33 +408,45 @@ async function* streamWithGemini(
 }
 
 // ==========================================
-// STREAMING COM OPENAI
+// STREAMING COM OPENAI (Atualizado para novos modelos)
 // ==========================================
 
 async function* streamWithOpenAI(
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   systemPrompt: string,
-  options: MultiProviderOptions
+  options: MultiProviderOptions & { openaiModel?: string; reasoningEffort?: 'low' | 'medium' | 'high' }
 ): AsyncGenerator<StreamChunk> {
   if (!openai) {
     throw new Error('OpenAI client not initialized')
   }
 
+  // Selecionar modelo - usar o4-mini como default para economia
+  const model = options.openaiModel || 'o4-mini'
+
+  // Construir mensagens formatadas
+  const formattedMessages = [
+    { role: 'system' as const, content: systemPrompt },
+    ...messages.map(m => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content
+    }))
+  ]
+
+  // Determinar se deve usar temperature
+  const useTemperature = !model.includes('o4') && !model.includes('o1') && !model.includes('o3')
+
+  // Criar stream diretamente com tipagem correta
   const stream = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    max_tokens: options.maxTokens || 8192,
-    temperature: options.temperature || 0.7,
-    stream: true,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      ...messages.map(m => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content
-      }))
-    ]
+    model,
+    max_completion_tokens: options.maxTokens || 8192,
+    stream: true as const,
+    stream_options: { include_usage: true },
+    messages: formattedMessages,
+    ...(useTemperature ? { temperature: options.temperature || 0.7 } : {})
   })
 
   let fullResponse = ''
+  let tokensInput = 0
   let tokensOutput = 0
 
   for await (const chunk of stream) {
@@ -444,18 +456,27 @@ async function* streamWithOpenAI(
       yield { type: 'text', content, provider: 'openai' }
     }
 
-    if (chunk.usage) {
-      tokensOutput = chunk.usage.completion_tokens || 0
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const usage = chunk.usage as any
+    if (usage) {
+      tokensInput = usage.prompt_tokens || 0
+      tokensOutput = usage.completion_tokens || 0
     }
   }
 
-  const inputLength = messages.reduce((acc, m) => acc + m.content.length, 0) + systemPrompt.length
-  const tokensInput = Math.ceil(inputLength / 4)
+  // Fallback para estimativa se usage nao disponivel
+  if (!tokensInput) {
+    const inputLength = messages.reduce((acc, m) => acc + m.content.length, 0) + systemPrompt.length
+    tokensInput = Math.ceil(inputLength / 4)
+  }
+  if (!tokensOutput) {
+    tokensOutput = Math.ceil(fullResponse.length / 4)
+  }
 
   yield {
     type: 'done',
     provider: 'openai',
-    tokens: { input: tokensInput, output: tokensOutput || Math.ceil(fullResponse.length / 4) }
+    tokens: { input: tokensInput, output: tokensOutput }
   }
 }
 
