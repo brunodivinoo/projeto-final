@@ -119,15 +119,22 @@ export function ImageEditor({ imageBase64, imageType, onSave, onCancel }: ImageE
 
     // Draw crop overlay if cropping
     if (tool === 'crop' && cropStart && cropEnd) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-
       const x = Math.min(cropStart.x, cropEnd.x)
       const y = Math.min(cropStart.y, cropEnd.y)
       const w = Math.abs(cropEnd.x - cropStart.x)
       const h = Math.abs(cropEnd.y - cropStart.y)
 
-      ctx.clearRect(x, y, w, h)
+      // Salvar o conteúdo da área de recorte antes de desenhar o overlay
+      const imageData = ctx.getImageData(x, y, Math.max(1, w), Math.max(1, h))
+
+      // Desenhar overlay escuro
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      // Restaurar a área de recorte (mostrar imagem original nessa área)
+      ctx.putImageData(imageData, x, y)
+
+      // Desenhar borda da seleção
       ctx.strokeStyle = '#00FF00'
       ctx.lineWidth = 2
       ctx.setLineDash([5, 5])
@@ -253,7 +260,39 @@ export function ImageEditor({ imageBase64, imageType, onSave, onCancel }: ImageE
       return
     }
 
-    // Create temporary canvas with cropped area
+    // Primeiro, redesenhar o canvas sem o overlay para ter a imagem limpa
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height)
+
+    // Replay history (desenhos) up to current index
+    for (let i = 0; i <= historyIndex; i++) {
+      const action = history[i]
+      if (!action) continue
+
+      ctx.beginPath()
+      ctx.strokeStyle = action.type === 'erase' ? '#FFFFFF' : action.color
+      ctx.lineWidth = action.lineWidth
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
+
+      if (action.type === 'erase') {
+        ctx.globalCompositeOperation = 'destination-out'
+      } else {
+        ctx.globalCompositeOperation = 'source-over'
+      }
+
+      action.paths.forEach((point, index) => {
+        if (index === 0) {
+          ctx.moveTo(point.x, point.y)
+        } else {
+          ctx.lineTo(point.x, point.y)
+        }
+      })
+      ctx.stroke()
+    }
+    ctx.globalCompositeOperation = 'source-over'
+
+    // Agora copiar a área recortada para um canvas temporário
     const tempCanvas = document.createElement('canvas')
     tempCanvas.width = w
     tempCanvas.height = h
