@@ -49,6 +49,7 @@ import { type QuestaoData } from '@/components/chat/QuestaoInterativa'
 import { useSessoesIA } from '@/hooks/useSessoesIA'
 import { SimulacaoConfig, gerarPromptSimulacao, type SimulacaoConfigData } from '@/components/chat/SimulacaoConfig'
 import { IndicadorProgresso, FichaDrawer, type DadosFicha, DADOS_FICHA_VAZIO } from '@/components/chat/FichaAnamnese'
+import { ImagePreview } from '@/components/chat/ImagePreview'
 import {
   MobileChatInput
 } from '@/components/mobile'
@@ -993,7 +994,7 @@ export default function IAPage() {
   // O scroll automático agora é gerenciado pelo hook useSmartScroll
   // Permite scroll manual durante streaming sem travar
 
-  // Processar imagem
+  // Processar imagem (upload ou arrastar)
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -1006,6 +1007,38 @@ export default function IAPage() {
     }
     reader.readAsDataURL(file)
   }
+
+  // Processar imagem colada (Ctrl+V / paste)
+  const handlePaste = useCallback((e: ClipboardEvent) => {
+    if (!isResidencia) return // Apenas plano Residência pode usar imagens
+
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      if (item.type.startsWith('image/')) {
+        e.preventDefault()
+        const file = item.getAsFile()
+        if (!file) continue
+
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const base64 = (reader.result as string).split(',')[1]
+          setImagemBase64(base64)
+          setImagemTipo(file.type)
+        }
+        reader.readAsDataURL(file)
+        break
+      }
+    }
+  }, [isResidencia])
+
+  // Adicionar listener de paste ao documento
+  useEffect(() => {
+    document.addEventListener('paste', handlePaste)
+    return () => document.removeEventListener('paste', handlePaste)
+  }, [handlePaste])
 
   // Processar PDF
   const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1969,23 +2002,21 @@ export default function IAPage() {
 
               {/* Área de anexos - aparece quando tem anexo */}
               {(imagemBase64 || pdfBase64) && (
-                <div className="px-3 pt-2.5 flex gap-2 flex-wrap">
-                  {imagemBase64 && (
-                    <div className="flex items-center gap-1.5 bg-blue-100 text-blue-600 px-2.5 py-1 rounded-lg text-xs font-medium">
-                      <ImageIcon className="w-3.5 h-3.5" />
-                      <span>Imagem</span>
-                      <button
-                        onClick={() => { setImagemBase64(null); setImagemTipo(null) }}
-                        className="hover:bg-blue-200 rounded p-0.5 ml-0.5"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
+                <div className="px-3 pt-3 pb-1 flex gap-3 flex-wrap items-start">
+                  {/* Preview de imagem com thumbnail e ícones */}
+                  {imagemBase64 && imagemTipo && (
+                    <ImagePreview
+                      imageBase64={imagemBase64}
+                      imageType={imagemTipo}
+                      onRemove={() => { setImagemBase64(null); setImagemTipo(null) }}
+                      onUpdate={(newBase64) => setImagemBase64(newBase64)}
+                    />
                   )}
+                  {/* Preview de PDF (mantém estilo original) */}
                   {pdfBase64 && (
-                    <div className="flex items-center gap-1.5 bg-red-100 text-red-600 px-2.5 py-1 rounded-lg text-xs font-medium">
+                    <div className="flex items-center gap-1.5 bg-red-100 text-red-600 px-2.5 py-1 rounded-lg text-xs font-medium h-8">
                       <FileUp className="w-3.5 h-3.5" />
-                      <span>PDF</span>
+                      <span>PDF anexado</span>
                       <button
                         onClick={() => setPdfBase64(null)}
                         className="hover:bg-red-200 rounded p-0.5 ml-0.5"
