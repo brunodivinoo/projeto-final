@@ -1,8 +1,15 @@
 // Tipos TypeScript para o Sistema de IA do PREPARAMED
 
 export type PlanoIA = 'gratuito' | 'premium' | 'residencia'
-export type ModeloIA = 'gemini' | 'claude'
+export type ModeloIA = 'gemini' | 'claude' | 'openai'
 export type RoleMessage = 'user' | 'assistant' | 'system'
+export type ReasoningEffort = 'low' | 'medium' | 'high'
+
+// Tipos para modelos OpenAI
+export type OpenAIModel = 'o4-mini' | 'gpt-5.2' | 'gpt-4o'
+
+// Complexidade de tarefas
+export type ComplexityLevel = 'simples' | 'moderada' | 'complexa' | 'especializada'
 
 // Limites por plano
 export interface LimitesPlanoIA {
@@ -225,12 +232,44 @@ export const PRECOS_MODELO = {
     cache_read: 0.30
   },
   'gemini-flash': {
-    input: 0.075, // aproximado
+    input: 0.075,
     output: 0.30,
     cache_write: 0,
     cache_read: 0
+  },
+  // OpenAI Models - precos atualizados
+  'o4-mini': {
+    input: 1.10,
+    output: 4.40,
+    cache_read: 0.275, // 75% desconto
+    cache_write: 0
+  },
+  'gpt-5.2': {
+    input: 2.50,
+    output: 10.00,
+    cache_read: 0.625, // 75% desconto
+    cache_write: 0,
+    reasoning: 15.00 // tokens de raciocinio
+  },
+  'gpt-4o': {
+    input: 2.50,
+    output: 10.00,
+    cache_read: 1.25,
+    cache_write: 0
   }
 }
 
 // Custo Web Search
 export const CUSTO_WEB_SEARCH = 0.01 // USD por busca
+
+// Comparativo de economia (Opus vs OpenAI)
+export const ECONOMIA_MODELO = {
+  'o4-mini_vs_opus': {
+    input_economia: 78, // 78% mais barato que Opus
+    output_economia: 82 // 82% mais barato que Opus
+  },
+  'gpt-5.2_vs_opus': {
+    input_economia: 50, // 50% mais barato que Opus
+    output_economia: 60 // 60% mais barato que Opus
+  }
+}
