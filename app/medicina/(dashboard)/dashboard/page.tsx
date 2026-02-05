@@ -48,13 +48,17 @@ export default function MedicinaDashboardPage() {
   } = useTrialTimer()
 
   const [recentConversations, setRecentConversations] = useState<Conversation[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [iniciandoTrial, setIniciandoTrial] = useState(false)
   const [userTopics, setUserTopics] = useState<string[]>([])
 
   // Buscar conversas recentes e tópicos do usuário
   const fetchConversations = useCallback(async () => {
-    if (authLoading || !user) return
+    if (authLoading) return
+    if (!user) {
+      setLoading(false)
+      return
+    }
 
     try {
       setLoading(true)
