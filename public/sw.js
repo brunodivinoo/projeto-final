@@ -10,7 +10,7 @@
 // CONFIGURACAO DE VERSAO
 // ======================
 // Incremente esta versao ao fazer deploy para forcar atualizacao do cache
-const CACHE_VERSION = 'v3.1.0';
+const CACHE_VERSION = 'v3.2.0';
 
 // Nomes dos caches separados por tipo de conteudo
 // Isso permite gerenciar diferentes estrategias e tempos de expiracao
@@ -46,6 +46,8 @@ const PRECACHE_ASSETS = [
   // === PAGINAS PRINCIPAIS ===
   '/',
   '/offline',
+  '/termos',
+  '/privacidade',
 
   // === PREPARA MED ===
   '/medicina',
@@ -109,6 +111,12 @@ const NEVER_CACHE_URLS = [
   '/cadastro',            // Paginas de cadastro
   '/esqueci-senha',       // Paginas de recuperacao
   '/redefinir-senha',     // Paginas de redefinicao
+];
+
+// URLs que contem parametros que nao devem ser cacheados
+const NEVER_CACHE_PARAMS = [
+  '_rsc',                 // React Server Components prefetch
+  '__nextDataReq',        // Next.js data requests
 ];
 
 // ============================================================
@@ -280,11 +288,24 @@ function getCacheType(request) {
 
 /**
  * Verifica se a URL nunca deve ser cacheada
- * @param {string} pathname - Caminho da URL
+ * @param {URL} url - Objeto URL completo
  * @returns {boolean}
  */
-function shouldNeverCache(pathname) {
-  return NEVER_CACHE_URLS.some(pattern => pathname.includes(pattern));
+function shouldNeverCache(url) {
+  const pathname = url.pathname;
+  const searchParams = url.search;
+
+  // Verifica se o pathname contem padroes proibidos
+  if (NEVER_CACHE_URLS.some(pattern => pathname.includes(pattern))) {
+    return true;
+  }
+
+  // Verifica se tem parametros que nao devem ser cacheados (RSC, etc)
+  if (NEVER_CACHE_PARAMS.some(param => searchParams.includes(param))) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -465,8 +486,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Ignora URLs que nunca devem ser cacheadas
-  if (shouldNeverCache(url.pathname)) {
+  // Ignora URLs que nunca devem ser cacheadas (inclui RSC prefetch)
+  if (shouldNeverCache(url)) {
     return;
   }
 
