@@ -756,7 +756,7 @@ function splitTextAndArtifacts(text: string): Array<{ type: 'text' | 'artifact';
   const parts: Array<{ type: 'text' | 'artifact'; content: string }> = []
 
   // Regex para encontrar blocos de código completos (```tipo:titulo ... ```)
-  const codeBlockRegex = /```(?:mermaid|questao|question|flashcards|simulado|layers|staging|flowchart|tree|organograma)[:\s][^`]*```/gs
+  const codeBlockRegex = /```(?:mermaid|questao|question|flashcards|simulado|layers|staging|flowchart|tree|organograma)[:\s][^`]*```/g
 
   let lastIndex = 0
   let match
