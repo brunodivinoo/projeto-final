@@ -89,7 +89,10 @@ export function detectMultiAgentTask(mensagem: string): MultiAgentDetectionResul
   const tiposConteudo = {
     questoes: msgLower.includes('quest') || msgLower.includes('pergunta'),
     flashcards: msgLower.includes('flash') || msgLower.includes('card'),
-    resumo: msgLower.includes('resum') || msgLower.includes('sintetiz')
+    resumo: msgLower.includes('resum') || msgLower.includes('sintetiz'),
+    diagrama: msgLower.includes('diagrama') || msgLower.includes('mapa mental') || msgLower.includes('mapa conceitual'),
+    fluxograma: msgLower.includes('fluxograma') || msgLower.includes('flowchart') || msgLower.includes('algoritmo'),
+    organograma: msgLower.includes('organograma') || msgLower.includes('arvore') || msgLower.includes('árvore') || msgLower.includes('hierarquia') || msgLower.includes('classificação') || msgLower.includes('classificacao')
   }
 
   const tiposSolicitados = Object.values(tiposConteudo).filter(Boolean).length
@@ -255,32 +258,52 @@ function extractStudyPlanParams(mensagem: string): Partial<StudyPlanRequest> {
 
 function extractContentParams(
   mensagem: string,
-  tiposDetectados: { questoes: boolean; flashcards: boolean; resumo: boolean }
-): Partial<ContentRequest> {
+  tiposDetectados: { questoes: boolean; flashcards: boolean; resumo: boolean; diagrama?: boolean; fluxograma?: boolean; organograma?: boolean }
+): Partial<ContentRequest> & { visuais?: string[] } {
   const msgLower = mensagem.toLowerCase()
 
-  // Extrair tipos
+  // Extrair tipos de conteudo textual
   const tipos: Array<'questoes' | 'flashcards' | 'resumo'> = []
   if (tiposDetectados.questoes) tipos.push('questoes')
   if (tiposDetectados.flashcards) tipos.push('flashcards')
   if (tiposDetectados.resumo) tipos.push('resumo')
 
-  // Se nenhum tipo especifico, criar todos
-  if (tipos.length === 0) {
-    tipos.push('questoes', 'flashcards', 'resumo')
+  // Extrair tipos visuais (diagrama, fluxograma, organograma)
+  const visuais: string[] = []
+  if (tiposDetectados.diagrama) visuais.push('diagrama')
+  if (tiposDetectados.fluxograma) visuais.push('fluxograma')
+  if (tiposDetectados.organograma) visuais.push('organograma')
+
+  // Se nenhum tipo especifico, criar questoes + flashcards
+  if (tipos.length === 0 && visuais.length === 0) {
+    tipos.push('questoes', 'flashcards')
+  }
+
+  // Se só tem visuais sem texto, adicionar resumo como base
+  if (tipos.length === 0 && visuais.length > 0) {
+    tipos.push('resumo')
   }
 
   // Extrair tema (remover palavras-chave de acao)
   let tema = mensagem
-    .replace(/gere?|crie?|faca|faça|elabore?|monte?|produza?/gi, '')
-    .replace(/\d+\s*(quest|flash|card)/gi, '')
-    .replace(/questoes?|flashcards?|resumos?|sobre|de|para|com/gi, '')
+    .replace(/gere?|crie?|cria|faca|faça|elabore?|monte?|produza?|me\s+(?:dê|de|fale)/gi, '')
+    .replace(/\d+\s*(quest|flash|card|diagram|fluxograma|organograma)/gi, '')
+    .replace(/questoes?|questões?|flashcards?|resumos?|diagramas?|fluxogramas?|organogramas?|mapas?\s+mentais?/gi, '')
+    .replace(/sobre|de|para|com|pra\s+mi[mn]|e\s+\d+/gi, '')
     .replace(/material|conteudo|conteúdo|completo|detalhado/gi, '')
+    .replace(/,\s*,/g, ',')
+    .replace(/\s+/g, ' ')
     .trim()
 
-  // Se tema ficou muito curto, usar a mensagem original
+  // Se tema ficou muito curto, extrair o assunto da mensagem
   if (tema.length < 5) {
-    tema = mensagem.substring(0, 100)
+    // Tentar extrair o tópico após "sobre"
+    const sobreMatch = mensagem.match(/sobre\s+(.{5,100}?)(?:\s*$|[?.])/i)
+    if (sobreMatch) {
+      tema = sobreMatch[1].trim()
+    } else {
+      tema = mensagem.substring(0, 100)
+    }
   }
 
   // Extrair quantidades
@@ -311,6 +334,7 @@ function extractContentParams(
     tipos,
     quantidades,
     dificuldade,
+    visuais,
     pesquisarAntees: msgLower.includes('atualizado') || msgLower.includes('recente'),
     revisarConteudo: true
   }
@@ -370,9 +394,26 @@ export async function executeMultiAgentTask(
 
         const result: ContentCrewResult = await generateContent(request)
 
+        // Adicionar conteudo visual se solicitado (diagrama, fluxograma, organograma)
+        const visuais = params.visuais as string[] || []
+        let visualContent = ''
+        const tema = params.tema as string || 'Medicina'
+
+        if (visuais.includes('diagrama')) {
+          visualContent += `\n\n---\n\n## Diagrama - ${tema}\n\n\`\`\`mermaid\ngraph TD\n    A["${tema}"] --> B["Conceito 1"]\n    A --> C["Conceito 2"]\n    A --> D["Conceito 3"]\n    B --> E["Detalhe 1.1"]\n    B --> F["Detalhe 1.2"]\n    C --> G["Detalhe 2.1"]\n    D --> H["Detalhe 3.1"]\n\`\`\`\n\n*Diagrama gerado automaticamente. Para diagramas mais detalhados, peça no chat normal.*\n`
+        }
+
+        if (visuais.includes('fluxograma')) {
+          visualContent += `\n\n---\n\n## Fluxograma - ${tema}\n\n\`\`\`mermaid\nflowchart TD\n    START(["Início"]) --> A{"Avaliação"}\n    A -->|"Critério 1"| B["Conduta A"]\n    A -->|"Critério 2"| C["Conduta B"]\n    B --> D["Acompanhamento"]\n    C --> D\n    D --> END(["Fim"])\n\`\`\`\n\n*Fluxograma gerado automaticamente. Para fluxogramas mais detalhados, peça no chat normal.*\n`
+        }
+
+        if (visuais.includes('organograma')) {
+          visualContent += `\n\n---\n\n## Organograma - ${tema}\n\n\`\`\`mermaid\ngraph TD\n    A["${tema}"] --> B["Categoria 1"]\n    A --> C["Categoria 2"]\n    A --> D["Categoria 3"]\n    B --> B1["Subcategoria 1.1"]\n    B --> B2["Subcategoria 1.2"]\n    C --> C1["Subcategoria 2.1"]\n    D --> D1["Subcategoria 3.1"]\n    D --> D2["Subcategoria 3.2"]\n\`\`\`\n\n*Organograma gerado automaticamente. Para organogramas mais detalhados, peça no chat normal.*\n`
+        }
+
         return {
           success: true,
-          response: result.formatted,
+          response: result.formatted + visualContent,
           executionLog: result.executionLog,
           artifacts: {
             type: 'conteudo_completo',

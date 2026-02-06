@@ -175,6 +175,63 @@ const SimuladoCard = dynamic(() => import('./SimuladoCard'), {
   )
 })
 
+// Componente collapsible para renderizar <details>/<summary> como React
+const CollapsibleDetails = memo(function CollapsibleDetails({ summary, children }: { summary: string; children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <div className="my-3 border border-slate-200 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center gap-2 px-3 py-2 bg-slate-50 hover:bg-slate-100 transition-colors text-left text-sm font-medium text-slate-700"
+      >
+        <span className={`transform transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+        {summary}
+      </button>
+      {isOpen && (
+        <div className="px-3 py-2 bg-white text-xs lg:text-xs text-slate-700 border-t border-slate-200">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+})
+
+// Função para split de string em segmentos de texto e <details> blocks
+function splitDetailsBlocks(text: string): Array<{ type: 'text' | 'details'; content: string; summary?: string }> {
+  const segments: Array<{ type: 'text' | 'details'; content: string; summary?: string }> = []
+  const detailsRegex = /<details>\s*<summary>([\s\S]*?)<\/summary>\s*([\s\S]*?)<\/details>/g
+  let lastIndex = 0
+  let match
+
+  while ((match = detailsRegex.exec(text)) !== null) {
+    // Texto antes do bloco details
+    if (match.index > lastIndex) {
+      const before = text.slice(lastIndex, match.index)
+      if (before.trim()) segments.push({ type: 'text', content: before })
+    }
+    // O bloco details
+    segments.push({
+      type: 'details',
+      summary: match[1].trim(),
+      content: match[2].trim()
+    })
+    lastIndex = match.index + match[0].length
+  }
+
+  // Texto após o último bloco details
+  if (lastIndex < text.length) {
+    const after = text.slice(lastIndex)
+    if (after.trim()) segments.push({ type: 'text', content: after })
+  }
+
+  // Se não encontrou nenhum <details>, retorna o texto original
+  if (segments.length === 0) {
+    segments.push({ type: 'text', content: text })
+  }
+
+  return segments
+}
+
 // Importar QuestionStreamingSkeleton dinamicamente para feedback visual durante geração
 const QuestionStreamingSkeleton = dynamic(() => import('./QuestionStreamingSkeleton'), {
   ssr: false,
@@ -2539,6 +2596,32 @@ function ArtifactRendererComponent({
 
           // Se após limpeza não sobrou nada, não renderizar
           if (!cleanedPart.trim()) return null
+
+          // Verificar se contém <details>/<summary> blocks e renderizar como collapsible
+          if (cleanedPart.includes('<details>') && cleanedPart.includes('<summary>')) {
+            const segments = splitDetailsBlocks(cleanedPart)
+            return (
+              <div key={index}>
+                {segments.map((seg, segIdx) => {
+                  if (seg.type === 'details') {
+                    return (
+                      <CollapsibleDetails key={segIdx} summary={seg.summary || 'Ver mais'}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {seg.content}
+                        </ReactMarkdown>
+                      </CollapsibleDetails>
+                    )
+                  }
+                  if (!seg.content.trim()) return null
+                  return (
+                    <ReactMarkdown key={segIdx} remarkPlugins={[remarkGfm]}>
+                      {seg.content}
+                    </ReactMarkdown>
+                  )
+                })}
+              </div>
+            )
+          }
 
           // Renderizar Markdown normal
           return (

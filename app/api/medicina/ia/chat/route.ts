@@ -104,6 +104,44 @@ import {
 import { analisarComplexidade } from '@/lib/ai/complexity-detector'
 // ========== FIM SMART ROUTER ==========
 
+// ========== MEMORIA PERSISTENTE ==========
+import {
+  processMessageForMemory,
+  getContextForPrompt
+} from '@/lib/ai/persistentMemory'
+// ========== FIM MEMORIA PERSISTENTE ==========
+
+// Extrair título inteligente da mensagem do usuário
+function extrairTituloInteligente(mensagem: string): string {
+  let titulo = mensagem
+
+  // Remover verbos de ação comuns no início
+  titulo = titulo.replace(/^(gere|crie|cria|faça|faz|elabore|monte|produza|explique|me\s+(?:dê|de|fale|explique|ensine|ajude|conte))\s+/i, '')
+  // Remover "pra mim", "para mim", "por favor", etc
+  titulo = titulo.replace(/\b(pra\s+mi[mn]|para\s+mi[mn]|por\s+favor|pfv|pls|please)\b/gi, '')
+  // Remover quantidades no inicio (5 flashcards, 2 questões...)
+  titulo = titulo.replace(/^\d+\s*/g, '')
+  // Remover tipos de conteudo do inicio (flashcards, questões, diagrama...)
+  titulo = titulo.replace(/^(flashcards?|questões?|questoes?|cards?|diagramas?|fluxogramas?|organogramas?|mapas?\s+mentais?|resumos?)\s*(,?\s*\d+\s*(flashcards?|questões?|questoes?|cards?|diagramas?|fluxogramas?|organogramas?)\s*)*/gi, '')
+  // Remover conectivos soltos no inicio
+  titulo = titulo.replace(/^(e\s+|,\s*|sobre\s+|de\s+|do\s+|da\s+|dos\s+|das\s+|com\s+|para\s+)/i, '')
+  // Capitalizar primeira letra
+  titulo = titulo.trim()
+  if (titulo.length > 0) {
+    titulo = titulo.charAt(0).toUpperCase() + titulo.slice(1)
+  }
+  // Limitar tamanho
+  if (titulo.length > 60) {
+    const corte = titulo.lastIndexOf(' ', 57)
+    titulo = titulo.substring(0, corte > 30 ? corte : 57) + '...'
+  }
+  // Se ficou muito curto ou vazio, usar a mensagem original
+  if (titulo.length < 3) {
+    titulo = mensagem.substring(0, 60) + (mensagem.length > 60 ? '...' : '')
+  }
+  return titulo
+}
+
 // Formatar resposta de tool para exibição
 function formatToolResponse(toolName: string, data: unknown): string {
   const resultado = data as Record<string, unknown>
@@ -301,7 +339,7 @@ export async function POST(request: NextRequest) {
         .from('conversas_ia_med')
         .insert({
           user_id,
-          titulo: mensagem.substring(0, 50) + (mensagem.length > 50 ? '...' : ''),
+          titulo: extrairTituloInteligente(mensagem),
           modelo: plano === 'residencia' ? 'claude' : 'gemini',
           modo: modo // Salvar modo da conversa
         })
@@ -331,7 +369,7 @@ export async function POST(request: NextRequest) {
           .upsert({
             id: conversaAtual,
             user_id,
-            titulo: mensagem.substring(0, 50) + (mensagem.length > 50 ? '...' : ''),
+            titulo: extrairTituloInteligente(mensagem),
             modelo: plano === 'residencia' ? 'claude' : 'gemini',
             modo: modo
           }, { onConflict: 'id' })
@@ -343,7 +381,7 @@ export async function POST(request: NextRequest) {
             .from('conversas_ia_med')
             .insert({
               user_id,
-              titulo: mensagem.substring(0, 50) + (mensagem.length > 50 ? '...' : ''),
+              titulo: extrairTituloInteligente(mensagem),
               modelo: plano === 'residencia' ? 'claude' : 'gemini',
               modo: modo
             })
@@ -387,6 +425,18 @@ export async function POST(request: NextRequest) {
       role: m.role as 'user' | 'assistant',
       content: m.content
     })) || []
+
+    // ========== MEMORIA PERSISTENTE ==========
+    // Processar mensagem para extrair e salvar entidades em background
+    // Não bloqueia a resposta - executa em paralelo
+    processMessageForMemory(user_id, mensagem, conversaAtual).then(result => {
+      if (result.entitiesFound > 0 || result.topicsSaved > 0) {
+        console.log(`[Memory] Salvo ${result.entitiesFound} entidades, ${result.topicsSaved} topicos`)
+      }
+    }).catch(err => {
+      console.error('[Memory] Erro ao processar memoria:', err)
+    })
+    // ========== FIM MEMORIA PERSISTENTE ==========
 
     // ========== VERIFICAR SE DEVE USAR MULTI-AGENTES ==========
     // Multi-agentes são usados para tarefas complexas como:
@@ -526,25 +576,30 @@ async function streamMultiAgentResponse(params: StreamMultiAgentParams) {
         encoder.encode(`data: ${JSON.stringify({
           type: 'conversa_created',
           conversa_id,
-          titulo: mensagem.substring(0, 50) + (mensagem.length > 50 ? '...' : ''),
+          titulo: extrairTituloInteligente(mensagem),
           modelo: 'multi-agent'
         })}\n\n`)
       )
 
-      // Notificar que está usando multi-agentes
-      const agentNotice = `🤖 **Ativando Multi-Agentes**\n\n*${detection.reason}*\n\n---\n\n`
+      // Feedback visual detalhado do multi-agentes
+      const taskLabel = detection.taskType === 'study_plan' ? 'Plano de Estudos' : 'Conteúdo Complexo'
+      const agentNotice = `🤖 **Ativando Multi-Agentes** — *${taskLabel}*\n\n*${detection.reason}*\n\n---\n\n`
       fullResponse += agentNotice
       controller.enqueue(
         encoder.encode(`data: ${JSON.stringify({ type: 'text', content: agentNotice })}\n\n`)
       )
 
-      // Enviar notificação de progresso
+      // Enviar notificação de progresso com detalhes
+      const tiposDesc = (detection.extractedParams.tipos as string[] || []).join(', ')
+      const visuaisDesc = (detection.extractedParams.visuais as string[] || []).join(', ')
+      const todosDesc = [tiposDesc, visuaisDesc].filter(Boolean).join(', ')
       controller.enqueue(
         encoder.encode(`data: ${JSON.stringify({
           type: 'agent_status',
           status: 'starting',
           taskType: detection.taskType,
-          message: 'Iniciando processamento com multi-agentes...'
+          message: `Gerando: ${todosDesc || taskLabel}`,
+          agents: ['Pesquisador', 'Criador', 'Revisor']
         })}\n\n`)
       )
 
@@ -775,7 +830,7 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
         encoder.encode(`data: ${JSON.stringify({
           type: 'conversa_created',
           conversa_id,
-          titulo: mensagem.substring(0, 50) + (mensagem.length > 50 ? '...' : ''),
+          titulo: extrairTituloInteligente(mensagem),
           modelo: complexityAnalysis.modeloRecomendado
         })}\n\n`)
       )
@@ -1385,7 +1440,7 @@ async function streamClaude(params: StreamClaudeParams) {
         encoder.encode(`data: ${JSON.stringify({
           type: 'conversa_created',
           conversa_id: conversa_id,
-          titulo: params.mensagem.substring(0, 50) + (params.mensagem.length > 50 ? '...' : ''),
+          titulo: extrairTituloInteligente(params.mensagem),
           modelo: params.plano === 'residencia' ? 'claude' : 'gemini'
         })}\n\n`)
       )

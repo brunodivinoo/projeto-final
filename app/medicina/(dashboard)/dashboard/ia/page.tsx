@@ -952,11 +952,20 @@ export default function IAPage() {
                   updated_at: novaConversa.updated_at
                 })
                 useConversaStore.getState().setConversaSelecionada(novaConversa.id)
+              } else if (data.type === 'agent_status') {
+                // Feedback visual dos multi-agentes - atualizar conteúdo com indicador de progresso
+                const statusMsg = data.message || 'Processando...'
+                const statusEmoji = data.status === 'starting' ? '⏳' : data.status === 'complete' ? '✅' : '🔄'
+                const agentProgress = `\n\n${statusEmoji} *${statusMsg}*`
+                // Não adicionar ao fullResponse pois é temporário
+                setMensagens(prev => prev.map(m =>
+                  m.id === respostaId ? { ...m, conteudo: fullResponse + agentProgress } : m
+                ))
               } else if (data.type === 'done') {
                 setConversaAtual(data.conversa_id)
                 setMensagens(prev => prev.map(m =>
                   m.id === respostaId
-                    ? { ...m, tokens: data.tokens?.input + data.tokens?.output, thinking: data.thinking || '' }
+                    ? { ...m, conteudo: fullResponse, tokens: data.tokens?.input + data.tokens?.output, thinking: data.thinking || '' }
                     : m
                 ))
                 fetchUso()
@@ -1383,6 +1392,14 @@ export default function IAPage() {
                   updated_at: novaConversa.updated_at
                 })
                 useConversaStore.getState().setConversaSelecionada(novaConversa.id)
+              } else if (data.type === 'agent_status') {
+                // Feedback visual dos multi-agentes
+                const statusMsg = data.message || 'Processando...'
+                const statusEmoji = data.status === 'starting' ? '⏳' : data.status === 'complete' ? '✅' : '🔄'
+                const agentProgress = `\n\n${statusEmoji} *${statusMsg}*`
+                setMensagens(prev => prev.map(m =>
+                  m.id === respostaId ? { ...m, conteudo: fullResponse + agentProgress } : m
+                ))
               } else if (data.type === 'done') {
                 receivedDone = true
                 setConversaAtual(data.conversa_id)
@@ -1391,7 +1408,7 @@ export default function IAPage() {
                 // Atualizar mensagem final com tokens e thinking
                 setMensagens(prev => prev.map(m =>
                   m.id === respostaId
-                    ? { ...m, tokens: data.tokens?.input + data.tokens?.output, thinking }
+                    ? { ...m, conteudo: fullResponse, tokens: data.tokens?.input + data.tokens?.output, thinking }
                     : m
                 ))
 

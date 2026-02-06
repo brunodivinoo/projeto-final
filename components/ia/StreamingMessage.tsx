@@ -1,10 +1,91 @@
 'use client'
 
-import { memo, useMemo, useRef, useEffect } from 'react'
+import { memo, useMemo, useRef, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Bot, User, Copy, Check, Sparkles, Clock } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+
+// Componente collapsible para renderizar <details>/<summary>
+const CollapsibleBlock = memo(function CollapsibleBlock({ summary, children }: { summary: string; children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <div className="my-2 border border-slate-200 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center gap-2 px-3 py-2 bg-slate-50 hover:bg-slate-100 transition-colors text-left text-sm font-medium text-slate-700"
+      >
+        <span className={`transform transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+        {summary}
+      </button>
+      {isOpen && (
+        <div className="px-3 py-2 bg-white text-sm text-slate-700 border-t border-slate-200">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+})
+
+// Renderizar conteúdo com suporte a <details>/<summary>
+function renderContentWithDetails(content: string) {
+  if (!content.includes('<details>') || !content.includes('<summary>')) {
+    return (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          code: ({ className, children, ...props }) => {
+            const isInline = !className
+            if (isInline) {
+              return <code className="bg-emerald-100 px-1.5 py-0.5 rounded text-emerald-700 text-sm" {...props}>{children}</code>
+            }
+            return <code className={className} {...props}>{children}</code>
+          },
+          table: ({ children }) => <div className="overflow-x-auto my-4"><table className="min-w-full border-collapse">{children}</table></div>,
+          p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
+          ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    )
+  }
+
+  // Split em segmentos de texto e <details> blocks
+  const segments: Array<{ type: 'text' | 'details'; content: string; summary?: string }> = []
+  const detailsRegex = /<details>\s*<summary>([\s\S]*?)<\/summary>\s*([\s\S]*?)<\/details>/g
+  let lastIdx = 0
+  let m
+  while ((m = detailsRegex.exec(content)) !== null) {
+    if (m.index > lastIdx) {
+      const before = content.slice(lastIdx, m.index)
+      if (before.trim()) segments.push({ type: 'text', content: before })
+    }
+    segments.push({ type: 'details', summary: m[1].trim(), content: m[2].trim() })
+    lastIdx = m.index + m[0].length
+  }
+  if (lastIdx < content.length) {
+    const after = content.slice(lastIdx)
+    if (after.trim()) segments.push({ type: 'text', content: after })
+  }
+  if (segments.length === 0) segments.push({ type: 'text', content })
+
+  return (
+    <>
+      {segments.map((seg, i) => {
+        if (seg.type === 'details') {
+          return (
+            <CollapsibleBlock key={i} summary={seg.summary || 'Ver mais'}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{seg.content}</ReactMarkdown>
+            </CollapsibleBlock>
+          )
+        }
+        return seg.content.trim() ? <ReactMarkdown key={i} remarkPlugins={[remarkGfm]}>{seg.content}</ReactMarkdown> : null
+      })}
+    </>
+  )
+}
 
 interface StreamingMessageProps {
   content: string
@@ -142,46 +223,7 @@ export const StreamingMessage = memo(function StreamingMessage({
         <div className="bg-slate-100 backdrop-blur-sm border border-slate-200 rounded-2xl rounded-tl-md px-4 py-3 shadow-lg">
           {content ? (
             <div className="prose prose-slate prose-sm max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  // Otimizar renderização de código
-                  code: ({ className, children, ...props }) => {
-                    const isInline = !className
-                    if (isInline) {
-                      return (
-                        <code className="bg-emerald-100 px-1.5 py-0.5 rounded text-emerald-700 text-sm" {...props}>
-                          {children}
-                        </code>
-                      )
-                    }
-                    return (
-                      <code className={className} {...props}>
-                        {children}
-                      </code>
-                    )
-                  },
-                  // Otimizar tabelas
-                  table: ({ children }) => (
-                    <div className="overflow-x-auto my-4">
-                      <table className="min-w-full border-collapse">{children}</table>
-                    </div>
-                  ),
-                  // Otimizar parágrafos
-                  p: ({ children }) => (
-                    <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>
-                  ),
-                  // Otimizar listas
-                  ul: ({ children }) => (
-                    <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>
-                  ),
-                  ol: ({ children }) => (
-                    <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>
-                  )
-                }}
-              >
-                {content}
-              </ReactMarkdown>
+              {renderContentWithDetails(content)}
               {isStreaming && <TypingCursor />}
             </div>
           ) : isStreaming ? (
