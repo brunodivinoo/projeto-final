@@ -94,6 +94,10 @@ import {
 } from '@/lib/ai/multiAgentIntegration'
 // ========== FIM INTEGRACAO MULTI-AGENTES ==========
 
+// ========== IMAGENS SERPER ==========
+import { buscarImagensComFallback, deveRecomendarImagens, formatarImagensParaChat } from '@/lib/services/serperImageService'
+// ========== FIM IMAGENS SERPER ==========
+
 // ========== SMART ROUTER - ROTEAMENTO INTELIGENTE ==========
 import {
   selecionarModelo,
@@ -756,7 +760,7 @@ function splitTextAndArtifacts(text: string): Array<{ type: 'text' | 'artifact';
   const parts: Array<{ type: 'text' | 'artifact'; content: string }> = []
 
   // Regex para encontrar blocos de código completos (```tipo:titulo ... ```)
-  const codeBlockRegex = /```(?:mermaid|questao|question|flashcards|simulado|layers|staging|flowchart|tree|organograma)[:\s][^`]*```/g
+  const codeBlockRegex = /```(?:mermaid|questao|question|flashcards|simulado|layers|staging|flowchart|tree|organograma|unified_study)[:\s][^`]*```/g
 
   let lastIndex = 0
   let match
@@ -966,6 +970,24 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
           } else if (chunk.type === 'error') {
             console.error('[Smart Router] Erro no stream:', chunk.error)
             throw new Error(chunk.error || 'Erro desconhecido')
+          }
+        }
+
+        // Buscar imagens relevantes via Serper (em paralelo com a atualização)
+        if (deveRecomendarImagens(mensagem)) {
+          try {
+            const topico = extractTopic(mensagem) || mensagem.substring(0, 80)
+            const imagensResult = await buscarImagensComFallback(topico, 3)
+
+            if (imagensResult.imagens && imagensResult.imagens.length > 0) {
+              const imagensTexto = formatarImagensParaChat(imagensResult.imagens)
+              fullResponse += imagensTexto
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: imagensTexto })}\n\n`)
+              )
+            }
+          } catch (imgError) {
+            console.error('[Chat] Erro ao buscar imagens Serper:', imgError)
           }
         }
 
