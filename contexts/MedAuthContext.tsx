@@ -510,6 +510,30 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
     const getSession = async () => {
       try {
+        // OTIMIZAÇÃO: Tentar obter sessão do localStorage primeiro (mais rápido)
+        // O Supabase armazena a sessão em localStorage com a chave específica
+        const storageKey = `sb-${process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0]}-auth-token`
+        const cachedSession = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
+
+        if (cachedSession) {
+          try {
+            const parsed = JSON.parse(cachedSession)
+            if (parsed?.user) {
+              console.log('[Auth] Usando sessão do cache local')
+              setUser(parsed.user)
+              // Buscar perfil em paralelo com validação da sessão
+              fetchProfile(
+                parsed.user.id,
+                parsed.user.email || undefined,
+                parsed.user.user_metadata?.nome
+              ).catch(err => console.error('[Auth] Erro ao carregar perfil:', err))
+            }
+          } catch (e) {
+            console.log('[Auth] Cache inválido, buscando sessão do servidor')
+          }
+        }
+
+        // Validar sessão com o servidor (pode demorar)
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
         if (!mounted) return
@@ -534,6 +558,9 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
             setProfileLoading(false)
           }
         } else {
+          // Sessão inválida - limpar user se foi setado do cache
+          setUser(null)
+          setProfile(null)
           setProfileLoading(false)
         }
       } catch (error) {
@@ -546,14 +573,15 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Timeout de segurança: se auth demorar mais de 8 segundos, liberar a página
+    // Timeout de segurança REDUZIDO: se auth demorar mais de 3 segundos, liberar a página
+    // O conteúdo vai carregar com dados do cache, e atualiza quando o servidor responder
     const safetyTimeout = setTimeout(() => {
       if (mounted) {
         console.warn('[Auth] Timeout de segurança atingido, liberando loading')
         setLoading(false)
-        setProfileLoading(false)
+        // NÃO definir profileLoading como false aqui - deixar o perfil continuar carregando
       }
-    }, 8000)
+    }, 3000)
 
     getSession()
 
