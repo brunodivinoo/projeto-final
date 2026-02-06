@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback, useState, useMemo, useRef } from 'react'
+import { useEffect, useCallback, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X,
@@ -1430,20 +1430,16 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
   }, [fullscreenArtifactId, allArtifacts, storeSetFullscreenArtifact])
 
   // Sincronizar quando selectedArtifactId muda (quando clica no chat)
-  // Usar ref para detectar mudanças reais e forçar atualização da sidebar
-  const prevSelectedRef = useRef<string | null>(null)
   useEffect(() => {
     if (selectedArtifactId && isSidebarOpen) {
       const artifact = allArtifacts.find(a => a.id === selectedArtifactId)
       if (artifact) {
-        // Sempre atualizar - mesmo se o ID é o mesmo (pode ter sido deselect+reselect)
         setViewingArtifactLocal(artifact)
       }
     }
-    prevSelectedRef.current = selectedArtifactId
   }, [selectedArtifactId, allArtifacts, isSidebarOpen])
 
-  // Quando sidebar abre pela primeira vez e já tem seleção pendente
+  // Quando sidebar abre e já tem seleção pendente
   useEffect(() => {
     if (isSidebarOpen && selectedArtifactId && !viewingArtifact) {
       const artifact = allArtifacts.find(a => a.id === selectedArtifactId)
