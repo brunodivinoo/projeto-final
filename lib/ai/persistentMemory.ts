@@ -257,50 +257,129 @@ export async function getContextForPrompt(userId: string): Promise<string> {
 
 /**
  * Detecta e extrai entidades da mensagem
+ * Inclui: provas, especialidades, nivel de estudo, doencas, medicamentos, areas anatomicas
  */
-export function detectEntities(message: string): Array<{ type: string; value: string }> {
-  const entities: Array<{ type: string; value: string }> = []
+export function detectEntities(message: string): Array<{ type: string; value: string; confidence?: number }> {
+  const entities: Array<{ type: string; value: string; confidence?: number }> = []
   const msgLower = message.toLowerCase()
 
   // Detectar provas alvo
   const provas = [
-    { pattern: /residencia|residência/, value: 'Residência Médica' },
-    { pattern: /revalida/, value: 'REVALIDA' },
-    { pattern: /enade/, value: 'ENADE' },
-    { pattern: /usp/, value: 'USP' },
-    { pattern: /unicamp/, value: 'UNICAMP' },
-    { pattern: /unifesp/, value: 'UNIFESP' }
+    { pattern: /residencia|residência/i, value: 'Residência Médica' },
+    { pattern: /revalida/i, value: 'REVALIDA' },
+    { pattern: /enade/i, value: 'ENADE' },
+    { pattern: /enamed/i, value: 'ENAMED' },
+    { pattern: /enare/i, value: 'ENARE' },
+    { pattern: /usp/i, value: 'USP' },
+    { pattern: /unicamp/i, value: 'UNICAMP' },
+    { pattern: /unifesp/i, value: 'UNIFESP' },
+    { pattern: /santa\s*casa/i, value: 'Santa Casa' },
+    { pattern: /sus/i, value: 'Prova SUS' },
+    { pattern: /concurso/i, value: 'Concurso Médico' }
   ]
 
   for (const prova of provas) {
-    if (prova.pattern.test(msgLower)) {
-      entities.push({ type: 'prova_alvo', value: prova.value })
+    if (prova.pattern.test(message)) {
+      entities.push({ type: 'prova_alvo', value: prova.value, confidence: 0.9 })
       break
     }
   }
 
-  // Detectar especialidades
+  // Detectar especialidades (expandido)
   const especialidades = [
-    'cardiologia', 'neurologia', 'pediatria', 'ginecologia', 'cirurgia',
-    'clinica medica', 'clínica médica', 'ortopedia', 'dermatologia',
-    'psiquiatria', 'oftalmologia', 'urologia', 'nefrologia', 'pneumologia',
-    'gastroenterologia', 'endocrinologia', 'reumatologia', 'infectologia',
-    'oncologia', 'hematologia', 'geriatria', 'medicina intensiva'
+    'cardiologia', 'neurologia', 'pediatria', 'ginecologia', 'obstetrícia', 'obstetricia',
+    'cirurgia geral', 'cirurgia', 'clínica médica', 'clinica medica', 'ortopedia',
+    'dermatologia', 'psiquiatria', 'oftalmologia', 'urologia', 'nefrologia',
+    'pneumologia', 'gastroenterologia', 'endocrinologia', 'reumatologia',
+    'infectologia', 'oncologia', 'hematologia', 'geriatria', 'medicina intensiva',
+    'emergência', 'emergencia', 'anestesiologia', 'radiologia', 'patologia',
+    'medicina de família', 'medicina de familia', 'otorrinolaringologia',
+    'cirurgia cardíaca', 'cirurgia cardiaca', 'cirurgia pediátrica',
+    'neonatologia', 'medicina do trabalho', 'medicina esportiva',
+    'medicina legal', 'saúde pública', 'saude publica', 'epidemiologia'
   ]
 
   for (const esp of especialidades) {
     if (msgLower.includes(esp)) {
-      entities.push({ type: 'especialidade_interesse', value: esp })
+      entities.push({ type: 'especialidade_interesse', value: esp, confidence: 0.85 })
     }
   }
 
   // Detectar nivel de estudo
   if (msgLower.includes('interno') || msgLower.includes('internato')) {
-    entities.push({ type: 'nivel_estudo', value: 'Internato' })
-  } else if (msgLower.includes('residente') || msgLower.includes('r1') || msgLower.includes('r2')) {
-    entities.push({ type: 'nivel_estudo', value: 'Residência' })
+    entities.push({ type: 'nivel_estudo', value: 'Internato', confidence: 0.9 })
+  } else if (msgLower.includes('residente') || msgLower.includes('r1') || msgLower.includes('r2') || msgLower.includes('r3')) {
+    entities.push({ type: 'nivel_estudo', value: 'Residência', confidence: 0.9 })
   } else if (msgLower.includes('graduacao') || msgLower.includes('graduação') || msgLower.includes('academico') || msgLower.includes('acadêmico')) {
-    entities.push({ type: 'nivel_estudo', value: 'Graduação' })
+    entities.push({ type: 'nivel_estudo', value: 'Graduação', confidence: 0.9 })
+  } else if (msgLower.includes('pos-graduacao') || msgLower.includes('pós-graduação') || msgLower.includes('mestrado') || msgLower.includes('doutorado')) {
+    entities.push({ type: 'nivel_estudo', value: 'Pós-Graduação', confidence: 0.9 })
+  }
+
+  // Detectar doenças e condições médicas
+  const doencas = [
+    { pattern: /diabetes\s*(mellitus|tipo\s*[12])?/i, value: 'Diabetes Mellitus' },
+    { pattern: /hipertens[ãa]o\s*(arterial)?/i, value: 'Hipertensão Arterial' },
+    { pattern: /insufici[êe]ncia\s*(card[íi]aca|renal|hep[áa]tica|respirat[óo]ria)/i, value: (m: string) => `Insuficiência ${m}` },
+    { pattern: /infarto|iam|sca/i, value: 'Infarto Agudo do Miocárdio' },
+    { pattern: /avc|acidente\s+vascular/i, value: 'AVC' },
+    { pattern: /pneumonia/i, value: 'Pneumonia' },
+    { pattern: /asma/i, value: 'Asma' },
+    { pattern: /dpoc/i, value: 'DPOC' },
+    { pattern: /c[âa]ncer|neoplasia|tumor/i, value: 'Neoplasia' },
+    { pattern: /covid|sars-cov/i, value: 'COVID-19' },
+    { pattern: /s[íi]ndrome\s+(?:dos?\s+)?([a-záéíóúãõê\s]+)/i, value: (m: string) => `Síndrome ${m}` },
+    { pattern: /lupus|l[úu]pus/i, value: 'Lúpus Eritematoso Sistêmico' },
+    { pattern: /sepse|sepsis/i, value: 'Sepse' },
+    { pattern: /meningite/i, value: 'Meningite' },
+    { pattern: /tuberculose|tb/i, value: 'Tuberculose' },
+    { pattern: /hiv|aids/i, value: 'HIV/AIDS' }
+  ]
+
+  for (const doenca of doencas) {
+    const match = doenca.pattern.exec(message)
+    if (match) {
+      const valor = typeof doenca.value === 'function' ? doenca.value(match[1] || '') : doenca.value
+      entities.push({ type: 'doenca_estudada', value: valor, confidence: 0.8 })
+    }
+  }
+
+  // Detectar medicamentos (por sufixos farmacológicos)
+  const medRegex = /\b([a-záéíóúãõê]+(?:ol|ina|mab|nib|pril|sartan|statina|cilina|micina|zol|pam|lol|dipina|prazol|tidina|setron|triptano))\b/gi
+  let medMatch
+  while ((medMatch = medRegex.exec(msgLower)) !== null) {
+    const med = medMatch[1]
+    if (med.length > 4) { // Ignorar palavras muito curtas
+      entities.push({ type: 'medicamento_mencionado', value: med, confidence: 0.7 })
+    }
+  }
+
+  // Detectar áreas anatômicas
+  const anatomia = [
+    'coração', 'coracao', 'pulmão', 'pulmao', 'fígado', 'figado',
+    'rim', 'rins', 'cérebro', 'cerebro', 'estômago', 'estomago',
+    'intestino', 'pâncreas', 'pancreas', 'tireoide', 'tireóide',
+    'útero', 'utero', 'ovário', 'ovario', 'próstata', 'prostata',
+    'mama', 'sistema reprodutor', 'sistema nervoso', 'sistema cardiovascular',
+    'sistema respiratório', 'sistema digestório', 'sistema urinário',
+    'sistema endócrino', 'sistema imunológico', 'sistema musculoesquelético'
+  ]
+
+  for (const area of anatomia) {
+    if (msgLower.includes(area)) {
+      entities.push({ type: 'area_anatomica', value: area, confidence: 0.75 })
+    }
+  }
+
+  // Detectar tipo de estudo preferido
+  if (msgLower.includes('questão') || msgLower.includes('questao') || msgLower.includes('questoes') || msgLower.includes('questões')) {
+    entities.push({ type: 'preferencia_estudo', value: 'questões', confidence: 0.6 })
+  }
+  if (msgLower.includes('flashcard') || msgLower.includes('flash card')) {
+    entities.push({ type: 'preferencia_estudo', value: 'flashcards', confidence: 0.6 })
+  }
+  if (msgLower.includes('resumo') || msgLower.includes('resumir')) {
+    entities.push({ type: 'preferencia_estudo', value: 'resumos', confidence: 0.6 })
   }
 
   return entities
@@ -308,24 +387,50 @@ export function detectEntities(message: string): Array<{ type: string; value: st
 
 /**
  * Processa mensagem e salva entidades detectadas
+ * Salva apenas entidades com confiança >= threshold
  */
 export async function processMessageForMemory(
   userId: string,
   message: string,
-  conversaId?: string
-): Promise<void> {
+  conversaId?: string,
+  confidenceThreshold: number = 0.6
+): Promise<{ entitiesFound: number; topicsSaved: number }> {
   const entities = detectEntities(message)
+  let entitiesFound = 0
+  let topicsSaved = 0
 
+  // Salvar entidades com confiança suficiente
   for (const entity of entities) {
-    await saveEntity(userId, entity.type, entity.value, conversaId)
+    if ((entity.confidence || 0.5) >= confidenceThreshold) {
+      const saved = await saveEntity(userId, entity.type, entity.value, conversaId)
+      if (saved) entitiesFound++
+    }
   }
 
-  // Extrair topico principal se for pergunta de estudo
-  const topicMatch = message.match(/sobre\s+(.{3,50})[\?\.]?/i)
-  if (topicMatch) {
-    const topic = topicMatch[1].trim()
-    await saveLearningTopic(userId, topic)
+  // Extrair topico principal - multiplas estratégias
+  const topicPatterns = [
+    /sobre\s+(?:o\s+|a\s+|os\s+|as\s+)?(.{3,80})[\?\.]?$/i,
+    /(?:estud|aprend|revis|entend)(?:ar|er|o)\s+(?:sobre\s+)?(.{3,80})[\?\.]?$/i,
+    /(?:explique|me explique|o que [ée])\s+(.{3,80})[\?\.]?$/i,
+    /(?:gere|crie)\s+.*(?:sobre|de)\s+(.{3,80})$/i
+  ]
+
+  for (const pattern of topicPatterns) {
+    const topicMatch = message.match(pattern)
+    if (topicMatch) {
+      const topic = topicMatch[1]
+        .replace(/[?.!,;]+$/, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+      if (topic.length >= 3 && topic.length <= 100) {
+        const saved = await saveLearningTopic(userId, topic)
+        if (saved) topicsSaved++
+        break
+      }
+    }
   }
+
+  return { entitiesFound, topicsSaved }
 }
 
 /**
