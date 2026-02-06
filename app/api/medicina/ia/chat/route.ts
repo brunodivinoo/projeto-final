@@ -976,7 +976,13 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
         try {
           // Fallback para Claude - usando Sonnet 4.5 para todos os planos (excelente qualidade, 5x mais barato que Opus)
           const modeloSelecionado = MODELOS.claude.sonnet
-          const systemPrompt = plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
+          let systemPrompt = plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
+
+          // Adicionar contexto da memória persistente
+          try {
+            const memCtx = await getContextForPrompt(user_id)
+            if (memCtx && memCtx.trim().length > 0) systemPrompt += memCtx
+          } catch { /* continua sem memória */ }
 
           const messages = historico.map(m => ({
             role: m.role,
@@ -1314,6 +1320,19 @@ async function streamClaude(params: StreamClaudeParams) {
   // Sonnet oferece excelente qualidade com custo 5x menor que Opus
   const modeloSelecionado = MODELOS.claude.sonnet
   let systemPrompt = params.plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
+
+  // ========== MEMORIA PERSISTENTE - CONTEXTO NO PROMPT ==========
+  // Buscar contexto da memória do usuário para personalizar respostas
+  try {
+    const memoryContext = await getContextForPrompt(user_id)
+    if (memoryContext && memoryContext.trim().length > 0) {
+      systemPrompt += memoryContext
+      console.log(`[Memory] Contexto adicionado ao prompt (${memoryContext.length} chars)`)
+    }
+  } catch (memError) {
+    console.error('[Memory] Erro ao buscar contexto (usando fallback):', memError)
+  }
+  // ========== FIM MEMORIA PERSISTENTE ==========
 
   // ========== SISTEMA DE VARIABILIDADE ==========
   // Detectar tipo de resposta e aplicar configurações de variação

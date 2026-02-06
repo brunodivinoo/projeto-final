@@ -2684,6 +2684,15 @@ function ArtifactRendererComponent({
       )
     }
 
+    // Fallback: match por título parcial (contém)
+    if (!matchingArtifact && artifactTitle) {
+      matchingArtifact = currentArtifacts.find(
+        a => a.type === artifactType &&
+             a.messageId === messageId &&
+             (a.title.includes(artifactTitle) || artifactTitle.includes(a.title))
+      )
+    }
+
     // Fallback final: match por tipo e messageId
     if (!matchingArtifact) {
       matchingArtifact = currentArtifacts.find(
@@ -2692,16 +2701,23 @@ function ArtifactRendererComponent({
       )
     }
 
+    // Fallback sem messageId: match por tipo e título (artefatos de multi-agentes podem não ter messageId)
+    if (!matchingArtifact && artifactTitle) {
+      matchingArtifact = currentArtifacts.find(
+        a => a.type === artifactType &&
+             a.title === artifactTitle
+      )
+    }
+
     if (matchingArtifact) {
-      // Forçar re-seleção mesmo se já era o selecionado (fix para sidebar não atualizar)
-      const currentSelected = useArtifactsStore.getState().selectedArtifactId
-      if (currentSelected === matchingArtifact.id) {
-        // Desselecionar e re-selecionar para forçar atualização
-        selectArtifact(null as unknown as string)
-        setTimeout(() => selectArtifact(matchingArtifact!.id), 0)
-      } else {
-        selectArtifact(matchingArtifact.id)
-      }
+      // SEMPRE forçar re-seleção via deselect+reselect para garantir que a sidebar atualize
+      // Isso resolve o bug onde clicar em outro deck não muda a sidebar
+      const targetId = matchingArtifact.id
+      selectArtifact(null as unknown as string)
+      // Usar requestAnimationFrame para garantir que o estado null seja processado antes do novo
+      requestAnimationFrame(() => {
+        selectArtifact(targetId)
+      })
     }
 
     // Abrir sidebar (desktop) ou drawer (mobile)
