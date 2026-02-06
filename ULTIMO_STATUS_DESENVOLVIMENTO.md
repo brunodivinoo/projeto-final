@@ -1,92 +1,86 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 03/02/2026 - Sessao Integracao Multi-Agentes
+## Atualizado em: 06/02/2026 - Sessao Correcoes Multi-Agentes + Memoria
 
 ---
 
-## O QUE FOI FEITO NESTA SESSAO (03/02/2026)
+## O QUE FOI FEITO NESTA SESSAO (06/02/2026)
 
-### 1. INTEGRACAO MULTI-AGENTES NA API /CHAT
+### 1. FIX: RENDERIZACAO DE `<details>/<summary>` NO CHAT
 
-**Integrado o sistema de multi-agentes (LangChain) na API principal /chat:**
+**Problema**: Tags HTML `<details>`, `<summary>` apareciam como texto raw no chat (nao eram renderizadas como elementos interativos).
 
-#### Novo arquivo: `lib/ai/multiAgentIntegration.ts`
-- Detecta automaticamente quando usar multi-agentes
-- Extrai parametros da mensagem (prova, horas, especialidade, etc.)
-- Roteia para a crew apropriada (StudyPlanCrew ou ContentCrew)
+**Solucao**: Criado componente `CollapsibleDetails` e funcao `splitDetailsBlocks()` que pre-processa o conteudo antes do ReactMarkdown, convertendo blocos `<details>` em componentes React collapsiveis estilizados.
 
-#### Quando os Multi-Agentes sao ativados:
-- **Plano de Estudos**: Quando detecta keywords como "plano de estudo", "cronograma", "como estudar para"
-- **Conteudo Complexo**: Quando pede multiplos tipos (questoes + flashcards) ou grande quantidade (10+ questoes)
+**Arquivos modificados**:
+- `components/ia/ArtifactRenderer.tsx` - CollapsibleDetails + splitDetailsBlocks
+- `components/ia/StreamingMessage.tsx` - renderContentWithDetails
 
-#### Fluxo de execucao:
-```
-USUARIO ENVIA MENSAGEM
-        │
-        ▼
-┌─────────────────────────────┐
-│   detectMultiAgentTask()    │
-│   - Analisa keywords        │
-│   - Extrai parametros       │
-│   - Decide se usa agentes   │
-└─────────────────────────────┘
-        │
-   ┌────┴────┐
-   │         │
-   ▼         ▼
-SIMPLES    COMPLEXO
-   │         │
-   ▼         ▼
-┌─────────┐ ┌─────────────────┐
-│ Claude  │ │ Multi-Agentes   │
-│(normal) │ │ - StudyPlanCrew │
-│         │ │ - ContentCrew   │
-└─────────┘ └─────────────────┘
-```
+### 2. FIX: TITULO INTELIGENTE DE CONVERSAS
 
-### 2. SISTEMA DE MEMORIA PERSISTENTE
+**Problema**: Titulo de conversa usava `mensagem.substring(0, 50)` resultando em titulos cortados e sem sentido (ex: "pra min cards, oes, 1 diagrama e 1 fluxograma").
 
-**Novo arquivo: `lib/ai/persistentMemory.ts`**
+**Solucao**: Criada funcao `extrairTituloInteligente()` que:
+- Remove verbos de acao (gere, crie, monte...)
+- Remove quantidades e tipos de conteudo
+- Extrai o topico real da mensagem
+- Capitaliza corretamente
+- Substituida em TODAS as 6 ocorrencias no `route.ts`
 
-- Salva contexto do usuario no Supabase entre sessoes
-- Detecta entidades (prova alvo, especialidade, nivel de estudo)
-- Armazena topicos estudados
-- Gera contexto automatico para enriquecer prompts
+### 3. FEAT: SUPORTE A DIAGRAMA/FLUXOGRAMA/ORGANOGRAMA NOS MULTI-AGENTES
 
-#### Funcionalidades:
-- `saveEntity()` - Salva entidades detectadas
-- `saveLearningTopic()` - Salva topicos estudados
-- `getContextForPrompt()` - Gera contexto para o prompt
-- `processMessageForMemory()` - Processa mensagem e extrai entidades
+**Problema**: Multi-agentes so detectavam 3 tipos (questoes, flashcards, resumo). Pedidos de diagramas, fluxogramas e organogramas eram ignorados.
 
-### 3. HELPER SUPABASE CENTRALIZADO
+**Solucao**:
+- Adicionados 3 novos tipos visuais na deteccao: `diagrama`, `fluxograma`, `organograma`
+- Keywords expandidas (ex: "mapa mental", "flowchart", "algoritmo", "arvore", "hierarquia")
+- Gerados como Mermaid code blocks (renderizados pelo ArtifactRenderer existente)
+- Melhorada extracao de tema (nao mais garbled)
 
-**Novo arquivo: `lib/supabase-admin.ts`**
+### 4. FEAT: FEEDBACK VISUAL DE MULTI-AGENTES
 
-- Lazy initialization para evitar erros durante build
-- Helper centralizado para uso em API routes
+**Problema**: Nao havia feedback visual durante processamento dos multi-agentes.
 
-### 4. CORRECOES DE BUILD
+**Solucao**:
+- Backend envia eventos `agent_status` com mensagem de progresso detalhada
+- Frontend recebe e mostra indicador visual temporario (emoji + mensagem)
+- Evento limpo ao receber resposta final (`done`)
 
-- Corrigido inicializacao do Supabase em `app/api/admin/separar-disciplinas/route.ts`
-- Corrigido inicializacao do Supabase em `app/api/estudos/ciclos/route.ts`
-- Adicionado arquivo `.env` para build local
+### 5. FEAT: EXTRACAO DE ENTIDADES EXPANDIDA
+
+**Problema**: Deteccao de entidades era basica (6 provas, 22 especialidades, 3 niveis).
+
+**Solucao**: Expandido `detectEntities()` com 50+ padroes:
+- **Provas**: +5 (ENAMED, ENARE, Santa Casa, SUS, Concurso)
+- **Especialidades**: +15 (emergencia, neonatologia, saude publica, etc.)
+- **Niveis**: +1 (Pos-Graduacao)
+- **Doencas**: 16 padroes (diabetes, hipertensao, IAM, AVC, pneumonia, etc.)
+- **Medicamentos**: Regex por sufixos farmacologicos (-ol, -ina, -mab, -pril, etc.)
+- **Anatomia**: 30+ areas (coracão, pulmao, sistemas corporais, etc.)
+- **Preferencias de estudo**: questoes, flashcards, resumos
+- **Confidence scoring**: cada entidade tem score de confianca
+
+### 6. FEAT: MEMORIA PERSISTENTE INTEGRADA
+
+**Problema**: Sistema de memoria existia mas nao estava integrado na API /chat.
+
+**Solucao**:
+- Importado `processMessageForMemory` e `getContextForPrompt` no route.ts
+- Processamento em background (nao bloqueia resposta)
+- Melhorada extracao de topicos com 4 estrategias de regex
+- Retorno agora inclui contadores de entidades/topicos salvos
 
 ---
 
 ## ARQUIVOS CRIADOS/MODIFICADOS
 
-### Novos arquivos:
-```
-lib/ai/multiAgentIntegration.ts   # Detector e executor de multi-agentes
-lib/ai/persistentMemory.ts        # Sistema de memoria persistente
-lib/supabase-admin.ts             # Helper centralizado para Supabase
-```
-
 ### Arquivos modificados:
 ```
-app/api/medicina/ia/chat/route.ts              # Integracao multi-agentes
-app/api/admin/separar-disciplinas/route.ts     # Fix lazy init
-app/api/estudos/ciclos/route.ts                # Fix lazy init
+components/ia/ArtifactRenderer.tsx        # CollapsibleDetails + splitDetailsBlocks
+components/ia/StreamingMessage.tsx         # renderContentWithDetails + CollapsibleBlock
+app/api/medicina/ia/chat/route.ts         # extrairTituloInteligente + memoria + agent_status
+app/medicina/(dashboard)/dashboard/ia/page.tsx  # handler agent_status (2 locais)
+lib/ai/multiAgentIntegration.ts           # tipos visuais + melhor extracao tema
+lib/ai/persistentMemory.ts               # detectEntities expandido + confidence
 ```
 
 ---
@@ -95,7 +89,7 @@ app/api/estudos/ciclos/route.ts                # Fix lazy init
 
 | Hash | Descricao |
 |------|-----------|
-| `1229d13` | feat: integrar multi-agentes na API /chat principal |
+| `9bb96b4` | feat: corrigir renderizacao multi-agentes, titulo inteligente e memoria persistente |
 
 ---
 
@@ -103,28 +97,7 @@ app/api/estudos/ciclos/route.ts                # Fix lazy init
 
 | PR | Titulo | Status |
 |----|--------|--------|
-| [#55](https://github.com/brunodivinoo/projeto-final/pull/55) | feat: integrar multi-agentes na API /chat principal | **MERGED** |
-
----
-
-## COMO FUNCIONA AGORA
-
-### Para o usuario:
-1. Usuario envia mensagem normalmente no chat
-2. Sistema detecta automaticamente se precisa de multi-agentes
-3. Se sim: mostra notificacao "🤖 Ativando Multi-Agentes" e executa crews
-4. Se nao: usa fluxo normal do Claude
-
-### Exemplos que ativam multi-agentes:
-- "Crie um plano de estudos para residencia de cardiologia"
-- "Monte um cronograma de 30 dias para o REVALIDA"
-- "Gere 15 questoes e 20 flashcards sobre insuficiencia cardiaca"
-- "Material completo sobre diabetes mellitus"
-
-### Exemplos que usam fluxo normal:
-- "O que e insuficiencia cardiaca?"
-- "Gere 5 questoes sobre pneumonia"
-- "Explique o ciclo de Krebs"
+| [#78](https://github.com/brunodivinoo/projeto-final/pull/78) | feat: corrigir multi-agentes, titulo inteligente e memoria persistente | **MERGED** |
 
 ---
 
@@ -133,35 +106,53 @@ app/api/estudos/ciclos/route.ts                # Fix lazy init
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| Multi-Agentes na API /chat | **INTEGRADO** |
-| StudyPlanCrew | **ATIVO** |
-| ContentCrew | **ATIVO** |
-| Memory Persistente | **IMPLEMENTADO** (tabela pendente) |
-| LangChain Orchestrator | Disponivel em `/api/medicina/ia/langchain` |
+| Multi-Agentes na API /chat | **INTEGRADO + CORRIGIDO** |
+| Tipos visuais (diagrama/fluxograma/organograma) | **ATIVO** |
+| Renderizacao details/summary | **CORRIGIDO** |
+| Titulo inteligente | **ATIVO** |
+| Feedback visual agentes | **ATIVO** |
+| Memory Persistente | **INTEGRADO** |
+| Extracao de Entidades | **EXPANDIDO (50+ padroes)** |
+| Tabela user_memory_med | **EXISTE** no Supabase |
 | Fallback Multi-Provider | **ATIVO** |
+| Smart Router | **ATIVO** |
 
 ---
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Criar tabela user_memory_med no Supabase** - SQL disponivel em `lib/ai/persistentMemory.ts`
-2. **Testar em producao** - Verificar funcionamento dos multi-agentes no chat real
-3. **Adicionar feedback visual** - Mostrar progresso dos agentes no frontend
-4. **Dashboard de agentes** - Visualizar execucao dos multi-agentes
-5. **Melhorar extracao de entidades** - Detectar mais informacoes do usuario
+1. **Dashboard de agentes** - Pagina admin para visualizar execucoes dos multi-agentes
+2. **Usar contexto da memoria no prompt** - Chamar `getContextForPrompt()` antes de enviar para IA
+3. **Gerar diagramas com IA real** - Usar Claude/Gemini para gerar Mermaid code especifico do tema
+4. **Melhorar qualidade visual** - Adicionar temas/cores nos diagramas gerados
+5. **Testes E2E** - Testar fluxo completo de multi-agentes em producao
 
 ---
 
 ## SESSOES ANTERIORES
 
-### Sessao LangChain (03/02/2026 - parte 1)
-- Implementado LangChain Orchestrator completo
-- Chains: chat, questoes, flashcards, resumo
-- Multi-Agentes: researcher, planner, creator, reviewer
-- Crews: study-plan, content
-- PR #51 merged
+### Sessao Multi-Agentes Fix (06/02/2026)
+- Fix renderizacao details/summary
+- Titulo inteligente
+- Tipos visuais nos multi-agentes
+- Feedback visual
+- Extracao de entidades expandida
+- Memoria persistente integrada
+- PR #78 merged
 
-### Sessao Fallback (03/02/2026 - parte 0)
+### Sessao Prompts + Auth (03-05/02/2026)
+- PRs #55-#77 merged
+- Melhorias em prompts, imagens, login, UI, Smart Router
+- Suporte a colar imagens + editor
+- Otimizacao de custos com Sonnet 4.5
+
+### Sessao Integracao Multi-Agentes (03/02/2026)
+- LangChain Orchestrator completo
+- Multi-Agentes (StudyPlanCrew, ContentCrew)
+- Sistema de memoria persistente (schema)
+- PR #55 merged
+
+### Sessao Fallback (03/02/2026)
 - Sistema fallback multi-provider (Claude -> Gemini -> OpenAI)
 - PR #49 merged
 
@@ -172,4 +163,4 @@ app/api/estudos/ciclos/route.ts                # Fix lazy init
 - Producao: https://projeto-final-zeta-navy.vercel.app
 - Chat IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
 - GitHub: https://github.com/brunodivinoo/projeto-final
-- PR #55: https://github.com/brunodivinoo/projeto-final/pull/55
+- PR #78: https://github.com/brunodivinoo/projeto-final/pull/78
