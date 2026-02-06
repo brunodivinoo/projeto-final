@@ -1,121 +1,85 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 06/02/2026 - Streaming + Mermaid Cleanup + Otimizacoes
+## Atualizado em: 06/02/2026 - UnifiedStudyMaterial Artefatos + Fix Imagens + UX
 
 ---
 
 ## O QUE FOI FEITO NESTA SESSAO (06/02/2026)
 
-### 1. FIX: STREAMING MULTI-AGENTES (EFEITO "ESCREVENDO")
+### 1. FEAT: UnifiedStudyMaterial APENAS no Painel de Artefatos
 
-**Problema**: Respostas dos multi-agentes apareciam de uma vez só, sem efeito de streaming gradual.
-
-**Causa raiz**: `streamMultiAgentResponse` esperava toda a geração terminar e enviava chunks de 100 chars com 10ms delay. O chunking cortava code blocks (artefatos) no meio, quebrando a renderização.
+**Problema**: O componente UnifiedStudyMaterial (com abas flashcards/questões/diagrama/fluxograma/organograma) renderizava INLINE no chat, duplicando conteúdo.
 
 **Solução**:
-- Nova função `splitTextAndArtifacts()` separa texto de code blocks antes do chunking
-- Artefatos (```mermaid, ```flashcards, etc.) são enviados INTEIROS (nunca fragmentados)
-- Texto é enviado em chunks de 30 chars com 15ms delay (efeito gradual natural)
-- Delay maior (50ms) entre artefatos para dar tempo ao frontend processar
+- Chat agora mostra apenas **deck cards compactos** (clicáveis)
+- Componente completo renderiza SOMENTE no painel lateral de artefatos (sidebar)
+- Adicionado `case 'unified_study'` no ArtifactsSidebar.tsx com dynamic import
+- Adicionado `artifactTabHint` no zustand store para abrir aba correta ao clicar deck
 
-### 2. FIX: CÓDIGO MERMAID CRU NO CHAT
+### 2. FEAT: Cores Variadas no UnifiedStudyMaterial
 
-**Problema**: Código Mermaid bruto (nós e setas como `A --> B["texto"]`) aparecia no final das respostas.
-
-**Causa raiz**: `cleanRenderedTextForChat()` só detectava código Mermaid com header `graph TD`/`flowchart TD`. Quando a IA gerava sem header, o código passava pelo filtro.
+**Problema**: Componente sempre usava cor rosa/pink.
 
 **Solução**:
-- Regex aprimorada para detectar código Mermaid SEM header (3+ linhas com `-->`)
-- Limpeza de linhas individuais com padrão `A --> B["texto"]`
-- Melhor matching de `classDef` e `class` lines
-- `generateMermaidWithAI()` agora detecta e adiciona header `graph TD` quando IA omite
+- 5 temas de cores: rose, violet, sky, emerald, amber
+- Seleção baseada em hash do título (determinística - mesmo tema = mesma cor)
+- Aplicado tanto nos deck cards do chat quanto no componente completo
 
-### 3. FEAT: OTIMIZAÇÕES DE VELOCIDADE (sessão anterior)
+### 3. FIX: Troca de Questões no Sidebar
 
-- Pipeline paralelo: análises independentes executam em paralelo
-- `Promise.allSettled` para memória + HF agent context
-- Tom natural adicionado aos system prompts
-- Correção de acentuação nos crews
+**Problema**: Ao clicar em Q1, Q2 etc nos deck cards, a questão no sidebar não mudava.
 
----
+**Causa raiz**: `openArtifactInSidebar('question')` era chamado sem título/conteúdo, sempre matched a primeira questão.
 
-### SESSÃO ANTERIOR: MEMORIA PERSISTENTE NO PROMPT
+**Solução**: Agora passa `openArtifactInSidebar('question', título, conteúdo)` para match correto.
 
-**Problema**: `getContextForPrompt()` estava importado mas nao era chamado. A IA nao usava o historico do usuario para personalizar respostas.
+### 4. FIX: Imagens Aparecendo como Texto/URL Cru
 
-**Solucao**: Integrado `getContextForPrompt(user_id)` em 2 caminhos:
-- **streamClaude** (principal) - antes do system prompt, busca entidades, topicos e resumos
-- **streamComSmartRouter** (fallback) - idem para quando usa OpenAI/Gemini
+**Problema**: Imagens médicas apareciam como URLs de texto ao invés de imagens renderizadas.
 
-**Resultado**: A IA agora sabe o que o usuario estudou, suas preferencias e entidades mencionadas anteriormente.
+**Causa raiz dupla**:
+1. `cleanRenderedTextForChat()` tinha regex que removia TODAS as imagens markdown `![...](...)`
+2. URLs de serviços como Kenhub contêm parênteses (ex: `:watermark(...)`) que quebram sintaxe markdown
 
-### 2. FEAT: DIAGRAMAS COM IA REAL (Gemini Flash)
+**Solução**:
+- Removidas as regex que stripavam imagens markdown no ArtifactRenderer.tsx
+- Adicionada `sanitizeUrlForMarkdown()` que codifica `(` → `%28` e `)` → `%29`
+- Aplicado em: serperImageService.ts, medical-images/service.ts, chat/route.ts
 
-**Problema**: Diagramas Mermaid eram templates hardcoded genericos ("Grupo 1", "Subgrupo 1.1", "Definicao e Conceitos").
+### 5. FIX: Formato de Resposta Verboso
 
-**Solucao**: Criada funcao `generateMermaidWithAI()` que:
-- Usa Gemini Flash (rapido e economico) para gerar Mermaid especifico do tema
-- Prompt com regras medicas rigorosas (terminologia correta, 10-20 nos)
-- 3 tipos: diagrama (mapa conceitual), fluxograma (clinico), organograma (hierarquia)
-- Geracao em paralelo (Promise.all) para multiplos visuais
-- Fallback robusto se a IA falhar (templates melhorados com conteudo medico)
+**Problema**: Respostas com seções duplicadas, referências ABNT extensas, e formato poluído.
 
-### 3. FEAT: QUALIDADE VISUAL DOS DIAGRAMAS
+**Solução**:
+- Removidos `traditionalBlocks` do multiAgentIntegration.ts (eram duplicados do unifiedBlock)
+- Simplificado formato de imagens: apenas `![título](url)` + fonte curta
+- Removidas referências ABNT verbosas das respostas
 
-**Problema**: Diagramas tinham apenas 2 classes de estilo basicas.
+### 6. FIX: Mermaid Rendering no Sidebar
 
-**Solucao**: 7 classDefs profissionais:
-- `root` (roxo) - no raiz principal
-- `highlight` (verde) - nos importantes
-- `decision` (amarelo/marrom) - nos de decisao
-- `danger` (vermelho) - alertas
-- `success` (verde) - resultados positivos
-- `info` (azul) - informacoes
-- `default` (azul escuro) - todos os outros
+**Problema**: Diagramas/fluxogramas mostravam "Erro ao renderizar diagrama" no sidebar.
 
-### 4. FIX: SIDEBAR NAO TROCA DECK
+**Solução**: Fallback melhorado no catch block:
+- Limpeza de fences (```mermaid ... ```)
+- Busca de header válido (graph/flowchart)
+- Force `flowchart TD\n` como último recurso se detectar setas `-->`
 
-**Problema**: Com a sidebar aberta mostrando Q1, clicar em Q2 ou flashcard nao mudava o conteudo.
+### 7. FEAT: Imagens Clicáveis com Galeria
 
-**Causa raiz**: `selectArtifact()` era chamado mas o `useEffect` no ArtifactsSidebar nao re-renderizava porque o `selectedArtifactId` ja estava definido (ou o valor era o mesmo).
-
-**Solucao**:
-- `openArtifactInSidebar` agora SEMPRE faz deselect+reselect via `requestAnimationFrame`
-- Novo `useEffect` que sincroniza quando sidebar abre com selecao pendente
-- `useRef` para rastrear mudancas de selecao
-
-### 5. FIX: TITULOS GARBLED NOS ARTEFATOS
-
-**Problema**: Titulos mostravam "cards, oes, a e e o sistema reprodutor feminino" em vez do tema real.
-
-**Causa raiz**: Regex `\d+\s*(quest|...)` removia "2 quest" de "2 questoes", deixando "oes". Alem disso, "cards" nao era removido pela regex de tipos.
-
-**Solucao**: Nova extracao de tema com 3 estrategias:
-1. **Prioridade**: buscar topico apos "sobre" (mais confiavel)
-2. **Fallback**: buscar topico apos "de/do/da" no final da frase
-3. **Ultimo recurso**: remover keywords com regex corrigida + limpar residuos
-
-### 6. FIX: DECKS NAO ABRINDO NA SIDEBAR
-
-**Problema**: Alguns cards no chat nao abriam na sidebar ao clicar.
-
-**Causa raiz**: Matching de artefatos era limitado (so por tipo+messageId). Artefatos de multi-agentes podem nao ter messageId, e o matching por titulo exato falhava.
-
-**Solucao**: 5 niveis de fallback no matching:
-1. Tipo + messageId + conteudo (mais preciso)
-2. Tipo + messageId + titulo exato
-3. Tipo + messageId + titulo parcial (contains)
-4. Tipo + messageId (qualquer)
-5. Tipo + titulo (sem messageId - para multi-agentes)
+**Solução**: No UnifiedStudyMaterial, imagens agora abrem em ImageModal (lightbox) ao clicar.
 
 ---
 
 ## ARQUIVOS MODIFICADOS
 
 ```
-app/api/medicina/ia/chat/route.ts         # getContextForPrompt em 2 caminhos
-lib/ai/multiAgentIntegration.ts           # generateMermaidWithAI + fix extracao tema
-components/ia/ArtifactRenderer.tsx         # fix openArtifactInSidebar (5 fallbacks)
-components/ia/ArtifactsSidebar.tsx         # fix useEffect sincronizacao + useRef
+stores/artifactsStore.ts                  # artifactTabHint state + action
+components/ia/ArtifactRenderer.tsx        # deck cards no chat + fix imagens + fix question switch
+components/ia/ArtifactsSidebar.tsx        # case unified_study + fix mermaid fallback
+components/ia/UnifiedStudyMaterial.tsx     # 5 color themes + initialTab + galeria imagens
+lib/ai/multiAgentIntegration.ts           # removido traditionalBlocks duplicados
+lib/services/serperImageService.ts        # sanitizeUrlForMarkdown + formato simples
+lib/medical-images/service.ts             # sanitizeUrlForMarkdown + formato simples
+app/api/medicina/ia/chat/route.ts         # sanitizeUrlForMarkdown no formatToolResponse
 ```
 
 ---
@@ -124,16 +88,15 @@ components/ia/ArtifactsSidebar.tsx         # fix useEffect sincronizacao + useRe
 
 | Hash | Descricao |
 |------|-----------|
-| `dad3694` | fix: streaming multi-agentes e limpeza de código Mermaid cru no chat |
-| `f88b7b4` | feat: otimizar velocidade IA, corrigir acentuação e tom natural |
+| `b998f8a` | feat: mover UnifiedStudyMaterial para artefatos + fix imagens e UX |
 
 ---
 
-## PR PENDENTE
+## PR / BRANCH
 
 | Branch | Titulo | Status |
 |--------|--------|--------|
-| `claude/continue-prepara-med-NYHog` | fix: streaming multi-agentes e limpeza de Mermaid cru | **PUSHED** (criar PR no GitHub) |
+| `claude/continue-prepara-med-1qbF3` | feat: mover UnifiedStudyMaterial para artefatos + fix imagens e UX | **PUSHED + PR #88 MERGED** |
 
 ---
 
@@ -142,14 +105,16 @@ components/ia/ArtifactsSidebar.tsx         # fix useEffect sincronizacao + useRe
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
+| UnifiedStudyMaterial no Sidebar | **ATIVO** (apenas artefatos) |
+| Deck Cards Compactos no Chat | **ATIVO** (5 cores) |
+| Imagens Renderizadas no Chat | **CORRIGIDO** (URL sanitization) |
+| Galeria de Imagens | **ATIVO** (ImageModal clicável) |
+| Troca de Questões no Sidebar | **CORRIGIDO** |
+| Mermaid Fallback no Sidebar | **CORRIGIDO** |
+| Formato de Resposta Limpo | **CORRIGIDO** (sem duplicação/ABNT) |
 | Memoria Persistente no Prompt | **ATIVO** (getContextForPrompt) |
 | Diagramas com IA Real | **ATIVO** (Gemini Flash) |
-| Qualidade Visual Diagramas | **7 classDefs profissionais** |
-| Sidebar Troca de Deck | **CORRIGIDO** |
-| Titulos de Artefatos | **CORRIGIDO** (3 estrategias) |
-| Abertura de Decks | **CORRIGIDO** (5 fallbacks) |
 | Multi-Agentes na API /chat | **INTEGRADO + CORRIGIDO** |
-| Tipos visuais (diagrama/fluxograma/organograma) | **ATIVO** |
 | Gabarito Comentado | **ATIVO** |
 | TTS Kokoro | **ATIVO** |
 | Sugestoes Contextuais | **ATIVO** |
@@ -160,15 +125,30 @@ components/ia/ArtifactsSidebar.tsx         # fix useEffect sincronizacao + useRe
 
 ## PROXIMOS PASSOS SUGERIDOS
 
-1. **Dashboard de agentes** - Pagina admin para visualizar execucoes dos multi-agentes
-2. **Testes E2E** - Testar fluxo completo de multi-agentes em producao
-3. **Melhorar persistencia de memoria** - Usar memoria para adaptar nivel de dificuldade
+1. **Testar em produção** - Verificar se todas as mudanças de UX funcionam no deploy
+2. **Dashboard de agentes** - Pagina admin para visualizar execucoes dos multi-agentes
+3. **Testes E2E** - Testar fluxo completo de multi-agentes em producao
 4. **Cache de diagramas** - Cachear diagramas gerados para evitar re-geracao
 5. **Modo offline** - Service worker para funcionar sem internet
 
 ---
 
 ## SESSOES ANTERIORES
+
+### Sessao UnifiedStudyMaterial + Imagens + UX (06/02/2026)
+- UnifiedStudyMaterial apenas no sidebar (artefatos)
+- Deck cards compactos no chat com 5 temas de cores
+- Fix imagens como texto (URL sanitization + regex)
+- Fix troca de questões
+- Fix mermaid rendering sidebar
+- Formato resposta limpo (sem duplicação)
+- Galeria de imagens clicável
+- PR #88 merged
+
+### Sessao Material Unificado (06/02/2026)
+- Material de estudo unificado com abas (estilo Claude AI)
+- Imagens Serper integradas
+- PR #87 merged
 
 ### Sessao Streaming + Mermaid Cleanup (06/02/2026)
 - Fix streaming multi-agentes (efeito "escrevendo")
@@ -228,4 +208,4 @@ components/ia/ArtifactsSidebar.tsx         # fix useEffect sincronizacao + useRe
 - Producao: https://projeto-final-zeta-navy.vercel.app
 - Chat IA: https://projeto-final-zeta-navy.vercel.app/medicina/dashboard/ia
 - GitHub: https://github.com/brunodivinoo/projeto-final
-- PR #83: https://github.com/brunodivinoo/projeto-final/pull/83
+- PR #88: https://github.com/brunodivinoo/projeto-final/pull/88
