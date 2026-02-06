@@ -57,11 +57,11 @@ export class StudyPlanCrew {
   }
 
   /**
-   * Executa a criacao completa do plano de estudos
+   * Executa a criação completa do plano de estudos
    */
   async execute(request: StudyPlanRequest): Promise<StudyPlanResult> {
     this.executionLog = []
-    this.log('Iniciando criacao do plano de estudos...')
+    this.log('Iniciando criação do plano de estudos...')
 
     const {
       objetivo,
@@ -80,7 +80,7 @@ export class StudyPlanCrew {
     let pesquisaContexto = ''
 
     if (provaAlvo) {
-      this.log(`[Pesquisador] Buscando informacoes sobre ${provaAlvo}...`)
+      this.log(`[Pesquisador] Buscando informações sobre ${provaAlvo}...`)
 
       try {
         const pesquisa = await this.researcher.research({
@@ -95,7 +95,7 @@ ${pesquisa.summary}
 
 Temas mais frequentes: ${pesquisa.findings.slice(0, 5).join(', ')}
 `
-        this.log(`[Pesquisador] Encontradas ${pesquisa.findings.length} informacoes relevantes`)
+        this.log(`[Pesquisador] Encontradas ${pesquisa.findings.length} informações relevantes`)
 
       } catch (error) {
         this.log(`[Pesquisador] Erro na pesquisa: ${error}`)
