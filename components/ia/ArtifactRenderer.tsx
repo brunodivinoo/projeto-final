@@ -2477,7 +2477,7 @@ function ArtifactRendererComponent({
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { parts, artifacts, hasIncompleteQuestion } = useMemo(() => parseArtifacts(debouncedContent), [debouncedContent])
-  const { addArtifact, artifacts: storeArtifacts, updateQuestionAnswer, setSidebarOpen, selectArtifact, setMobileDrawerOpen } = useArtifactsStore()
+  const { addArtifact, artifacts: storeArtifacts, updateQuestionAnswer, setSidebarOpen, selectArtifact, setMobileDrawerOpen, setFullscreenArtifact } = useArtifactsStore()
   const addedArtifactsRef = useRef<Set<string>>(new Set())
 
   // Cache de respostas anteriores para este componente
@@ -2666,58 +2666,74 @@ function ArtifactRendererComponent({
     // Buscar artefatos diretamente da store para evitar problemas de closure
     const currentArtifacts = useArtifactsStore.getState().artifacts
 
-    // Encontrar o artefato na store - match por conteúdo tem prioridade (mais preciso)
+    // Mapeamento de tipos: quando adicionamos à store, 'mermaid' vira 'flowchart'
+    // Precisamos buscar por TODOS os tipos possíveis que o artefato pode ter sido armazenado
+    const typeVariants: string[] = [artifactType]
+    if (artifactType === 'mermaid') {
+      typeVariants.push('flowchart', 'modern_flowchart', 'tree_diagram', 'diagram')
+    } else if (artifactType === 'flowchart') {
+      typeVariants.push('mermaid', 'modern_flowchart')
+    }
+
+    const matchesType = (a: { type: string }) => typeVariants.includes(a.type)
+
+    // 1) Match por conteúdo + messageId (mais preciso)
     let matchingArtifact = artifactContent
       ? currentArtifacts.find(
-          a => a.type === artifactType &&
+          a => matchesType(a) &&
                a.messageId === messageId &&
                a.content === artifactContent
         )
       : null
 
-    // Fallback: match por título exato
+    // 2) Match por conteúdo sem tipo (conteúdo é único)
+    if (!matchingArtifact && artifactContent) {
+      matchingArtifact = currentArtifacts.find(
+        a => a.messageId === messageId &&
+             a.content === artifactContent
+      ) || null
+    }
+
+    // 3) Match por título exato + tipo + messageId
     if (!matchingArtifact && artifactTitle) {
       matchingArtifact = currentArtifacts.find(
-        a => a.type === artifactType &&
+        a => matchesType(a) &&
              a.messageId === messageId &&
              a.title === artifactTitle
-      )
+      ) || null
     }
 
-    // Fallback: match por título parcial (contém)
+    // 4) Match por título parcial + messageId
     if (!matchingArtifact && artifactTitle) {
       matchingArtifact = currentArtifacts.find(
-        a => a.type === artifactType &&
-             a.messageId === messageId &&
-             (a.title.includes(artifactTitle) || artifactTitle.includes(a.title))
-      )
+        a => a.messageId === messageId &&
+             (a.title === artifactTitle ||
+              a.title.includes(artifactTitle) ||
+              artifactTitle.includes(a.title))
+      ) || null
     }
 
-    // Fallback final: match por tipo e messageId
+    // 5) Match por tipo + messageId (primeiro encontrado)
     if (!matchingArtifact) {
       matchingArtifact = currentArtifacts.find(
-        a => a.type === artifactType &&
+        a => matchesType(a) &&
              a.messageId === messageId
-      )
+      ) || null
     }
 
-    // Fallback sem messageId: match por tipo e título (artefatos de multi-agentes podem não ter messageId)
+    // 6) Match sem messageId por título (multi-agentes)
     if (!matchingArtifact && artifactTitle) {
       matchingArtifact = currentArtifacts.find(
-        a => a.type === artifactType &&
+        a => matchesType(a) &&
              a.title === artifactTitle
-      )
+      ) || null
     }
 
     if (matchingArtifact) {
-      // SEMPRE forçar re-seleção via deselect+reselect para garantir que a sidebar atualize
-      // Isso resolve o bug onde clicar em outro deck não muda a sidebar
-      const targetId = matchingArtifact.id
-      selectArtifact(null as unknown as string)
-      // Usar requestAnimationFrame para garantir que o estado null seja processado antes do novo
-      requestAnimationFrame(() => {
-        selectArtifact(targetId)
-      })
+      // Usar setFullscreenArtifact - mecanismo nativo e confiável para forçar
+      // a sidebar a abrir no artefato correto, mesmo se já estava aberta em outro
+      setFullscreenArtifact(matchingArtifact.id)
+      selectArtifact(matchingArtifact.id)
     }
 
     // Abrir sidebar (desktop) ou drawer (mobile)
@@ -2727,7 +2743,7 @@ function ArtifactRendererComponent({
     } else {
       setSidebarOpen(true)
     }
-  }, [messageId, selectArtifact, setSidebarOpen, setMobileDrawerOpen])
+  }, [messageId, selectArtifact, setSidebarOpen, setMobileDrawerOpen, setFullscreenArtifact])
 
   return (
     <div className="artifact-renderer lg:text-[0.9em] xl:text-[0.85em]">
