@@ -54,6 +54,8 @@ import {
   MobileChatInput
 } from '@/components/mobile'
 import { MobileArtifactsScreen } from '@/components/mobile/MobileArtifactsScreen'
+import MessageActions from '@/components/chat/MessageActions'
+import SuggestionChips from '@/components/chat/SuggestionChips'
 
 // Hook para obter o estado da sidebar de artefatos
 // Considera artefatos filtrados pelo modo atual e conversa
@@ -151,6 +153,9 @@ interface MemoizedMessageProps {
   trialAtivo: boolean
   onQuestaoResponder?: (questao: QuestaoData, letra: string, acertou: boolean, tempo: number) => void
   questoesRespondidas?: Set<number>
+  isLastIAMessage?: boolean
+  onRetry?: () => void
+  onSuggestionClick?: (suggestion: string) => void
 }
 
 const MemoizedMessage = memo(function MemoizedMessage({
@@ -164,7 +169,10 @@ const MemoizedMessage = memo(function MemoizedMessage({
   plano,
   trialAtivo,
   onQuestaoResponder,
-  questoesRespondidas = new Set()
+  questoesRespondidas = new Set(),
+  isLastIAMessage = false,
+  onRetry,
+  onSuggestionClick
 }: MemoizedMessageProps) {
   // Verificar se a mensagem contém questões
   const temQuestao = msg.tipo === 'ia' && chatMode === 'questoes' && msg.conteudo?.includes('```questao')
@@ -266,37 +274,39 @@ const MemoizedMessage = memo(function MemoizedMessage({
           )}
         </div>
 
-        {msg.tipo === 'ia' && msg.conteudo && (
-          <div className="flex items-center gap-2 mt-1 ml-1">
-            <button
-              onClick={() => copiarResposta(msg.id, msg.conteudo)}
-              className="text-slate-400 hover:text-slate-600 text-[10px] flex items-center gap-1 transition-colors"
-            >
-              {copiado === msg.id ? <CheckCircle2 className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-              {copiado === msg.id ? 'Copiado!' : 'Copiar'}
-            </button>
-            {msg.tokens && (
-              <span className="text-slate-300 text-[10px]">
-                {msg.tokens.toLocaleString()} tokens
-              </span>
+        {msg.tipo === 'ia' && msg.conteudo && !streaming && (
+          <>
+            <MessageActions
+              messageId={msg.id}
+              conteudo={msg.conteudo}
+              onRetry={onRetry}
+              tokens={msg.tokens}
+            />
+            {/* Sugestões contextuais - só na última mensagem da IA */}
+            {isLastIAMessage && onSuggestionClick && (
+              <SuggestionChips
+                lastMessage={msg.conteudo}
+                chatMode={chatMode}
+                onSuggestionClick={onSuggestionClick}
+              />
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
   )
 }, (prevProps, nextProps) => {
   // Custom comparison: só re-renderiza se a mensagem mudou
-  // Mensagens do usuário nunca mudam depois de enviadas
   if (prevProps.msg.tipo === 'usuario') {
     return prevProps.msg.id === nextProps.msg.id &&
            prevProps.copiado === nextProps.copiado
   }
-  // Mensagens da IA: comparar conteúdo também
+  // Mensagens da IA: comparar conteúdo e flags
   return prevProps.msg.id === nextProps.msg.id &&
          prevProps.msg.conteudo === nextProps.msg.conteudo &&
          prevProps.copiado === nextProps.copiado &&
-         prevProps.streaming === nextProps.streaming
+         prevProps.streaming === nextProps.streaming &&
+         prevProps.isLastIAMessage === nextProps.isLastIAMessage
 })
 
 export default function IAPage() {
@@ -1980,22 +1990,49 @@ export default function IAPage() {
               ) : null}
             </div>
           ) : (
-            mensagens.map((msg) => (
-              <MemoizedMessage
-                key={msg.id}
-                msg={msg}
-                streaming={streaming}
-                copiado={copiado}
-                copiarResposta={copiarResposta}
-                user={user}
-                conversaAtual={conversaAtual}
-                chatMode={chatMode as ChatModeType}
-                plano={(plano || 'gratuito') as PlanoUsuario}
-                trialAtivo={trialStatus.ativo}
-                onQuestaoResponder={handleQuestaoResponder}
-                questoesRespondidas={questoesRespondidas}
-              />
-            ))
+            mensagens.map((msg, idx) => {
+              // Encontrar a última mensagem de IA (não-vazia e não-streaming)
+              const lastIAIdx = mensagens.reduce((last, m, i) =>
+                m.tipo === 'ia' && m.conteudo ? i : last, -1)
+
+              return (
+                <MemoizedMessage
+                  key={msg.id}
+                  msg={msg}
+                  streaming={streaming}
+                  copiado={copiado}
+                  copiarResposta={copiarResposta}
+                  user={user}
+                  conversaAtual={conversaAtual}
+                  chatMode={chatMode as ChatModeType}
+                  plano={(plano || 'gratuito') as PlanoUsuario}
+                  trialAtivo={trialStatus.ativo}
+                  onQuestaoResponder={handleQuestaoResponder}
+                  questoesRespondidas={questoesRespondidas}
+                  isLastIAMessage={idx === lastIAIdx && !streaming}
+                  onRetry={msg.tipo === 'ia' ? () => {
+                    // Encontrar a mensagem do usuário anterior
+                    const userMsgIdx = mensagens.slice(0, idx).reverse().findIndex(m => m.tipo === 'usuario')
+                    if (userMsgIdx >= 0) {
+                      const userMsg = mensagens[idx - 1 - userMsgIdx]
+                      if (userMsg?.conteudo) {
+                        setInput(userMsg.conteudo)
+                        // Remover última resposta da IA
+                        setMensagens(prev => prev.filter(m => m.id !== msg.id))
+                      }
+                    }
+                  } : undefined}
+                  onSuggestionClick={(suggestion: string) => {
+                    setInput(suggestion)
+                    // Auto-enviar após um tick
+                    setTimeout(() => {
+                      const sendBtn = document.querySelector('[data-enviar-btn]') as HTMLButtonElement
+                      sendBtn?.click()
+                    }, 100)
+                  }}
+                />
+              )
+            })
           )}
 
           {loading && !mensagens.find(m => m.tipo === 'ia' && m.conteudo === '') && (
