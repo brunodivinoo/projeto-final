@@ -803,76 +803,91 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
       )
 
     case 'modern_flowchart':
-      // Renderizar fluxograma moderno
+      // Renderizar fluxograma como Mermaid (padrão visual unificado)
       try {
         const flowchartData = JSON.parse(artifact.content)
-        if (!flowchartData.nodes || !Array.isArray(flowchartData.nodes)) {
+        // Converter JSON nodes/edges para código Mermaid
+        let mermaidFlowCode = 'flowchart TD\n'
+        if (flowchartData.nodes && Array.isArray(flowchartData.nodes)) {
+          flowchartData.nodes.forEach((node: { id?: string; label?: string; name?: string; type?: string }, idx: number) => {
+            const nodeId = node.id || `n${idx}`
+            const label = (node.label || node.name || `Nó ${idx + 1}`).replace(/"/g, "'")
+            if (node.type === 'start' || idx === 0) {
+              mermaidFlowCode += `    ${nodeId}(["${label}"])\n`
+            } else if (node.type === 'end' || idx === flowchartData.nodes.length - 1) {
+              mermaidFlowCode += `    ${nodeId}(("${label}"))\n`
+            } else if (node.type === 'decision') {
+              mermaidFlowCode += `    ${nodeId}{"${label}"}\n`
+            } else {
+              mermaidFlowCode += `    ${nodeId}["${label}"]\n`
+            }
+          })
+          if (flowchartData.edges && Array.isArray(flowchartData.edges)) {
+            flowchartData.edges.forEach((edge: { from?: string; source?: string; to?: string; target?: string; label?: string }) => {
+              const from = edge.from || edge.source || ''
+              const to = edge.to || edge.target || ''
+              if (from && to) {
+                const edgeLabel = edge.label ? `|"${edge.label.replace(/"/g, "'")}"| ` : ''
+                mermaidFlowCode += `    ${from} -->${edgeLabel}${to}\n`
+              }
+            })
+          } else {
+            // Sem edges definidas, conectar sequencialmente
+            for (let i = 0; i < flowchartData.nodes.length - 1; i++) {
+              const fromId = flowchartData.nodes[i].id || `n${i}`
+              const toId = flowchartData.nodes[i + 1].id || `n${i + 1}`
+              mermaidFlowCode += `    ${fromId} --> ${toId}\n`
+            }
+          }
+        } else {
           throw new Error('Estrutura inválida')
         }
         return (
           <div className={containerClass}>
-            <ModernFlowchart
-              title={flowchartData.title || artifact.title}
-              nodes={flowchartData.nodes}
-              edges={flowchartData.edges || []}
-              description={flowchartData.description}
-              showLegend={flowchartData.showLegend !== false}
-            />
+            <MermaidDiagram chart={mermaidFlowCode} title={flowchartData.title || artifact.title} />
           </div>
         )
       } catch {
+        // Fallback: tentar renderizar content direto como Mermaid
         return (
-          <div className={`p-4 ${containerClass}`}>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-xl">📊</span>
-              <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
-            </div>
-            <div className="bg-gradient-to-b from-blue-500/10 to-emerald-500/10 rounded-lg p-4 border border-slate-200">
-              <p className="text-slate-600 text-sm text-center">
-                Fluxograma disponível
-              </p>
-              <p className="text-slate-500 text-xs text-center mt-2">
-                Clique em &quot;Tela cheia&quot; para visualizar
-              </p>
-            </div>
+          <div className={containerClass}>
+            <MermaidDiagram chart={artifact.content} title={artifact.title} />
           </div>
         )
       }
 
     case 'tree_diagram':
-      // Renderizar organograma em árvore
+      // Renderizar organograma como Mermaid (padrão visual unificado)
       try {
         const treeData = JSON.parse(artifact.content)
         const rootData = treeData.data || treeData.root || treeData.tree || treeData
-        if (!rootData.name && !rootData.label) {
-          throw new Error('Estrutura inválida')
+        // Converter árvore JSON para código Mermaid
+        let mermaidTreeCode = 'flowchart TD\n'
+        let nodeCounter = 0
+        const addTreeNode = (node: { name?: string; label?: string; children?: unknown[] }, parentId?: string) => {
+          const nodeId = `t${nodeCounter++}`
+          const label = (node.name || node.label || 'Item').replace(/"/g, "'")
+          if (!parentId) {
+            mermaidTreeCode += `    ${nodeId}[["${label}"]]\n`
+          } else {
+            mermaidTreeCode += `    ${nodeId}["${label}"]\n`
+            mermaidTreeCode += `    ${parentId} --> ${nodeId}\n`
+          }
+          if (node.children && Array.isArray(node.children)) {
+            node.children.forEach((child) => addTreeNode(child as { name?: string; label?: string; children?: unknown[] }, nodeId))
+          }
         }
+        addTreeNode(rootData)
         return (
           <div className={containerClass}>
-            <TreeDiagram
-              title={treeData.title || artifact.title}
-              data={rootData}
-              description={treeData.description}
-              defaultExpanded={treeData.defaultExpanded !== false}
-              showChildCount={treeData.showChildCount !== false}
-            />
+            <MermaidDiagram chart={mermaidTreeCode} title={treeData.title || artifact.title} />
           </div>
         )
       } catch {
+        // Fallback: tentar renderizar content direto como Mermaid
         return (
-          <div className={`p-4 ${containerClass}`}>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-xl">🌳</span>
-              <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
-            </div>
-            <div className="bg-gradient-to-b from-purple-500/10 to-blue-500/10 rounded-lg p-4 border border-slate-200">
-              <p className="text-slate-600 text-sm text-center">
-                Organograma disponível
-              </p>
-              <p className="text-slate-500 text-xs text-center mt-2">
-                Clique em &quot;Tela cheia&quot; para visualizar
-              </p>
-            </div>
+          <div className={containerClass}>
+            <MermaidDiagram chart={artifact.content} title={artifact.title} />
           </div>
         )
       }

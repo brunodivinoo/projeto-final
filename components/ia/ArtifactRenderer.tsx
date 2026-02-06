@@ -262,8 +262,8 @@ interface ArtifactRendererProps {
 // Regex para detectar artefatos no formato ```artifact:tipo:titulo
 const ARTIFACT_REGEX = /```artifact:(diagram|flowchart|table|comparison|mindmap):([^\n]*)\n([\s\S]*?)```/g
 
-// Regex para detectar blocos de código Mermaid padrão
-const MERMAID_REGEX = /```mermaid\n([\s\S]*?)```/g
+// Regex para detectar blocos de código Mermaid padrão (com título opcional: ```mermaid:Titulo)
+const MERMAID_REGEX = /```mermaid(?::([^\n]*))?\n([\s\S]*?)```/g
 
 // Regex para detectar solicitações de geração de imagem
 const IMAGE_GEN_REGEX = /```generate_image\n([\s\S]*?)```/g
@@ -1148,6 +1148,37 @@ function cleanRenderedTextForChat(content: string): string {
   cleaned = cleaned.replace(/\s*\[\d+\]\s*/g, ' ')
 
   // =====================================
+  // 7.5. REMOVER TEXTO EXTRA DE FLASHCARDS
+  // =====================================
+  // Remover "Seu flashcard está pronto!" e blocos complementares
+  cleaned = cleaned.replace(/[🎯🃏📝✅]?\s*\*{0,2}Seu[s]?\s+flashcard[s]?\s+(?:está|estão|est[aá])\s+pronto[s]?[!.]*\*{0,2}[^\n]*/gi, '')
+  // Remover "Este card foca na..." e texto similar
+  cleaned = cleaned.replace(/Este\s+card\s+foca\s+n[ao][\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
+  // Remover "Por que este conceito é importante"
+  cleaned = cleaned.replace(/#{1,4}\s*[🔥💡🎯]?\s*(?:Por\s+que\s+este|Why\s+this)[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
+  // Remover "Complemento Visual" e imagens de referência
+  cleaned = cleaned.replace(/#{1,4}\s*[📚📷🔍]?\s*Complemento\s+Visual[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
+  cleaned = cleaned.replace(/\*{0,2}📷?\s*Imagens?\s+de\s+Refer[eê]ncia[:\s]*\*{0,2}[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
+  // Remover referências ABNT inline
+  cleaned = cleaned.replace(/\*{0,2}📚?\s*Refer[eê]ncias?\s+\(?ABNT[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
+  // Remover fonte Sanar/Sanarmed
+  cleaned = cleaned.replace(/📌\s*Fonte:.*sanar.*\n?/gi, '')
+  // Remover markdown images inline
+  cleaned = cleaned.replace(/!\[.*?\]\(https?:\/\/[^\)]*\)\n?/g, '')
+
+  // =====================================
+  // 7.6. REMOVER TEXTO EXTRA DE QUESTÕES (multi-agentes)
+  // =====================================
+  // Remover "Sua questão está pronta!" e blocos complementares
+  cleaned = cleaned.replace(/[✅🎯📋]?\s*\*{0,2}Sua[s]?\s+quest[ãa]o[\s\S]*?(?:pronta|pronto)[!.]*\*{0,2}[^\n]*/gi, '')
+  // Remover "Esta questão testa:" e texto similar
+  cleaned = cleaned.replace(/[🎯📋]?\s*Esta\s+quest[ãa]o\s+testa[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
+  // Remover "Quer mais questões..."
+  cleaned = cleaned.replace(/Quer\s+mais\s+quest[õo]es[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
+  // Remover "Pontos-Chave sobre..." blocos longos após questões
+  cleaned = cleaned.replace(/[💡🎯]?\s*\*{0,2}Pontos[- ]Chave\s+sobre[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
+
+  // =====================================
   // 8. LIMPEZA GERAL
   // =====================================
   // Remover múltiplas quebras de linha consecutivas
@@ -2007,10 +2038,25 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
       cleaned = cleaned.replace(/\*\*(?:Categoria|Tópico|Conceito)[^\n]*\*\*[^\n]*\n?/gi, '')
       // Remover linhas com contagem de cards
       cleaned = cleaned.replace(/.*\d+\s*cards?.*\n?/gi, '')
-      // NOVO: Remover títulos de deck que vazam como lista (- Título do Deck)
+      // Remover títulos de deck que vazam como lista (- Título do Deck)
       cleaned = cleaned.replace(/(?:^|\n)\s*[-•●]\s*[A-Za-zÀ-ÿ][\w\sÀ-ÿ\-]+(?:\n|$)/gi, '\n')
-      // NOVO: Remover títulos simples antes do deck
+      // Remover títulos simples antes do deck
       cleaned = cleaned.replace(/(?:^|\n)\s*[A-Za-zÀ-ÿ][\w\sÀ-ÿ\-]{5,50}\s*(?:\n|$)(?=\s*$)/gi, '\n')
+      // Remover "Seu flashcard está pronto!" e variações
+      cleaned = cleaned.replace(/[🎯🃏📝✅]?\s*\*{0,2}Seu[s]?\s+flashcard[s]?\s+(?:está|estão|est[aá])\s+pronto[s]?[!.]*\*{0,2}[^\n]*/gi, '')
+      // Remover seções "Por que este conceito é importante"
+      cleaned = cleaned.replace(/#{1,4}\s*[🔥💡🎯]?\s*(?:Por\s+que|Why)[\s\S]*?(?=\n#{1,4}\s|$)/gi, '')
+      // Remover seções "Complemento Visual"
+      cleaned = cleaned.replace(/#{1,4}\s*[📚📷🔍]?\s*Complemento\s+Visual[\s\S]*?(?=\n#{1,4}\s|$)/gi, '')
+      // Remover imagens de referência inline
+      cleaned = cleaned.replace(/\*{0,2}📷?\s*Imagens?\s+de\s+Refer[eê]ncia[:\s]*\*{0,2}[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
+      // Remover referências ABNT inline
+      cleaned = cleaned.replace(/\*{0,2}📚?\s*Refer[eê]ncias?\s+\(?ABNT[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
+      // Remover blocos de fonte/Sanar
+      cleaned = cleaned.replace(/📌\s*Fonte:.*\n?/gi, '')
+      cleaned = cleaned.replace(/🚀\s*Fonte:.*\n?/gi, '')
+      // Remover linhas com markdown images ![...](...)
+      cleaned = cleaned.replace(/!\[.*?\]\(.*?\)\n?/g, '')
     }
 
     // Para simulados, remover instruções redundantes
@@ -2106,10 +2152,12 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
         endIndex
       }
     } else if (type === 'mermaid') {
+      // Regex: /```mermaid(?::([^\n]*))?\n([\s\S]*?)```/
+      // match[1] = título opcional (após :), match[2] = conteúdo Mermaid
       artifact = {
         type: 'mermaid',
-        title: 'Diagrama',
-        content: match[1].trim(),
+        title: match[1]?.trim() || 'Diagrama',
+        content: (match[2] || '').trim(),
         startIndex,
         endIndex
       }
@@ -2894,149 +2942,55 @@ function ArtifactRendererComponent({
           )
         }
 
-        // Fluxograma Moderno - Card de Preview Rico (abre na sidebar)
+        // Fluxograma Moderno - Card compacto igual ao Mermaid (abre na sidebar)
         if (part.type === 'modern_flowchart') {
-          let flowTitle = part.title || 'Fluxograma'
-          let nodeLabels: string[] = []
-          try {
-            const flowchartData = JSON.parse(part.content)
-            flowTitle = part.title || flowchartData.title || 'Fluxograma'
-            // Extrair labels dos nós para as tags
-            if (flowchartData.nodes && Array.isArray(flowchartData.nodes)) {
-              nodeLabels = flowchartData.nodes
-                .slice(0, 4)
-                .map((n: { label?: string; name?: string }) => n.label || n.name || '')
-                .filter((l: string) => l.length > 0)
-            }
-          } catch { /* ignore */ }
-
-          const extraCount = nodeLabels.length > 4 ? nodeLabels.length - 4 : 0
+          const flowTitle = part.title || 'Fluxograma'
 
           return (
-            <div
+            <button
               key={index}
               onClick={() => openArtifactInSidebar('modern_flowchart', flowTitle)}
-              className="my-3 w-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group"
+              className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-cyan-50 to-blue-50 hover:from-cyan-100 hover:to-blue-100 border border-cyan-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  <span className="text-sm text-slate-600 font-medium">Fluxograma</span>
-                </div>
-                <span className="text-xs text-blue-500 group-hover:text-blue-600 font-medium flex items-center gap-1">
-                  Abrir
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </span>
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <span className="text-xl">🔀</span>
               </div>
-              {/* Body */}
-              <div className="p-4">
-                <h3 className="font-bold text-slate-800 text-base mb-3">{flowTitle}</h3>
-                {/* Tags dos nós */}
-                {nodeLabels.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {nodeLabels.map((label, i) => (
-                      <span
-                        key={i}
-                        className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs rounded-lg border border-blue-100 truncate max-w-[120px]"
-                      >
-                        {label}
-                      </span>
-                    ))}
-                    {extraCount > 0 && (
-                      <span className="px-2.5 py-1 text-slate-500 text-xs">
-                        +{extraCount}
-                      </span>
-                    )}
-                  </div>
-                )}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-slate-800 truncate text-sm">{flowTitle}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Fluxograma • Toque para visualizar</p>
               </div>
-            </div>
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-100 group-hover:bg-cyan-200 flex items-center justify-center transition-colors">
+                <svg className="w-4 h-4 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
           )
         }
 
-        // Organograma/Árvore - Card de Preview Rico (abre na sidebar)
+        // Organograma/Árvore - Card compacto igual ao Mermaid (abre na sidebar)
         if (part.type === 'tree_diagram') {
-          let treeTitle = part.title || 'Organograma'
-          let treeItems: Array<{ name: string; description?: string }> = []
-          let totalCount = 0
-          try {
-            const treeData = JSON.parse(part.content)
-            treeTitle = part.title || treeData.title || 'Organograma'
-            // Extrair primeiros itens da árvore
-            const rootData = treeData.data || treeData
-            if (rootData.children && Array.isArray(rootData.children)) {
-              // Função para contar total de nós
-              const countNodes = (node: { children?: unknown[] }): number => {
-                let count = 1
-                if (node.children && Array.isArray(node.children)) {
-                  node.children.forEach((child) => {
-                    count += countNodes(child as { children?: unknown[] })
-                  })
-                }
-                return count
-              }
-              totalCount = countNodes(rootData)
-
-              // Extrair primeiros 3 itens do primeiro nível
-              treeItems = rootData.children.slice(0, 3).map((child: { name?: string; label?: string; description?: string }) => ({
-                name: child.name || child.label || 'Item',
-                description: child.description
-              }))
-            }
-          } catch { /* ignore */ }
-
-          const extraCount = totalCount > 3 ? totalCount - 3 : 0
+          const treeTitle = part.title || 'Organograma'
 
           return (
-            <div
+            <button
               key={index}
               onClick={() => openArtifactInSidebar('tree_diagram', treeTitle)}
-              className="my-3 w-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group"
+              className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border border-purple-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <span className="text-sm text-slate-600 font-medium">Organograma</span>
-                </div>
-                <span className="text-xs text-purple-500 group-hover:text-purple-600 font-medium flex items-center gap-1">
-                  Abrir
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </span>
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                <span className="text-xl">🌳</span>
               </div>
-              {/* Body */}
-              <div className="p-4">
-                <h3 className="font-bold text-slate-800 text-base mb-3">{treeTitle}</h3>
-                {/* Lista hierárquica */}
-                {treeItems.length > 0 && (
-                  <div className="space-y-1.5">
-                    {treeItems.map((item, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <span className="text-purple-500 mt-0.5">•</span>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm text-purple-700 font-medium">{item.name}</span>
-                          {item.description && (
-                            <span className="text-xs text-slate-500 ml-1">- {item.description}</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {extraCount > 0 && (
-                      <p className="text-xs text-slate-400 ml-4">+{extraCount} itens</p>
-                    )}
-                  </div>
-                )}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-slate-800 truncate text-sm">{treeTitle}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Organograma • Toque para visualizar</p>
               </div>
-            </div>
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 group-hover:bg-purple-200 flex items-center justify-center transition-colors">
+                <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
           )
         }
 

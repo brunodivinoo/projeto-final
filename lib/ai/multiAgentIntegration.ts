@@ -400,15 +400,15 @@ export async function executeMultiAgentTask(
         const tema = params.tema as string || 'Medicina'
 
         if (visuais.includes('diagrama')) {
-          visualContent += `\n\n---\n\n## Diagrama - ${tema}\n\n\`\`\`mermaid\ngraph TD\n    A["${tema}"] --> B["Conceito 1"]\n    A --> C["Conceito 2"]\n    A --> D["Conceito 3"]\n    B --> E["Detalhe 1.1"]\n    B --> F["Detalhe 1.2"]\n    C --> G["Detalhe 2.1"]\n    D --> H["Detalhe 3.1"]\n\`\`\`\n\n*Diagrama gerado automaticamente. Para diagramas mais detalhados, peça no chat normal.*\n`
+          visualContent += `\n\n\`\`\`mermaid:Diagrama - ${tema}\ngraph TD\n    A[["${tema}"]] --> B["Definição e Conceitos"]\n    A --> C["Classificação"]\n    A --> D["Aspectos Clínicos"]\n    B --> B1["Epidemiologia"]\n    B --> B2["Fisiopatologia"]\n    C --> C1["Tipos / Subtipos"]\n    C --> C2["Critérios Diagnósticos"]\n    D --> D1["Quadro Clínico"]\n    D --> D2["Tratamento"]\n    D --> D3["Prognóstico"]\n\n    classDef default fill:#1e3a5f,stroke:#60a5fa,stroke-width:2px,color:#fff\n    classDef highlight fill:#065f46,stroke:#34d399,stroke-width:2px,color:#fff\n    class A highlight\n\`\`\`\n`
         }
 
         if (visuais.includes('fluxograma')) {
-          visualContent += `\n\n---\n\n## Fluxograma - ${tema}\n\n\`\`\`mermaid\nflowchart TD\n    START(["Início"]) --> A{"Avaliação"}\n    A -->|"Critério 1"| B["Conduta A"]\n    A -->|"Critério 2"| C["Conduta B"]\n    B --> D["Acompanhamento"]\n    C --> D\n    D --> END(["Fim"])\n\`\`\`\n\n*Fluxograma gerado automaticamente. Para fluxogramas mais detalhados, peça no chat normal.*\n`
+          visualContent += `\n\n\`\`\`mermaid:Fluxograma - ${tema}\nflowchart TD\n    START(["Paciente com suspeita"]) --> ANAMNESE["Anamnese e Exame Físico"]\n    ANAMNESE --> EXAMES{"Exames Complementares"}\n    EXAMES -->|"Positivo"| DIAG["Diagnóstico Confirmado"]\n    EXAMES -->|"Negativo"| INVEST["Investigação Adicional"]\n    INVEST --> EXAMES\n    DIAG --> TRAT["Definir Conduta"]\n    TRAT --> SEG["Seguimento"]\n    SEG --> REAV{"Reavaliação"}\n    REAV -->|"Melhora"| ALTA(["Alta / Manutenção"])\n    REAV -->|"Sem melhora"| TRAT\n\n    classDef default fill:#1e3a5f,stroke:#60a5fa,stroke-width:2px,color:#fff\n    classDef decision fill:#92400e,stroke:#f59e0b,stroke-width:2px,color:#fff\n    class EXAMES,REAV decision\n\`\`\`\n`
         }
 
         if (visuais.includes('organograma')) {
-          visualContent += `\n\n---\n\n## Organograma - ${tema}\n\n\`\`\`mermaid\ngraph TD\n    A["${tema}"] --> B["Categoria 1"]\n    A --> C["Categoria 2"]\n    A --> D["Categoria 3"]\n    B --> B1["Subcategoria 1.1"]\n    B --> B2["Subcategoria 1.2"]\n    C --> C1["Subcategoria 2.1"]\n    D --> D1["Subcategoria 3.1"]\n    D --> D2["Subcategoria 3.2"]\n\`\`\`\n\n*Organograma gerado automaticamente. Para organogramas mais detalhados, peça no chat normal.*\n`
+          visualContent += `\n\n\`\`\`mermaid:Organograma - ${tema}\ngraph TD\n    A[["${tema}"]] --> B["Grupo 1"]\n    A --> C["Grupo 2"]\n    A --> D["Grupo 3"]\n    B --> B1["Subgrupo 1.1"]\n    B --> B2["Subgrupo 1.2"]\n    C --> C1["Subgrupo 2.1"]\n    C --> C2["Subgrupo 2.2"]\n    D --> D1["Subgrupo 3.1"]\n    D --> D2["Subgrupo 3.2"]\n    D --> D3["Subgrupo 3.3"]\n\n    classDef default fill:#1e3a5f,stroke:#60a5fa,stroke-width:2px,color:#fff\n    classDef root fill:#5b21b6,stroke:#a78bfa,stroke-width:2px,color:#fff\n    class A root\n\`\`\`\n`
         }
 
         return {

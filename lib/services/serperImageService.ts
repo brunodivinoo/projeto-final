@@ -26,7 +26,6 @@ const DOMINIOS_CONFIAVEIS = [
   'biologianet.com',
   'anatomiaemfoco.com.br',
   'kenhub.com',
-  'sanarmed.com',
   'msdmanuals.com',
   'scielo.br',
   'gov.br',
@@ -57,7 +56,11 @@ const DOMINIOS_BLOQUEADOS = [
   'gettyimages.com',
   'istockphoto.com',
   'dreamstime.com',
-  'freepik.com'
+  'freepik.com',
+  // Sanarmed - BANIDO expressamente
+  'sanarmed.com',
+  'sanar.com.br',
+  'sanarflix.com.br'
 ]
 
 /**

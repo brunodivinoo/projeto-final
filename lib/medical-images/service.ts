@@ -132,12 +132,6 @@ const FONTES_BRASILEIRAS = {
   },
 
   // Sites Educacionais Brasileiros - MODERADAMENTE CONFIÁVEIS
-  SANAR: {
-    nome: 'Sanar Med',
-    sigla: 'Sanar',
-    dominios: ['sanarmed.com'],
-    tipo: 'educacional'
-  },
   MEDCEL: {
     nome: 'Medcel',
     sigla: 'Medcel',
@@ -159,7 +153,9 @@ const DOMINIOS_BLOQUEADOS = [
   'dreamstime.com', 'freepik.com', 'depositphotos.com',
   // Fontes não brasileiras/não confiáveis
   'wikimedia.org', 'wikipedia.org', 'openi.nlm.nih.gov',
-  'radiopaedia.org', 'medpix.nlm.nih.gov'
+  'radiopaedia.org', 'medpix.nlm.nih.gov',
+  // Sanarmed - BANIDO expressamente
+  'sanarmed.com', 'sanar.com.br', 'sanarflix.com.br'
 ]
 
 // ==========================================
@@ -784,10 +780,18 @@ export function formatarImagensParaChat(imagens: ImagemMedicaBrasileira[]): stri
   if (imagens.length === 0) {
     return '⚠️ Não foram encontradas imagens nas fontes brasileiras verificadas para este tópico.'
   }
-  
+
+  // Deduplicar imagens por URL para evitar repetições
+  const seenUrls = new Set<string>()
+  const imagensUnicas = imagens.filter(img => {
+    if (seenUrls.has(img.url)) return false
+    seenUrls.add(img.url)
+    return true
+  })
+
   let output = '📷 **Imagens de Referência - Fontes Brasileiras Acadêmicas:**\n\n'
-  
-  imagens.forEach((img, i) => {
+
+  imagensUnicas.forEach((img, i) => {
     output += `**${i + 1}. ${img.titulo}**\n`
     output += `![${img.titulo}](${img.url})\n`
     output += `📎 **Fonte:** ${img.fonte} (${img.siglaInstituicao})\n`
@@ -795,13 +799,13 @@ export function formatarImagensParaChat(imagens: ImagemMedicaBrasileira[]): stri
     output += `📜 **Licença:** ${img.licenca}\n`
     output += `🔗 [Acessar fonte original](${img.fonteUrl})\n\n`
   })
-  
+
   output += '\n---\n📚 **REFERÊNCIAS BIBLIOGRÁFICAS (ABNT NBR 6023:2018):**\n\n'
-  
-  imagens.forEach((img, i) => {
+
+  imagensUnicas.forEach((img, i) => {
     output += `${i + 1}. ${img.referenciaABNT}\n\n`
   })
-  
+
   return output
 }
 

@@ -357,10 +357,11 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
   },
 
   // Obter artefatos apenas da conversa atual
+  // FIX: Não mostrar artefatos sem conversaId em todos os chats
   getArtifactsForCurrentConversa: () => {
     const state = get()
     if (!state.currentConversaId) return state.artifacts
-    return state.artifacts.filter((a) => a.conversaId === state.currentConversaId || !a.conversaId)
+    return state.artifacts.filter((a) => a.conversaId === state.currentConversaId)
   },
 
   // Obter artefatos por modo de chat
