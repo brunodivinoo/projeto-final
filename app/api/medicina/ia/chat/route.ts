@@ -623,15 +623,9 @@ async function streamMultiAgentResponse(params: StreamMultiAgentParams) {
             await new Promise(resolve => setTimeout(resolve, 10))
           }
 
-          // Enviar log de execução se disponível
+          // Log de execução apenas no console do servidor (não enviar para o chat)
           if (result.executionLog && result.executionLog.length > 0) {
-            const logSection = '\n\n---\n\n<details>\n<summary>📋 Log de Execução dos Agentes</summary>\n\n```\n' +
-              result.executionLog.join('\n') +
-              '\n```\n</details>'
-            fullResponse += logSection
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: 'text', content: logSection })}\n\n`)
-            )
+            console.log('[MultiAgent] Log de execução:', result.executionLog.join(' | '))
           }
 
           // Enviar artefatos se disponíveis
