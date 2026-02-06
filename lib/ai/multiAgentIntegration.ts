@@ -991,12 +991,12 @@ export async function executeMultiAgentTask(
         // O bloco unified_study (componente principal)
         const unifiedBlock = `\n\n\`\`\`unified_study:${tema}\n${JSON.stringify(unifiedStudyData)}\n\`\`\`\n`
 
-        // Combinar: intro + unified block + blocos tradicionais (flashcards/questões/mermaid para sidebar)
-        const traditionalBlocks = contentResult.formatted + mermaidContent
+        // NOTA: Não incluir blocos tradicionais (flashcards/questões/mermaid) para evitar duplicação
+        // O componente unified_study no painel de artefatos já contém todo o conteúdo interativo
 
         return {
           success: true,
-          response: introText + unifiedBlock + '\n\n---\n\n' + traditionalBlocks,
+          response: introText + unifiedBlock,
           executionLog: contentResult.executionLog,
           artifacts: {
             type: 'conteudo_completo',

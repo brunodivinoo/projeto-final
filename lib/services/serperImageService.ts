@@ -258,21 +258,22 @@ export async function buscarImagensMedicas(
   }
 }
 
+// Função para sanitizar URLs para uso em markdown (escapar parênteses que quebram a sintaxe)
+function sanitizeUrlForMarkdown(url: string): string {
+  return url.replace(/\(/g, '%28').replace(/\)/g, '%29')
+}
+
 // Função para formatar imagens para exibição no chat
 export function formatarImagensParaChat(imagens: ImagemMedica[]): string {
   if (imagens.length === 0) return ''
 
-  let texto = '\n\n📷 **Imagens de Referência:**\n\n'
+  let texto = '\n\n'
 
   imagens.forEach((img, index) => {
-    texto += `**${index + 1}. ${img.titulo}**\n`
-    texto += `![${img.titulo}](${img.url})\n`
-    texto += `📌 Fonte: [${img.fonte}](${img.linkOriginal})\n\n`
-  })
-
-  texto += '\n---\n**Referências das Imagens (ABNT):**\n'
-  imagens.forEach((img, index) => {
-    texto += `${index + 1}. ${img.referencia}\n`
+    const safeUrl = sanitizeUrlForMarkdown(img.url)
+    const safeLink = sanitizeUrlForMarkdown(img.linkOriginal)
+    texto += `![${img.titulo}](${safeUrl})\n`
+    texto += `*${index + 1}. ${img.titulo}* — Fonte: [${img.fonte}](${safeLink})\n\n`
   })
 
   return texto

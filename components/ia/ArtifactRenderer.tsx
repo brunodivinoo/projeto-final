@@ -1175,13 +1175,11 @@ function cleanRenderedTextForChat(content: string): string {
   cleaned = cleaned.replace(/#{1,4}\s*[🔥💡🎯]?\s*(?:Por\s+que\s+este|Why\s+this)[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
   // Remover "Complemento Visual" e imagens de referência
   cleaned = cleaned.replace(/#{1,4}\s*[📚📷🔍]?\s*Complemento\s+Visual[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
-  cleaned = cleaned.replace(/\*{0,2}📷?\s*Imagens?\s+de\s+Refer[eê]ncia[:\s]*\*{0,2}[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
-  // Remover referências ABNT inline
+  // NOTA: NÃO remover imagens de referência nem markdown images - elas devem renderizar no chat
+  // Remover referências ABNT inline (mas manter imagens)
   cleaned = cleaned.replace(/\*{0,2}📚?\s*Refer[eê]ncias?\s+\(?ABNT[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
   // Remover fonte Sanar/Sanarmed
   cleaned = cleaned.replace(/📌\s*Fonte:.*sanar.*\n?/gi, '')
-  // Remover markdown images inline
-  cleaned = cleaned.replace(/!\[.*?\]\(https?:\/\/[^\)]*\)\n?/g, '')
 
   // =====================================
   // 7.6. REMOVER TEXTO EXTRA DE QUESTÕES (multi-agentes)
@@ -2176,15 +2174,12 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
       cleaned = cleaned.replace(/#{1,4}\s*[🔥💡🎯]?\s*(?:Por\s+que|Why)[\s\S]*?(?=\n#{1,4}\s|$)/gi, '')
       // Remover seções "Complemento Visual"
       cleaned = cleaned.replace(/#{1,4}\s*[📚📷🔍]?\s*Complemento\s+Visual[\s\S]*?(?=\n#{1,4}\s|$)/gi, '')
-      // Remover imagens de referência inline
-      cleaned = cleaned.replace(/\*{0,2}📷?\s*Imagens?\s+de\s+Refer[eê]ncia[:\s]*\*{0,2}[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
-      // Remover referências ABNT inline
+      // NOTA: Manter imagens de referência - não remover mais
+      // Remover referências ABNT inline (mas manter imagens)
       cleaned = cleaned.replace(/\*{0,2}📚?\s*Refer[eê]ncias?\s+\(?ABNT[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
       // Remover blocos de fonte/Sanar
       cleaned = cleaned.replace(/📌\s*Fonte:.*\n?/gi, '')
       cleaned = cleaned.replace(/🚀\s*Fonte:.*\n?/gi, '')
-      // Remover linhas com markdown images ![...](...)
-      cleaned = cleaned.replace(/!\[.*?\]\(.*?\)\n?/g, '')
     }
 
     // Para simulados, remover instruções redundantes
@@ -3317,7 +3312,7 @@ function ArtifactRendererComponent({
           return (
             <button
               key={index}
-              onClick={() => openArtifactInSidebar('question')}
+              onClick={() => openArtifactInSidebar('question', `${disciplina} - ${assunto}`, part.content)}
               className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 border border-emerald-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
             >
               {/* Ícone */}
@@ -3422,13 +3417,104 @@ function ArtifactRendererComponent({
           )
         }
 
-        // Material de Estudo Unificado (componente com abas - estilo Claude AI)
+        // Material de Estudo Unificado - Renderizar como deck cards compactos no chat
+        // O componente completo (com abas) é renderizado APENAS no painel de artefatos
         if (part.type === 'unified_study' && part.unifiedStudyData) {
+          const uData = part.unifiedStudyData as unknown as import('./UnifiedStudyMaterial').UnifiedStudyData
+          const DECK_COLORS = [
+            { from: 'from-rose-50', to: 'to-pink-50', hover_from: 'hover:from-rose-100', hover_to: 'hover:to-pink-100', border: 'border-rose-200', icon_from: 'from-rose-500', icon_to: 'to-pink-500', shadow: 'shadow-rose-500/20', badge: 'bg-rose-100 text-rose-700', arrow_bg: 'bg-rose-100', arrow_hover: 'group-hover:bg-rose-200', arrow_text: 'text-rose-600' },
+            { from: 'from-violet-50', to: 'to-purple-50', hover_from: 'hover:from-violet-100', hover_to: 'hover:to-purple-100', border: 'border-violet-200', icon_from: 'from-violet-500', icon_to: 'to-purple-500', shadow: 'shadow-violet-500/20', badge: 'bg-violet-100 text-violet-700', arrow_bg: 'bg-violet-100', arrow_hover: 'group-hover:bg-violet-200', arrow_text: 'text-violet-600' },
+            { from: 'from-amber-50', to: 'to-orange-50', hover_from: 'hover:from-amber-100', hover_to: 'hover:to-orange-100', border: 'border-amber-200', icon_from: 'from-amber-500', icon_to: 'to-orange-500', shadow: 'shadow-amber-500/20', badge: 'bg-amber-100 text-amber-700', arrow_bg: 'bg-amber-100', arrow_hover: 'group-hover:bg-amber-200', arrow_text: 'text-amber-600' },
+            { from: 'from-emerald-50', to: 'to-teal-50', hover_from: 'hover:from-emerald-100', hover_to: 'hover:to-teal-100', border: 'border-emerald-200', icon_from: 'from-emerald-500', icon_to: 'to-teal-500', shadow: 'shadow-emerald-500/20', badge: 'bg-emerald-100 text-emerald-700', arrow_bg: 'bg-emerald-100', arrow_hover: 'group-hover:bg-emerald-200', arrow_text: 'text-emerald-600' },
+            { from: 'from-sky-50', to: 'to-blue-50', hover_from: 'hover:from-sky-100', hover_to: 'hover:to-blue-100', border: 'border-sky-200', icon_from: 'from-sky-500', icon_to: 'to-blue-500', shadow: 'shadow-sky-500/20', badge: 'bg-sky-100 text-sky-700', arrow_bg: 'bg-sky-100', arrow_hover: 'group-hover:bg-sky-200', arrow_text: 'text-sky-600' },
+          ]
+
+          // Função para abrir o artefato unified_study no sidebar com aba específica
+          const openUnifiedTab = (tab: string) => {
+            useArtifactsStore.getState().setArtifactTabHint(tab)
+            openArtifactInSidebar('unified_study', uData.titulo, part.content)
+          }
+
+          // Construir lista de deck cards
+          const deckCards: Array<{ key: string; emoji: string; title: string; subtitle: string; tab: string }> = []
+          if (uData.flashcards?.cards?.length) {
+            deckCards.push({ key: 'fc', emoji: '🃏', title: `${uData.titulo} - Flashcards`, subtitle: `${uData.flashcards.cards.length} cards • Toque para estudar`, tab: 'flashcards' })
+          }
+          if (uData.questoes?.length) {
+            uData.questoes.forEach((q, i) => {
+              deckCards.push({ key: `q${i}`, emoji: `Q${i + 1}`, title: `${q.disciplina} - ${q.assunto}`, subtitle: 'Questão de múltipla escolha • Toque para responder', tab: 'questoes' })
+            })
+          }
+          if (uData.diagrama?.elementos?.length) {
+            deckCards.push({ key: 'diag', emoji: '🏛', title: `Diagrama - ${uData.diagrama.titulo || uData.titulo}`, subtitle: 'Diagrama interativo • Toque para visualizar', tab: 'diagrama' })
+          }
+          if (uData.fluxograma?.etapas?.length) {
+            deckCards.push({ key: 'flux', emoji: '📊', title: `Fluxograma - ${uData.fluxograma.titulo || uData.titulo}`, subtitle: 'Fluxograma clínico • Toque para visualizar', tab: 'fluxograma' })
+          }
+          if (uData.organograma?.raiz) {
+            deckCards.push({ key: 'org', emoji: '📁', title: `Organograma - ${uData.organograma.titulo || uData.titulo}`, subtitle: 'Hierarquia • Toque para visualizar', tab: 'organograma' })
+          }
+
           return (
-            <div key={index} className="my-4">
-              <UnifiedStudyMaterial
-                data={part.unifiedStudyData as unknown as import('./UnifiedStudyMaterial').UnifiedStudyData}
-              />
+            <div key={index} className="my-3 space-y-2">
+              {/* Imagens com galeria clicável */}
+              {uData.imagens && uData.imagens.length > 0 && (
+                <div className="flex gap-3 overflow-x-auto pb-2 px-1">
+                  {uData.imagens.map((img, i) => (
+                    <div key={i} className="flex-shrink-0 group cursor-pointer" onClick={() => openImageModal(img.url, img.titulo)}>
+                      <div className="relative rounded-lg overflow-hidden border border-slate-200 hover:border-blue-400 transition-all shadow-sm hover:shadow-md">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={img.url}
+                          alt={img.titulo}
+                          className="h-24 w-auto max-w-[160px] object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                          <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1 max-w-[160px] truncate">{img.titulo}</p>
+                      {img.fonte && <p className="text-[9px] text-slate-400 truncate max-w-[160px]">Fonte: {img.fonte}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Breadcrumb */}
+              <p className="text-[11px] text-slate-400 px-1">
+                Material educativo • {uData.titulo}
+              </p>
+
+              {/* Deck cards compactos */}
+              {deckCards.map((card, ci) => {
+                const color = DECK_COLORS[ci % DECK_COLORS.length]
+                const isQuestion = card.key.startsWith('q')
+                return (
+                  <button
+                    key={card.key}
+                    onClick={() => openUnifiedTab(card.tab)}
+                    className={`w-full flex items-center gap-3 p-4 bg-gradient-to-r ${color.from} ${color.to} ${color.hover_from} ${color.hover_to} border ${color.border} rounded-xl text-left transition-all shadow-sm hover:shadow-md group`}
+                  >
+                    <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${color.icon_from} ${color.icon_to} flex items-center justify-center shadow-lg ${color.shadow}`}>
+                      {isQuestion ? (
+                        <span className="text-white font-bold text-lg">{card.emoji}</span>
+                      ) : (
+                        <span className="text-xl">{card.emoji}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-slate-800 truncate text-sm">{card.title}</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">{card.subtitle}</p>
+                    </div>
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-full ${color.arrow_bg} ${color.arrow_hover} flex items-center justify-center transition-colors`}>
+                      <svg className={`w-4 h-4 ${color.arrow_text}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           )
         }

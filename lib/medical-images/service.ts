@@ -789,21 +789,16 @@ export function formatarImagensParaChat(imagens: ImagemMedicaBrasileira[]): stri
     return true
   })
 
-  let output = '📷 **Imagens de Referência - Fontes Brasileiras Acadêmicas:**\n\n'
+  // Sanitizar URLs para markdown (escapar parênteses)
+  const sanitize = (url: string) => url.replace(/\(/g, '%28').replace(/\)/g, '%29')
+
+  let output = '\n\n'
 
   imagensUnicas.forEach((img, i) => {
-    output += `**${i + 1}. ${img.titulo}**\n`
-    output += `![${img.titulo}](${img.url})\n`
-    output += `📎 **Fonte:** ${img.fonte} (${img.siglaInstituicao})\n`
-    output += `🏛️ **Instituição:** ${img.instituicao}\n`
-    output += `📜 **Licença:** ${img.licenca}\n`
-    output += `🔗 [Acessar fonte original](${img.fonteUrl})\n\n`
-  })
-
-  output += '\n---\n📚 **REFERÊNCIAS BIBLIOGRÁFICAS (ABNT NBR 6023:2018):**\n\n'
-
-  imagensUnicas.forEach((img, i) => {
-    output += `${i + 1}. ${img.referenciaABNT}\n\n`
+    const safeUrl = sanitize(img.url)
+    const safeFonteUrl = sanitize(img.fonteUrl)
+    output += `![${img.titulo}](${safeUrl})\n`
+    output += `*${i + 1}. ${img.titulo}* — [${img.fonte}](${safeFonteUrl})\n\n`
   })
 
   return output

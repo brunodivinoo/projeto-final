@@ -175,6 +175,7 @@ interface ArtifactsState {
   currentChatMode: ChatModeType | null  // Modo de chat atual para filtrar artefatos
   chatModeFilter: ChatModeType | 'all'  // Filtro por modo de chat na sidebar
   categoryFilter: ArtifactCategory  // Filtro por categoria (imagens, pdfs, etc.)
+  artifactTabHint: string | null  // Dica de aba para unified_study (qual aba abrir)
 
   // Ações
   addArtifact: (artifact: Omit<Artifact, 'id' | 'createdAt'>) => string
@@ -201,6 +202,7 @@ interface ArtifactsState {
   getUploadedImages: () => Artifact[]  // Obter todas as imagens enviadas
   getUploadedPDFs: () => Artifact[]  // Obter todos os PDFs enviados
   updateQuestionAnswer: (artifactId: string, resposta: string, acertou: boolean) => void  // Sincronizar resposta
+  setArtifactTabHint: (tab: string | null) => void  // Definir dica de aba para unified_study
 }
 
 export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
@@ -214,6 +216,7 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
   currentChatMode: null,
   chatModeFilter: 'all',
   categoryFilter: 'all',
+  artifactTabHint: null,
 
   // Adicionar artefato genérico
   addArtifact: (artifact) => {
@@ -425,7 +428,9 @@ export const useArtifactsStore = create<ArtifactsState>((set, get) => ({
         return artifact
       })
     }))
-  }
+  },
+
+  setArtifactTabHint: (tab) => set({ artifactTabHint: tab })
 }))
 
 // Funções helper para extrair artefatos do conteúdo

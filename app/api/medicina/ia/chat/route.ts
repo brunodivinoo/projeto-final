@@ -212,19 +212,16 @@ function formatToolResponse(toolName: string, data: unknown): string {
         return '\n\n📷 Não encontrei imagens para esse termo. Tente outro termo de busca.\n'
       }
 
-      // Texto simplificado - imagens serão renderizadas pelo frontend
-      // Cada imagem em seu próprio parágrafo para facilitar carregamento progressivo
-      let texto = '\n\n📷 **Imagens de Referência:**\n\n'
+      // Sanitizar URLs para markdown (escapar parênteses que quebram a sintaxe)
+      const sanitize = (url: string) => url.replace(/\(/g, '%28').replace(/\)/g, '%29')
+
+      let texto = '\n\n'
 
       imagens.forEach((img, i) => {
-        texto += `**${i + 1}. ${img.titulo}**\n`
-        texto += `![${img.titulo}](${img.url})\n`
-        texto += `📌 Fonte: [${img.fonte}](${img.linkOriginal})\n\n`
-      })
-
-      texto += '---\n📚 **Referências (ABNT):**\n'
-      imagens.forEach((img, i) => {
-        texto += `${i + 1}. ${img.referencia}\n`
+        const safeUrl = sanitize(img.url)
+        const safeLink = sanitize(img.linkOriginal)
+        texto += `![${img.titulo}](${safeUrl})\n`
+        texto += `*${i + 1}. ${img.titulo}* — Fonte: [${img.fonte}](${safeLink})\n\n`
       })
 
       return texto
