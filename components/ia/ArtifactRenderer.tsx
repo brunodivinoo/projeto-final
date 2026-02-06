@@ -162,6 +162,19 @@ const FlashcardDeck = dynamic(() => import('./FlashcardDeck'), {
   )
 })
 
+// Importar UnifiedStudyMaterial dinamicamente
+const UnifiedStudyMaterial = dynamic(() => import('./UnifiedStudyMaterial'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-gradient-to-b from-rose-50/80 to-pink-50/40 border border-rose-100 rounded-2xl p-6 my-4">
+      <div className="flex items-center gap-2 text-rose-400">
+        <div className="animate-spin w-5 h-5 border-2 border-rose-400 border-t-transparent rounded-full" />
+        <span>Carregando material de estudo...</span>
+      </div>
+    </div>
+  )
+})
+
 // Importar SimuladoCard dinamicamente para renderização de simulados
 const SimuladoCard = dynamic(() => import('./SimuladoCard'), {
   ssr: false,
@@ -297,6 +310,9 @@ const FLASHCARD_BLOCK_REGEX = /```flashcards?(?::([^\n]*))?\n([\s\S]*?)```/g
 
 // Regex para detectar flashcards em formato JSON direto
 const FLASHCARD_JSON_REGEX = /```(?:json)?\s*\n?\s*(\[\s*\{[^`]*"frente"[^`]*"verso"[^`]*\}\s*\])\s*```/g
+
+// Regex para detectar material de estudo unificado (componente com abas)
+const UNIFIED_STUDY_REGEX = /```unified_study(?::([^\n]*))?\n([\s\S]*?)```/g
 
 // NOTA: As regex FLOWCHART_JSON_REGEX e TREE_JSON_REGEX foram substituídas
 // pela função extractDiagramJsons que é mais robusta e detecta JSON tanto em
@@ -1058,7 +1074,7 @@ interface SimuladoData {
 }
 
 interface Artifact {
-  type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question' | 'flashcards' | 'simulado' | 'modern_flowchart' | 'tree_diagram'
+  type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question' | 'flashcards' | 'simulado' | 'modern_flowchart' | 'tree_diagram' | 'unified_study'
   subtype?: string
   title?: string
   content: string
@@ -1069,6 +1085,7 @@ interface Artifact {
   questionData?: Question  // Dados estruturados da questão
   flashcardData?: { titulo: string; cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: 'facil' | 'medio' | 'dificil' }> }
   simuladoData?: SimuladoData  // Dados estruturados do simulado
+  unifiedStudyData?: Record<string, unknown>  // Material de estudo unificado com abas
 }
 
 // Função para extrair termos de busca de imagens do conteúdo
@@ -1730,13 +1747,14 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   // Combinar todas as regex em uma busca
   const allMatches: Array<{
     match: RegExpMatchArray
-    type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question' | 'flashcards' | 'simulado' | 'modern_flowchart' | 'tree_diagram'
+    type: 'artifact' | 'mermaid' | 'image_request' | 'layers' | 'staging' | 'converted_ascii' | 'question' | 'flashcards' | 'simulado' | 'modern_flowchart' | 'tree_diagram' | 'unified_study'
     asciiType?: 'flowchart' | 'layers' | 'tree' | 'table' | 'generic'
     convertedContent?: string
     originalAscii?: string
     questionData?: Question
     flashcardData?: { titulo: string; cards: Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: 'facil' | 'medio' | 'dificil' }> }
     simuladoData?: SimuladoData
+    unifiedStudyData?: Record<string, unknown>
   }> = []
 
   // Buscar artefatos personalizados
@@ -2101,6 +2119,29 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
     }
   }
 
+  // Buscar blocos unified_study (material de estudo unificado com abas)
+  const unifiedStudyRegex = new RegExp(UNIFIED_STUDY_REGEX.source, 'g')
+  let unifiedMatch
+  while ((unifiedMatch = unifiedStudyRegex.exec(processedContent)) !== null) {
+    try {
+      const titulo = unifiedMatch[1]?.trim() || 'Material de Estudo'
+      const jsonContent = unifiedMatch[2]?.trim()
+      if (!jsonContent) continue
+
+      const parsed = JSON.parse(jsonContent)
+      if (parsed.titulo) {
+        allMatches.push({
+          match: unifiedMatch,
+          type: 'unified_study',
+          unifiedStudyData: parsed
+        })
+        console.log('[ArtifactRenderer] Unified Study detectado:', titulo)
+      }
+    } catch (e) {
+      console.log('[ArtifactRenderer] Erro ao parsear unified_study:', e)
+    }
+  }
+
   // Ordenar por índice
   allMatches.sort((a, b) => (a.match.index ?? 0) - (b.match.index ?? 0))
 
@@ -2320,6 +2361,16 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
         startIndex,
         endIndex,
         simuladoData: matchData.simuladoData
+      }
+    } else if (type === 'unified_study' && matchData.unifiedStudyData) {
+      // Material de estudo unificado (componente com abas - estilo Claude AI)
+      artifact = {
+        type: 'unified_study',
+        title: (matchData.unifiedStudyData.titulo as string) || 'Material de Estudo',
+        content: JSON.stringify(matchData.unifiedStudyData),
+        startIndex,
+        endIndex,
+        unifiedStudyData: matchData.unifiedStudyData
       }
     } else {
       artifact = {
@@ -3367,6 +3418,17 @@ function ArtifactRendererComponent({
                   </p>
                 )}
               </div>
+            </div>
+          )
+        }
+
+        // Material de Estudo Unificado (componente com abas - estilo Claude AI)
+        if (part.type === 'unified_study' && part.unifiedStudyData) {
+          return (
+            <div key={index} className="my-4">
+              <UnifiedStudyMaterial
+                data={part.unifiedStudyData as unknown as import('./UnifiedStudyMaterial').UnifiedStudyData}
+              />
             </div>
           )
         }

@@ -30,6 +30,7 @@ export type ArtifactType =
   | 'modern_flowchart' // Fluxogramas modernos com nodes/edges
   | 'tree_diagram' // Organogramas/árvores hierárquicas
   | 'mermaid' // Diagramas Mermaid genéricos
+  | 'unified_study' // Material de estudo unificado com abas (flashcards + questões + diagramas)
 
 // Categorias de artefatos para abas
 export type ArtifactCategory = 'all' | 'images_generated' | 'images_uploaded' | 'pdfs' | 'questions' | 'diagrams' | 'simulados' | 'flashcards_cat'
@@ -510,7 +511,8 @@ export const ARTIFACT_ICONS: Record<ArtifactType, string> = {
   document: '📑',
   modern_flowchart: '🔀',
   tree_diagram: '🌳',
-  mermaid: '📊'
+  mermaid: '📊',
+  unified_study: '📚'
 }
 
 // Labels para cada tipo
@@ -539,7 +541,8 @@ export const ARTIFACT_LABELS: Record<ArtifactType, string> = {
   document: 'Documento',
   modern_flowchart: 'Fluxograma',
   tree_diagram: 'Organograma',
-  mermaid: 'Diagrama'
+  mermaid: 'Diagrama',
+  unified_study: 'Material de Estudo'
 }
 
 // Labels para categorias de artefatos

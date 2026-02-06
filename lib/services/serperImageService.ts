@@ -19,6 +19,7 @@ interface ResultadoBuscaImagens {
 
 // Domínios confiáveis para imagens médicas brasileiras
 const DOMINIOS_CONFIAVEIS = [
+  // Portais educativos brasileiros
   'brasilescola.uol.com.br',
   'mundoeducacao.uol.com.br',
   'todamateria.com.br',
@@ -27,17 +28,35 @@ const DOMINIOS_CONFIAVEIS = [
   'anatomiaemfoco.com.br',
   'kenhub.com',
   'msdmanuals.com',
+  'medicinanet.com.br',
+  'minhavida.com.br',
+  'drauziovarella.uol.com.br',
+  'wikipedia.org',
+  // Bases científicas e bibliotecas virtuais
   'scielo.br',
+  'bvsalud.org',
+  'lilacs.bvsalud.org',
+  'pubmed.ncbi.nlm.nih.gov',
+  'scholar.google.com',
+  // Instituições e governo
   'gov.br',
   'fiocruz.br',
+  'cfm.org.br',
+  'bce.unb.br',
+  // Universidades brasileiras
   'usp.br',
   'unicamp.br',
   'ufrj.br',
   'ufmg.br',
-  'wikipedia.org',
-  'medicinanet.com.br',
-  'minhavida.com.br',
-  'drauziovarella.uol.com.br'
+  'unb.br',
+  'ufba.br',
+  'unifesp.br',
+  // Revistas acadêmicas brasileiras
+  'educacaomedica.org.br',
+  'gmbahia.ufba.br',
+  // Plataformas educativas
+  'khanacademy.org',
+  'pt.khanacademy.org',
 ]
 
 // Domínios a EVITAR (não confiáveis)
@@ -272,7 +291,9 @@ interface ResultadoBuscaImagensComFallback extends ResultadoBuscaImagens {
 // Domínios top para ranking (maior prioridade)
 const DOMINIOS_TOP = [
   'brasilescola', 'infoescola', 'usp', 'unicamp', 'ufrj',
-  'ufmg', 'fiocruz', 'scielo', 'kenhub', 'msdmanuals'
+  'ufmg', 'fiocruz', 'scielo', 'kenhub', 'msdmanuals',
+  'bvsalud', 'lilacs', 'pubmed', 'cfm', 'gov.br',
+  'educacaomedica', 'khanacademy', 'anatomiaemfoco', 'unifesp'
 ]
 
 /**

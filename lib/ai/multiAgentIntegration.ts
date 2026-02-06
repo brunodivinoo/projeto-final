@@ -4,6 +4,7 @@
 import { generateStudyPlan, type StudyPlanRequest, type StudyPlanResult } from '@/lib/agents/crews/study-plan-crew'
 import { generateContent, type ContentRequest, type ContentCrewResult } from '@/lib/agents/crews/content-crew'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { buscarImagensComFallback } from '@/lib/services/serperImageService'
 
 // ==========================================
 // TIPOS
@@ -527,6 +528,277 @@ ${MERMAID_STYLE_BLOCK}
 }
 
 // ==========================================
+// GERADOR DE DADOS VISUAIS ESTRUTURADOS (Gemini)
+// ==========================================
+
+interface VisualDataResult {
+  diagrama?: {
+    titulo: string
+    descricao?: string
+    elementos: Array<{
+      id: string
+      nome: string
+      emoji?: string
+      descricao?: string
+      x: number
+      y: number
+      tipo?: string
+    }>
+  }
+  fluxograma?: {
+    titulo: string
+    descricao?: string
+    etapas: Array<{
+      id: string
+      texto: string
+      subtexto?: string
+      emoji?: string
+      tipo: 'inicio' | 'processo' | 'decisao' | 'fim'
+      cor?: string
+    }>
+    conexoes: Array<{ de: string; para: string; label?: string }>
+  }
+  organograma?: {
+    titulo: string
+    descricao?: string
+    raiz: {
+      nome: string
+      emoji?: string
+      descricao?: string
+      filhos?: Array<{
+        nome: string
+        emoji?: string
+        descricao?: string
+        filhos?: Array<{
+          nome: string
+          emoji?: string
+          descricao?: string
+        }>
+      }>
+    }
+  }
+}
+
+/**
+ * Gera dados visuais estruturados (diagrama, fluxograma, organograma) usando Gemini Flash
+ * Retorna JSON estruturado para renderização CSS (não Mermaid)
+ */
+async function generateVisualDataWithAI(
+  tema: string,
+  visuais: string[]
+): Promise<VisualDataResult> {
+  try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      generationConfig: {
+        temperature: 0.5,
+        maxOutputTokens: 4096,
+        responseMimeType: 'application/json'
+      }
+    })
+
+    const sections: string[] = []
+
+    if (visuais.includes('diagrama')) {
+      sections.push(`"diagrama": {
+  "titulo": "titulo do diagrama sobre o tema",
+  "descricao": "subtitulo curto descritivo em CAIXA ALTA",
+  "elementos": [
+    { "id": "el1", "nome": "Nome da Estrutura", "emoji": "emoji representativo", "descricao": "breve descricao", "x": 50, "y": 20, "tipo": "orgao" }
+  ]
+}
+REGRAS diagrama: coloque 6-10 elementos, x e y sao porcentagens (0-100), distribua bem no espaço, use emojis medicos`)
+    }
+
+    if (visuais.includes('fluxograma')) {
+      sections.push(`"fluxograma": {
+  "titulo": "titulo do fluxograma",
+  "descricao": "subtitulo curto descritivo em CAIXA ALTA",
+  "etapas": [
+    { "id": "e1", "texto": "Etapa Principal", "subtexto": "detalhes", "emoji": "emoji", "tipo": "inicio", "cor": "inicio" },
+    { "id": "e2", "texto": "Processo", "subtexto": "descricao", "emoji": "emoji", "tipo": "processo" }
+  ],
+  "conexoes": [
+    { "de": "e1", "para": "e2" },
+    { "de": "e3", "para": "e4", "label": "Se sim" }
+  ]
+}
+REGRAS fluxograma: use 5-8 etapas, tipos: inicio/processo/decisao/fim, decisoes podem ter 2+ conexoes com labels, cor pode ser: inicio/processo/decisao/fim/ovulacao/lutea`)
+    }
+
+    if (visuais.includes('organograma')) {
+      sections.push(`"organograma": {
+  "titulo": "titulo do organograma",
+  "descricao": "subtitulo curto descritivo em CAIXA ALTA",
+  "raiz": {
+    "nome": "Categoria Principal",
+    "emoji": "emoji",
+    "descricao": "descricao curta",
+    "filhos": [
+      {
+        "nome": "Subcategoria",
+        "emoji": "emoji",
+        "descricao": "descricao",
+        "filhos": [
+          { "nome": "Item", "emoji": "emoji", "descricao": "descricao" }
+        ]
+      }
+    ]
+  }
+}
+REGRAS organograma: maximo 3 niveis de profundidade, 2-4 filhos por no, use emojis medicos em cada no`)
+    }
+
+    const prompt = `Gere dados EDUCATIVOS MEDICOS PRECISOS sobre "${tema}" em formato JSON.
+
+RETORNE UM JSON com estas chaves:
+${sections.join('\n\n')}
+
+REGRAS GLOBAIS:
+1. Conteudo REAL e preciso sobre "${tema}" - terminologia medica correta
+2. Use emojis adequados ao contexto medico (orgaos, processos, etc.)
+3. Todos os textos em portugues do Brasil
+4. Seja especifico - nada generico
+5. Use nomes reais de estruturas, processos, fases etc.
+
+Retorne APENAS o JSON valido.`
+
+    const result = await model.generateContent(prompt)
+    let jsonStr = result.response.text().trim()
+
+    // Limpar fences markdown se presentes
+    jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim()
+
+    const parsed = JSON.parse(jsonStr) as VisualDataResult
+    console.log(`[VisualAI] Dados visuais gerados com sucesso para "${tema}": ${Object.keys(parsed).join(', ')}`)
+    return parsed
+  } catch (error) {
+    console.error(`[VisualAI] Erro ao gerar dados visuais:`, error)
+    return generateFallbackVisualData(tema, visuais)
+  }
+}
+
+/**
+ * Fallback: gera dados visuais basicos quando a IA falha
+ */
+function generateFallbackVisualData(tema: string, visuais: string[]): VisualDataResult {
+  const result: VisualDataResult = {}
+
+  if (visuais.includes('diagrama')) {
+    result.diagrama = {
+      titulo: tema,
+      descricao: 'DIAGRAMA CONCEITUAL',
+      elementos: [
+        { id: 'e1', nome: tema, emoji: '🏥', descricao: 'Tema principal', x: 50, y: 15, tipo: 'principal' },
+        { id: 'e2', nome: 'Definição', emoji: '📖', descricao: 'Conceito base', x: 20, y: 40 },
+        { id: 'e3', nome: 'Classificação', emoji: '📋', descricao: 'Tipos e subtipos', x: 50, y: 40 },
+        { id: 'e4', nome: 'Tratamento', emoji: '💊', descricao: 'Abordagem terapêutica', x: 80, y: 40 },
+        { id: 'e5', nome: 'Diagnóstico', emoji: '🔬', descricao: 'Exames e critérios', x: 35, y: 70 },
+        { id: 'e6', nome: 'Prognóstico', emoji: '📈', descricao: 'Evolução e desfechos', x: 65, y: 70 },
+      ]
+    }
+  }
+
+  if (visuais.includes('fluxograma')) {
+    result.fluxograma = {
+      titulo: 'Abordagem Clínica',
+      descricao: `FLUXO DE AVALIAÇÃO - ${tema.toUpperCase()}`,
+      etapas: [
+        { id: 'f1', texto: 'Avaliação Inicial', subtexto: 'Anamnese e exame físico', emoji: '👨‍⚕️', tipo: 'inicio', cor: 'inicio' },
+        { id: 'f2', texto: 'Exames Complementares', subtexto: 'Laboratoriais e imagem', emoji: '🔬', tipo: 'processo' },
+        { id: 'f3', texto: 'Diagnóstico Confirmado?', emoji: '❓', tipo: 'decisao' },
+        { id: 'f4', texto: 'Tratamento', subtexto: 'Conduta terapêutica', emoji: '💊', tipo: 'processo' },
+        { id: 'f5', texto: 'Investigação Adicional', subtexto: 'Exames específicos', emoji: '🔎', tipo: 'processo' },
+        { id: 'f6', texto: 'Acompanhamento', subtexto: 'Seguimento clínico', emoji: '📋', tipo: 'fim', cor: 'fim' },
+      ],
+      conexoes: [
+        { de: 'f1', para: 'f2' },
+        { de: 'f2', para: 'f3' },
+        { de: 'f3', para: 'f4', label: 'Sim' },
+        { de: 'f3', para: 'f5', label: 'Não' },
+        { de: 'f4', para: 'f6' },
+        { de: 'f5', para: 'f3' },
+      ]
+    }
+  }
+
+  if (visuais.includes('organograma')) {
+    result.organograma = {
+      titulo: 'Classificação',
+      descricao: `ORGANIZAÇÃO HIERÁRQUICA - ${tema.toUpperCase()}`,
+      raiz: {
+        nome: tema,
+        emoji: '🏥',
+        descricao: 'Classificação geral',
+        filhos: [
+          {
+            nome: 'Categoria A',
+            emoji: '📋',
+            descricao: 'Primeiro grupo',
+            filhos: [
+              { nome: 'Tipo 1', emoji: '🔵', descricao: 'Subtipo' },
+              { nome: 'Tipo 2', emoji: '🟢', descricao: 'Subtipo' },
+            ]
+          },
+          {
+            nome: 'Categoria B',
+            emoji: '📑',
+            descricao: 'Segundo grupo',
+            filhos: [
+              { nome: 'Tipo 3', emoji: '🟡', descricao: 'Subtipo' },
+              { nome: 'Tipo 4', emoji: '🔴', descricao: 'Subtipo' },
+            ]
+          }
+        ]
+      }
+    }
+  }
+
+  return result
+}
+
+/**
+ * Gera emojis para flashcards com base no tema
+ */
+function getFlashcardEmojis(tema: string): string[] {
+  const temaLower = tema.toLowerCase()
+  if (temaLower.includes('reprodut') || temaLower.includes('ginecol')) {
+    return ['🫘', '🌿', '🍐', '🌸', '🩸', '🧬', '💧', '🌺']
+  }
+  if (temaLower.includes('cardi') || temaLower.includes('coração')) {
+    return ['❤️', '🫀', '💓', '🩺', '📈', '💉', '🔬', '🏥']
+  }
+  if (temaLower.includes('neuro') || temaLower.includes('cérebro')) {
+    return ['🧠', '⚡', '🔬', '💊', '🩻', '🧬', '📊', '🏥']
+  }
+  if (temaLower.includes('pulm') || temaLower.includes('respir')) {
+    return ['🫁', '💨', '🩺', '🔬', '💊', '📊', '🏥', '⚕️']
+  }
+  // Default
+  return ['📖', '🔬', '💊', '🩺', '🧬', '📋', '🏥', '⚕️']
+}
+
+/**
+ * Detecta ícone do tema
+ */
+function getThemeIcon(tema: string): string {
+  const temaLower = tema.toLowerCase()
+  if (temaLower.includes('reprodut') && temaLower.includes('femin')) return '♀️'
+  if (temaLower.includes('reprodut') && temaLower.includes('masc')) return '♂️'
+  if (temaLower.includes('cardi') || temaLower.includes('coração')) return '❤️'
+  if (temaLower.includes('neuro') || temaLower.includes('cérebro')) return '🧠'
+  if (temaLower.includes('pulm') || temaLower.includes('respir')) return '🫁'
+  if (temaLower.includes('digest') || temaLower.includes('gastr')) return '🫃'
+  if (temaLower.includes('renal') || temaLower.includes('rim')) return '🫘'
+  if (temaLower.includes('endócrino') || temaLower.includes('hormôn')) return '🧪'
+  if (temaLower.includes('imuno') || temaLower.includes('infec')) return '🦠'
+  if (temaLower.includes('osso') || temaLower.includes('ortop')) return '🦴'
+  if (temaLower.includes('pele') || temaLower.includes('derma')) return '🧴'
+  return '📚'
+}
+
+// ==========================================
 // EXECUTOR DE MULTI-AGENTES
 // ==========================================
 
@@ -578,19 +850,21 @@ export async function executeMultiAgentTask(
           revisarConteudo: params.revisarConteudo as boolean || true
         }
 
-        const result: ContentCrewResult = await generateContent(request)
-
-        // Adicionar conteudo visual se solicitado (diagrama, fluxograma, organograma)
-        // Gera diagramas com IA real (Gemini Flash) em paralelo
         const visuais = params.visuais as string[] || []
-        let visualContent = ''
         const tema = params.tema as string || 'Medicina'
 
-        if (visuais.length > 0) {
-          console.log(`[MultiAgent] Gerando ${visuais.length} visuais com IA: ${visuais.join(', ')}`)
-
-          // Gerar todos os diagramas em paralelo com IA
-          const diagramPromises = visuais.map(async (tipo) => {
+        // Executar em paralelo: content-crew + visual data + imagens + mermaid (backward compat)
+        const [result, visualData, imagensResult, ...mermaidResults] = await Promise.allSettled([
+          // 1. Content-crew (questões + flashcards + resumo)
+          generateContent(request),
+          // 2. Dados visuais estruturados para o componente unificado
+          visuais.length > 0
+            ? generateVisualDataWithAI(tema, visuais)
+            : Promise.resolve({} as VisualDataResult),
+          // 3. Buscar imagens via Serper
+          buscarImagensComFallback(tema, 4),
+          // 4. Mermaid blocks para backward compatibility (sidebar)
+          ...visuais.map(async (tipo) => {
             const tipoLabel = tipo.charAt(0).toUpperCase() + tipo.slice(1)
             try {
               const mermaidCode = await generateMermaidWithAI(
@@ -599,25 +873,137 @@ export async function executeMultiAgentTask(
               )
               return `\n\n\`\`\`mermaid:${tipoLabel} - ${tema}\n${mermaidCode}\n\`\`\`\n`
             } catch (err) {
-              console.error(`[MultiAgent] Erro ao gerar ${tipo}:`, err)
+              console.error(`[MultiAgent] Erro ao gerar mermaid ${tipo}:`, err)
               const fallback = generateFallbackMermaid(tema, tipo as 'diagrama' | 'fluxograma' | 'organograma')
               return `\n\n\`\`\`mermaid:${tipoLabel} - ${tema}\n${fallback}\n\`\`\`\n`
             }
           })
+        ])
 
-          const diagramResults = await Promise.all(diagramPromises)
-          visualContent = diagramResults.join('')
+        // Extrair resultados (com fallback se algum falhou)
+        const contentResult = result.status === 'fulfilled' ? result.value : null
+        const visuals = visualData.status === 'fulfilled' ? visualData.value : {} as VisualDataResult
+        const imagens = imagensResult.status === 'fulfilled' ? imagensResult.value : null
+        const mermaidContent = mermaidResults
+          .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
+          .map(r => r.value)
+          .join('')
+
+        if (!contentResult) {
+          return {
+            success: false,
+            response: '',
+            error: 'Erro ao gerar conteúdo com content-crew'
+          }
         }
+
+        // Extrair flashcards e questões do resultado da content-crew
+        const flashcardEmojis = getFlashcardEmojis(tema)
+        const flashcardsFromCrew = contentResult.conteudos.find(c => c.type === 'flashcards')
+        const questoesFromCrew = contentResult.conteudos.find(c => c.type === 'questoes')
+
+        // Construir flashcards com emojis para o componente unificado
+        let unifiedFlashcards: Array<{ id: string; emoji?: string; frente: string; verso: string; referencia?: string }> | undefined
+        if (flashcardsFromCrew?.flashcards) {
+          unifiedFlashcards = flashcardsFromCrew.flashcards.flashcards.map((fc, i) => ({
+            id: `fc-${i + 1}`,
+            emoji: flashcardEmojis[i % flashcardEmojis.length],
+            frente: fc.frente,
+            verso: fc.verso,
+            referencia: (fc as Record<string, unknown>).referencia as string | undefined
+          }))
+        }
+
+        // Construir questões para o componente unificado
+        let unifiedQuestoes: Array<{
+          numero: number; disciplina: string; assunto: string; enunciado: string;
+          alternativas: Array<{ letra: string; texto: string }>;
+          gabarito_comentado: { resposta_correta: string; explicacao: string; analise_alternativas?: Array<{ letra: string; analise: string }>; ponto_chave?: string; imagem_url?: string }
+        }> | undefined
+        if (questoesFromCrew?.questoes) {
+          // Buscar imagem para gabarito se possível
+          const imagemGabarito = imagens?.imagens?.[1]?.url || undefined
+
+          unifiedQuestoes = questoesFromCrew.questoes.questoes.map((q, i) => ({
+            numero: i + 1,
+            disciplina: questoesFromCrew.questoes?.metadata?.tema_principal || tema,
+            assunto: q.tema || tema,
+            enunciado: q.enunciado,
+            alternativas: Object.entries(q.alternativas)
+              .filter(([, alt]) => alt)
+              .map(([letra, texto]) => ({ letra, texto: texto as string })),
+            gabarito_comentado: {
+              resposta_correta: q.gabarito,
+              explicacao: q.explicacao,
+              analise_alternativas: (q.analise_alternativas || []).map((a: { letra: string; analise: string }) => ({
+                letra: a.letra,
+                analise: a.analise
+              })),
+              ponto_chave: q.ponto_chave || '',
+              imagem_url: i === 0 ? imagemGabarito : undefined
+            }
+          }))
+        }
+
+        // Construir imagens para o componente unificado
+        const unifiedImagens = imagens?.imagens?.map(img => ({
+          url: img.url,
+          titulo: img.titulo,
+          fonte: img.fonte
+        })) || []
+
+        // Montar o JSON do unified_study
+        const unifiedStudyData: Record<string, unknown> = {
+          titulo: tema,
+          icone: getThemeIcon(tema),
+          subtitulo: 'Material de estudo interativo',
+          imagens: unifiedImagens.length > 0 ? unifiedImagens : undefined
+        }
+
+        if (unifiedFlashcards && unifiedFlashcards.length > 0) {
+          unifiedStudyData.flashcards = { cards: unifiedFlashcards }
+        }
+        if (unifiedQuestoes && unifiedQuestoes.length > 0) {
+          unifiedStudyData.questoes = unifiedQuestoes
+        }
+        if (visuals.diagrama) {
+          unifiedStudyData.diagrama = visuals.diagrama
+        }
+        if (visuals.fluxograma) {
+          unifiedStudyData.fluxograma = visuals.fluxograma
+        }
+        if (visuals.organograma) {
+          unifiedStudyData.organograma = visuals.organograma
+        }
+
+        // Gerar texto de introdução com imagens
+        let introText = `# Material de Estudo: ${tema}\n\n`
+
+        // Adicionar imagens inline no texto
+        if (unifiedImagens.length > 0) {
+          introText += `\n`
+          unifiedImagens.slice(0, 2).forEach((img) => {
+            introText += `![${img.titulo}](${img.url})\n`
+          })
+          introText += `\n`
+        }
+
+        // O bloco unified_study (componente principal)
+        const unifiedBlock = `\n\n\`\`\`unified_study:${tema}\n${JSON.stringify(unifiedStudyData)}\n\`\`\`\n`
+
+        // Combinar: intro + unified block + blocos tradicionais (flashcards/questões/mermaid para sidebar)
+        const traditionalBlocks = contentResult.formatted + mermaidContent
 
         return {
           success: true,
-          response: result.formatted + visualContent,
-          executionLog: result.executionLog,
+          response: introText + unifiedBlock + '\n\n---\n\n' + traditionalBlocks,
+          executionLog: contentResult.executionLog,
           artifacts: {
             type: 'conteudo_completo',
             data: {
-              conteudos: result.conteudos,
-              revisoes: result.revisoes
+              conteudos: contentResult.conteudos,
+              revisoes: contentResult.revisoes,
+              unifiedStudyData
             }
           }
         }
