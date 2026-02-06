@@ -1849,13 +1849,55 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
     }
   }
 
+  // Buscar flashcards em formato ```flashcards:Titulo (formato principal de decks)
+  const flashcardBlockRegex = new RegExp(FLASHCARD_BLOCK_REGEX.source, 'g')
+  let flashcardBlockMatch
+  while ((flashcardBlockMatch = flashcardBlockRegex.exec(processedContent)) !== null) {
+    try {
+      const titulo = flashcardBlockMatch[1]?.trim() || 'Flashcards'
+      const jsonContent = flashcardBlockMatch[2]?.trim()
+      if (!jsonContent) continue
+
+      const parsed = JSON.parse(jsonContent)
+      const cardsArray = Array.isArray(parsed) ? parsed : parsed.cards || parsed.flashcards || []
+
+      if (cardsArray.length > 0 && cardsArray[0].frente && cardsArray[0].verso) {
+        const flashcardData = {
+          titulo,
+          cards: cardsArray.map((card: { id?: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: unknown }, idx: number) => ({
+            id: card.id || `flashcard-${idx + 1}-${Date.now()}`,
+            frente: card.frente,
+            verso: card.verso,
+            referencia: card.referencia,
+            tags: card.tags,
+            dificuldade: parseDificuldade(card.dificuldade)
+          }))
+        }
+
+        allMatches.push({
+          match: flashcardBlockMatch,
+          type: 'flashcards',
+          flashcardData
+        })
+
+        if (parseLogAllowed) {
+          console.log('[ArtifactRenderer] Flashcards block detectados:', flashcardData.cards.length, 'titulo:', titulo)
+        }
+      }
+    } catch (e) {
+      if (parseLogAllowed) {
+        console.log('[ArtifactRenderer] Erro ao parsear flashcards block:', e)
+      }
+    }
+  }
+
   // Buscar flashcards em formato JSON direto (bloco de código ```json com array)
   const flashcardJsonRegex = /```(?:json)?\s*\n(\s*\[[\s\S]*?"frente"[\s\S]*?"verso"[\s\S]*?\])\s*\n```/g
   let flashcardJsonMatch
   while ((flashcardJsonMatch = flashcardJsonRegex.exec(processedContent)) !== null) {
     try {
       const parsed = JSON.parse(flashcardJsonMatch[1])
-      if (Array.isArray(parsed) && parsed.length >= 2 && parsed[0].frente && parsed[0].verso) {
+      if (Array.isArray(parsed) && parsed.length >= 1 && parsed[0].frente && parsed[0].verso) {
         const flashcardData = {
           titulo: 'Flashcards',
           cards: parsed.map((card: { frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: unknown }, idx: number) => ({
@@ -1885,7 +1927,7 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
   // IMPORTANTE: Processa mesmo quando há questões na resposta!
   if (!allMatches.some(m => m.type === 'flashcards')) {
     const flashcardData = extractFlashcardsFromText(processedContent)
-    if (flashcardData && flashcardData.cards.length >= 2) {
+    if (flashcardData && flashcardData.cards.length >= 1) {
       // Encontrar a posição do JSON array no texto para removê-lo
       // Usar regex mais precisa para encontrar apenas o array JSON
       const jsonArrayPattern = /\[\s*\n?\s*\{[\s\S]*?"frente"[\s\S]*?"verso"[\s\S]*?\}\s*\n?\s*\]/
