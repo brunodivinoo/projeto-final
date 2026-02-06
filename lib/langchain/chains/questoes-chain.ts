@@ -245,7 +245,7 @@ export async function runQuestoesChainWithValidation(
 export function formatQuestoesParaExibicao(output: QuestoesOutput): string {
   // Gera blocos ```questao com JSON estruturado para renderização como DECK cards
   // O ArtifactRenderer detecta esses blocos e renderiza como cards clicáveis na sidebar
-  let texto = `Questoes - ${output.metadata.tema_principal}\nTotal: ${output.metadata.total_geradas} questoes\n`
+  let texto = `Questões - ${output.metadata.tema_principal}\nTotal: ${output.metadata.total_geradas} questões\n`
 
   output.questoes.forEach((q, i) => {
     const questionJson = {

@@ -429,9 +429,18 @@ Responda APENAS com o código Mermaid, começando com "graph TD" ou "flowchart T
       .replace(/\s*```$/i, '')
       .trim()
 
-    // Validar que começa com graph ou flowchart
+    // Garantir que começa com graph ou flowchart
     if (!mermaidCode.startsWith('graph') && !mermaidCode.startsWith('flowchart')) {
-      throw new Error('Código Mermaid inválido gerado pela IA')
+      // Tentar encontrar graph/flowchart no início de alguma linha
+      const headerMatch = mermaidCode.match(/^(graph|flowchart)\s+(TD|LR|BT|RL)/m)
+      if (headerMatch) {
+        // Remover lixo antes do header
+        mermaidCode = mermaidCode.substring(mermaidCode.indexOf(headerMatch[0]))
+      } else {
+        // Adicionar header padrão
+        const header = tipo === 'fluxograma' ? 'flowchart TD' : 'graph TD'
+        mermaidCode = header + '\n' + mermaidCode
+      }
     }
 
     // Garantir que tem os estilos

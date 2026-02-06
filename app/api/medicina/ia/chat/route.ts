@@ -611,16 +611,29 @@ async function streamMultiAgentResponse(params: StreamMultiAgentParams) {
         )
 
         if (result.success) {
-          // Enviar resposta em chunks para simular streaming
-          const responseChunks = chunkResponse(result.response, 100) // 100 chars por chunk
+          // Separar texto de artefatos (code blocks) para não quebrar blocos no chunking
+          const parts = splitTextAndArtifacts(result.response)
 
-          for (const chunk of responseChunks) {
-            fullResponse += chunk
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`)
-            )
-            // Pequeno delay para efeito de streaming
-            await new Promise(resolve => setTimeout(resolve, 10))
+          for (const part of parts) {
+            if (part.type === 'artifact') {
+              // Enviar blocos de artefatos INTEIROS (nunca chunkar)
+              fullResponse += part.content
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: part.content })}\n\n`)
+              )
+              // Delay maior para dar tempo do frontend processar o artefato
+              await new Promise(resolve => setTimeout(resolve, 50))
+            } else {
+              // Streamar texto em chunks pequenos para efeito de streaming
+              const chunks = chunkResponse(part.content, 30)
+              for (const chunk of chunks) {
+                fullResponse += chunk
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`)
+                )
+                await new Promise(resolve => setTimeout(resolve, 15))
+              }
+            }
           }
 
           // Log de execução apenas no console do servidor (não enviar para o chat)
@@ -733,6 +746,48 @@ async function streamMultiAgentResponse(params: StreamMultiAgentParams) {
       'Connection': 'keep-alive'
     }
   })
+}
+
+/**
+ * Separa texto de artefatos (code blocks) para que artefatos
+ * sejam enviados inteiros e não quebrados pelo chunking
+ */
+function splitTextAndArtifacts(text: string): Array<{ type: 'text' | 'artifact'; content: string }> {
+  const parts: Array<{ type: 'text' | 'artifact'; content: string }> = []
+
+  // Regex para encontrar blocos de código completos (```tipo:titulo ... ```)
+  const codeBlockRegex = /```(?:mermaid|questao|question|flashcards|simulado|layers|staging|flowchart|tree|organograma)[:\s][^`]*```/g
+
+  let lastIndex = 0
+  let match
+
+  while ((match = codeBlockRegex.exec(text)) !== null) {
+    // Texto antes do bloco
+    if (match.index > lastIndex) {
+      const textBefore = text.slice(lastIndex, match.index)
+      if (textBefore.trim()) {
+        parts.push({ type: 'text', content: textBefore })
+      }
+    }
+    // O bloco de artefato inteiro
+    parts.push({ type: 'artifact', content: match[0] })
+    lastIndex = match.index + match[0].length
+  }
+
+  // Texto restante após último bloco
+  if (lastIndex < text.length) {
+    const remaining = text.slice(lastIndex)
+    if (remaining.trim()) {
+      parts.push({ type: 'text', content: remaining })
+    }
+  }
+
+  // Se não encontrou nenhum bloco, retornar tudo como texto
+  if (parts.length === 0) {
+    parts.push({ type: 'text', content: text })
+  }
+
+  return parts
 }
 
 /**
@@ -1202,28 +1257,23 @@ async function streamClaude(params: StreamClaudeParams) {
     } as Anthropic.DocumentBlockParam)
   }
 
-  // ========== PIPELINE META AI COMPLETO ==========
-  // PASSO 1: Recebe pergunta (já recebida em 'mensagem')
+  // ========== PIPELINE META AI COMPLETO (OTIMIZADO - PARALELO) ==========
+  // Executar análises independentes em paralelo para reduzir latência
 
-  // PASSO 2: Análise de estrutura (TaskManager)
+  // BATCH 1: Análises independentes (não dependem umas das outras)
   const analise = analisarPergunta(mensagem)
-  const instrucoesAdicionais = gerarInstrucoesAdicionais(analise)
-
-  // PASSO 3: Classificação de intenção (IntentClassifier)
   const classificacao = classificarIntencao(mensagem)
+  const nivelDetectado = detectarNivelConhecimento(mensagem)
+  const analiseUrgencia = detectarUrgencia(mensagem)
+
+  // BATCH 2: Derivações (dependem do batch 1)
+  const instrucoesAdicionais = gerarInstrucoesAdicionais(analise)
   const instrucoesIntencao = gerarInstrucoesDeIntencao(classificacao)
   const configAPI = getConfiguracoesAPI(classificacao)
-
-  // PASSO 3.1: Análise de perfil do usuário (UserProfileManager)
-  // Criar perfil básico para esta sessão (pode ser persistido no futuro)
   const perfilUsuario: PerfilUsuario = criarPerfilPadrao(user_id)
-  const nivelDetectado = detectarNivelConhecimento(mensagem)
   perfilUsuario.nivelConhecimento = nivelDetectado
   const analisePerfil = analisarPerfilParaContexto(perfilUsuario, mensagem)
   const instrucoesPerfil = gerarInstrucoesPersonalizadas(analisePerfil)
-
-  // PASSO 3.2: Detecção de urgência (UrgencyDetector)
-  const analiseUrgencia = detectarUrgencia(mensagem)
   const instrucoesUrgencia = gerarInstrucoesUrgencia(analiseUrgencia)
 
   // PASSO 3.3: Estrutura de explicação (ExplanationStructure)
@@ -1321,59 +1371,43 @@ async function streamClaude(params: StreamClaudeParams) {
   const modeloSelecionado = MODELOS.claude.sonnet
   let systemPrompt = params.plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
 
-  // ========== MEMORIA PERSISTENTE - CONTEXTO NO PROMPT ==========
-  // Buscar contexto da memória do usuário para personalizar respostas
-  try {
-    const memoryContext = await getContextForPrompt(user_id)
-    if (memoryContext && memoryContext.trim().length > 0) {
-      systemPrompt += memoryContext
-      console.log(`[Memory] Contexto adicionado ao prompt (${memoryContext.length} chars)`)
-    }
-  } catch (memError) {
-    console.error('[Memory] Erro ao buscar contexto (usando fallback):', memError)
-  }
-  // ========== FIM MEMORIA PERSISTENTE ==========
-
-  // ========== SISTEMA DE VARIABILIDADE ==========
-  // Detectar tipo de resposta e aplicar configurações de variação
+  // ========== ENRIQUECIMENTO PARALELO (memória + variação + HF) ==========
+  // Executar todas as operações async em paralelo para reduzir latência
   const responseType = detectResponseType(params.mensagem)
   const variationConfig = VARIATION_CONFIG[responseType]
   const topic = extractTopic(params.mensagem)
   const styleInstructions = generateStyleInstructions(user_id)
-
-  // Enriquecer prompt com variação de abordagem
   const variedPromptInstructions = generateVariedPrompt('', topic, user_id)
 
-  // Adicionar instruções de estilo e variação ao system prompt
+  // Rodar memória e HF em paralelo (ambos são I/O-bound)
+  const [memoryResult, agentResult] = await Promise.allSettled([
+    getContextForPrompt(user_id),
+    (FEATURES.SMART_AGENTS || FEATURES.MEDICAL_RAG)
+      ? prepareAgentContext(params.mensagem)
+      : Promise.resolve(null)
+  ])
+
+  // Aplicar resultados
+  if (memoryResult.status === 'fulfilled' && memoryResult.value?.trim()) {
+    systemPrompt += memoryResult.value
+    console.log(`[Memory] Contexto adicionado (${memoryResult.value.length} chars)`)
+  }
+
   systemPrompt += `\n\n---\n${styleInstructions}\n${variedPromptInstructions}`
 
-  console.log(`[Variação] Tipo: ${responseType} | Temp: ${variationConfig.temperature} | Tópico: ${topic}`)
-  // ========== FIM SISTEMA DE VARIABILIDADE ==========
-
-  // ========== ENRIQUECIMENTO COM HUGGING FACE ==========
   let agentContext: Awaited<ReturnType<typeof prepareAgentContext>> | null = null
-
-  try {
-    if (FEATURES.SMART_AGENTS || FEATURES.MEDICAL_RAG) {
-      // Preparar contexto do agente
-      agentContext = await prepareAgentContext(params.mensagem)
-
-      // Adicionar instrucoes especificas do agente
-      if (agentContext.systemPromptAddition) {
-        systemPrompt += '\n\n' + agentContext.systemPromptAddition
-      }
-
-      // Adicionar contexto medico enriquecido
-      if (agentContext.enrichedContext) {
-        systemPrompt += '\n\n' + agentContext.enrichedContext
-      }
-
-      console.log(`[HF] Agente detectado: ${agentContext.agentType}`)
+  if (agentResult.status === 'fulfilled' && agentResult.value) {
+    agentContext = agentResult.value
+    if (agentContext.systemPromptAddition) {
+      systemPrompt += '\n\n' + agentContext.systemPromptAddition
     }
-  } catch (hfError) {
-    // Se falhar, continua com o prompt original
-    console.error('[HF] Erro ao enriquecer prompt (usando fallback):', hfError)
+    if (agentContext.enrichedContext) {
+      systemPrompt += '\n\n' + agentContext.enrichedContext
+    }
+    console.log(`[HF] Agente: ${agentContext.agentType}`)
   }
+
+  console.log(`[Variação] Tipo: ${responseType} | Temp: ${variationConfig.temperature} | Tópico: ${topic}`)
   // ========== FIM ENRIQUECIMENTO ==========
 
   // IMPORTANTE: Extended Thinking NÃO é compatível com tool_use no agentic loop

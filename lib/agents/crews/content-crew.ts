@@ -1,4 +1,4 @@
-// Crew de Criacao de Conteudo
+// Crew de Criação de Conteúdo
 // Coordena agentes para criar material de estudo de alta qualidade
 
 import { ResearcherAgent, createResearcherAgent } from '../agents/researcher'
@@ -55,11 +55,11 @@ export class ContentCrew {
   }
 
   /**
-   * Executa a criacao de conteudo
+   * Executa a criação de conteúdo
    */
   async execute(request: ContentRequest): Promise<ContentCrewResult> {
     this.executionLog = []
-    this.log(`Iniciando criacao de conteudo sobre: ${request.tema}`)
+    this.log(`Iniciando criação de conteúdo sobre: ${request.tema}`)
 
     const {
       tema,
@@ -78,7 +78,7 @@ export class ContentCrew {
     let pesquisaResult: ContentCrewResult['pesquisa']
 
     if (pesquisarAntees) {
-      this.log('[Pesquisador] Buscando informacoes atualizadas...')
+      this.log('[Pesquisador] Buscando informações atualizadas...')
 
       try {
         const pesquisa = await this.researcher.research({
@@ -92,7 +92,7 @@ export class ContentCrew {
           sources: pesquisa.sources.length
         }
 
-        this.log(`[Pesquisador] Encontradas ${pesquisa.findings.length} informacoes`)
+        this.log(`[Pesquisador] Encontradas ${pesquisa.findings.length} informações`)
 
       } catch (error) {
         this.log(`[Pesquisador] Erro: ${error}`)
@@ -102,7 +102,7 @@ export class ContentCrew {
     // ==========================================
     // ETAPA 2: CRIACAO DE CONTEUDO
     // ==========================================
-    this.log('[Criador] Gerando conteudo...')
+    this.log('[Criador] Gerando conteúdo...')
 
     const conteudos: ContentOutput[] = []
 
@@ -138,7 +138,7 @@ export class ContentCrew {
     let revisoes: ContentCrewResult['revisoes']
 
     if (revisarConteudo && conteudos.length > 0) {
-      this.log('[Revisor] Revisando conteudo...')
+      this.log('[Revisor] Revisando conteúdo...')
       revisoes = []
 
       for (const conteudo of conteudos) {
@@ -160,7 +160,7 @@ export class ContentCrew {
           // Se nao aprovado e tem conteudo corrigido, usar
           if (!revisao.approved && revisao.correctedContent) {
             conteudo.formatted = revisao.correctedContent
-            this.log(`[Revisor] Conteudo de ${conteudo.type} corrigido`)
+            this.log(`[Revisor] Conteúdo de ${conteudo.type} corrigido`)
           }
 
         } catch (error) {
@@ -172,7 +172,7 @@ export class ContentCrew {
     // ==========================================
     // RESULTADO FINAL
     // ==========================================
-    this.log('Criacao de conteudo finalizada!')
+    this.log('Criação de conteúdo finalizada!')
 
     // Combinar todos os conteudos formatados
     let formatted = `# Material de Estudo: ${tema}\n\n`
