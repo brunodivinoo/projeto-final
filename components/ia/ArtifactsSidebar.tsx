@@ -70,6 +70,19 @@ const FlashcardDeck = dynamic(() => import('./FlashcardDeck'), {
   )
 })
 
+// Importar UnifiedStudyMaterial dinamicamente
+const UnifiedStudyMaterial = dynamic(() => import('./UnifiedStudyMaterial'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-gradient-to-b from-rose-50/80 to-pink-50/40 border border-rose-100 rounded-2xl p-6">
+      <div className="flex items-center gap-2 text-rose-400">
+        <div className="animate-spin w-5 h-5 border-2 border-rose-400 border-t-transparent rounded-full" />
+        <span>Carregando material de estudo...</span>
+      </div>
+    </div>
+  )
+})
+
 // Funções auxiliares para extrair informações do JSON
 function tryParseJson(content: string): Record<string, unknown> | null {
   try {
@@ -534,14 +547,22 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         throw new Error('JSON não reconhecido')
       } catch {
         // Não é JSON válido ou é JSON não reconhecido
-        // Verificar se começa com sintaxe Mermaid válida
-        const trimmedContent = artifact.content.trim()
-        const isMermaidSyntax = /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|gitGraph|mindmap|timeline|quadrantChart|sankey|xychart)/i.test(trimmedContent)
+        // Tentar limpar e corrigir o conteúdo Mermaid antes de verificar
+        let mermaidContent = artifact.content.trim()
+        // Remover fences markdown se presentes
+        mermaidContent = mermaidContent.replace(/^```(?:mermaid)?\s*/i, '').replace(/\s*```$/i, '').trim()
+        // Tentar encontrar graph/flowchart no início de alguma linha
+        const headerMatch = mermaidContent.match(/^(graph|flowchart)\s+(TD|LR|BT|RL)/m)
+        if (headerMatch && mermaidContent.indexOf(headerMatch[0]) > 0) {
+          mermaidContent = mermaidContent.substring(mermaidContent.indexOf(headerMatch[0]))
+        }
+
+        const isMermaidSyntax = /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|gitGraph|mindmap|timeline|quadrantChart|sankey|xychart)/i.test(mermaidContent)
 
         if (isMermaidSyntax) {
           return (
             <div className={`relative ${containerClass}`}>
-              <MermaidDiagram chart={artifact.content} title={artifact.title} />
+              <MermaidDiagram chart={mermaidContent} title={artifact.title} />
               <button
                 onClick={handleCopy}
                 className="absolute top-2 right-2 p-2 bg-black/50 rounded-lg hover:bg-black/70 transition-colors"
@@ -549,6 +570,16 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
               >
                 {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-600" />}
               </button>
+            </div>
+          )
+        }
+
+        // Último recurso: tentar forçar como flowchart
+        if (mermaidContent.includes('-->') || mermaidContent.includes('---')) {
+          const forcedMermaid = 'flowchart TD\n' + mermaidContent
+          return (
+            <div className={`relative ${containerClass}`}>
+              <MermaidDiagram chart={forcedMermaid} title={artifact.title} />
             </div>
           )
         }
@@ -1006,6 +1037,33 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
           </div>
         </div>
       )
+
+    case 'unified_study': {
+      // Renderizar material de estudo unificado completo com abas
+      try {
+        const unifiedData = JSON.parse(artifact.content)
+        const tabHint = useArtifactsStore.getState().artifactTabHint
+        return (
+          <div className={containerClass}>
+            <UnifiedStudyMaterial
+              data={unifiedData}
+              isFullscreen={isFullscreen}
+              initialTab={tabHint || undefined}
+            />
+          </div>
+        )
+      } catch {
+        return (
+          <div className={`p-4 ${containerClass}`}>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl">📚</span>
+              <h4 className="text-slate-800 font-medium">{artifact.title}</h4>
+            </div>
+            <div className="text-slate-700 text-sm whitespace-pre-wrap">{artifact.content}</div>
+          </div>
+        )
+      }
+    }
 
     default:
       return (

@@ -117,10 +117,32 @@ export interface UnifiedStudyData {
 interface UnifiedStudyMaterialProps {
   data: UnifiedStudyData
   isFullscreen?: boolean
+  initialTab?: string
 }
 
 // ==========================================
-// CORES DO TEMA
+// TEMAS DE CORES (variações)
+// ==========================================
+
+const COLOR_THEMES = [
+  { bg: 'from-rose-50/80 to-pink-50/40', border: 'border-rose-100', accent: 'text-rose-400', accentBg: 'bg-rose-100', accentText: 'text-rose-800', buttonActive: 'bg-rose-500 text-white', buttonInactive: 'bg-white text-gray-600 hover:bg-rose-50', tabActive: 'bg-rose-500', scrollbar: 'bg-rose-400', nodeHighlight: 'text-rose-700', orgRoot: 'bg-rose-100 border-rose-300', orgChild: 'border-rose-200', diagBg: 'bg-rose-50/50 border-rose-100', diagLine: '#f9a8d4' },
+  { bg: 'from-violet-50/80 to-purple-50/40', border: 'border-violet-100', accent: 'text-violet-400', accentBg: 'bg-violet-100', accentText: 'text-violet-800', buttonActive: 'bg-violet-500 text-white', buttonInactive: 'bg-white text-gray-600 hover:bg-violet-50', tabActive: 'bg-violet-500', scrollbar: 'bg-violet-400', nodeHighlight: 'text-violet-700', orgRoot: 'bg-violet-100 border-violet-300', orgChild: 'border-violet-200', diagBg: 'bg-violet-50/50 border-violet-100', diagLine: '#c4b5fd' },
+  { bg: 'from-sky-50/80 to-cyan-50/40', border: 'border-sky-100', accent: 'text-sky-400', accentBg: 'bg-sky-100', accentText: 'text-sky-800', buttonActive: 'bg-sky-500 text-white', buttonInactive: 'bg-white text-gray-600 hover:bg-sky-50', tabActive: 'bg-sky-500', scrollbar: 'bg-sky-400', nodeHighlight: 'text-sky-700', orgRoot: 'bg-sky-100 border-sky-300', orgChild: 'border-sky-200', diagBg: 'bg-sky-50/50 border-sky-100', diagLine: '#7dd3fc' },
+  { bg: 'from-emerald-50/80 to-teal-50/40', border: 'border-emerald-100', accent: 'text-emerald-400', accentBg: 'bg-emerald-100', accentText: 'text-emerald-800', buttonActive: 'bg-emerald-500 text-white', buttonInactive: 'bg-white text-gray-600 hover:bg-emerald-50', tabActive: 'bg-emerald-500', scrollbar: 'bg-emerald-400', nodeHighlight: 'text-emerald-700', orgRoot: 'bg-emerald-100 border-emerald-300', orgChild: 'border-emerald-200', diagBg: 'bg-emerald-50/50 border-emerald-100', diagLine: '#6ee7b7' },
+  { bg: 'from-amber-50/80 to-orange-50/40', border: 'border-amber-100', accent: 'text-amber-400', accentBg: 'bg-amber-100', accentText: 'text-amber-800', buttonActive: 'bg-amber-500 text-white', buttonInactive: 'bg-white text-gray-600 hover:bg-amber-50', tabActive: 'bg-amber-500', scrollbar: 'bg-amber-400', nodeHighlight: 'text-amber-700', orgRoot: 'bg-amber-100 border-amber-300', orgChild: 'border-amber-200', diagBg: 'bg-amber-50/50 border-amber-100', diagLine: '#fcd34d' },
+]
+
+function getThemeFromTitle(title: string): typeof COLOR_THEMES[0] {
+  let hash = 0
+  for (let i = 0; i < title.length; i++) {
+    hash = ((hash << 5) - hash) + title.charCodeAt(i)
+    hash |= 0
+  }
+  return COLOR_THEMES[Math.abs(hash) % COLOR_THEMES.length]
+}
+
+// ==========================================
+// CORES DO TEMA (legacy - usadas pelos sub-componentes)
 // ==========================================
 
 const ETAPA_CORES: Record<string, { bg: string; border: string; text: string }> = {
@@ -786,7 +808,10 @@ interface TabDef {
   emoji: string
 }
 
-export default function UnifiedStudyMaterial({ data, isFullscreen = false }: UnifiedStudyMaterialProps) {
+export default function UnifiedStudyMaterial({ data, isFullscreen = false, initialTab }: UnifiedStudyMaterialProps) {
+  const theme = useMemo(() => getThemeFromTitle(data.titulo || ''), [data.titulo])
+  const [galleryImage, setGalleryImage] = useState<string | null>(null)
+
   const availableTabs = useMemo(() => {
     const tabs: TabDef[] = []
     if (data.flashcards?.cards?.length) tabs.push({ key: 'flashcards', label: 'Flashcards', emoji: '🃏' })
@@ -797,7 +822,18 @@ export default function UnifiedStudyMaterial({ data, isFullscreen = false }: Uni
     return tabs
   }, [data])
 
-  const [activeTab, setActiveTab] = useState(availableTabs[0]?.key || 'flashcards')
+  const [activeTab, setActiveTab] = useState(() => {
+    // Usar initialTab se for válido
+    if (initialTab && availableTabs.find(t => t.key === initialTab)) return initialTab
+    return availableTabs[0]?.key || 'flashcards'
+  })
+
+  // Atualizar activeTab quando initialTab mudar (ex: clique em deck card diferente)
+  useEffect(() => {
+    if (initialTab && availableTabs.find(t => t.key === initialTab)) {
+      setActiveTab(initialTab)
+    }
+  }, [initialTab, availableTabs])
 
   // Garantir que activeTab é válido
   useEffect(() => {
@@ -807,13 +843,13 @@ export default function UnifiedStudyMaterial({ data, isFullscreen = false }: Uni
   }, [availableTabs, activeTab])
 
   return (
-    <div className={`bg-gradient-to-b from-rose-50/80 to-pink-50/40 rounded-2xl border border-rose-100 shadow-sm overflow-hidden ${
+    <div className={`bg-gradient-to-b ${theme.bg} rounded-2xl border ${theme.border} shadow-sm overflow-hidden ${
       isFullscreen ? 'h-full flex flex-col' : ''
     }`}>
       {/* Header */}
       <div className="text-center pt-6 pb-4 px-4">
         {data.icone && (
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-rose-100 flex items-center justify-center">
+          <div className={`w-12 h-12 mx-auto mb-3 rounded-full ${theme.accentBg} flex items-center justify-center`}>
             <span className="text-2xl">{data.icone}</span>
           </div>
         )}
@@ -823,18 +859,25 @@ export default function UnifiedStudyMaterial({ data, isFullscreen = false }: Uni
         </p>
       </div>
 
-      {/* Imagens de introdução */}
+      {/* Imagens de introdução - clicáveis com galeria */}
       {data.imagens && data.imagens.length > 0 && (
         <div className="px-4 pb-3">
           <div className="flex gap-3 overflow-x-auto pb-2">
             {data.imagens.slice(0, 3).map((img, i) => (
-              <img
-                key={i}
-                src={img.url}
-                alt={img.titulo}
-                className="h-20 w-auto rounded-lg object-cover flex-shrink-0 border border-rose-100"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-              />
+              <div key={i} className="flex-shrink-0 cursor-pointer group" onClick={() => setGalleryImage(img.url)}>
+                <div className={`relative rounded-lg overflow-hidden border ${theme.border} hover:border-blue-400 transition-all`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt={img.titulo}
+                    className="h-20 w-auto object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                    <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -849,8 +892,8 @@ export default function UnifiedStudyMaterial({ data, isFullscreen = false }: Uni
               onClick={() => setActiveTab(tab.key)}
               className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all border ${
                 activeTab === tab.key
-                  ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-rose-300 hover:text-rose-600'
+                  ? `${theme.buttonActive} border-transparent shadow-md`
+                  : `${theme.buttonInactive} border-gray-200`
               }`}
             >
               <span className="mr-1">{tab.emoji}</span>
@@ -895,6 +938,11 @@ export default function UnifiedStudyMaterial({ data, isFullscreen = false }: Uni
           Material educativo • {data.titulo}
         </p>
       </div>
+
+      {/* Modal de galeria de imagens */}
+      {galleryImage && (
+        <ImageModal src={galleryImage} alt={data.titulo} isOpen={true} onClose={() => setGalleryImage(null)} />
+      )}
     </div>
   )
 }
