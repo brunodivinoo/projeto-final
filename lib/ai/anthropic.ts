@@ -95,7 +95,7 @@ export async function chatComClaudeStream(
   // Criar stream
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const streamParams: any = {
-    model: MODELOS.claude.opus,
+    model: MODELOS.claude.sonnet,
     max_tokens: useExtendedThinking ? 16000 : 8192,
     system: systemConfig,
     messages: claudeMessages,
@@ -158,7 +158,7 @@ export async function chatComClaude(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const params: any = {
-    model: MODELOS.claude.opus,
+    model: MODELOS.claude.sonnet,
     max_tokens: useExtendedThinking ? 16000 : 8192,
     system: SYSTEM_PROMPT_RESIDENCIA,
     messages: claudeMessages
@@ -217,7 +217,7 @@ export async function analisarImagemComClaude(
   pergunta: string
 ): Promise<ChatResponse> {
   const response = await anthropic.messages.create({
-    model: MODELOS.claude.opus,
+    model: MODELOS.claude.sonnet,
     max_tokens: 8192,
     system: SYSTEM_PROMPT_RESIDENCIA,
     messages: [{
@@ -265,7 +265,7 @@ export async function analisarPDFComClaude(
   pergunta: string
 ): Promise<ChatResponse> {
   const response = await anthropic.messages.create({
-    model: MODELOS.claude.opus,
+    model: MODELOS.claude.sonnet,
     max_tokens: 8192,
     system: SYSTEM_PROMPT_RESIDENCIA,
     messages: [{
@@ -314,7 +314,7 @@ export async function gerarConteudoEstruturado<T>(
   systemPrompt?: string
 ): Promise<T | null> {
   const response = await anthropic.messages.create({
-    model: MODELOS.claude.opus,
+    model: MODELOS.claude.sonnet,
     max_tokens: 8192,
     system: systemPrompt || SYSTEM_PROMPT_RESIDENCIA,
     tools: [schema],
@@ -350,7 +350,7 @@ export async function contarTokens(
     }))
 
   const count = await anthropic.messages.countTokens({
-    model: MODELOS.claude.opus,
+    model: MODELOS.claude.sonnet,
     system: systemPrompt || SYSTEM_PROMPT_RESIDENCIA,
     messages: claudeMessages
   })

@@ -21,6 +21,14 @@ export const QuestaoSchema = z.object({
   }),
   gabarito: z.enum(['A', 'B', 'C', 'D', 'E']),
   explicacao: z.string().min(50),
+  analise_alternativas: z.array(z.object({
+    letra: z.string(),
+    correta: z.boolean(),
+    analise: z.string()
+  })).optional(),
+  ponto_chave: z.string().optional(),
+  pegadinha: z.string().optional(),
+  dica_memorizacao: z.string().optional(),
   dificuldade: z.enum(['facil', 'media', 'dificil']),
   tema: z.string(),
   tags: z.array(z.string()).optional()
@@ -50,7 +58,12 @@ const QUESTOES_SYSTEM_PROMPT = `Voce e um especialista em criar questoes de conc
 
 REGRAS OBRIGATORIAS:
 1. Todas as questoes devem ter formato de multipla escolha (A, B, C, D, E)
-2. Cada questao deve ter uma EXPLICACAO DETALHADA do gabarito
+2. Cada questao deve ter GABARITO COMENTADO COMPLETO com:
+   - explicacao geral detalhada (minimo 3 paragrafos)
+   - analise individual de CADA alternativa (por que certa/errada)
+   - ponto-chave para prova
+   - pegadinha comum (se aplicavel)
+   - dica de memorizacao (mneumonico, macete)
 3. As questoes devem cobrir diferentes niveis de dificuldade
 4. Use casos clinicos realistas quando apropriado
 5. Evite pegadinhas; foque em conhecimento clinico relevante
@@ -69,7 +82,17 @@ ESTRUTURA JSON OBRIGATORIA:
         "E": "Alternativa E"
       },
       "gabarito": "A",
-      "explicacao": "Explicacao detalhada de por que A esta correta e as outras erradas...",
+      "explicacao": "Explicacao DETALHADA com minimo 3 paragrafos: contexto clinico, fisiopatologia, raciocinio diagnostico e por que a resposta correta e A. Incluir dados epidemiologicos e guidelines quando relevante.",
+      "analise_alternativas": [
+        {"letra": "A", "correta": true, "analise": "Correta porque..."},
+        {"letra": "B", "correta": false, "analise": "Incorreta porque..."},
+        {"letra": "C", "correta": false, "analise": "Incorreta porque..."},
+        {"letra": "D", "correta": false, "analise": "Incorreta porque..."},
+        {"letra": "E", "correta": false, "analise": "Incorreta porque..."}
+      ],
+      "ponto_chave": "Conceito fundamental que o estudante DEVE memorizar para provas",
+      "pegadinha": "Erro comum que estudantes cometem neste tema (se aplicavel)",
+      "dica_memorizacao": "Mneumonico ou macete para lembrar (ex: ABCDE, sigla, associacao)",
       "dificuldade": "media",
       "tema": "Cardiologia - Insuficiencia Cardiaca",
       "tags": ["ICC", "tratamento", "farmacos"]
@@ -105,7 +128,7 @@ export async function runQuestoesChain(input: QuestoesChainInput): Promise<Quest
     dificuldade = 'mista',
     estilo = 'residencia',
     incluirCasosClinicas = true,
-    provider = 'claude',
+    provider = 'gemini',
     contextoAdicional
   } = input
 
@@ -240,8 +263,13 @@ export function formatQuestoesParaExibicao(output: QuestoesOutput): string {
         })),
       gabarito_comentado: {
         resposta_correta: q.gabarito,
-        explicacao: q.explicacao
-      }
+        explicacao: q.explicacao,
+        analise_alternativas: q.analise_alternativas || [],
+        ponto_chave: q.ponto_chave || '',
+        pegadinha: q.pegadinha || '',
+        dica_memorizacao: q.dica_memorizacao || ''
+      },
+      tags: q.tags || []
     }
 
     texto += `\n\`\`\`questao\n${JSON.stringify(questionJson, null, 2)}\n\`\`\`\n`

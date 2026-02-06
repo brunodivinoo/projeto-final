@@ -112,7 +112,7 @@ export async function runResumoChain(input: ResumoChainInput): Promise<Resumo> {
     profundidade = 'intermediario',
     focoEm,
     incluirDiagramas = true,
-    provider = 'claude', // Claude e melhor para resumos detalhados
+    provider = 'gemini', // Gemini Flash para otimizar custo (40x mais barato)
     contextoAdicional
   } = input
 

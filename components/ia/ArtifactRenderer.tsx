@@ -1179,7 +1179,20 @@ function cleanRenderedTextForChat(content: string): string {
   cleaned = cleaned.replace(/[💡🎯]?\s*\*{0,2}Pontos[- ]Chave\s+sobre[\s\S]*?(?=\n#{1,4}\s|\n---|\n\n\n|$)/gi, '')
 
   // =====================================
-  // 8. LIMPEZA GERAL
+  // 8. REMOVER CÓDIGO MERMAID/DIAGRAMA CRU
+  // =====================================
+  // Remover blocos de código Mermaid que vazaram no texto
+  cleaned = cleaned.replace(/```(?:mermaid)?(?::[^\n]*)?\n[\s\S]*?```/g, '')
+  // Remover código Mermaid solto (sem backticks wrapper)
+  cleaned = cleaned.replace(/(?:^|\n)(?:graph\s+(?:TD|LR|BT|RL)|flowchart\s+(?:TD|LR|BT|RL))\n(?:\s+\w+[\[\(\{"][\s\S]*?(?=\n\n\n|\n[A-Z#]|\n$|$))/gm, '')
+  // Remover linhas classDef/class isoladas
+  cleaned = cleaned.replace(/^\s*classDef\s+\w+\s+fill:.*$/gm, '')
+  cleaned = cleaned.replace(/^\s*class\s+\w+\s+\w+\s*$/gm, '')
+  // Remover qualquer bloco que começa com graph/flowchart e tem arrows (-->)
+  cleaned = cleaned.replace(/(?:graph|flowchart)\s+(?:TD|LR|BT|RL)\n(?:[\s\S]*?-->[\s\S]*?)(?=\n\n|\n[^A-Z\s]|$)/gi, '')
+
+  // =====================================
+  // 9. LIMPEZA GERAL
   // =====================================
   // Remover múltiplas quebras de linha consecutivas
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
@@ -1463,6 +1476,36 @@ function extractGabaritoComentadoFromPartial(json: string): Record<string, unkno
       gabarito.ponto_chave = JSON.parse(`"${pontoMatch[1]}"`)
     } catch {
       gabarito.ponto_chave = pontoMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+    }
+  }
+
+  // Extrair pegadinha
+  const pegadinhaMatch = gabaritoContent.match(/"pegadinha"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+  if (pegadinhaMatch) {
+    try {
+      gabarito.pegadinha = JSON.parse(`"${pegadinhaMatch[1]}"`)
+    } catch {
+      gabarito.pegadinha = pegadinhaMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+    }
+  }
+
+  // Extrair dica_memorizacao
+  const dicaMatch = gabaritoContent.match(/"dica_memorizacao"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+  if (dicaMatch) {
+    try {
+      gabarito.dica_memorizacao = JSON.parse(`"${dicaMatch[1]}"`)
+    } catch {
+      gabarito.dica_memorizacao = dicaMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+    }
+  }
+
+  // Extrair analise_alternativas (array)
+  const analiseMatch = gabaritoContent.match(/"analise_alternativas"\s*:\s*(\[[\s\S]*?\])/)
+  if (analiseMatch) {
+    try {
+      gabarito.analise_alternativas = JSON.parse(analiseMatch[1])
+    } catch {
+      // Array incompleto durante streaming, ignorar
     }
   }
 
@@ -2619,20 +2662,46 @@ function ArtifactRendererComponent({
   }, [])
 
   // Função para abrir artefato na sidebar
-  const openArtifactInSidebar = useCallback((artifactType: string, artifactTitle?: string) => {
+  const openArtifactInSidebar = useCallback((artifactType: string, artifactTitle?: string, artifactContent?: string) => {
     // Buscar artefatos diretamente da store para evitar problemas de closure
     const currentArtifacts = useArtifactsStore.getState().artifacts
 
-    // Encontrar o artefato na store pelo tipo e messageId
-    const matchingArtifact = currentArtifacts.find(
-      a => a.type === artifactType &&
-           a.messageId === messageId &&
-           (artifactTitle ? a.title === artifactTitle : true)
-    )
+    // Encontrar o artefato na store - match por conteúdo tem prioridade (mais preciso)
+    let matchingArtifact = artifactContent
+      ? currentArtifacts.find(
+          a => a.type === artifactType &&
+               a.messageId === messageId &&
+               a.content === artifactContent
+        )
+      : null
+
+    // Fallback: match por título exato
+    if (!matchingArtifact && artifactTitle) {
+      matchingArtifact = currentArtifacts.find(
+        a => a.type === artifactType &&
+             a.messageId === messageId &&
+             a.title === artifactTitle
+      )
+    }
+
+    // Fallback final: match por tipo e messageId
+    if (!matchingArtifact) {
+      matchingArtifact = currentArtifacts.find(
+        a => a.type === artifactType &&
+             a.messageId === messageId
+      )
+    }
 
     if (matchingArtifact) {
-      // Selecionar o artefato para exibir na sidebar
-      selectArtifact(matchingArtifact.id)
+      // Forçar re-seleção mesmo se já era o selecionado (fix para sidebar não atualizar)
+      const currentSelected = useArtifactsStore.getState().selectedArtifactId
+      if (currentSelected === matchingArtifact.id) {
+        // Desselecionar e re-selecionar para forçar atualização
+        selectArtifact(null as unknown as string)
+        setTimeout(() => selectArtifact(matchingArtifact!.id), 0)
+      } else {
+        selectArtifact(matchingArtifact.id)
+      }
     }
 
     // Abrir sidebar (desktop) ou drawer (mobile)
@@ -2921,7 +2990,7 @@ function ArtifactRendererComponent({
           return (
             <button
               key={index}
-              onClick={() => openArtifactInSidebar('mermaid', diagramTitle)}
+              onClick={() => openArtifactInSidebar('mermaid', diagramTitle, part.content)}
               className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-cyan-50 to-blue-50 hover:from-cyan-100 hover:to-blue-100 border border-cyan-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
             >
               {/* Ícone */}
@@ -2958,7 +3027,7 @@ function ArtifactRendererComponent({
           return (
             <button
               key={index}
-              onClick={() => openArtifactInSidebar('layers', layerTitle)}
+              onClick={() => openArtifactInSidebar('layers', layerTitle, part.content)}
               className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-pink-50 to-purple-50 hover:from-pink-100 hover:to-purple-100 border border-pink-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
             >
               {/* Ícone */}
@@ -2991,7 +3060,7 @@ function ArtifactRendererComponent({
           return (
             <button
               key={index}
-              onClick={() => openArtifactInSidebar('modern_flowchart', flowTitle)}
+              onClick={() => openArtifactInSidebar('modern_flowchart', flowTitle, part.content)}
               className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-cyan-50 to-blue-50 hover:from-cyan-100 hover:to-blue-100 border border-cyan-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
             >
               <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
@@ -3017,7 +3086,7 @@ function ArtifactRendererComponent({
           return (
             <button
               key={index}
-              onClick={() => openArtifactInSidebar('tree_diagram', treeTitle)}
+              onClick={() => openArtifactInSidebar('tree_diagram', treeTitle, part.content)}
               className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border border-purple-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
             >
               <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
@@ -3047,7 +3116,7 @@ function ArtifactRendererComponent({
             return (
               <button
                 key={index}
-                onClick={() => openArtifactInSidebar('staging', stagingTitle)}
+                onClick={() => openArtifactInSidebar('staging', stagingTitle, part.content)}
                 className="my-3 w-full flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border border-blue-200 rounded-xl text-left transition-all shadow-sm hover:shadow-md group"
               >
                 {/* Ícone */}
@@ -3233,7 +3302,7 @@ function ArtifactRendererComponent({
           return (
             <div
               key={index}
-              onClick={() => openArtifactInSidebar('simulado', part.simuladoData?.titulo)}
+              onClick={() => openArtifactInSidebar('simulado', part.simuladoData?.titulo, part.content)}
               className="my-3 w-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group"
             >
               {/* Header */}
