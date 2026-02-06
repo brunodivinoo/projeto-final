@@ -220,25 +220,31 @@ export async function runQuestoesChainWithValidation(
 // ==========================================
 
 export function formatQuestoesParaExibicao(output: QuestoesOutput): string {
-  let texto = `# Questoes - ${output.metadata.tema_principal}\n\n`
-  texto += `Total: ${output.metadata.total_geradas} questoes\n\n`
-  texto += `---\n\n`
+  // Gera blocos ```questao com JSON estruturado para renderização como DECK cards
+  // O ArtifactRenderer detecta esses blocos e renderiza como cards clicáveis na sidebar
+  let texto = `Questoes - ${output.metadata.tema_principal}\nTotal: ${output.metadata.total_geradas} questoes\n`
 
   output.questoes.forEach((q, i) => {
-    texto += `## Questao ${i + 1} [${q.dificuldade.toUpperCase()}]\n\n`
-    texto += `${q.enunciado}\n\n`
-
-    Object.entries(q.alternativas).forEach(([letra, alt]) => {
-      if (alt) {
-        const marcador = letra === q.gabarito ? '**' : ''
-        texto += `${marcador}${letra}) ${alt}${marcador}\n`
+    const questionJson = {
+      numero: i + 1,
+      tipo: 'multipla_escolha',
+      dificuldade: q.dificuldade === 'media' ? 'medio' : q.dificuldade,
+      disciplina: output.metadata.tema_principal,
+      assunto: q.tema || output.metadata.tema_principal,
+      enunciado: q.enunciado,
+      alternativas: Object.entries(q.alternativas)
+        .filter(([, alt]) => alt)
+        .map(([letra, texto]) => ({
+          letra,
+          texto
+        })),
+      gabarito_comentado: {
+        resposta_correta: q.gabarito,
+        explicacao: q.explicacao
       }
-    })
+    }
 
-    texto += `\n<details>\n<summary>Ver Gabarito e Explicacao</summary>\n\n`
-    texto += `**Gabarito: ${q.gabarito}**\n\n`
-    texto += `${q.explicacao}\n\n`
-    texto += `</details>\n\n---\n\n`
+    texto += `\n\`\`\`questao\n${JSON.stringify(questionJson, null, 2)}\n\`\`\`\n`
   })
 
   return texto

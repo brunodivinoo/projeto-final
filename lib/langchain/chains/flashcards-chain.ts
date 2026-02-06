@@ -216,22 +216,20 @@ export function exportToAnkiFormat(output: FlashcardsOutput): string {
 // ==========================================
 
 export function formatFlashcardsParaExibicao(output: FlashcardsOutput): string {
-  let texto = `# Flashcards - ${output.metadata.tema}\n\n`
-  texto += `Total: ${output.metadata.total} flashcards\n`
-  texto += `Categorias: ${output.metadata.categorias.join(', ')}\n\n`
-  texto += `---\n\n`
+  // Gera bloco ```flashcards:Titulo com JSON estruturado para renderização como DECK card
+  // O ArtifactRenderer detecta esse bloco e renderiza como card clicável na sidebar
+  const titulo = output.metadata.tema || 'Flashcards'
 
-  output.flashcards.forEach((card, i) => {
-    texto += `### Flashcard ${i + 1}\n\n`
-    texto += `**FRENTE:**\n${card.frente}\n\n`
-    texto += `<details>\n<summary>Ver Resposta</summary>\n\n`
-    texto += `**VERSO:**\n${card.verso}\n\n`
-    if (card.dica) {
-      texto += `**Dica:** ${card.dica}\n\n`
-    }
-    texto += `*Categoria: ${card.categoria}*\n`
-    texto += `</details>\n\n---\n\n`
-  })
+  const cardsJson = output.flashcards.map((card, i) => ({
+    id: `fc-${i + 1}`,
+    frente: card.frente,
+    verso: card.verso,
+    tags: card.tags || [card.categoria],
+    dificuldade: card.dificuldade === 'media' ? 'medio' : (card.dificuldade || 'medio')
+  }))
+
+  let texto = `s - ${titulo}\nTotal: ${output.metadata.total} flashcards\nCategorias: ${output.metadata.categorias.join(', ')}\n`
+  texto += `\n\`\`\`flashcards:${titulo}\n${JSON.stringify(cardsJson, null, 2)}\n\`\`\`\n`
 
   return texto
 }

@@ -388,7 +388,16 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
           return
         }
 
-        setImages(data.images || [])
+        // Deduplicar imagens por URL para evitar repetições
+        const uniqueImages: MedicalImage[] = []
+        const seenUrls = new Set<string>()
+        for (const img of (data.images || [])) {
+          if (!seenUrls.has(img.url)) {
+            seenUrls.add(img.url)
+            uniqueImages.push(img)
+          }
+        }
+        setImages(uniqueImages)
         setSearchInfo({
           queryUsed: data.queryUsed,
           originalQuery: data.originalQuery,
