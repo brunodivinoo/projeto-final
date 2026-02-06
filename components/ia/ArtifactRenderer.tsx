@@ -1181,15 +1181,17 @@ function cleanRenderedTextForChat(content: string): string {
   // =====================================
   // 8. REMOVER CÓDIGO MERMAID/DIAGRAMA CRU
   // =====================================
-  // Remover blocos de código Mermaid que vazaram no texto
+  // Remover blocos de código Mermaid completos que vazaram no texto
   cleaned = cleaned.replace(/```(?:mermaid)?(?::[^\n]*)?\n[\s\S]*?```/g, '')
-  // Remover código Mermaid solto (sem backticks wrapper)
-  cleaned = cleaned.replace(/(?:^|\n)(?:graph\s+(?:TD|LR|BT|RL)|flowchart\s+(?:TD|LR|BT|RL))\n(?:\s+\w+[\[\(\{"][\s\S]*?(?=\n\n\n|\n[A-Z#]|\n$|$))/gm, '')
+  // Remover código Mermaid com header graph/flowchart
+  cleaned = cleaned.replace(/(?:^|\n)(?:graph|flowchart)\s+(?:TD|LR|BT|RL)\n(?:[\s\S]*?-->[\s\S]*?)(?=\n\n[^A-Z\s]|\n\n\n|$)/gim, '')
+  // Remover código Mermaid sem header (só nós e setas) - detecta 3+ linhas com -->
+  cleaned = cleaned.replace(/(?:^|\n)(?:\s*\w+(?:\[.*?\]|\(".*?"\))?\s*-->(?:\|"?.*?"?\|)?\s*\w+(?:\[.*?\]|\(".*?"\))?\s*\n){3,}/gm, '')
+  // Remover linhas individuais que parecem Mermaid (A --> B["texto"])
+  cleaned = cleaned.replace(/^\s*\w+\s*-->\s*\w+\[?"[^"]*"?\]?\s*$/gm, '')
   // Remover linhas classDef/class isoladas
   cleaned = cleaned.replace(/^\s*classDef\s+\w+\s+fill:.*$/gm, '')
-  cleaned = cleaned.replace(/^\s*class\s+\w+\s+\w+\s*$/gm, '')
-  // Remover qualquer bloco que começa com graph/flowchart e tem arrows (-->)
-  cleaned = cleaned.replace(/(?:graph|flowchart)\s+(?:TD|LR|BT|RL)\n(?:[\s\S]*?-->[\s\S]*?)(?=\n\n|\n[^A-Z\s]|$)/gi, '')
+  cleaned = cleaned.replace(/^\s*class\s+[\w,\s]+\s+\w+\s*$/gm, '')
 
   // =====================================
   // 9. LIMPEZA GERAL

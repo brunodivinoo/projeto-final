@@ -611,16 +611,29 @@ async function streamMultiAgentResponse(params: StreamMultiAgentParams) {
         )
 
         if (result.success) {
-          // Enviar resposta em chunks para simular streaming
-          const responseChunks = chunkResponse(result.response, 100) // 100 chars por chunk
+          // Separar texto de artefatos (code blocks) para não quebrar blocos no chunking
+          const parts = splitTextAndArtifacts(result.response)
 
-          for (const chunk of responseChunks) {
-            fullResponse += chunk
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`)
-            )
-            // Pequeno delay para efeito de streaming
-            await new Promise(resolve => setTimeout(resolve, 10))
+          for (const part of parts) {
+            if (part.type === 'artifact') {
+              // Enviar blocos de artefatos INTEIROS (nunca chunkar)
+              fullResponse += part.content
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: part.content })}\n\n`)
+              )
+              // Delay maior para dar tempo do frontend processar o artefato
+              await new Promise(resolve => setTimeout(resolve, 50))
+            } else {
+              // Streamar texto em chunks pequenos para efeito de streaming
+              const chunks = chunkResponse(part.content, 30)
+              for (const chunk of chunks) {
+                fullResponse += chunk
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`)
+                )
+                await new Promise(resolve => setTimeout(resolve, 15))
+              }
+            }
           }
 
           // Log de execução apenas no console do servidor (não enviar para o chat)
@@ -733,6 +746,48 @@ async function streamMultiAgentResponse(params: StreamMultiAgentParams) {
       'Connection': 'keep-alive'
     }
   })
+}
+
+/**
+ * Separa texto de artefatos (code blocks) para que artefatos
+ * sejam enviados inteiros e não quebrados pelo chunking
+ */
+function splitTextAndArtifacts(text: string): Array<{ type: 'text' | 'artifact'; content: string }> {
+  const parts: Array<{ type: 'text' | 'artifact'; content: string }> = []
+
+  // Regex para encontrar blocos de código completos (```tipo:titulo ... ```)
+  const codeBlockRegex = /```(?:mermaid|questao|question|flashcards|simulado|layers|staging|flowchart|tree|organograma)[:\s][^`]*```/gs
+
+  let lastIndex = 0
+  let match
+
+  while ((match = codeBlockRegex.exec(text)) !== null) {
+    // Texto antes do bloco
+    if (match.index > lastIndex) {
+      const textBefore = text.slice(lastIndex, match.index)
+      if (textBefore.trim()) {
+        parts.push({ type: 'text', content: textBefore })
+      }
+    }
+    // O bloco de artefato inteiro
+    parts.push({ type: 'artifact', content: match[0] })
+    lastIndex = match.index + match[0].length
+  }
+
+  // Texto restante após último bloco
+  if (lastIndex < text.length) {
+    const remaining = text.slice(lastIndex)
+    if (remaining.trim()) {
+      parts.push({ type: 'text', content: remaining })
+    }
+  }
+
+  // Se não encontrou nenhum bloco, retornar tudo como texto
+  if (parts.length === 0) {
+    parts.push({ type: 'text', content: text })
+  }
+
+  return parts
 }
 
 /**
