@@ -49,10 +49,11 @@ export class StudyPlanCrew {
   private executionLog: string[] = []
 
   constructor() {
+    // Todos usam Gemini Flash para otimizar custo (40x mais barato que Sonnet)
     this.researcher = createResearcherAgent('gemini')
-    this.planner = createPlannerAgent('claude')
-    this.creator = createCreatorAgent('claude')
-    this.reviewer = createReviewerAgent('claude')
+    this.planner = createPlannerAgent('gemini')
+    this.creator = createCreatorAgent('gemini')
+    this.reviewer = createReviewerAgent('gemini')
   }
 
   /**

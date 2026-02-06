@@ -48,9 +48,10 @@ export class ContentCrew {
   private executionLog: string[] = []
 
   constructor() {
+    // Todos usam Gemini Flash para otimizar custo (40x mais barato que Sonnet)
     this.researcher = createResearcherAgent('gemini')
-    this.creator = createCreatorAgent('claude')
-    this.reviewer = createReviewerAgent('claude')
+    this.creator = createCreatorAgent('gemini')
+    this.reviewer = createReviewerAgent('gemini')
   }
 
   /**
