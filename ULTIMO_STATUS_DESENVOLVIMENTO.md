@@ -1,11 +1,44 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 06/02/2026 - Sessao Memoria + Diagramas IA + Fix Sidebar
+## Atualizado em: 06/02/2026 - Streaming + Mermaid Cleanup + Otimizacoes
 
 ---
 
 ## O QUE FOI FEITO NESTA SESSAO (06/02/2026)
 
-### 1. FEAT: MEMORIA PERSISTENTE NO PROMPT
+### 1. FIX: STREAMING MULTI-AGENTES (EFEITO "ESCREVENDO")
+
+**Problema**: Respostas dos multi-agentes apareciam de uma vez só, sem efeito de streaming gradual.
+
+**Causa raiz**: `streamMultiAgentResponse` esperava toda a geração terminar e enviava chunks de 100 chars com 10ms delay. O chunking cortava code blocks (artefatos) no meio, quebrando a renderização.
+
+**Solução**:
+- Nova função `splitTextAndArtifacts()` separa texto de code blocks antes do chunking
+- Artefatos (```mermaid, ```flashcards, etc.) são enviados INTEIROS (nunca fragmentados)
+- Texto é enviado em chunks de 30 chars com 15ms delay (efeito gradual natural)
+- Delay maior (50ms) entre artefatos para dar tempo ao frontend processar
+
+### 2. FIX: CÓDIGO MERMAID CRU NO CHAT
+
+**Problema**: Código Mermaid bruto (nós e setas como `A --> B["texto"]`) aparecia no final das respostas.
+
+**Causa raiz**: `cleanRenderedTextForChat()` só detectava código Mermaid com header `graph TD`/`flowchart TD`. Quando a IA gerava sem header, o código passava pelo filtro.
+
+**Solução**:
+- Regex aprimorada para detectar código Mermaid SEM header (3+ linhas com `-->`)
+- Limpeza de linhas individuais com padrão `A --> B["texto"]`
+- Melhor matching de `classDef` e `class` lines
+- `generateMermaidWithAI()` agora detecta e adiciona header `graph TD` quando IA omite
+
+### 3. FEAT: OTIMIZAÇÕES DE VELOCIDADE (sessão anterior)
+
+- Pipeline paralelo: análises independentes executam em paralelo
+- `Promise.allSettled` para memória + HF agent context
+- Tom natural adicionado aos system prompts
+- Correção de acentuação nos crews
+
+---
+
+### SESSÃO ANTERIOR: MEMORIA PERSISTENTE NO PROMPT
 
 **Problema**: `getContextForPrompt()` estava importado mas nao era chamado. A IA nao usava o historico do usuario para personalizar respostas.
 
@@ -91,15 +124,16 @@ components/ia/ArtifactsSidebar.tsx         # fix useEffect sincronizacao + useRe
 
 | Hash | Descricao |
 |------|-----------|
-| `4373e90` | feat: memoria persistente no prompt, diagramas IA real e fix sidebar |
+| `dad3694` | fix: streaming multi-agentes e limpeza de código Mermaid cru no chat |
+| `f88b7b4` | feat: otimizar velocidade IA, corrigir acentuação e tom natural |
 
 ---
 
-## PR MERGEADO
+## PR PENDENTE
 
-| PR | Titulo | Status |
-|----|--------|--------|
-| [#83](https://github.com/brunodivinoo/projeto-final/pull/83) | feat: memoria no prompt, diagramas IA real e fix sidebar | **MERGED** |
+| Branch | Titulo | Status |
+|--------|--------|--------|
+| `claude/continue-prepara-med-NYHog` | fix: streaming multi-agentes e limpeza de Mermaid cru | **PUSHED** (criar PR no GitHub) |
 
 ---
 
@@ -135,6 +169,15 @@ components/ia/ArtifactsSidebar.tsx         # fix useEffect sincronizacao + useRe
 ---
 
 ## SESSOES ANTERIORES
+
+### Sessao Streaming + Mermaid Cleanup (06/02/2026)
+- Fix streaming multi-agentes (efeito "escrevendo")
+- Fix código Mermaid cru no chat
+- splitTextAndArtifacts() para chunking seguro
+- generateMermaidWithAI() com header fix
+- Pipeline paralelo + Promise.allSettled
+- Tom natural nos prompts
+- Correção de acentuação
 
 ### Sessao Memoria + Diagramas + Sidebar (06/02/2026)
 - Memoria persistente no prompt
