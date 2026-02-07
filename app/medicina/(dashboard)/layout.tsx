@@ -138,12 +138,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }, [user, setConversas])
 
   useEffect(() => {
-    if (!loading && !profileLoading && !user) router.push('/medicina/login')
-  }, [user, loading, profileLoading, router])
+    if (!loading && !user) router.push('/medicina/login')
+  }, [user, loading, router])
 
   useEffect(() => {
-    if (user && !loading && !profileLoading) fetchConversas()
-  }, [user, loading, profileLoading, fetchConversas])
+    if (user && !loading) fetchConversas()
+  }, [user, loading, fetchConversas])
 
   // Fechar menus ao clicar fora
   useEffect(() => {
@@ -253,7 +253,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
   }
 
-  if (loading || profileLoading) {
+  // 🔧 FIX: Aguardar apenas loading de autenticação, NÃO profileLoading
+  // Isso permite que o app renderize mesmo se fetchProfile travar
+  if (loading) {
     return (
       <div className="min-h-screen bg-surface-100 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -261,6 +263,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <Stethoscope className="w-6 h-6 text-white" />
           </div>
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-200 border-t-primary-600"></div>
+          <p className="text-sm text-slate-500">Carregando autenticação...</p>
         </div>
       </div>
     )
