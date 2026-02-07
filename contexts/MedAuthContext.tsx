@@ -340,8 +340,14 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     const mesAtual = new Date().toISOString().slice(0, 7) // "2026-01"
 
     try {
-      // ========== OTIMIZACAO: Buscar todos os dados em PARALELO ==========
-      const [profileResult, limitesResult, assinaturaResult] = await Promise.allSettled([
+      console.log('[Auth] Iniciando queries do Supabase...')
+
+      // 🔧 TIMEOUT GLOBAL: Queries NUNCA podem demorar > 12s
+      const queryTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout de 12s nas queries do Supabase')), 12000)
+      )
+
+      const queriesPromise = Promise.allSettled([
         // 1. Profile
         supabase
           .from('profiles_med')
@@ -361,9 +367,16 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
           .select('*')
           .eq('user_id', userId)
           .eq('status', 'ativa')
-          .order('created_at', { ascending: false })
+          .order('created_at', { ascending: false})
           .limit(1)
       ])
+
+      const [profileResult, limitesResult, assinaturaResult] = await Promise.race([
+        queriesPromise,
+        queryTimeout
+      ]) as PromiseSettledResult<any>[]
+
+      console.log('[Auth] Queries completadas com sucesso')
 
       // Processar PROFILE
       if (profileResult.status === 'fulfilled') {
