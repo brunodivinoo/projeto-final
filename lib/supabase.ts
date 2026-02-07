@@ -13,13 +13,7 @@ function getSupabaseBrowser(): SupabaseClient {
       throw new Error('Supabase URL and Anon Key must be configured')
     }
 
-    _supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-      }
-    })
+    _supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
   }
   return _supabase
 }
