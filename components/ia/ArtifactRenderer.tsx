@@ -2654,6 +2654,119 @@ function ArtifactRendererComponent({
         storeType = 'flashcards'
       } else if (artifact.type === 'simulado') {
         storeType = 'simulado'
+      } else if (artifact.type === 'unified_study' && artifact.unifiedStudyData) {
+        // Unified Study: registrar CADA sub-componente como artefato individual
+        // para que todos apareçam na sidebar com seus renderers próprios
+        const uData = artifact.unifiedStudyData as Record<string, unknown>
+
+        // 1) Flashcards → tipo 'flashcards'
+        const uFlashcards = uData.flashcards as { cards?: Array<Record<string, unknown>> } | undefined
+        if (uFlashcards?.cards?.length) {
+          const fcContent = JSON.stringify({ titulo: uData.titulo, cards: uFlashcards.cards })
+          const fcKey = `${conversaId}-${messageId}-${artifact.startIndex}-unified_fc`
+          if (!addedArtifactsRef.current.has(fcKey)) {
+            const fcExists = currentStoreArtifacts.some(a => a.messageId === messageId && a.content === fcContent && a.conversaId === conversaId)
+            if (!fcExists) {
+              addArtifact({
+                type: 'flashcards',
+                title: `${uData.titulo} - Flashcards`,
+                content: fcContent,
+                messageId,
+                conversaId,
+                chatMode,
+                metadata: {
+                  flashcards: { titulo: uData.titulo as string, cards: uFlashcards.cards as Array<{ id: string; frente: string; verso: string; referencia?: string; tags?: string[]; dificuldade?: 'facil' | 'medio' | 'dificil' }> }
+                }
+              })
+            }
+            addedArtifactsRef.current.add(fcKey)
+          }
+        }
+
+        // 2) Questões → tipo 'question' (uma por questão)
+        const uQuestoes = uData.questoes as Array<Record<string, unknown>> | undefined
+        if (uQuestoes?.length) {
+          uQuestoes.forEach((q, i) => {
+            const qContent = JSON.stringify(q)
+            const qKey = `${conversaId}-${messageId}-${artifact.startIndex}-unified_q${i}`
+            if (!addedArtifactsRef.current.has(qKey)) {
+              const qExists = currentStoreArtifacts.some(a => a.messageId === messageId && a.content === qContent && a.conversaId === conversaId)
+              if (!qExists) {
+                const alternativas = (q.alternativas as Array<{ letra: string; texto: string }>) || []
+                const gabarito = (q.gabarito_comentado as Record<string, unknown>) || {}
+                addArtifact({
+                  type: 'question',
+                  title: `${q.disciplina || 'Medicina'} - ${q.assunto || 'Questão'}`,
+                  content: qContent,
+                  messageId,
+                  conversaId,
+                  chatMode,
+                  metadata: {
+                    question: {
+                      numero: (q.numero as number) || i + 1,
+                      tipo: 'multipla_escolha',
+                      dificuldade: (q.dificuldade as 'facil' | 'medio' | 'dificil' | 'muito_dificil') || 'medio',
+                      disciplina: (q.disciplina as string) || 'Medicina',
+                      assunto: (q.assunto as string) || 'Geral',
+                      enunciado: (q.enunciado as string) || '',
+                      caso_clinico: q.caso_clinico as string | undefined,
+                      alternativas: alternativas.map(a => ({ letra: a.letra, texto: a.texto })),
+                      gabarito_comentado: {
+                        resposta_correta: (gabarito.resposta_correta as string) || '',
+                        explicacao: (gabarito.explicacao as string) || '',
+                        analise_alternativas: (gabarito.analise_alternativas as Array<{ letra: string; analise: string }> | undefined)?.map(a => ({
+                          letra: a.letra,
+                          analise: a.analise
+                        })),
+                        ponto_chave: gabarito.ponto_chave as string | undefined
+                      }
+                    }
+                  }
+                })
+              }
+              addedArtifactsRef.current.add(qKey)
+            }
+          })
+        }
+
+        // 3) Diagramas visuais → tipo 'unified_study' (renderiza com UnifiedStudyMaterial)
+        const diagramSections: Array<{ key: string; check: boolean; data: Record<string, unknown>; title: string }> = []
+        const uDiagrama = uData.diagrama as { titulo?: string; elementos?: unknown[] } | undefined
+        const uFluxograma = uData.fluxograma as { titulo?: string; etapas?: unknown[] } | undefined
+        const uOrganograma = uData.organograma as { titulo?: string; raiz?: unknown } | undefined
+
+        if (uDiagrama?.elementos?.length) {
+          diagramSections.push({ key: 'diag', check: true, data: { titulo: uData.titulo, diagrama: uData.diagrama }, title: `Diagrama - ${uDiagrama.titulo || uData.titulo}` })
+        }
+        if (uFluxograma?.etapas?.length) {
+          diagramSections.push({ key: 'flux', check: true, data: { titulo: uData.titulo, fluxograma: uData.fluxograma }, title: `Fluxograma - ${uFluxograma.titulo || uData.titulo}` })
+        }
+        if (uOrganograma?.raiz) {
+          diagramSections.push({ key: 'org', check: true, data: { titulo: uData.titulo, organograma: uData.organograma }, title: `Organograma - ${uOrganograma.titulo || uData.titulo}` })
+        }
+
+        diagramSections.forEach(({ key, data, title }) => {
+          const dContent = JSON.stringify(data)
+          const dKey = `${conversaId}-${messageId}-${artifact.startIndex}-unified_${key}`
+          if (!addedArtifactsRef.current.has(dKey)) {
+            const dExists = currentStoreArtifacts.some(a => a.messageId === messageId && a.content === dContent && a.conversaId === conversaId)
+            if (!dExists) {
+              addArtifact({
+                type: 'unified_study' as import('@/stores/artifactsStore').ArtifactType,
+                title,
+                content: dContent,
+                messageId,
+                conversaId,
+                chatMode
+              })
+            }
+            addedArtifactsRef.current.add(dKey)
+          }
+        })
+
+        // Marcar o artefato principal como processado e pular adição single
+        addedArtifactsRef.current.add(artifactKey)
+        return
       } else {
         // Detectar tipo pelo conteúdo
         const detectedType = detectArtifactType(artifact.content)
@@ -3429,30 +3542,24 @@ function ArtifactRendererComponent({
             { from: 'from-sky-50', to: 'to-blue-50', hover_from: 'hover:from-sky-100', hover_to: 'hover:to-blue-100', border: 'border-sky-200', icon_from: 'from-sky-500', icon_to: 'to-blue-500', shadow: 'shadow-sky-500/20', badge: 'bg-sky-100 text-sky-700', arrow_bg: 'bg-sky-100', arrow_hover: 'group-hover:bg-sky-200', arrow_text: 'text-sky-600' },
           ]
 
-          // Função para abrir o artefato unified_study no sidebar com aba específica
-          const openUnifiedTab = (tab: string) => {
-            useArtifactsStore.getState().setArtifactTabHint(tab)
-            openArtifactInSidebar('unified_study', uData.titulo, part.content)
-          }
-
-          // Construir lista de deck cards
-          const deckCards: Array<{ key: string; emoji: string; title: string; subtitle: string; tab: string }> = []
+          // Construir lista de deck cards com tipo e conteúdo para abrir artefato individual
+          const deckCards: Array<{ key: string; emoji: string; title: string; subtitle: string; openType: string; openContent: string }> = []
           if (uData.flashcards?.cards?.length) {
-            deckCards.push({ key: 'fc', emoji: '🃏', title: `${uData.titulo} - Flashcards`, subtitle: `${uData.flashcards.cards.length} cards • Toque para estudar`, tab: 'flashcards' })
+            deckCards.push({ key: 'fc', emoji: '🃏', title: `${uData.titulo} - Flashcards`, subtitle: `${uData.flashcards.cards.length} cards • Toque para estudar`, openType: 'flashcards', openContent: JSON.stringify({ titulo: uData.titulo, cards: uData.flashcards.cards }) })
           }
           if (uData.questoes?.length) {
             uData.questoes.forEach((q, i) => {
-              deckCards.push({ key: `q${i}`, emoji: `Q${i + 1}`, title: `${q.disciplina} - ${q.assunto}`, subtitle: 'Questão de múltipla escolha • Toque para responder', tab: 'questoes' })
+              deckCards.push({ key: `q${i}`, emoji: `Q${i + 1}`, title: `${q.disciplina} - ${q.assunto}`, subtitle: 'Questão de múltipla escolha • Toque para responder', openType: 'question', openContent: JSON.stringify(q) })
             })
           }
           if (uData.diagrama?.elementos?.length) {
-            deckCards.push({ key: 'diag', emoji: '🏛', title: `Diagrama - ${uData.diagrama.titulo || uData.titulo}`, subtitle: 'Diagrama interativo • Toque para visualizar', tab: 'diagrama' })
+            deckCards.push({ key: 'diag', emoji: '🏛', title: `Diagrama - ${uData.diagrama.titulo || uData.titulo}`, subtitle: 'Diagrama interativo • Toque para visualizar', openType: 'unified_study', openContent: JSON.stringify({ titulo: uData.titulo, diagrama: uData.diagrama }) })
           }
           if (uData.fluxograma?.etapas?.length) {
-            deckCards.push({ key: 'flux', emoji: '📊', title: `Fluxograma - ${uData.fluxograma.titulo || uData.titulo}`, subtitle: 'Fluxograma clínico • Toque para visualizar', tab: 'fluxograma' })
+            deckCards.push({ key: 'flux', emoji: '📊', title: `Fluxograma - ${uData.fluxograma.titulo || uData.titulo}`, subtitle: 'Fluxograma clínico • Toque para visualizar', openType: 'unified_study', openContent: JSON.stringify({ titulo: uData.titulo, fluxograma: uData.fluxograma }) })
           }
           if (uData.organograma?.raiz) {
-            deckCards.push({ key: 'org', emoji: '📁', title: `Organograma - ${uData.organograma.titulo || uData.titulo}`, subtitle: 'Hierarquia • Toque para visualizar', tab: 'organograma' })
+            deckCards.push({ key: 'org', emoji: '📁', title: `Organograma - ${uData.organograma.titulo || uData.titulo}`, subtitle: 'Hierarquia • Toque para visualizar', openType: 'unified_study', openContent: JSON.stringify({ titulo: uData.titulo, organograma: uData.organograma }) })
           }
 
           return (
@@ -3493,7 +3600,7 @@ function ArtifactRendererComponent({
                 return (
                   <button
                     key={card.key}
-                    onClick={() => openUnifiedTab(card.tab)}
+                    onClick={() => openArtifactInSidebar(card.openType, card.title, card.openContent)}
                     className={`w-full flex items-center gap-3 p-4 bg-gradient-to-r ${color.from} ${color.to} ${color.hover_from} ${color.hover_to} border ${color.border} rounded-xl text-left transition-all shadow-sm hover:shadow-md group`}
                   >
                     <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${color.icon_from} ${color.icon_to} flex items-center justify-center shadow-lg ${color.shadow}`}>
