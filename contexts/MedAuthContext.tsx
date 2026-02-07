@@ -510,36 +510,13 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
     const getSession = async () => {
       try {
-        // OTIMIZAÇÃO: Tentar obter sessão do localStorage primeiro (mais rápido)
-        // O Supabase armazena a sessão em localStorage com a chave específica
-        const storageKey = `sb-${process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0]}-auth-token`
-        const cachedSession = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
-
-        if (cachedSession) {
-          try {
-            const parsed = JSON.parse(cachedSession)
-            if (parsed?.user) {
-              console.log('[Auth] Usando sessão do cache local')
-              setUser(parsed.user)
-              // Buscar perfil em paralelo com validação da sessão
-              fetchProfile(
-                parsed.user.id,
-                parsed.user.email || undefined,
-                parsed.user.user_metadata?.nome
-              ).catch(err => console.error('[Auth] Erro ao carregar perfil:', err))
-            }
-          } catch (e) {
-            console.log('[Auth] Cache inválido, buscando sessão do servidor')
-          }
-        }
-
-        // Validar sessão com o servidor (pode demorar)
+        // Validar sessão via cookies (o middleware já fez refresh do JWT server-side)
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
         if (!mounted) return
 
         if (sessionError) {
-          console.error('Erro na sessão:', sessionError)
+          console.error('[Auth] Erro na sessão:', sessionError)
           setProfileLoading(false)
           setLoading(false)
           return
@@ -554,34 +531,32 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
               session.user.user_metadata?.nome
             )
           } catch (profileErr) {
-            console.error('Erro ao carregar perfil:', profileErr)
+            console.error('[Auth] Erro ao carregar perfil:', profileErr)
             setProfileLoading(false)
           }
         } else {
-          // Sessão inválida - limpar user se foi setado do cache
           setUser(null)
           setProfile(null)
           setProfileLoading(false)
         }
       } catch (error) {
-        console.error('Erro ao buscar sessão:', error)
+        console.error('[Auth] Erro ao buscar sessão:', error)
         setProfileLoading(false)
       } finally {
-        // SEMPRE definir loading como false, mesmo se unmounted
-        // Isso evita que a página fique travada em loading infinito
         setLoading(false)
       }
     }
 
-    // Timeout de segurança REDUZIDO: se auth demorar mais de 3 segundos, liberar a página
-    // O conteúdo vai carregar com dados do cache, e atualiza quando o servidor responder
+    // Timeout de segurança: se auth demorar mais de 8 segundos, liberar TUDO
+    // Com o middleware fazendo refresh server-side, getSession() deve ser rápido
+    // Este timeout só dispara em casos extremos de rede lenta
     const safetyTimeout = setTimeout(() => {
       if (mounted) {
         console.warn('[Auth] Timeout de segurança atingido, liberando loading')
         setLoading(false)
-        // NÃO definir profileLoading como false aqui - deixar o perfil continuar carregando
+        setProfileLoading(false)
       }
-    }, 3000)
+    }, 8000)
 
     getSession()
 
