@@ -540,7 +540,7 @@ export function DiagramaTab({ diagrama, imagens }: { diagrama: UnifiedStudyData[
       )}
 
       {/* Diagrama CSS interativo */}
-      <div className="bg-rose-50/50 rounded-2xl border border-rose-100 p-6 relative" style={{ minHeight: '320px' }}>
+      <div className="bg-rose-50/50 rounded-2xl border border-rose-100 p-6 relative overflow-visible" style={{ minHeight: '320px' }}>
         <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
           {/* Linhas de conexão entre elementos */}
           {diagrama.elementos.length > 1 && diagrama.elementos.slice(1).map((el, i) => {
@@ -563,13 +563,23 @@ export function DiagramaTab({ diagrama, imagens }: { diagrama: UnifiedStudyData[
 
         {diagrama.elementos.map((el) => {
           const isHovered = hoveredEl === el.id
+          // Posicionar tooltip inteligente: se elemento está à esquerda, tooltip vai à direita e vice-versa
+          const tooltipLeft = el.x < 30
+          const tooltipRight = el.x > 70
+          const tooltipAlign = tooltipLeft
+            ? 'left-0'
+            : tooltipRight
+              ? 'right-0'
+              : 'left-1/2 -translate-x-1/2'
+
           return (
             <div
               key={el.id}
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
-              style={{ left: `${el.x}%`, top: `${el.y}%` }}
+              className="absolute transform -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${el.x}%`, top: `${el.y}%`, zIndex: isHovered ? 30 : 10 }}
               onMouseEnter={() => setHoveredEl(el.id)}
               onMouseLeave={() => setHoveredEl(null)}
+              onClick={() => setHoveredEl(isHovered ? null : el.id)}
             >
               <motion.div
                 animate={{ scale: isHovered ? 1.1 : 1 }}
@@ -583,7 +593,8 @@ export function DiagramaTab({ diagrama, imagens }: { diagrama: UnifiedStudyData[
                   <motion.div
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white shadow-lg rounded-lg px-3 py-2 text-xs text-gray-600 whitespace-nowrap border z-20"
+                    className={`absolute top-full ${tooltipAlign} mt-1 bg-white shadow-lg rounded-lg px-3 py-2 text-xs text-gray-600 border max-w-[220px] whitespace-normal text-center`}
+                    style={{ zIndex: 50 }}
                   >
                     {el.descricao}
                   </motion.div>
@@ -790,8 +801,10 @@ export function OrganogramaTab({ organograma }: { organograma: UnifiedStudyData[
         </p>
       )}
 
-      <div className="bg-rose-50/30 rounded-2xl border border-rose-100 p-6 flex justify-center overflow-x-auto">
-        {renderOrgNode(organograma.raiz)}
+      <div className="bg-rose-50/30 rounded-2xl border border-rose-100 p-6 overflow-x-auto">
+        <div className="min-w-max flex justify-center pb-2">
+          {renderOrgNode(organograma.raiz)}
+        </div>
       </div>
     </div>
   )

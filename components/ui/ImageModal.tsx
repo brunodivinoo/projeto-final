@@ -80,21 +80,21 @@ export function ImageModal({ src, alt, isOpen, onClose, caption, source }: Image
         {/* Zoom out */}
         <button
           onClick={(e) => { e.stopPropagation(); setZoom(z => Math.max(z - 0.25, 0.5)) }}
-          className="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors backdrop-blur-sm"
+          className="p-2.5 bg-white/15 hover:bg-white/25 rounded-full transition-colors backdrop-blur-md border border-white/20"
           title="Diminuir zoom (-)"
         >
           <ZoomOut className="w-5 h-5 text-white" />
         </button>
 
         {/* Indicador de zoom */}
-        <span className="text-slate-700 text-sm min-w-[60px] text-center font-medium bg-slate-100 px-3 py-2 rounded-full backdrop-blur-sm">
+        <span className="text-white text-sm min-w-[60px] text-center font-medium bg-white/15 px-3 py-2 rounded-full backdrop-blur-md border border-white/20">
           {Math.round(zoom * 100)}%
         </span>
 
         {/* Zoom in */}
         <button
           onClick={(e) => { e.stopPropagation(); setZoom(z => Math.min(z + 0.25, 3)) }}
-          className="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors backdrop-blur-sm"
+          className="p-2.5 bg-white/15 hover:bg-white/25 rounded-full transition-colors backdrop-blur-md border border-white/20"
           title="Aumentar zoom (+)"
         >
           <ZoomIn className="w-5 h-5 text-white" />
@@ -107,7 +107,7 @@ export function ImageModal({ src, alt, isOpen, onClose, caption, source }: Image
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors backdrop-blur-sm"
+          className="p-2.5 bg-white/15 hover:bg-white/25 rounded-full transition-colors backdrop-blur-md border border-white/20"
           title="Abrir em nova aba"
         >
           <ExternalLink className="w-5 h-5 text-white" />
@@ -118,7 +118,7 @@ export function ImageModal({ src, alt, isOpen, onClose, caption, source }: Image
           href={src}
           download={alt || 'imagem'}
           onClick={(e) => e.stopPropagation()}
-          className="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors backdrop-blur-sm"
+          className="p-2.5 bg-white/15 hover:bg-white/25 rounded-full transition-colors backdrop-blur-md border border-white/20"
           title="Baixar imagem"
         >
           <Download className="w-5 h-5 text-white" />
@@ -127,7 +127,7 @@ export function ImageModal({ src, alt, isOpen, onClose, caption, source }: Image
         {/* Fechar */}
         <button
           onClick={(e) => { e.stopPropagation(); onClose() }}
-          className="p-2.5 bg-slate-100 hover:bg-red-500/50 rounded-full transition-colors ml-2 backdrop-blur-sm"
+          className="p-2.5 bg-white/15 hover:bg-red-500/60 rounded-full transition-colors ml-2 backdrop-blur-md border border-white/20"
           title="Fechar (ESC)"
         >
           <X className="w-5 h-5 text-white" />
@@ -180,10 +180,10 @@ export function ImageModal({ src, alt, isOpen, onClose, caption, source }: Image
       {(caption || source) && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 max-w-2xl px-6 py-3 bg-black/80 backdrop-blur-sm rounded-xl text-center z-[10000]">
           {caption && (
-            <p className="text-slate-800 text-sm mb-1">{caption}</p>
+            <p className="text-white text-sm mb-1">{caption}</p>
           )}
           {source && (
-            <p className="text-slate-500 text-xs">Fonte: {source}</p>
+            <p className="text-slate-300 text-xs">Fonte: {source}</p>
           )}
         </div>
       )}
