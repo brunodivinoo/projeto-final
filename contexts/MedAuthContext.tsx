@@ -304,22 +304,37 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     fetchingRef.current = true
     setProfileLoading(true)
 
-    // Garantir que a sessão é válida antes de buscar profile
+    console.log('[Auth] Iniciando fetchProfile para userId:', userId)
+
+    // 🔧 FIX: Refresh opcional e com timeout - NÃO destruir usuário se falhar
     try {
-      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession()
-      if (refreshError || !session) {
-        console.error('[Auth] Sessão inválida ao buscar perfil:', refreshError?.message)
-        setUser(null)
-        setProfile(null)
-        setProfileLoading(false)
-        fetchingRef.current = false
-        return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.expires_at) {
+        const expiresAt = new Date(session.expires_at * 1000)
+        const expiresIn = expiresAt.getTime() - Date.now()
+
+        // Apenas fazer refresh se expirar em < 5 minutos
+        if (expiresIn < 5 * 60 * 1000) {
+          console.log('[Auth] Token expira em breve, tentando refresh com timeout...')
+
+          // Timeout de 10s para evitar travamento
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout')), 10000)
+          )
+          const refreshPromise = supabase.auth.refreshSession()
+
+          try {
+            await Promise.race([refreshPromise, timeoutPromise])
+            console.log('[Auth] Refresh completado com sucesso')
+          } catch (err) {
+            console.warn('[Auth] Timeout ou erro no refresh, continuando sem refresh:', err)
+            // ✅ NÃO limpar usuário - apenas continuar
+          }
+        }
       }
     } catch (err) {
-      console.error('[Auth] Erro ao validar sessão antes de buscar perfil:', err)
-      fetchingRef.current = false
-      setProfileLoading(false)
-      return
+      console.warn('[Auth] Erro ao verificar expiração, continuando normalmente:', err)
+      // ✅ NÃO limpar usuário - apenas continuar
     }
 
     const mesAtual = new Date().toISOString().slice(0, 7) // "2026-01"
@@ -425,11 +440,14 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       }
 
       lastFetchedUserIdRef.current = userId
+      console.log('[Auth] fetchProfile completado com sucesso')
     } catch (error) {
-      console.error('Erro ao buscar perfil MED:', error)
+      console.error('[Auth] Erro ao buscar perfil MED:', error)
+      // ✅ NÃO limpar usuário - apenas marcar como completo
     } finally {
       fetchingRef.current = false
       setProfileLoading(false)
+      console.log('[Auth] fetchProfile finalizado (loading=false)')
     }
   }, [])
 
