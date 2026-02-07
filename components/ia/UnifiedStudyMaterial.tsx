@@ -502,7 +502,7 @@ function AnaliseAlternativas({ analises, correta }: { analises: Array<{ letra: s
 }
 
 // --- Diagrama Tab ---
-function DiagramaTab({ diagrama, imagens }: { diagrama: UnifiedStudyData['diagrama']; imagens?: ImagemRef[] }) {
+export function DiagramaTab({ diagrama, imagens }: { diagrama: UnifiedStudyData['diagrama']; imagens?: ImagemRef[] }) {
   const [hoveredEl, setHoveredEl] = useState<string | null>(null)
   const [modalImage, setModalImage] = useState<string | null>(null)
 
@@ -607,7 +607,7 @@ function DiagramaTab({ diagrama, imagens }: { diagrama: UnifiedStudyData['diagra
 }
 
 // --- Fluxograma Tab ---
-function FluxogramaTab({ fluxograma: fluxogramaProp }: { fluxograma: UnifiedStudyData['fluxograma'] }) {
+export function FluxogramaTab({ fluxograma: fluxogramaProp }: { fluxograma: UnifiedStudyData['fluxograma'] }) {
   if (!fluxogramaProp) return null
 
   // Copiar para variável local não-nula (TypeScript narrowing em closures)
@@ -713,7 +713,7 @@ function FluxogramaTab({ fluxograma: fluxogramaProp }: { fluxograma: UnifiedStud
 }
 
 // --- Organograma Tab ---
-function OrganogramaTab({ organograma }: { organograma: UnifiedStudyData['organograma'] }) {
+export function OrganogramaTab({ organograma }: { organograma: UnifiedStudyData['organograma'] }) {
   if (!organograma) return null
 
   function renderOrgNode(node: OrgNode, level: number = 0, isLast: boolean = true): React.ReactNode {

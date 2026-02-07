@@ -28,6 +28,8 @@ import {
 } from 'lucide-react'
 import { useArtifactsStore, ARTIFACT_ICONS, ARTIFACT_LABELS, CHAT_MODE_CONFIG, type Artifact, type ArtifactType, type ChatModeType } from '@/stores/artifactsStore'
 import { useMedAuth } from '@/contexts/MedAuthContext'
+import { DiagramaTab, FluxogramaTab, OrganogramaTab } from './UnifiedStudyMaterial'
+import type { UnifiedStudyData } from './UnifiedStudyMaterial'
 import dynamic from 'next/dynamic'
 import type { PlanoUsuario } from './QuestionArtifactCard'
 
@@ -1039,14 +1041,49 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
       )
 
     case 'unified_study': {
-      // Renderizar material de estudo unificado completo com abas
+      // Renderizar material de estudo unificado
       try {
-        const unifiedData = JSON.parse(artifact.content)
+        const unifiedData = JSON.parse(artifact.content) as Partial<UnifiedStudyData> & { titulo: string }
+
+        // Dados parciais (1 seção visual) → renderizar sub-componente diretamente
+        const hasDiag = !!(unifiedData.diagrama as UnifiedStudyData['diagrama'])?.elementos?.length
+        const hasFlux = !!(unifiedData.fluxograma as UnifiedStudyData['fluxograma'])?.etapas?.length
+        const hasOrg = !!(unifiedData.organograma as UnifiedStudyData['organograma'])?.raiz
+        const hasFlashcards = !!(unifiedData.flashcards as UnifiedStudyData['flashcards'])?.cards?.length
+        const hasQuestoes = !!(unifiedData.questoes as UnifiedStudyData['questoes'])?.length
+        const sectionCount = [hasDiag, hasFlux, hasOrg, hasFlashcards, hasQuestoes].filter(Boolean).length
+
+        if (sectionCount <= 1) {
+          // Artefato visual individual → renderizar sub-componente direto
+          if (hasDiag) {
+            return (
+              <div className={`p-4 ${containerClass}`}>
+                <DiagramaTab diagrama={unifiedData.diagrama as UnifiedStudyData['diagrama']} />
+              </div>
+            )
+          }
+          if (hasFlux) {
+            return (
+              <div className={`p-4 ${containerClass}`}>
+                <FluxogramaTab fluxograma={unifiedData.fluxograma as UnifiedStudyData['fluxograma']} />
+              </div>
+            )
+          }
+          if (hasOrg) {
+            return (
+              <div className={`p-4 ${containerClass}`}>
+                <OrganogramaTab organograma={unifiedData.organograma as UnifiedStudyData['organograma']} />
+              </div>
+            )
+          }
+        }
+
+        // Material completo com múltiplas abas → usar UnifiedStudyMaterial
         const tabHint = useArtifactsStore.getState().artifactTabHint
         return (
           <div className={containerClass}>
             <UnifiedStudyMaterial
-              data={unifiedData}
+              data={unifiedData as UnifiedStudyData}
               isFullscreen={isFullscreen}
               initialTab={tabHint || undefined}
             />
