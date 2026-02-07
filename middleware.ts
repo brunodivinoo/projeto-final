@@ -35,18 +35,36 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') ||
-                     request.nextUrl.pathname.startsWith('/cadastro')
-  const isDashboard = request.nextUrl.pathname.startsWith('/dashboard')
+  const pathname = request.nextUrl.pathname
 
-  // Se não está logado e tenta acessar dashboard, redireciona pro login
+  // Detectar rotas de auth e dashboard (ambos /medicina/* e raiz)
+  const isMedAuthPage = pathname.startsWith('/medicina/login') || pathname.startsWith('/medicina/cadastro')
+  const isMedDashboard = pathname.startsWith('/medicina/dashboard')
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/cadastro')
+  const isDashboard = pathname.startsWith('/dashboard')
+
+  // MEDICINA: Se não está logado e tenta acessar dashboard, redireciona pro login
+  if (!session && isMedDashboard) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/medicina/login'
+    return NextResponse.redirect(url)
+  }
+
+  // MEDICINA: Se está logado e tenta acessar login/cadastro, redireciona pro dashboard
+  if (session && isMedAuthPage) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/medicina/dashboard'
+    return NextResponse.redirect(url)
+  }
+
+  // RAIZ: Se não está logado e tenta acessar dashboard, redireciona pro login
   if (!session && isDashboard) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  // Se está logado e tenta acessar login/cadastro, redireciona pro dashboard
+  // RAIZ: Se está logado e tenta acessar login/cadastro, redireciona pro dashboard
   if (session && isAuthPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
@@ -57,5 +75,12 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/cadastro'],
+  matcher: [
+    '/dashboard/:path*',
+    '/login',
+    '/cadastro',
+    '/medicina/dashboard/:path*',
+    '/medicina/login',
+    '/medicina/cadastro',
+  ],
 }
