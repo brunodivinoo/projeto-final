@@ -304,6 +304,24 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     fetchingRef.current = true
     setProfileLoading(true)
 
+    // Garantir que a sessão é válida antes de buscar profile
+    try {
+      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession()
+      if (refreshError || !session) {
+        console.error('[Auth] Sessão inválida ao buscar perfil:', refreshError?.message)
+        setUser(null)
+        setProfile(null)
+        setProfileLoading(false)
+        fetchingRef.current = false
+        return
+      }
+    } catch (err) {
+      console.error('[Auth] Erro ao validar sessão antes de buscar perfil:', err)
+      fetchingRef.current = false
+      setProfileLoading(false)
+      return
+    }
+
     const mesAtual = new Date().toISOString().slice(0, 7) // "2026-01"
 
     try {
@@ -510,17 +528,36 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
     const initAuth = async () => {
       try {
-        // 1. getSession() lê tokens dos cookies (rápido, sem rede)
-        //    O middleware já validou/refreshou server-side via getUser()
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        // 1. Tentar getSession() primeiro (rápido, lê cookies locais)
+        let { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
         if (!mounted) return
 
-        if (sessionError) {
+        // 2. Se getSession() falhar ou não retornar usuário, usar getUser() como fallback
+        // getUser() valida JWT no servidor Supabase (mais confiável)
+        if (sessionError || !session?.user) {
+          console.log('[Auth] getSession() falhou ou retornou null, usando getUser() como fallback')
+
+          const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+          if (!userError && user) {
+            console.log('[Auth] getUser() encontrou usuário válido, fazendo refresh da sessão')
+            // Usuário válido - forçar refresh da sessão
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+
+            if (!refreshError && refreshData.session) {
+              session = refreshData.session
+              console.log('[Auth] Sessão refreshada com sucesso')
+            } else {
+              console.error('[Auth] Erro ao refresh sessão:', refreshError?.message)
+            }
+          } else {
+            console.log('[Auth] getUser() também falhou - usuário não autenticado')
+          }
+        }
+
+        if (sessionError && sessionError.message !== 'Auth session missing!') {
           console.error('[Auth] Erro na sessão:', sessionError.message)
-          setProfileLoading(false)
-          setLoading(false)
-          return
         }
 
         if (session?.user) {
@@ -558,6 +595,8 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       async (event: AuthChangeEvent, session: Session | null) => {
         if (!mounted) return
 
+        console.log('[Auth] onAuthStateChange:', event, session?.user?.id)
+
         if (session?.user) {
           if (session.user.id !== lastFetchedUserIdRef.current) {
             setUser(session.user)
@@ -584,6 +623,36 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe()
     }
   }, [fetchProfile])
+
+  // Re-validação periódica da sessão (a cada 5 minutos)
+  // Garante que se a sessão expirar, detectamos e podemos redirecionar
+  useEffect(() => {
+    if (!user) return
+
+    const validateSession = async () => {
+      try {
+        const { data: { user: validUser }, error } = await supabase.auth.getUser()
+
+        if (error || !validUser) {
+          console.log('[Auth] Sessão expirada ou inválida detectada, limpando estado')
+          setUser(null)
+          setProfile(null)
+          setLimites(null)
+          lastFetchedUserIdRef.current = null
+        }
+      } catch (err) {
+        console.error('[Auth] Erro ao validar sessão:', err)
+      }
+    }
+
+    // Validar imediatamente ao montar
+    validateSession()
+
+    // Validar a cada 5 minutos
+    const interval = setInterval(validateSession, 5 * 60 * 1000)
+
+    return () => clearInterval(interval)
+  }, [user])
 
   const signOut = async () => {
     await supabase.auth.signOut()
