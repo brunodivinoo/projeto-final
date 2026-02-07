@@ -16,6 +16,7 @@ import {
   X,
   MousePointer2
 } from 'lucide-react'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 interface MermaidDiagramProps {
   chart: string
@@ -263,6 +264,9 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
   // Ref para throttle do mouse move
   const mouseMoveThrottleRef = useRef<number | null>(null)
   const lastPositionRef = useRef({ x: 0, y: 0 })
+
+  // Detectar se é mobile
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     const renderDiagram = async () => {
@@ -634,6 +638,39 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
 
   }, [svg])
 
+  // Otimização para Mobile - Garantir visibilidade do SVG
+  useEffect(() => {
+    if (!svg || !svgContainerRef.current) return
+
+    const svgElement = svgContainerRef.current.querySelector('svg')
+    if (!svgElement) return
+
+    if (isMobile) {
+      // Forçar SVG responsivo no mobile
+      svgElement.setAttribute('width', '100%')
+      svgElement.setAttribute('height', 'auto')
+      svgElement.style.maxWidth = '100%'
+      svgElement.style.height = 'auto'
+
+      // Ajustar viewBox para caber na tela
+      const bbox = svgElement.getBBox?.()
+      if (bbox) {
+        const padding = 20
+        svgElement.setAttribute(
+          'viewBox',
+          `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`
+        )
+      }
+
+      // Desabilitar interatividade no mobile por padrão (performance)
+      if (interactiveMode) {
+        setInteractiveMode(false)
+      }
+
+      console.log('[MermaidDiagram] Otimizado para mobile')
+    }
+  }, [svg, isMobile, interactiveMode])
+
   // Destacar caminhos conectados a um nó
   const highlightConnectedPaths = (svgElement: SVGSVGElement, nodeId: string) => {
     const paths = new Set<string>()
@@ -893,13 +930,26 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
               <Download className="w-4 h-4 text-slate-600" />
             </button>
 
+            {/* Fullscreen - SEMPRE visível (essencial para mobile) */}
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors active:bg-slate-200"
+              title={isFullscreen ? 'Sair do fullscreen (ESC)' : 'Fullscreen'}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="w-4 h-4 text-slate-600" />
+              ) : (
+                <Maximize2 className="w-4 h-4 text-slate-600" />
+              )}
+            </button>
+
           </div>
         </div>
 
         {/* Diagrama */}
         <div
           ref={containerRef}
-          className={`relative overflow-hidden ${isFullscreen ? 'flex-1' : 'min-h-[200px]'}`}
+          className={`relative ${isMobile && !isFullscreen ? 'overflow-x-auto' : 'overflow-hidden'} ${isFullscreen ? 'flex-1' : 'min-h-[200px]'}`}
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -909,7 +959,7 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
         >
           <div
             ref={svgContainerRef}
-            className={`p-6 flex items-center justify-center ${isDragging ? '' : 'transition-transform duration-100'}`}
+            className={`${isMobile && !isFullscreen ? 'p-4 min-w-max' : 'p-6'} flex items-center justify-center ${isDragging ? '' : 'transition-transform duration-100'}`}
             style={{
               transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
               transformOrigin: 'center center',
@@ -919,7 +969,7 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
           >
             {svg ? (
               <div
-                className="mermaid-container w-full overflow-visible"
+                className={`mermaid-container ${isMobile && !isFullscreen ? 'min-w-[600px]' : 'w-full'} overflow-visible`}
                 dangerouslySetInnerHTML={{ __html: svg }}
               />
             ) : (
@@ -1077,11 +1127,22 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
           {isFullscreen && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 bg-white/90 border border-slate-200 rounded-lg text-slate-500 text-xs shadow-sm">
               <Move className="w-3 h-3" />
-              <span>Arraste para mover</span>
+              <span>{isMobile ? 'Arraste para mover' : 'Arraste para mover'}</span>
+              {!isMobile && (
+                <>
+                  <span className="text-slate-300">|</span>
+                  <span>Ctrl + Scroll para zoom</span>
+                </>
+              )}
               <span className="text-slate-300">|</span>
-              <span>Ctrl + Scroll para zoom</span>
-              <span className="text-slate-300">|</span>
-              <span>ESC para sair</span>
+              <span>{isMobile ? 'Toque para fechar' : 'ESC para sair'}</span>
+            </div>
+          )}
+
+          {/* Hint para scroll horizontal no mobile */}
+          {isMobile && !isFullscreen && svg && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2 py-1 bg-purple-50 border border-purple-200 rounded-lg">
+              <span className="text-purple-600 text-xs">← Deslize para ver mais →</span>
             </div>
           )}
 
