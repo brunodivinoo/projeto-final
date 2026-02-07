@@ -340,12 +340,20 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     const mesAtual = new Date().toISOString().slice(0, 7) // "2026-01"
 
     try {
-      console.log('[Auth] Iniciando queries do Supabase...')
+      console.log('[Auth] 🚀 STEP 1: Iniciando queries do Supabase...')
 
-      // 🔧 TIMEOUT GLOBAL: Queries NUNCA podem demorar > 12s
-      const queryTimeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout de 12s nas queries do Supabase')), 12000)
-      )
+      // 🔧 TIMEOUT ULTRA-ROBUSTO: 8s (reduzido para debug mais rápido)
+      let timeoutFired = false
+      const queryTimeout = new Promise<never>((_, reject) => {
+        const timer = setTimeout(() => {
+          timeoutFired = true
+          console.warn('[Auth] ⏱️ TIMEOUT DISPARADO após 8s!')
+          reject(new Error('Timeout de 8s nas queries do Supabase'))
+        }, 8000)
+        console.log('[Auth] 🕐 Timeout de 8s configurado (timer id:', timer, ')')
+      })
+
+      console.log('[Auth] 🚀 STEP 2: Criando Promise.allSettled com 3 queries...')
 
       const queriesPromise = Promise.allSettled([
         // 1. Profile
@@ -353,14 +361,22 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
           .from('profiles_med')
           .select('*')
           .eq('id', userId)
-          .single(),
+          .single()
+          .then(result => {
+            console.log('[Auth] ✅ Query 1/3 (profile) completou')
+            return result
+          }),
         // 2. Limites
         supabase
           .from('limites_uso_med')
           .select('*')
           .eq('user_id', userId)
           .eq('mes_referencia', mesAtual)
-          .single(),
+          .single()
+          .then(result => {
+            console.log('[Auth] ✅ Query 2/3 (limites) completou')
+            return result
+          }),
         // 3. Assinatura
         supabase
           .from('assinaturas_med')
@@ -369,14 +385,40 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
           .eq('status', 'ativa')
           .order('created_at', { ascending: false})
           .limit(1)
+          .then(result => {
+            console.log('[Auth] ✅ Query 3/3 (assinatura) completou')
+            return result
+          })
       ])
 
-      const [profileResult, limitesResult, assinaturaResult] = await Promise.race([
-        queriesPromise,
-        queryTimeout
-      ]) as PromiseSettledResult<any>[]
+      console.log('[Auth] 🚀 STEP 3: Aguardando Promise.race (queries vs timeout)...')
 
-      console.log('[Auth] Queries completadas com sucesso')
+      const raceStartTime = Date.now()
+      let raceResult: PromiseSettledResult<any>[]
+
+      try {
+        raceResult = await Promise.race([
+          queriesPromise.then(results => {
+            const elapsed = Date.now() - raceStartTime
+            console.log(`[Auth] ✅ Promise.race RESOLVEU via queriesPromise (${elapsed}ms)`)
+            return results
+          }),
+          queryTimeout
+        ]) as PromiseSettledResult<any>[]
+      } catch (err) {
+        const elapsed = Date.now() - raceStartTime
+        console.error(`[Auth] ❌ Promise.race REJEITOU (timeout) após ${elapsed}ms:`, err)
+        throw err // Re-lançar para cair no catch externo
+      }
+
+      const [profileResult, limitesResult, assinaturaResult] = raceResult
+
+      console.log('[Auth] ✅ STEP 4: Queries completadas! Processando resultados...')
+      console.log('[Auth] 📊 Results:', {
+        profile: profileResult.status,
+        limites: limitesResult.status,
+        assinatura: assinaturaResult.status
+      })
 
       // Processar PROFILE
       if (profileResult.status === 'fulfilled') {
@@ -453,14 +495,33 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       }
 
       lastFetchedUserIdRef.current = userId
-      console.log('[Auth] fetchProfile completado com sucesso')
+      console.log('[Auth] ✅ STEP 5: fetchProfile completado com SUCESSO')
     } catch (error) {
-      console.error('[Auth] Erro ao buscar perfil MED:', error)
-      // ✅ NÃO limpar usuário - apenas marcar como completo
+      console.error('[Auth] ❌ ERRO CAPTURADO em fetchProfile:', error)
+      console.error('[Auth] 📍 Tipo do erro:', error instanceof Error ? error.message : String(error))
+      console.error('[Auth] 📍 Stack:', error instanceof Error ? error.stack : 'N/A')
+      // ✅ NÃO limpar usuário - mesmo com erro, deixar app funcionar
+
+      // Se timeout disparou, criar perfil mínimo para permitir uso
+      if (error instanceof Error && error.message.includes('Timeout')) {
+        console.warn('[Auth] 💊 FALLBACK: Criando perfil mínimo por timeout')
+        setProfile({
+          id: userId,
+          nome: userEmail?.split('@')[0] || 'Estudante',
+          email: userEmail,
+          plano: 'gratuito',
+          trial_used: false,
+          trial_started_at: null,
+          trial_tempo_usado_segundos: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        } as ProfileMED)
+      }
     } finally {
       fetchingRef.current = false
       setProfileLoading(false)
-      console.log('[Auth] fetchProfile finalizado (loading=false)')
+      console.log('[Auth] 🏁 FINALLY: fetchProfile finalizado (profileLoading=false)')
+      console.log('[Auth] 🏁 Estado final: user=' + (user ? 'SET' : 'NULL') + ', profile=' + (profile ? 'SET' : 'NULL'))
     }
   }, [])
 
