@@ -1893,10 +1893,10 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
         </button>
       )}
 
-      {/* Sidebar Desktop */}
+      {/* Sidebar - fullscreen no mobile, painel lateral no desktop */}
       <div
-        className={`fixed top-0 right-0 h-full bg-white/95 backdrop-blur-sm border-l border-slate-200 transition-all duration-300 z-50 hidden md:flex flex-col ${
-          isSidebarOpen ? 'w-[420px]' : 'w-0'
+        className={`fixed top-0 right-0 h-full bg-white/95 backdrop-blur-sm border-l border-slate-200 transition-all duration-300 z-50 flex flex-col ${
+          isSidebarOpen ? 'w-full md:w-[420px]' : 'w-0 hidden'
         } ${className}`}
       >
         {isSidebarOpen && (

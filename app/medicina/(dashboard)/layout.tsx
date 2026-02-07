@@ -87,7 +87,7 @@ function groupConversasByDate(conversas: { id: string; titulo: string; updated_a
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, profile, plano, loading, signOut, trialStatus } = useMedAuth()
+  const { user, profile, plano, loading, profileLoading, signOut, trialStatus } = useMedAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
@@ -138,12 +138,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }, [user, setConversas])
 
   useEffect(() => {
-    if (!loading && !user) router.push('/medicina/login')
-  }, [user, loading, router])
+    if (!loading && !profileLoading && !user) router.push('/medicina/login')
+  }, [user, loading, profileLoading, router])
 
   useEffect(() => {
-    if (user && !loading) fetchConversas()
-  }, [user, loading, fetchConversas])
+    if (user && !loading && !profileLoading) fetchConversas()
+  }, [user, loading, profileLoading, fetchConversas])
 
   // Fechar menus ao clicar fora
   useEffect(() => {
@@ -253,7 +253,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
   }
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="min-h-screen bg-surface-100 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
