@@ -206,24 +206,53 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
       )
 
     case 'modern_flowchart':
-      // Renderizar fluxograma moderno
+      // Renderizar fluxograma como Mermaid (padrão visual unificado com desktop)
       try {
         const flowchartData = JSON.parse(artifact.content)
+        let mermaidFlowCode = 'flowchart TD\n'
         if (flowchartData.nodes && Array.isArray(flowchartData.nodes)) {
+          flowchartData.nodes.forEach((node: { id?: string; label?: string; name?: string; type?: string }, idx: number) => {
+            const nodeId = node.id || `n${idx}`
+            const label = (node.label || node.name || `Nó ${idx + 1}`).replace(/"/g, "'")
+            if (node.type === 'start' || idx === 0) {
+              mermaidFlowCode += `    ${nodeId}(["${label}"])\n`
+            } else if (node.type === 'end' || idx === flowchartData.nodes.length - 1) {
+              mermaidFlowCode += `    ${nodeId}(("${label}"))\n`
+            } else if (node.type === 'decision') {
+              mermaidFlowCode += `    ${nodeId}{"${label}"}\n`
+            } else {
+              mermaidFlowCode += `    ${nodeId}["${label}"]\n`
+            }
+          })
+          if (flowchartData.edges && Array.isArray(flowchartData.edges)) {
+            flowchartData.edges.forEach((edge: { from?: string; source?: string; to?: string; target?: string; label?: string }) => {
+              const from = edge.from || edge.source || ''
+              const to = edge.to || edge.target || ''
+              if (from && to) {
+                const edgeLabel = edge.label ? `|"${edge.label.replace(/"/g, "'")}"| ` : ''
+                mermaidFlowCode += `    ${from} -->${edgeLabel}${to}\n`
+              }
+            })
+          } else {
+            for (let i = 0; i < flowchartData.nodes.length - 1; i++) {
+              const fromId = flowchartData.nodes[i].id || `n${i}`
+              const toId = flowchartData.nodes[i + 1].id || `n${i + 1}`
+              mermaidFlowCode += `    ${fromId} --> ${toId}\n`
+            }
+          }
           return (
             <div className="p-3 overflow-x-auto">
-              <ModernFlowchart
-                title={flowchartData.title || artifact.title}
-                nodes={flowchartData.nodes}
-                edges={flowchartData.edges || []}
-                description={flowchartData.description}
-                showLegend={flowchartData.showLegend !== false}
-              />
+              <MermaidDiagram chart={mermaidFlowCode} title={flowchartData.title || artifact.title} />
             </div>
           )
         }
       } catch {
-        // Fallback
+        // Fallback: tentar content direto como Mermaid
+        return (
+          <div className="p-3 overflow-x-auto">
+            <MermaidDiagram chart={artifact.content} title={artifact.title} />
+          </div>
+        )
       }
       return (
         <div className="p-4">
@@ -234,33 +263,40 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
       )
 
     case 'tree_diagram':
-      // Renderizar organograma em árvore
+      // Renderizar organograma como Mermaid (padrão visual unificado com desktop)
       try {
         const treeData = JSON.parse(artifact.content)
         const rootData = treeData.data || treeData.root || treeData.tree || treeData
-        if (rootData.name || rootData.label || rootData.children) {
-          return (
-            <div className="p-3 overflow-x-auto">
-              <TreeDiagram
-                title={treeData.title || artifact.title}
-                data={rootData}
-                description={treeData.description}
-                defaultExpanded={treeData.defaultExpanded !== false}
-                showChildCount={treeData.showChildCount !== false}
-              />
-            </div>
-          )
+        // Converter árvore JSON para código Mermaid
+        let mermaidTreeCode = 'flowchart TD\n'
+        let nodeCounter = 0
+        const addTreeNode = (node: { name?: string; label?: string; children?: unknown[] }, parentId?: string) => {
+          const nodeId = `t${nodeCounter++}`
+          const label = (node.name || node.label || 'Item').replace(/"/g, "'")
+          if (!parentId) {
+            mermaidTreeCode += `    ${nodeId}[["${label}"]]\n`
+          } else {
+            mermaidTreeCode += `    ${nodeId}["${label}"]\n`
+            mermaidTreeCode += `    ${parentId} --> ${nodeId}\n`
+          }
+          if (node.children && Array.isArray(node.children)) {
+            node.children.forEach((child) => addTreeNode(child as { name?: string; label?: string; children?: unknown[] }, nodeId))
+          }
         }
-      } catch {
-        // Fallback
-      }
-      return (
-        <div className="p-4">
-          <div className="bg-purple-50 rounded-xl p-4 text-center">
-            <p className="text-purple-600">Organograma disponível</p>
+        addTreeNode(rootData)
+        return (
+          <div className="p-3 overflow-x-auto">
+            <MermaidDiagram chart={mermaidTreeCode} title={treeData.title || artifact.title} />
           </div>
-        </div>
-      )
+        )
+      } catch {
+        // Fallback: tentar content direto como Mermaid
+        return (
+          <div className="p-3 overflow-x-auto">
+            <MermaidDiagram chart={artifact.content} title={artifact.title} />
+          </div>
+        )
+      }
 
     case 'layers':
     case 'anatomy':
@@ -294,11 +330,12 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
 
     case 'diagram':
     case 'flowchart': {
-      // IMPORTANTE: Verificar se é JSON antes de passar para Mermaid
+      // IMPORTANTE: Verificar se o conteúdo é JSON antes de passar para Mermaid
+      // Se for JSON com estrutura de flowchart ou tree, usar o componente correto
       try {
         const parsed = JSON.parse(artifact.content)
 
-        // Se tem nodes, é um ModernFlowchart
+        // Se tem nodes e é array, é um ModernFlowchart
         if (parsed.nodes && Array.isArray(parsed.nodes)) {
           return (
             <div className="p-3 overflow-x-auto">
@@ -344,34 +381,53 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
             </div>
           )
         }
+
+        // É JSON mas não reconhecido
+        throw new Error('JSON não reconhecido')
       } catch {
-        // Não é JSON, verificar se é Mermaid válido
-      }
+        // Não é JSON válido — tentar limpar e corrigir o conteúdo Mermaid
+        let mermaidContent = artifact.content.trim()
+        // Remover fences markdown se presentes (```mermaid ... ```)
+        mermaidContent = mermaidContent.replace(/^```(?:mermaid)?\s*/i, '').replace(/\s*```$/i, '').trim()
+        // Tentar encontrar graph/flowchart no início de alguma linha
+        const headerMatch = mermaidContent.match(/^(graph|flowchart)\s+(TD|LR|BT|RL)/m)
+        if (headerMatch && mermaidContent.indexOf(headerMatch[0]) > 0) {
+          mermaidContent = mermaidContent.substring(mermaidContent.indexOf(headerMatch[0]))
+        }
 
-      // Verificar se é sintaxe Mermaid válida
-      const trimmedContent = artifact.content.trim()
-      const isMermaidSyntax = /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|gitGraph|mindmap|timeline)/i.test(trimmedContent)
+        const isMermaidSyntax = /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|gitGraph|mindmap|timeline|quadrantChart|sankey|xychart)/i.test(mermaidContent)
 
-      if (isMermaidSyntax) {
+        if (isMermaidSyntax) {
+          return (
+            <div className="p-3 overflow-x-auto">
+              <MermaidDiagram chart={mermaidContent} title={artifact.title} />
+            </div>
+          )
+        }
+
+        // Último recurso: se tem setas (-->), forçar como flowchart
+        if (mermaidContent.includes('-->') || mermaidContent.includes('---')) {
+          const forcedMermaid = 'flowchart TD\n' + mermaidContent
+          return (
+            <div className="p-3 overflow-x-auto">
+              <MermaidDiagram chart={forcedMermaid} title={artifact.title} />
+            </div>
+          )
+        }
+
+        // Fallback: mostrar conteúdo como texto
         return (
-          <div className="p-3 overflow-x-auto">
-            <MermaidDiagram
-              chart={artifact.content}
-              title={artifact.title}
-            />
+          <div className="p-4">
+            <div className="bg-red-50 rounded-xl p-4">
+              <div className="flex items-center gap-2 text-red-600 mb-2">
+                <span>⚠️</span>
+                <span className="font-medium text-sm">Erro ao renderizar diagrama</span>
+              </div>
+              <p className="text-red-500 text-xs">Formato não reconhecido</p>
+            </div>
           </div>
         )
       }
-
-      // Fallback: mostrar conteúdo como texto
-      return (
-        <div className="p-4">
-          <div className="bg-slate-50 rounded-xl p-4">
-            <h4 className="font-medium text-slate-800 mb-2">{artifact.title}</h4>
-            <p className="text-slate-600 text-sm whitespace-pre-wrap">{artifact.content.substring(0, 500)}...</p>
-          </div>
-        </div>
-      )
     }
 
     default:

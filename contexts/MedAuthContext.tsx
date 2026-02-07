@@ -508,15 +508,16 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true
 
-    const getSession = async () => {
+    const initAuth = async () => {
       try {
-        // Validar sessão via cookies (o middleware já fez refresh do JWT server-side)
+        // 1. getSession() lê tokens dos cookies (rápido, sem rede)
+        //    O middleware já validou/refreshou server-side via getUser()
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
         if (!mounted) return
 
         if (sessionError) {
-          console.error('[Auth] Erro na sessão:', sessionError)
+          console.error('[Auth] Erro na sessão:', sessionError.message)
           setProfileLoading(false)
           setLoading(false)
           return
@@ -524,6 +525,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
         if (session?.user) {
           setUser(session.user)
+          setLoading(false)
           try {
             await fetchProfile(
               session.user.id,
@@ -535,30 +537,22 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
             setProfileLoading(false)
           }
         } else {
+          // Sem sessão nos cookies — usuário não está logado
           setUser(null)
           setProfile(null)
           setProfileLoading(false)
+          setLoading(false)
         }
       } catch (error) {
         console.error('[Auth] Erro ao buscar sessão:', error)
-        setProfileLoading(false)
-      } finally {
-        setLoading(false)
+        if (mounted) {
+          setProfileLoading(false)
+          setLoading(false)
+        }
       }
     }
 
-    // Timeout de segurança: se auth demorar mais de 8 segundos, liberar TUDO
-    // Com o middleware fazendo refresh server-side, getSession() deve ser rápido
-    // Este timeout só dispara em casos extremos de rede lenta
-    const safetyTimeout = setTimeout(() => {
-      if (mounted) {
-        console.warn('[Auth] Timeout de segurança atingido, liberando loading')
-        setLoading(false)
-        setProfileLoading(false)
-      }
-    }, 8000)
-
-    getSession()
+    initAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
@@ -567,6 +561,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           if (session.user.id !== lastFetchedUserIdRef.current) {
             setUser(session.user)
+            setLoading(false)
             await fetchProfile(
               session.user.id,
               session.user.email || undefined,
@@ -586,7 +581,6 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false
-      clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
   }, [fetchProfile])

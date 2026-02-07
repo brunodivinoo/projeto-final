@@ -25,16 +25,17 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // IMPORTANTE: Usar getSession() primeiro - é mais rápido e não invalida tokens
-  // getUser() faz uma chamada ao servidor e pode causar problemas de sessão
-  const { data: { session }, error } = await supabase.auth.getSession()
+  // getUser() valida o JWT no servidor Supabase e faz refresh automático se expirado.
+  // Mais confiável que getSession() que só lê do cookie local sem validar.
+  const { data: { user }, error } = await supabase.auth.getUser()
 
-  // Se houve erro ao verificar sessão, deixar passar (não deslogar o usuário)
-  if (error) {
-    console.error('Middleware: Erro ao verificar sessão:', error.message)
+  // Se houve erro ao verificar, deixar passar (não deslogar o usuário por erro de rede)
+  if (error && error.status !== 401) {
+    console.error('Middleware: Erro ao verificar usuário:', error.message)
     return supabaseResponse
   }
 
+  const isAuthenticated = !!user
   const pathname = request.nextUrl.pathname
 
   // Detectar rotas de auth e dashboard (ambos /medicina/* e raiz)
@@ -44,28 +45,28 @@ export async function middleware(request: NextRequest) {
   const isDashboard = pathname.startsWith('/dashboard')
 
   // MEDICINA: Se não está logado e tenta acessar dashboard, redireciona pro login
-  if (!session && isMedDashboard) {
+  if (!isAuthenticated && isMedDashboard) {
     const url = request.nextUrl.clone()
     url.pathname = '/medicina/login'
     return NextResponse.redirect(url)
   }
 
   // MEDICINA: Se está logado e tenta acessar login/cadastro, redireciona pro dashboard
-  if (session && isMedAuthPage) {
+  if (isAuthenticated && isMedAuthPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/medicina/dashboard'
     return NextResponse.redirect(url)
   }
 
   // RAIZ: Se não está logado e tenta acessar dashboard, redireciona pro login
-  if (!session && isDashboard) {
+  if (!isAuthenticated && isDashboard) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
   // RAIZ: Se está logado e tenta acessar login/cadastro, redireciona pro dashboard
-  if (session && isAuthPage) {
+  if (isAuthenticated && isAuthPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

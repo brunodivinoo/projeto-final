@@ -76,7 +76,7 @@ export default function MedicinaLoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/medicina/dashboard`
+          redirectTo: `${window.location.origin}/medicina/auth/callback`
         }
       })
 
@@ -104,7 +104,7 @@ export default function MedicinaLoginPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/medicina/dashboard`
+          emailRedirectTo: `${window.location.origin}/medicina/auth/callback`
         }
       })
 
