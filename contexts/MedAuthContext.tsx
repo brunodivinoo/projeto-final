@@ -207,6 +207,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
   const fetchingRef = useRef(false)
   const lastFetchedUserIdRef = useRef<string | null>(null)
+  const fetchProfilePromiseRef = useRef<Promise<void> | null>(null) // Lock atômico
 
   const plano = profile?.plano || 'gratuito'
   const limitesPlano = LIMITES_PLANO[plano]
@@ -252,7 +253,16 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
   // Atualizar trial status e incrementar tempo usado (heartbeat)
   useEffect(() => {
-    const updateTrial = () => setTrialStatus(calcularTrialStatus())
+    const updateTrial = () => {
+      const newStatus = calcularTrialStatus()
+      setTrialStatus(prevStatus => {
+        // ⚡ Otimização: Só atualizar se mudou de verdade (evitar re-renders)
+        if (JSON.stringify(prevStatus) === JSON.stringify(newStatus)) {
+          return prevStatus
+        }
+        return newStatus
+      })
+    }
     updateTrial()
 
     // Se trial ativo, incrementar tempo usado a cada minuto
@@ -293,18 +303,26 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
   }, [calcularTrialStatus, user, profile])
 
   const fetchProfile = useCallback(async (userId: string, userEmail?: string, userName?: string, forceRefresh = false) => {
-    if (fetchingRef.current) {
+    // 🔒 LOCK ATÔMICO: Se já está executando, AGUARDAR ao invés de rejeitar
+    if (fetchProfilePromiseRef.current) {
+      console.log('[Auth] ⏳ fetchProfile já em execução, aguardando conclusão...')
+      await fetchProfilePromiseRef.current
       return
     }
+
+    // Early return se já foi fetchado e não é force refresh
     if (!forceRefresh && lastFetchedUserIdRef.current === userId) {
       setProfileLoading(false)
+      console.log('[Auth] Perfil já carregado, pulando fetch')
       return
     }
 
-    fetchingRef.current = true
-    setProfileLoading(true)
+    // Criar Promise de fetch e guardar no ref como lock
+    fetchProfilePromiseRef.current = (async () => {
+      fetchingRef.current = true
+      setProfileLoading(true)
 
-    console.log('[Auth] Iniciando fetchProfile para userId:', userId)
+      console.log('[Auth] 🔓 Iniciando fetchProfile para userId:', userId)
 
     // 🔧 FIX: Refresh opcional e com timeout - NÃO destruir usuário se falhar
     try {
@@ -525,8 +543,16 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     } finally {
       fetchingRef.current = false
       setProfileLoading(false)
+      fetchProfilePromiseRef.current = null // 🔓 Liberar lock
       console.log('[Auth] 🏁 FINALLY: fetchProfile finalizado (profileLoading=false)')
-      console.log('[Auth] 🏁 Estado final: user=' + (user ? 'SET' : 'NULL') + ', profile=' + (profile ? 'SET' : 'NULL'))
+    }
+    })() // Executar a Promise imediatamente
+
+    // Aguardar conclusão
+    try {
+      await fetchProfilePromiseRef.current
+    } finally {
+      // Já foi limpo no finally interno
     }
   }, [])
 
