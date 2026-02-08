@@ -303,19 +303,18 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
   }, [calcularTrialStatus, user, profile])
 
   const fetchProfile = useCallback(async (userId: string, userEmail?: string, userName?: string, forceRefresh = false) => {
+    console.log('[Auth] 🔓 fetchProfile chamado - userId:', userId, 'forceRefresh:', forceRefresh)
+
     // 🔒 LOCK ATÔMICO: Se já está executando, AGUARDAR ao invés de rejeitar
     if (fetchProfilePromiseRef.current) {
       console.log('[Auth] ⏳ fetchProfile já em execução, aguardando conclusão...')
       await fetchProfilePromiseRef.current
+      console.log('[Auth] ✅ Fetch anterior completou, retornando')
       return
     }
 
-    // Early return se já foi fetchado e não é force refresh
-    if (!forceRefresh && lastFetchedUserIdRef.current === userId) {
-      setProfileLoading(false)
-      console.log('[Auth] Perfil já carregado, pulando fetch')
-      return
-    }
+    // 🔥 REMOVIDO: Early return que estava causando problemas no F5
+    // Agora SEMPRE executa fetchProfile quando chamado explicitamente
 
     // Criar Promise de fetch e guardar no ref como lock
     fetchProfilePromiseRef.current = (async () => {
@@ -718,26 +717,25 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       async (event: AuthChangeEvent, session: Session | null) => {
         if (!mounted) return
 
-        console.log('[Auth] onAuthStateChange:', event, session?.user?.id)
+        console.log('[Auth] 📡 onAuthStateChange:', event, session?.user?.id)
 
         if (session?.user) {
           setUser(session.user)
           setLoading(false)
 
           // 🔧 FIX: Se o evento é SIGNED_IN (refresh/F5), forçar fetchProfile
-          // mesmo que o ID já tenha sido fetchado antes
           const forceRefresh = event === 'SIGNED_IN'
+          console.log('[Auth] 🔍 Evento:', event, '→ forceRefresh:', forceRefresh)
+          console.log('[Auth] 🔍 lastFetchedUserIdRef:', lastFetchedUserIdRef.current)
+          console.log('[Auth] 🔍 Condição:', session.user.id !== lastFetchedUserIdRef.current || forceRefresh)
 
-          if (session.user.id !== lastFetchedUserIdRef.current || forceRefresh) {
-            await fetchProfile(
-              session.user.id,
-              session.user.email || undefined,
-              session.user.user_metadata?.nome,
-              forceRefresh  // ✅ PASSAR forceRefresh como 4º argumento!
-            )
-          } else {
-            console.log('[Auth] Perfil já foi carregado, pulando fetchProfile')
-          }
+          // 🔥 SEMPRE chamar fetchProfile - lock atômico previne duplicação
+          await fetchProfile(
+            session.user.id,
+            session.user.email || undefined,
+            session.user.user_metadata?.nome,
+            forceRefresh
+          )
         } else {
           setUser(null)
           setProfile(null)
