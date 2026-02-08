@@ -701,7 +701,8 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
             await fetchProfile(
               session.user.id,
               session.user.email || undefined,
-              session.user.user_metadata?.nome
+              session.user.user_metadata?.nome,
+              forceRefresh  // ✅ PASSAR forceRefresh como 4º argumento!
             )
           } else {
             console.log('[Auth] Perfil já foi carregado, pulando fetchProfile')
@@ -721,7 +722,8 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [fetchProfile])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // ✅ ARRAY VAZIO - executar apenas UMA VEZ na montagem (fix de loop infinito)
 
   // Re-validação periódica da sessão (a cada 5 minutos)
   // Garante que se a sessão expirar, detectamos e podemos redirecionar
