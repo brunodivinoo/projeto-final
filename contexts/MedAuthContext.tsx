@@ -207,7 +207,6 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
   const fetchingRef = useRef(false)
   const lastFetchedUserIdRef = useRef<string | null>(null)
-  const fetchProfilePromiseRef = useRef<Promise<void> | null>(null) // Lock atômico
 
   const plano = profile?.plano || 'gratuito'
   const limitesPlano = LIMITES_PLANO[plano]
@@ -305,23 +304,16 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string, userEmail?: string, userName?: string, forceRefresh = false) => {
     console.log('[Auth] 🔓 fetchProfile chamado - userId:', userId, 'forceRefresh:', forceRefresh)
 
-    // 🔒 LOCK ATÔMICO: Se já está executando, AGUARDAR ao invés de rejeitar
-    if (fetchProfilePromiseRef.current) {
-      console.log('[Auth] ⏳ fetchProfile já em execução, aguardando conclusão...')
-      await fetchProfilePromiseRef.current
-      console.log('[Auth] ✅ Fetch anterior completou, retornando')
+    // ⏸️ LOCK SIMPLES: Se já está executando, retornar
+    if (fetchingRef.current) {
+      console.log('[Auth] ⏳ fetchProfile já em execução, ignorando chamada duplicada')
       return
     }
 
-    // 🔥 REMOVIDO: Early return que estava causando problemas no F5
-    // Agora SEMPRE executa fetchProfile quando chamado explicitamente
+    fetchingRef.current = true
+    setProfileLoading(true)
 
-    // Criar Promise de fetch e guardar no ref como lock
-    fetchProfilePromiseRef.current = (async () => {
-      fetchingRef.current = true
-      setProfileLoading(true)
-
-      console.log('[Auth] 🔓 Iniciando fetchProfile para userId:', userId)
+    console.log('[Auth] 🚀 Iniciando fetchProfile para userId:', userId)
 
     // 🔧 FIX: Refresh opcional e com timeout - NÃO destruir usuário se falhar
     try {
@@ -542,16 +534,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     } finally {
       fetchingRef.current = false
       setProfileLoading(false)
-      fetchProfilePromiseRef.current = null // 🔓 Liberar lock
       console.log('[Auth] 🏁 FINALLY: fetchProfile finalizado (profileLoading=false)')
-    }
-    })() // Executar a Promise imediatamente
-
-    // Aguardar conclusão
-    try {
-      await fetchProfilePromiseRef.current
-    } finally {
-      // Já foi limpo no finally interno
     }
   }, [])
 
