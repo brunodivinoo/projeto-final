@@ -10,7 +10,7 @@
 // CONFIGURACAO DE VERSAO
 // ======================
 // Incremente esta versao ao fazer deploy para forcar atualizacao do cache
-const CACHE_VERSION = 'v3.2.0';
+const CACHE_VERSION = 'v3.3.0-auth-fix';
 
 // Nomes dos caches separados por tipo de conteudo
 // Isso permite gerenciar diferentes estrategias e tempos de expiracao
