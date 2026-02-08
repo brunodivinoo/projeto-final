@@ -252,7 +252,16 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
   // Atualizar trial status e incrementar tempo usado (heartbeat)
   useEffect(() => {
-    const updateTrial = () => setTrialStatus(calcularTrialStatus())
+    const updateTrial = () => {
+      const newStatus = calcularTrialStatus()
+      setTrialStatus(prevStatus => {
+        // ⚡ Otimização: Só atualizar se mudou de verdade (evitar re-renders)
+        if (JSON.stringify(prevStatus) === JSON.stringify(newStatus)) {
+          return prevStatus
+        }
+        return newStatus
+      })
+    }
     updateTrial()
 
     // Se trial ativo, incrementar tempo usado a cada minuto
@@ -293,18 +302,18 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
   }, [calcularTrialStatus, user, profile])
 
   const fetchProfile = useCallback(async (userId: string, userEmail?: string, userName?: string, forceRefresh = false) => {
+    console.log('[Auth] 🔓 fetchProfile chamado - userId:', userId, 'forceRefresh:', forceRefresh)
+
+    // ⏸️ LOCK SIMPLES: Se já está executando, retornar
     if (fetchingRef.current) {
-      return
-    }
-    if (!forceRefresh && lastFetchedUserIdRef.current === userId) {
-      setProfileLoading(false)
+      console.log('[Auth] ⏳ fetchProfile já em execução, ignorando chamada duplicada')
       return
     }
 
     fetchingRef.current = true
     setProfileLoading(true)
 
-    console.log('[Auth] Iniciando fetchProfile para userId:', userId)
+    console.log('[Auth] 🚀 Iniciando fetchProfile para userId:', userId)
 
     // 🔧 FIX: Refresh opcional e com timeout - NÃO destruir usuário se falhar
     try {
@@ -526,7 +535,6 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       fetchingRef.current = false
       setProfileLoading(false)
       console.log('[Auth] 🏁 FINALLY: fetchProfile finalizado (profileLoading=false)')
-      console.log('[Auth] 🏁 Estado final: user=' + (user ? 'SET' : 'NULL') + ', profile=' + (profile ? 'SET' : 'NULL'))
     }
   }, [])
 
@@ -692,26 +700,25 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       async (event: AuthChangeEvent, session: Session | null) => {
         if (!mounted) return
 
-        console.log('[Auth] onAuthStateChange:', event, session?.user?.id)
+        console.log('[Auth] 📡 onAuthStateChange:', event, session?.user?.id)
 
         if (session?.user) {
           setUser(session.user)
           setLoading(false)
 
           // 🔧 FIX: Se o evento é SIGNED_IN (refresh/F5), forçar fetchProfile
-          // mesmo que o ID já tenha sido fetchado antes
           const forceRefresh = event === 'SIGNED_IN'
+          console.log('[Auth] 🔍 Evento:', event, '→ forceRefresh:', forceRefresh)
+          console.log('[Auth] 🔍 lastFetchedUserIdRef:', lastFetchedUserIdRef.current)
+          console.log('[Auth] 🔍 Condição:', session.user.id !== lastFetchedUserIdRef.current || forceRefresh)
 
-          if (session.user.id !== lastFetchedUserIdRef.current || forceRefresh) {
-            await fetchProfile(
-              session.user.id,
-              session.user.email || undefined,
-              session.user.user_metadata?.nome,
-              forceRefresh  // ✅ PASSAR forceRefresh como 4º argumento!
-            )
-          } else {
-            console.log('[Auth] Perfil já foi carregado, pulando fetchProfile')
-          }
+          // 🔥 SEMPRE chamar fetchProfile - lock atômico previne duplicação
+          await fetchProfile(
+            session.user.id,
+            session.user.email || undefined,
+            session.user.user_metadata?.nome,
+            forceRefresh
+          )
         } else {
           setUser(null)
           setProfile(null)
