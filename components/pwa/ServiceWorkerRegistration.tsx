@@ -199,6 +199,13 @@ export function ServiceWorkerRegistration({
   // REGISTRO INICIAL
   // ============================================================
   useEffect(() => {
+    // 🔴 TEMPORARIAMENTE DESABILITADO PARA FIX DE AUTH
+    // Service Worker está cacheando bundles JavaScript antigos
+    // Causando problema crítico de autenticação
+    // TODO: Reabilitar após resolver problema de cache de bundles
+    console.log('[PWA] Service Worker DESABILITADO temporariamente (fix de auth)')
+    return
+
     // Aguarda a pagina carregar completamente
     if (document.readyState === 'complete') {
       registerServiceWorker()
