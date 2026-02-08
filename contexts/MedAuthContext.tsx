@@ -342,15 +342,16 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[Auth] 🚀 STEP 1: Iniciando queries do Supabase...')
 
-      // 🔧 TIMEOUT ULTRA-ROBUSTO: 8s (reduzido para debug mais rápido)
+      // 🔧 TIMEOUT ULTRA-ROBUSTO: 8s com cancelamento automático
       let timeoutFired = false
+      let timeoutId: NodeJS.Timeout | null = null
       const queryTimeout = new Promise<never>((_, reject) => {
-        const timer = setTimeout(() => {
+        timeoutId = setTimeout(() => {
           timeoutFired = true
           console.warn('[Auth] ⏱️ TIMEOUT DISPARADO após 8s!')
           reject(new Error('Timeout de 8s nas queries do Supabase'))
         }, 8000)
-        console.log('[Auth] 🕐 Timeout de 8s configurado (timer id:', timer, ')')
+        console.log('[Auth] 🕐 Timeout de 8s configurado')
       })
 
       console.log('[Auth] 🚀 STEP 2: Criando Promise.allSettled com 3 queries...')
@@ -400,7 +401,11 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
         raceResult = await Promise.race([
           queriesPromise.then(results => {
             const elapsed = Date.now() - raceStartTime
-            console.log(`[Auth] ✅ Promise.race RESOLVEU via queriesPromise (${elapsed}ms)`)
+            // ✅ CANCELAR TIMEOUT quando queries completarem com sucesso!
+            if (timeoutId) {
+              clearTimeout(timeoutId)
+              console.log(`[Auth] ✅ Promise.race RESOLVEU via queriesPromise (${elapsed}ms) - timeout cancelado`)
+            }
             return results
           }),
           queryTimeout
