@@ -690,14 +690,21 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
         console.log('[Auth] onAuthStateChange:', event, session?.user?.id)
 
         if (session?.user) {
-          if (session.user.id !== lastFetchedUserIdRef.current) {
-            setUser(session.user)
-            setLoading(false)
+          setUser(session.user)
+          setLoading(false)
+
+          // 🔧 FIX: Se o evento é SIGNED_IN (refresh/F5), forçar fetchProfile
+          // mesmo que o ID já tenha sido fetchado antes
+          const forceRefresh = event === 'SIGNED_IN'
+
+          if (session.user.id !== lastFetchedUserIdRef.current || forceRefresh) {
             await fetchProfile(
               session.user.id,
               session.user.email || undefined,
               session.user.user_metadata?.nome
             )
+          } else {
+            console.log('[Auth] Perfil já foi carregado, pulando fetchProfile')
           }
         } else {
           setUser(null)
