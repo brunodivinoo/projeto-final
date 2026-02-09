@@ -196,6 +196,22 @@ const MedAuthContext = createContext<MedAuthContextType>({
   podeUsarFuncionalidade: () => false,
 })
 
+// =============================================
+// ARQUITETURA v2 - RECONSTRUÇÃO COMPLETA
+// =============================================
+// REGRA #1: onAuthStateChange NUNCA faz queries ao banco
+//           Apenas seta user/loading. Isso evita queries durante
+//           _initialize e _recoverAndRefresh quando o JWT não está pronto.
+//
+// REGRA #2: useEffect separado observa mudanças em `user`
+//           e dispara fetchProfile DEPOIS que o Supabase está pronto.
+//
+// REGRA #3: Dados existentes são preservados enquanto re-fetch ocorre.
+//           profileLoading só é true no carregamento inicial.
+//
+// REGRA #4: AbortController cancela queries obsoletas.
+// =============================================
+
 export function MedAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<ProfileMED | null>(null)
@@ -205,8 +221,10 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
   const [profileLoading, setProfileLoading] = useState(true)
   const [trialStatus, setTrialStatus] = useState<TrialStatus>(defaultTrialStatus)
 
-  const fetchingRef = useRef(false)
+  // Refs para controle de fluxo
   const lastFetchedUserIdRef = useRef<string | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const fetchCountRef = useRef(0) // Para detectar chamadas obsoletas
 
   const plano = profile?.plano || 'gratuito'
   const limitesPlano = LIMITES_PLANO[plano]
@@ -255,7 +273,6 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     const updateTrial = () => {
       const newStatus = calcularTrialStatus()
       setTrialStatus(prevStatus => {
-        // ⚡ Otimização: Só atualizar se mudou de verdade (evitar re-renders)
         if (JSON.stringify(prevStatus) === JSON.stringify(newStatus)) {
           return prevStatus
         }
@@ -277,7 +294,6 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
           // Verificar se acabou o trial
           if (novoTempoUsado >= DURACAO_TRIAL_SEGUNDOS) {
-            // Marcar trial como usado
             await supabase
               .from('profiles_med')
               .update({
@@ -286,7 +302,6 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
               })
               .eq('id', user.id)
           } else {
-            // Apenas incrementar tempo
             await supabase
               .from('profiles_med')
               .update({ trial_tempo_usado_segundos: novoTempoUsado })
@@ -301,110 +316,71 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval)
   }, [calcularTrialStatus, user, profile])
 
-  const fetchProfile = useCallback(async (userId: string, userEmail?: string, userName?: string, forceRefresh = false) => {
-    console.log('[Auth] 🔓 fetchProfile chamado - userId:', userId, 'forceRefresh:', forceRefresh)
-
-    // ⏸️ LOCK SIMPLES: Se já está executando, retornar
-    if (fetchingRef.current) {
-      console.log('[Auth] ⏳ fetchProfile já em execução, ignorando chamada duplicada')
+  // =============================================
+  // fetchProfile - Busca dados do perfil no Supabase
+  // NUNCA chamada dentro de onAuthStateChange
+  // =============================================
+  const fetchProfile = useCallback(async (userId: string, forceRefresh = false, userEmail?: string, userName?: string) => {
+    // CACHE: Se já temos os dados para este userId e não é refresh forçado, pular
+    if (!forceRefresh && lastFetchedUserIdRef.current === userId) {
+      console.log('[Auth] Cache hit - perfil já carregado para', userId.slice(0, 8))
+      setProfileLoading(false)
       return
     }
 
-    // 📦 CACHE: Se perfil já existe E não é refresh forçado, retornar
-    if (profile && profile.id === userId && !forceRefresh && lastFetchedUserIdRef.current === userId) {
-      console.log('[Auth] 📦 CACHE HIT: Perfil já carregado para este userId, pulando queries')
-      return
+    // Cancelar fetch anterior se existir
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
+    // ID desta chamada para detectar se ficou obsoleta
+    const thisFetchId = ++fetchCountRef.current
+
+    // Se é primeira carga (sem dados ainda), mostrar loading
+    // Se já tem dados, NÃO mostrar loading (refresh silencioso)
+    const isFirstLoad = !profile || profile.id !== userId
+    if (isFirstLoad) {
+      setProfileLoading(true)
     }
 
-    fetchingRef.current = true
-    setProfileLoading(true)
+    console.log('[Auth] fetchProfile iniciando para', userId.slice(0, 8), isFirstLoad ? '(primeira carga)' : '(refresh silencioso)')
 
-    console.log('[Auth] 🚀 Iniciando fetchProfile para userId:', userId)
-
-    // Definir mês atual para query de limites
-    const mesAtual = new Date().toISOString().slice(0, 7) // "2026-01"
+    const mesAtual = new Date().toISOString().slice(0, 7)
 
     try {
-      console.log('[Auth] 🚀 STEP 1: Iniciando queries do Supabase...')
-
-      // 🔧 TIMEOUT: 40s (queries estão MUITO lentas, precisa investigar!)
-      let timeoutFired = false
-      let timeoutId: NodeJS.Timeout | null = null
-      const queryTimeout = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => {
-          timeoutFired = true
-          console.warn('[Auth] ⏱️ TIMEOUT DISPARADO após 40s!')
-          reject(new Error('Timeout de 40s nas queries do Supabase'))
-        }, 40000)
-        console.log('[Auth] 🕐 Timeout de 40s configurado')
-      })
-
-      console.log('[Auth] 🚀 STEP 2: Criando Promise.allSettled com 3 queries...')
-
-      const queriesPromise = Promise.allSettled([
-        // 1. Profile
+      // Queries paralelas com timeout de 10s
+      const results = await Promise.allSettled([
         supabase
           .from('profiles_med')
           .select('*')
           .eq('id', userId)
-          .single()
-          .then(result => {
-            console.log('[Auth] ✅ Query 1/3 (profile) completou')
-            return result
-          }),
-        // 2. Limites
+          .single(),
         supabase
           .from('limites_uso_med')
           .select('*')
           .eq('user_id', userId)
           .eq('mes_referencia', mesAtual)
-          .single()
-          .then(result => {
-            console.log('[Auth] ✅ Query 2/3 (limites) completou')
-            return result
-          }),
-        // 3. Assinatura
+          .single(),
         supabase
           .from('assinaturas_med')
           .select('*')
           .eq('user_id', userId)
           .eq('status', 'ativa')
-          .order('created_at', { ascending: false})
+          .order('created_at', { ascending: false })
           .limit(1)
-          .then(result => {
-            console.log('[Auth] ✅ Query 3/3 (assinatura) completou')
-            return result
-          })
       ])
 
-      console.log('[Auth] 🚀 STEP 3: Aguardando Promise.race (queries vs timeout)...')
-
-      const raceStartTime = Date.now()
-      let raceResult: PromiseSettledResult<any>[]
-
-      try {
-        raceResult = await Promise.race([
-          queriesPromise.then(results => {
-            const elapsed = Date.now() - raceStartTime
-            // ✅ CANCELAR TIMEOUT quando queries completarem com sucesso!
-            if (timeoutId) {
-              clearTimeout(timeoutId)
-              console.log(`[Auth] ✅ Promise.race RESOLVEU via queriesPromise (${elapsed}ms) - timeout cancelado`)
-            }
-            return results
-          }),
-          queryTimeout
-        ]) as PromiseSettledResult<any>[]
-      } catch (err) {
-        const elapsed = Date.now() - raceStartTime
-        console.error(`[Auth] ❌ Promise.race REJEITOU (timeout) após ${elapsed}ms:`, err)
-        throw err // Re-lançar para cair no catch externo
+      // Verificar se esta chamada foi abortada/obsoleta
+      if (controller.signal.aborted || thisFetchId !== fetchCountRef.current) {
+        console.log('[Auth] fetchProfile obsoleto, descartando resultado')
+        return
       }
 
-      const [profileResult, limitesResult, assinaturaResult] = raceResult
+      const [profileResult, limitesResult, assinaturaResult] = results
 
-      console.log('[Auth] ✅ STEP 4: Queries completadas! Processando resultados...')
-      console.log('[Auth] 📊 Results:', {
+      console.log('[Auth] Queries completadas:', {
         profile: profileResult.status,
         limites: limitesResult.status,
         assinatura: assinaturaResult.status
@@ -440,7 +416,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
         const { data: limitesData, error: limitesError } = limitesResult.value
 
         if (limitesError && limitesError.code === 'PGRST116') {
-          // Limites nao existem - criar novo (em background, nao bloquear)
+          // Limites nao existem - criar novo (em background)
           supabase
             .from('limites_uso_med')
             .insert({
@@ -461,11 +437,9 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
               if (data) setLimites(data as LimitesUsoMED)
             })
         } else if (limitesData) {
-          // Verificar se eh um novo dia - atualizar em background
           const hoje = new Date().toISOString().split('T')[0]
           if (limitesData.data_questoes !== hoje) {
             setLimites({ ...limitesData, questoes_dia: 0, data_questoes: hoje } as LimitesUsoMED)
-            // Atualizar no banco em background
             supabase
               .from('limites_uso_med')
               .update({ questoes_dia: 0, data_questoes: hoje })
@@ -485,30 +459,118 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       }
 
       lastFetchedUserIdRef.current = userId
-      console.log('[Auth] ✅ STEP 5: fetchProfile completado com SUCESSO')
+      console.log('[Auth] fetchProfile completado com sucesso')
     } catch (error) {
-      console.error('[Auth] ❌ ERRO CAPTURADO em fetchProfile:', error)
-      console.error('[Auth] 📍 Tipo do erro:', error instanceof Error ? error.message : String(error))
-      console.error('[Auth] 📍 Stack:', error instanceof Error ? error.stack : 'N/A')
-
-      // ✅ CRITICAL: NÃO criar perfil fallback!
-      // Isso sobrescreve dados reais quando há timeout
-      // Melhor manter o perfil anterior (se existir) do que criar dados falsos
-      console.warn('[Auth] ⚠️ Mantendo estado anterior - não sobrescrever perfil por timeout')
+      // Se foi abort, não é erro real
+      if (controller.signal.aborted) return
+      console.error('[Auth] Erro em fetchProfile:', error)
+      // NÃO sobrescrever dados existentes em caso de erro
     } finally {
-      fetchingRef.current = false
-      setProfileLoading(false)
-      console.log('[Auth] 🏁 FINALLY: fetchProfile finalizado (profileLoading=false)')
+      if (thisFetchId === fetchCountRef.current) {
+        setProfileLoading(false)
+      }
+    }
+  }, [profile])
+
+  // =============================================
+  // EFEITO 1: Inicialização do Auth
+  // onAuthStateChange APENAS seta user/loading
+  // ZERO queries ao banco aqui dentro
+  // =============================================
+  useEffect(() => {
+    let mounted = true
+
+    // Listener de mudança de auth - APENAS seta estado
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event: AuthChangeEvent, session: Session | null) => {
+        if (!mounted) return
+
+        console.log('[Auth] onAuthStateChange:', event, session?.user?.id?.slice(0, 8))
+
+        if (session?.user) {
+          setUser(session.user)
+          setLoading(false)
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null)
+          setProfile(null)
+          setLimites(null)
+          setAssinatura(null)
+          lastFetchedUserIdRef.current = null
+          setProfileLoading(false)
+          setLoading(false)
+        }
+      }
+    )
+
+    // Inicialização: pegar sessão existente
+    const initAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+
+        if (!mounted) return
+
+        if (error && error.message !== 'Auth session missing!') {
+          console.error('[Auth] Erro na sessão:', error.message)
+        }
+
+        if (session?.user) {
+          setUser(session.user)
+        } else {
+          // Sem sessão - usuário não logado
+          setUser(null)
+          setProfile(null)
+          setProfileLoading(false)
+        }
+      } catch (error) {
+        console.error('[Auth] Erro ao buscar sessão:', error)
+        if (mounted) {
+          setProfileLoading(false)
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    initAuth()
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
     }
   }, [])
 
+  // =============================================
+  // EFEITO 2: Quando user muda, buscar perfil
+  // Este efeito é o ÚNICO lugar que chama fetchProfile
+  // Separar do onAuthStateChange garante que o JWT está pronto
+  // =============================================
+  useEffect(() => {
+    if (!user) return
+
+    // Pequeno delay para garantir que o Supabase client
+    // finalizou _initialize/_recoverAndRefresh e o JWT está commitado
+    const timer = setTimeout(() => {
+      fetchProfile(
+        user.id,
+        false,
+        user.email || undefined,
+        user.user_metadata?.nome
+      )
+    }, 100)
+
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
   const refreshProfile = useCallback(async () => {
     if (user) {
-      await fetchProfile(user.id, user.email || undefined, user.user_metadata?.nome, true)
+      await fetchProfile(user.id, true, user.email || undefined, user.user_metadata?.nome)
     }
   }, [user, fetchProfile])
 
-  // Iniciar trial de 4 horas
+  // Iniciar trial
   const iniciarTrial = useCallback(async (): Promise<boolean> => {
     if (!user || !profile || profile.trial_used || profile.trial_started_at) return false
     try {
@@ -526,9 +588,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
   // Verificar se pode usar funcionalidade
   const podeUsarFuncionalidade = useCallback((func: 'ia' | 'simulados' | 'flashcards' | 'casos_clinicos' | 'analise_exames' | 'voz' | 'biblioteca'): boolean => {
-    // Se trial ativo, pode tudo
     if (trialStatus.ativo) return true
-    // Verificar por plano
     const checks: Record<string, boolean> = {
       ia: limitesPlano.perguntas_ia_mes !== 0,
       simulados: limitesPlano.simulados_mes !== 0,
@@ -542,12 +602,10 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
   }, [trialStatus.ativo, limitesPlano])
 
   const verificarLimite = useCallback((tipo: 'questoes_dia' | 'simulados_mes' | 'perguntas_ia_mes' | 'resumos_ia_mes' | 'flashcards_ia_mes' | 'casos_clinicos_mes' | 'anotacoes_total') => {
-    // Mapear para o campo correto do limitesPlano (que usa flashcards_semana)
     const tipoPlano = tipo === 'flashcards_ia_mes' ? 'flashcards_semana' : tipo
     const limite = limitesPlano[tipoPlano as keyof typeof limitesPlano] as number
     const usado = limites?.[tipo] || 0
 
-    // -1 significa ilimitado
     if (limite === -1) {
       return { permitido: true, usado, limite: -1 }
     }
@@ -569,7 +627,6 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       const novoValor = (limites[tipo] || 0) + 1
       const updates: Partial<LimitesUsoMED> = { [tipo]: novoValor }
 
-      // Se for questoes_dia, atualizar a data também
       if (tipo === 'questoes_dia') {
         updates.data_questoes = new Date().toISOString().split('T')[0]
       }
@@ -592,143 +649,25 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     return false
   }, [user, limites, verificarLimite])
 
-  useEffect(() => {
-    let mounted = true
-
-    const initAuth = async () => {
-      try {
-        // 1. Tentar getSession() primeiro (rápido, lê cookies locais)
-        let { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-        if (!mounted) return
-
-        // 2. Se getSession() falhar ou não retornar usuário, usar getUser() como fallback
-        // getUser() valida JWT no servidor Supabase (mais confiável)
-        if (sessionError || !session?.user) {
-          console.log('[Auth] getSession() falhou ou retornou null, usando getUser() como fallback')
-
-          const { data: { user }, error: userError } = await supabase.auth.getUser()
-
-          if (!userError && user) {
-            console.log('[Auth] getUser() encontrou usuário válido, fazendo refresh da sessão')
-            // Usuário válido - forçar refresh da sessão
-            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-
-            if (!refreshError && refreshData.session) {
-              session = refreshData.session
-              console.log('[Auth] Sessão refreshada com sucesso')
-            } else {
-              console.error('[Auth] Erro ao refresh sessão:', refreshError?.message)
-            }
-          } else {
-            console.log('[Auth] getUser() também falhou - usuário não autenticado')
-          }
-        }
-
-        if (sessionError && sessionError.message !== 'Auth session missing!') {
-          console.error('[Auth] Erro na sessão:', sessionError.message)
-        }
-
-        if (session?.user) {
-          setUser(session.user)
-          setLoading(false)
-          try {
-            await fetchProfile(
-              session.user.id,
-              session.user.email || undefined,
-              session.user.user_metadata?.nome
-            )
-          } catch (profileErr) {
-            console.error('[Auth] Erro ao carregar perfil:', profileErr)
-            setProfileLoading(false)
-          }
-        } else {
-          // Sem sessão nos cookies — usuário não está logado
-          setUser(null)
-          setProfile(null)
-          setProfileLoading(false)
-          setLoading(false)
-        }
-      } catch (error) {
-        console.error('[Auth] Erro ao buscar sessão:', error)
-        if (mounted) {
-          setProfileLoading(false)
-          setLoading(false)
-        }
-      }
-    }
-
-    initAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session: Session | null) => {
-        if (!mounted) return
-
-        console.log('[Auth] 📡 onAuthStateChange:', event, session?.user?.id)
-
-        if (session?.user) {
-          setUser(session.user)
-          setLoading(false)
-
-          // 📦 CACHE: Nunca forçar refresh no onAuthStateChange
-          // Se precisar refresh manual, usar refreshProfile() explicitamente
-          // Isso permite o cache funcionar em F5 e troca de aba
-          const forceRefresh = false
-          console.log('[Auth] 🔍 Evento:', event, '→ forceRefresh:', forceRefresh)
-          console.log('[Auth] 🔍 lastFetchedUserIdRef:', lastFetchedUserIdRef.current)
-          console.log('[Auth] 🔍 Condição:', session.user.id !== lastFetchedUserIdRef.current || forceRefresh)
-
-          // 🔥 SEMPRE chamar fetchProfile - lock atômico previne duplicação
-          await fetchProfile(
-            session.user.id,
-            session.user.email || undefined,
-            session.user.user_metadata?.nome,
-            forceRefresh
-          )
-        } else {
-          setUser(null)
-          setProfile(null)
-          setLimites(null)
-          lastFetchedUserIdRef.current = null
-          setProfileLoading(false)
-        }
-        setLoading(false)
-      }
-    )
-
-    return () => {
-      mounted = false
-      subscription.unsubscribe()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // ✅ ARRAY VAZIO - executar apenas UMA VEZ na montagem (fix de loop infinito)
-
   // Re-validação periódica da sessão (a cada 5 minutos)
-  // Garante que se a sessão expirar, detectamos e podemos redirecionar
   useEffect(() => {
     if (!user) return
 
-    const validateSession = async () => {
+    const interval = setInterval(async () => {
       try {
         const { data: { user: validUser }, error } = await supabase.auth.getUser()
-
         if (error || !validUser) {
-          console.log('[Auth] Sessão expirada ou inválida detectada, limpando estado')
+          console.log('[Auth] Sessão expirada, limpando estado')
           setUser(null)
           setProfile(null)
           setLimites(null)
+          setAssinatura(null)
           lastFetchedUserIdRef.current = null
         }
       } catch (err) {
         console.error('[Auth] Erro ao validar sessão:', err)
       }
-    }
-
-    // Validar imediatamente ao montar
-    validateSession()
-
-    // Validar a cada 5 minutos
-    const interval = setInterval(validateSession, 5 * 60 * 1000)
+    }, 5 * 60 * 1000)
 
     return () => clearInterval(interval)
   }, [user])
@@ -738,6 +677,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     setProfile(null)
     setLimites(null)
+    setAssinatura(null)
     lastFetchedUserIdRef.current = null
   }
 
