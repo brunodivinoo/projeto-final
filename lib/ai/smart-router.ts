@@ -186,10 +186,15 @@ export async function* streamInteligente(
   // Adicionar mensagem atual
   messages.push({ role: 'user', content: mensagem })
 
-  // Selecionar system prompt
-  const systemPrompt = plano === 'residencia'
+  // Selecionar system prompt com detecção de primeira mensagem
+  let systemPrompt = plano === 'residencia'
     ? SYSTEM_PROMPT_RESIDENCIA
     : SYSTEM_PROMPT_PREMIUM
+
+  // Primeira mensagem: injetar instrução de resposta rica
+  if (historico.length === 0) {
+    systemPrompt += `\n\nATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo. Siga a regra de PRIMEIRA MENSAGEM: resposta rica com texto detalhado, 1 fluxograma Mermaid, 2-3 questões em formato \`\`\`questao JSON, referências. Máximo 1-2 imagens sem repetição.`
+  }
 
   // Rotear para provider correto
   if (provider === 'openai') {

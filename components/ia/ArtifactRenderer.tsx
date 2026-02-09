@@ -8,11 +8,11 @@ function useDebouncedValue<T>(value: T, delay: number): T {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    // Se o valor mudou significativamente (mais de 100 chars de diferença), atualizar imediatamente
+    // Se o valor mudou significativamente (mais de 300 chars de diferença), atualizar imediatamente
     const currentStr = typeof value === 'string' ? value : JSON.stringify(value)
     const debouncedStr = typeof debouncedValue === 'string' ? debouncedValue : JSON.stringify(debouncedValue)
 
-    if (Math.abs(currentStr.length - debouncedStr.length) > 100) {
+    if (Math.abs(currentStr.length - debouncedStr.length) > 300) {
       setDebouncedValue(value)
       return
     }
@@ -2572,9 +2572,10 @@ function ArtifactRendererComponent({
 
   // Extrair termos de busca de imagens médicas reais
   // Usar ref para estabilizar e evitar pisca-pisca durante streaming
+  // IMPORTANTE: usar debouncedContent para evitar recálculos constantes durante streaming
   const imageSearchTermsRef = useRef<string[]>([])
   const imageSearchTerms = useMemo(() => {
-    const newTerms = extractImageSearchTerms(content)
+    const newTerms = extractImageSearchTerms(debouncedContent)
     // Só atualiza se realmente mudou (comparação por valor)
     const currentTerms = imageSearchTermsRef.current
     const changed = newTerms.length !== currentTerms.length ||
@@ -2584,10 +2585,22 @@ function ArtifactRendererComponent({
       return newTerms
     }
     return currentTerms // Retorna a referência antiga se não mudou
-  }, [content])
+  }, [debouncedContent])
+
+  // Coletar URLs de imagens inline do markdown para deduplicação
+  const inlineImageUrls = useMemo(() => {
+    const urls = new Set<string>()
+    // Encontrar todas as imagens markdown: ![alt](url)
+    const imgRegex = /!\[[^\]]*\]\(([^)]+)\)/g
+    let match
+    while ((match = imgRegex.exec(debouncedContent)) !== null) {
+      urls.add(match[1])
+    }
+    return urls
+  }, [debouncedContent])
 
   // Extrair referências/fontes do conteúdo para citações interativas
-  const references = useMemo(() => extractReferences(content), [content])
+  const references = useMemo(() => extractReferences(debouncedContent), [debouncedContent])
 
   // Função para renderizar texto com citações interativas
   const renderTextWithCitations = useCallback((text: string | React.ReactNode): React.ReactNode => {
@@ -3649,10 +3662,14 @@ function ArtifactRendererComponent({
       })}
 
       {/* Renderizar galeria de imagens médicas reais se houver termos de busca */}
+      {/* Key estável baseada nos termos para evitar re-mount durante streaming */}
+      {/* excludeUrls filtra imagens que já apareceram inline no markdown */}
       {imageSearchTerms.length > 0 && userId && (
         <MedicalImageGallery
+          key={`gallery-${imageSearchTerms.join('-')}`}
           searchTerms={imageSearchTerms}
           userId={userId}
+          excludeUrls={inlineImageUrls}
         />
       )}
 

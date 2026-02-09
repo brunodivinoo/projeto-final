@@ -1052,6 +1052,14 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
           const modeloSelecionado = MODELOS.claude.sonnet
           let systemPrompt = plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
 
+          // Detecção de primeira mensagem no fallback
+          if (historico.length === 0) {
+            systemPrompt += `\n\n<first_message_context>
+ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
+Siga a regra de PRIMEIRA MENSAGEM: resposta rica com texto detalhado, 1 fluxograma Mermaid, 2-3 questões em formato \`\`\`questao JSON, referências. Máximo 1-2 imagens sem repetição.
+</first_message_context>`
+          }
+
           // Adicionar contexto da memória persistente
           try {
             const memCtx = await getContextForPrompt(user_id)
@@ -1389,6 +1397,23 @@ async function streamClaude(params: StreamClaudeParams) {
   // Sonnet oferece excelente qualidade com custo 5x menor que Opus
   const modeloSelecionado = MODELOS.claude.sonnet
   let systemPrompt = params.plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
+
+  // ========== DETECÇÃO DE PRIMEIRA MENSAGEM ==========
+  // Se não há histórico, é a primeira mensagem do chat - injetar instrução de resposta rica
+  const isFirstMessage = historico.length === 0
+  if (isFirstMessage) {
+    systemPrompt += `\n\n<first_message_context>
+ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
+Siga OBRIGATORIAMENTE a "REGRA DA PRIMEIRA MENSAGEM DE CHAT NOVO":
+1. Resposta COMPLETA e RICA com texto detalhado (mínimo 3 parágrafos)
+2. OBRIGATÓRIO gerar 1 fluxograma Mermaid (\`\`\`mermaid com graph TD)
+3. OBRIGATÓRIO gerar 2-3 questões no formato \`\`\`questao com JSON estruturado
+4. Referências ABNT ao final
+5. NO MÁXIMO 1-2 imagens, SEM repetição de URLs
+NÃO gere questões como texto puro - SEMPRE use \`\`\`questao com JSON!
+</first_message_context>`
+    console.log('[Chat API] Primeira mensagem detectada - injetando instrução de resposta rica')
+  }
 
   // ========== ENRIQUECIMENTO PARALELO (memória + variação + HF) ==========
   // Executar todas as operações async em paralelo para reduzir latência
@@ -2186,9 +2211,15 @@ interface StreamGeminiParams {
 async function streamGemini(params: StreamGeminiParams) {
   const { historico, mensagem, conversa_id, user_id, imagem_base64, imagem_tipo } = params
 
+  // Montar system prompt com detecção de primeira mensagem
+  let geminiSystemPrompt = SYSTEM_PROMPT_PREMIUM
+  if (historico.length === 0) {
+    geminiSystemPrompt += `\n\nATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo. Siga a regra de PRIMEIRA MENSAGEM: resposta rica com texto detalhado, 1 fluxograma Mermaid, 2-3 questões em formato \`\`\`questao JSON, referências. Máximo 1-2 imagens sem repetição.`
+  }
+
   const model = genAI.getGenerativeModel({
     model: MODELOS.gemini.flash,
-    systemInstruction: SYSTEM_PROMPT_PREMIUM,
+    systemInstruction: geminiSystemPrompt,
     generationConfig: {
       temperature: 0.7,
       topP: 0.95,
