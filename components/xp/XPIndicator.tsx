@@ -1,9 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useState, memo} from 'react'
 import { useXPContext } from '@/contexts/XPContext'
 import { XPModal } from './XPModal'
 
-export function XPIndicator() {
+function XPIndicatorRaw() {
   const [showModal, setShowModal] = useState(false)
   const { xpTotal, nivel, nivelInfo, progressoNivel, loading, multiplicador } = useXPContext()
 
@@ -77,3 +77,5 @@ export function XPIndicator() {
     </>
   )
 }
+
+export const XPIndicator = memo(XPIndicatorRaw)

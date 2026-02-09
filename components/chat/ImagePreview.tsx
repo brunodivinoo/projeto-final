@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo} from 'react'
 import { Pencil, X } from 'lucide-react'
 import { ImageEditor } from './ImageEditor'
 
@@ -11,7 +11,7 @@ interface ImagePreviewProps {
   onUpdate: (newBase64: string) => void
 }
 
-export function ImagePreview({ imageBase64, imageType, onRemove, onUpdate }: ImagePreviewProps) {
+function ImagePreviewRaw({ imageBase64, imageType, onRemove, onUpdate }: ImagePreviewProps) {
   const [showEditor, setShowEditor] = useState(false)
 
   const handleSaveEdit = (editedBase64: string) => {
@@ -67,4 +67,4 @@ export function ImagePreview({ imageBase64, imageType, onRemove, onUpdate }: Ima
   )
 }
 
-export default ImagePreview
+export const ImagePreview = memo(ImagePreviewRaw)

@@ -1,4 +1,6 @@
 'use client'
+
+import { memo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSidebar } from '@/contexts/SidebarContext'
@@ -30,7 +32,7 @@ const menuConta = [
   { icon: 'token', label: 'Créditos IA', href: '/dashboard/creditos' },
 ]
 
-export function Sidebar() {
+function SidebarRaw() {
   const pathname = usePathname()
   const { isOpen, closeSidebar } = useSidebar()
 
@@ -51,6 +53,7 @@ export function Sidebar() {
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={closeSidebar}
+          aria-hidden="true"
         />
       )}
 
@@ -61,7 +64,7 @@ export function Sidebar() {
         transform transition-transform duration-300 ease-in-out
         lg:translate-x-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
+      `} role="navigation" aria-label="Menu principal">
         {/* Logo */}
         <div className="p-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
@@ -72,8 +75,9 @@ export function Sidebar() {
           <button
             onClick={closeSidebar}
             className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+            aria-label="Fechar menu de navegação"
           >
-            <span className="material-symbols-outlined">close</span>
+            <span className="material-symbols-outlined" aria-hidden="true">close</span>
           </button>
         </div>
 
@@ -164,3 +168,5 @@ export function Sidebar() {
     </>
   )
 }
+
+export const Sidebar = memo(SidebarRaw)

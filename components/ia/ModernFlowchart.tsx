@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, memo} from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Maximize2,
@@ -157,7 +157,7 @@ function ArrowDown({ label, delay = 0 }: { label?: string; delay?: number }) {
 }
 
 // Componente principal
-export default function ModernFlowchart({
+function ModernFlowchart({
   title,
   nodes,
   edges,
@@ -347,3 +347,5 @@ export function parseModernFlowchart(content: string): ModernFlowchartProps | nu
     return null
   }
 }
+
+export default memo(ModernFlowchart)

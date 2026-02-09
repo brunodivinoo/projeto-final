@@ -6,13 +6,18 @@
 // ============================================================
 
 import type { Metadata, Viewport } from "next"
+import { Inter } from "next/font/google"
 import "./globals.css"
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration"
 
 // ============================================================
-// FONTE - Usando fontes do sistema (sem dependências externas)
+// FONTE - Inter via next/font (auto-hosted, sem CLS)
 // ============================================================
-// A fonte é definida diretamente no CSS para usar system fonts
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+})
 
 // ============================================================
 // VIEWPORT - Configuracoes de visualizacao
@@ -109,7 +114,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR" className="light">
+    <html lang="pt-BR" className={`light ${inter.variable}`}>
       <head>
         {/* === PWA META TAGS ADICIONAIS === */}
         {/* Estas tags complementam as definidas em metadata */}
@@ -135,15 +140,11 @@ export default function RootLayout({
         {/* Mask Icon para Safari */}
         <link rel="mask-icon" href="/icons/icon.svg" color="#6366f1" />
 
-        {/* Preconnect para recursos externos */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-
-        {/* DNS Prefetch */}
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        {/* DNS Prefetch para Supabase */}
+        <link rel="dns-prefetch" href="https://zkcstkbpgwdoiihvfspp.supabase.co" />
       </head>
 
-      <body className="font-sans antialiased bg-[#f8fafc] text-slate-900">
+      <body className={`${inter.className} antialiased bg-[#f8fafc] text-slate-900`}>
         {/* === CONTEUDO DA PAGINA === */}
         {children}
 

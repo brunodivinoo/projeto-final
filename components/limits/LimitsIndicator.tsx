@@ -1,9 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useState, memo} from 'react'
 import { useLimitsContext, calcularPorcentagem } from '@/contexts/LimitsContext'
 import { LimitsModal } from './LimitsModal'
 
-export function LimitsIndicator() {
+function LimitsIndicatorRaw() {
   const [showModal, setShowModal] = useState(false)
   const { limites, loading, isPro } = useLimitsContext()
 
@@ -68,3 +68,5 @@ export function LimitsIndicator() {
     </>
   )
 }
+
+export const LimitsIndicator = memo(LimitsIndicatorRaw)

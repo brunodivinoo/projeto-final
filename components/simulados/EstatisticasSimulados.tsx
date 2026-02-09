@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, memo} from 'react'
 import { useSimulados, Estatisticas } from '@/hooks/useSimulados'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -7,7 +7,7 @@ interface Props {
   onCreateSimulado?: () => void
 }
 
-export function EstatisticasSimulados({ onCreateSimulado }: Props) {
+function EstatisticasSimuladosRaw({ onCreateSimulado }: Props) {
   const { user, loading: authLoading } = useAuth()
   const { buscarEstatisticas } = useSimulados()
   const [estatisticas, setEstatisticas] = useState<Estatisticas | null>(null)
@@ -289,3 +289,5 @@ export function EstatisticasSimulados({ onCreateSimulado }: Props) {
     </div>
   )
 }
+
+export const EstatisticasSimulados = memo(EstatisticasSimuladosRaw)

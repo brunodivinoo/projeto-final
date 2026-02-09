@@ -11,7 +11,7 @@
  * - Cores com alto contraste para legibilidade
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, memo} from 'react'
 import { Send, Sparkles, Mic } from 'lucide-react'
 
 interface ChatInputProps {
@@ -37,7 +37,7 @@ const SUGGESTIONS = [
   { prefix: 'tratamento', full: 'Qual o tratamento para ' },
 ]
 
-export function ChatInput({
+function ChatInputRaw({
   onSubmit,
   placeholder = 'Pergunte, peça questões, flashcards, resumos...',
   disabled = false,
@@ -162,6 +162,7 @@ export function ChatInput({
             placeholder={placeholder}
             disabled={disabled}
             rows={1}
+            aria-label="Mensagem para o assistente de IA"
             className="chat-textarea-expandable flex-1 bg-transparent text-slate-800 placeholder-slate-400
                        resize-none focus:outline-none text-sm md:text-base leading-relaxed
                        scrollbar-thin pr-2"
@@ -188,8 +189,9 @@ export function ChatInput({
                          disabled:cursor-not-allowed text-white transition-all
                          active:scale-95 flex-shrink-0 shadow-sm"
               title="Enviar (Enter)"
+              aria-label="Enviar mensagem"
             >
-              <Send className="w-5 h-5" />
+              <Send className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -209,3 +211,5 @@ export function ChatInput({
     </div>
   )
 }
+
+export const ChatInput = memo(ChatInputRaw)

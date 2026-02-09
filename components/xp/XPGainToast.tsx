@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo} from 'react'
 import { NivelInfo } from '@/hooks/useXP'
 
 interface XPGainToastProps {
@@ -10,7 +10,7 @@ interface XPGainToastProps {
   onClose: () => void
 }
 
-export function XPGainToast({
+function XPGainToastRaw({
   xpGanho,
   multiplicador = 1,
   nivelUp = false,
@@ -166,3 +166,5 @@ export function XPToastContainer({ toasts, onRemove }: XPToastContainerProps) {
     </div>
   )
 }
+
+export const XPGainToast = memo(XPGainToastRaw)

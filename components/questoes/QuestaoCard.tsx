@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo} from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useXPContext } from '@/contexts/XPContext'
 import { useLimitsContext } from '@/contexts/LimitsContext'
@@ -34,7 +34,7 @@ interface QuestaoCardProps {
 
 type TabType = 'gabarito' | 'comentarios' | 'estatisticas' | 'reportar'
 
-export function QuestaoCard({ questao, onResponder }: QuestaoCardProps) {
+function QuestaoCardRaw({ questao, onResponder }: QuestaoCardProps) {
   const { user } = useAuth()
   const { ganharXP } = useXPContext()
   const { consumirRecurso } = useLimitsContext()
@@ -302,3 +302,5 @@ export function QuestaoCard({ questao, onResponder }: QuestaoCardProps) {
     </div>
   )
 }
+
+export const QuestaoCard = memo(QuestaoCardRaw)

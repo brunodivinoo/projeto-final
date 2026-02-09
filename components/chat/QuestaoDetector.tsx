@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, memo} from 'react'
 import { QuestaoInterativa, type QuestaoData } from './QuestaoInterativa'
 
 interface QuestaoDetectorProps {
@@ -14,7 +14,7 @@ interface QuestaoDetectorProps {
  * Detecta questões no formato ```questao {...} ``` no conteúdo do chat
  * e renderiza o componente QuestaoInterativa
  */
-export function QuestaoDetector({
+function QuestaoDetectorRaw({
   conteudo,
   onResponder,
   onProxima,
@@ -182,4 +182,4 @@ export function extrairQuestoes(conteudo: string): QuestaoData[] {
   return questoes
 }
 
-export default QuestaoDetector
+export const QuestaoDetector = memo(QuestaoDetectorRaw)

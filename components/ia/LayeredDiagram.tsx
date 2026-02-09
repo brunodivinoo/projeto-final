@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, memo} from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronDown,
@@ -612,7 +612,7 @@ function LayerDetailPanel({
 }
 
 // Componente principal
-export default function LayeredDiagram({
+function LayeredDiagram({
   title,
   layers,
   showStaging = false,
@@ -901,3 +901,5 @@ export function parseLayeredDiagram(content: string): LayeredDiagramProps | null
     return null
   }
 }
+
+export default memo(LayeredDiagram)

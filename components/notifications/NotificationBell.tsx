@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo} from 'react'
 import { useRouter } from 'next/navigation'
 import { useNotifications, Notification } from '@/contexts/NotificationContext'
 
@@ -38,7 +38,7 @@ function getNotificationColor(type: Notification['type']): string {
   }
 }
 
-export function NotificationBell() {
+function NotificationBellRaw() {
   const router = useRouter()
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -169,3 +169,5 @@ export function NotificationBell() {
     </div>
   )
 }
+
+export const NotificationBell = memo(NotificationBellRaw)
