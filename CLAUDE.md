@@ -113,6 +113,20 @@ NEXT_PUBLIC_APP_URL, NODE_ENV, CRON_SECRET, ADMIN_SECRET_KEY
 ENABLE_MEDICAL_EMBEDDINGS, ENABLE_MEDICAL_RAG, ENABLE_SMART_AGENTS
 ```
 
+## Tokens para Automacao (pedir ao usuario no inicio da sessao)
+
+Claude precisa destes tokens para executar o pipeline completo. Pedir ao usuario quando necessario.
+
+| Token | Para que serve |
+|-------|----------------|
+| **GITHUB_TOKEN** | Criar PRs, fazer merge via API REST (api.github.com) |
+| **VERCEL_TOKEN** | Verificar deploy, ler logs de build (api.vercel.com) |
+| **SUPABASE_SERVICE_ROLE_KEY** | Verificacao de saude do banco pos-deploy (opcional) |
+
+- Tokens NAO sao salvos em arquivos - usados apenas em memoria durante a sessao
+- GitHub: `curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/brunodivinoo/projeto-final/...`
+- Vercel: `curl -H "Authorization: Bearer $VERCEL_TOKEN" https://api.vercel.com/...`
+
 ## Regras de Desenvolvimento
 
 ### NUNCA fazer sem permissao explicita:
@@ -120,6 +134,8 @@ ENABLE_MEDICAL_EMBEDDINGS, ENABLE_MEDICAL_RAG, ENABLE_SMART_AGENTS
 2. **Alterar RPC functions** - exec_sql_custom, list_tables_custom sao criticas
 3. **Push direto para main** - Sempre usar branch `claude/` e PR
 4. **Remover funcionalidades existentes** - Apenas corrigir/melhorar
+5. **Merge PR sem aprovacao** - Claude NUNCA faz merge para main sem o usuario dizer "pode mergear"
+6. **Redeploy/rollback** - Apenas apos confirmacao do usuario
 
 ### Padroes do projeto:
 1. Streaming SSE para respostas de IA (nao REST simples)
@@ -131,13 +147,33 @@ ENABLE_MEDICAL_EMBEDDINGS, ENABLE_MEDICAL_RAG, ENABLE_SMART_AGENTS
 7. Mensagens seguintes: artefatos apenas se usuario pedir, mas IA sempre oferece
 8. Todas tabelas usam sufixo `_med`
 9. Colunas reais da mensagens_ia_med: id, conversa_id, role, content, tokens, has_image, has_pdf, image_url, pdf_url, created_at, sessao_id
+10. Ao final de cada sessao de desenvolvimento, Claude DEVE pedir os tokens: "Me passe GITHUB_TOKEN e VERCEL_TOKEN para eu criar o PR e acompanhar o deploy"
+11. Claude sempre reporta: link do PR criado + status final do deploy
 
-### Workflow de deploy:
+### Workflow de deploy (pipeline completo - Claude executa):
+
+**Fase 1 - Desenvolvimento:**
 1. Desenvolver na branch `claude/setup-prepara-med-*`
 2. Commitar com mensagens claras
 3. Push para a branch
-4. Criar PR no GitHub para main
-5. Merge -> Vercel auto-deploy
+
+**Fase 2 - PR e Merge (Claude executa via GitHub API):**
+4. Claude pede GITHUB_TOKEN ao usuario (se ainda nao tem)
+5. Claude cria PR via API REST do GitHub
+6. Claude envia o link do PR para o usuario
+7. Usuario aprova -> Claude faz merge via API
+8. Se houver conflitos, Claude avisa e propoe resolucao
+
+**Fase 3 - Monitoramento de Deploy (Claude executa via Vercel API):**
+9. Claude pede VERCEL_TOKEN ao usuario (se ainda nao tem)
+10. Claude monitora status do deploy (BUILDING -> READY ou ERROR)
+11. Se ERROR: Claude le os logs do build, diagnostica e propoe fix
+12. Se READY: Claude confirma que o site esta live
+
+**Fase 4 - Validacao Pos-Deploy:**
+13. Claude verifica que a URL de producao responde
+14. Se houver erro, Claude propoe fix imediato (nova branch -> novo PR -> novo ciclo)
+15. Claude reporta resultado final ao usuario
 
 ## Historico de Sessoes
 
