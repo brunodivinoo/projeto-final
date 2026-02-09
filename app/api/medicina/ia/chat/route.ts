@@ -929,11 +929,39 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
 
   const encoder = new TextEncoder()
 
+  // Estado compartilhado entre start e cancel
+  let fullResponse = ''
+  let tokensInput = 0
+  let tokensOutput = 0
+  let assistantMsgId: string | null = null
+  let heartbeatInterval: ReturnType<typeof setInterval> | null = null
+  let streamAborted = false
+  let lastUpdateTime = Date.now()
+  const UPDATE_INTERVAL = 3000 // Salvar a cada 3s (reduzido de 10s para perder menos conteúdo)
+
+  const updateResponse = async (final = false) => {
+    const now = Date.now()
+    if (!final && now - lastUpdateTime < UPDATE_INTERVAL) return
+    if (!assistantMsgId) return
+
+    lastUpdateTime = now
+    const { error } = await supabase
+      .from('mensagens_ia_med')
+      .update({
+        content: fullResponse || '[Resposta vazia]',
+        tokens: tokensInput + tokensOutput
+      })
+      .eq('id', assistantMsgId)
+
+    if (error) {
+      console.error('[Smart Router] Erro ao atualizar resposta:', error)
+    } else if (final) {
+      console.log('[Smart Router] Resposta final salva, tamanho:', fullResponse.length)
+    }
+  }
+
   const readableStream = new ReadableStream({
     async start(controller) {
-      let fullResponse = ''
-      let tokensInput = 0
-      let tokensOutput = 0
 
       // Criar registro de resposta ANTES de iniciar streaming
       const { data: assistantMsg, error: createMsgError } = await supabase
@@ -951,7 +979,7 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
         console.error('[Smart Router] Erro ao criar mensagem assistant:', createMsgError)
       }
 
-      const assistantMsgId = assistantMsg?.id
+      assistantMsgId = assistantMsg?.id
       console.log('[Smart Router] Mensagem criada com ID:', assistantMsgId)
 
       // Enviar conversa_id imediatamente
@@ -964,33 +992,8 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
         })}\n\n`)
       )
 
-      // Variável para controlar atualizações
-      let lastUpdateTime = Date.now()
-      const UPDATE_INTERVAL = 10000
-
-      const updateResponse = async (final = false) => {
-        const now = Date.now()
-        if (!final && now - lastUpdateTime < UPDATE_INTERVAL) return
-        if (!assistantMsgId) return
-
-        lastUpdateTime = now
-        const { error } = await supabase
-          .from('mensagens_ia_med')
-          .update({
-            content: fullResponse || '[Resposta vazia]',
-            tokens: tokensInput + tokensOutput
-          })
-          .eq('id', assistantMsgId)
-
-        if (error) {
-          console.error('[Smart Router] Erro ao atualizar resposta:', error)
-        } else if (final) {
-          console.log('[Smart Router] Resposta final salva, tamanho:', fullResponse.length)
-        }
-      }
-
       // Heartbeat para manter conexão
-      const heartbeatInterval = setInterval(async () => {
+      heartbeatInterval = setInterval(async () => {
         try {
           controller.enqueue(encoder.encode(`: heartbeat\n\n`))
           await updateResponse()
@@ -1107,11 +1110,11 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
           })}\n\n`)
         )
 
-        clearInterval(heartbeatInterval)
+        if (heartbeatInterval) clearInterval(heartbeatInterval)
         controller.close()
 
       } catch (error) {
-        clearInterval(heartbeatInterval)
+        if (heartbeatInterval) clearInterval(heartbeatInterval)
         console.error('[Smart Router] Erro:', error)
 
         // Tentar fallback para Claude
@@ -1235,6 +1238,32 @@ Siga a regra de PRIMEIRA MENSAGEM: resposta rica com texto detalhado, 1 fluxogra
 
           controller.close()
         }
+      }
+    },
+
+    // Chamado quando o cliente desconecta (fecha aba, perde internet, etc)
+    cancel() {
+      streamAborted = true
+      console.log('[Smart Router] Stream cancelado pelo cliente. Salvando resposta parcial...')
+      if (heartbeatInterval) clearInterval(heartbeatInterval)
+
+      // Salvar resposta parcial no banco (fire-and-forget)
+      if (assistantMsgId && fullResponse.length > 0) {
+        const conteudoFinal = fullResponse + '\n\n---\n*⚠️ Resposta interrompida (conexão perdida). Recarregue a página para ver o conteúdo salvo.*'
+        supabase
+          .from('mensagens_ia_med')
+          .update({
+            content: conteudoFinal,
+            tokens: tokensInput + tokensOutput
+          })
+          .eq('id', assistantMsgId)
+          .then(({ error }) => {
+            if (error) {
+              console.error('[Smart Router] Erro ao salvar resposta parcial no cancel:', error)
+            } else {
+              console.log('[Smart Router] Resposta parcial salva no cancel, tamanho:', fullResponse.length)
+            }
+          })
       }
     }
   })
@@ -1573,6 +1602,15 @@ NÃO gere questões como texto puro - SEMPRE use \`\`\`questao com JSON!
   // Criar encoder para streaming
   const encoder = new TextEncoder()
 
+  // Estado compartilhado entre start e cancel para resiliência a desconexão
+  const claudeState = {
+    fullResponse: '',
+    tokensInput: 0,
+    tokensOutput: 0,
+    assistantMsgId: null as string | null,
+    heartbeatInterval: null as ReturnType<typeof setInterval> | null
+  }
+
   // Stream response com agentic loop para múltiplas tools
   const readableStream = new ReadableStream({
     async start(controller) {
@@ -1585,6 +1623,13 @@ NÃO gere questões como texto puro - SEMPRE use \`\`\`questao com JSON!
       let continuationCount = 0 // Contador de continuações por max_tokens
       const MAX_ITERATIONS = 10 // Limite de iterações (tools + continuações)
       const MAX_CONTINUATIONS = 5 // Limite de continuações automáticas por max_tokens (aumentado para garantir respostas completas)
+
+      // Helper para sincronizar estado com o objeto compartilhado (para cancel callback)
+      const syncState = () => {
+        claudeState.fullResponse = fullResponse
+        claudeState.tokensInput = tokensInput
+        claudeState.tokensOutput = tokensOutput
+      }
 
       // Criar registro de resposta ANTES de iniciar streaming (para garantir salvamento)
       const { data: assistantMsg, error: createMsgError } = await supabase
@@ -1603,6 +1648,7 @@ NÃO gere questões como texto puro - SEMPRE use \`\`\`questao com JSON!
       }
 
       const assistantMsgId = assistantMsg?.id
+      claudeState.assistantMsgId = assistantMsgId || null
       console.log('[Chat API] Mensagem assistant criada com ID:', assistantMsgId)
 
       // ========== ENVIAR CONVERSA_ID IMEDIATAMENTE PARA O FRONTEND ==========
@@ -1619,7 +1665,7 @@ NÃO gere questões como texto puro - SEMPRE use \`\`\`questao com JSON!
 
       // Variável para controlar última atualização
       let lastUpdateTime = Date.now()
-      const UPDATE_INTERVAL = 10000 // Atualizar a cada 10 segundos
+      const UPDATE_INTERVAL = 3000 // Salvar a cada 3s (reduzido de 10s para perder menos conteúdo em desconexão)
 
       // Função para atualizar resposta no banco
       const updateResponse = async (final = false) => {
@@ -1647,6 +1693,7 @@ NÃO gere questões como texto puro - SEMPRE use \`\`\`questao com JSON!
       // Heartbeat para manter conexão viva (a cada 25s) E atualizar resposta
       const heartbeatInterval = setInterval(async () => {
         try {
+          syncState() // Sincronizar estado para cancel callback
           controller.enqueue(encoder.encode(`: heartbeat\n\n`))
           // Atualizar resposta durante o heartbeat
           await updateResponse()
@@ -1654,6 +1701,7 @@ NÃO gere questões como texto puro - SEMPRE use \`\`\`questao com JSON!
           // Controller já fechado, ignorar
         }
       }, 25000)
+      claudeState.heartbeatInterval = heartbeatInterval
 
       try {
         // Agentic loop - continua até o Claude terminar ou atingir limite
@@ -1688,6 +1736,10 @@ NÃO gere questões como texto puro - SEMPRE use \`\`\`questao com JSON!
               if (evt.delta.type === 'text_delta') {
                 const text = evt.delta.text
                 fullResponse += text
+                syncState() // Sincronizar para cancel callback
+
+                // Salvar progressivamente (a cada 3s)
+                await updateResponse()
 
                 // Enviar chunk
                 controller.enqueue(
@@ -2263,6 +2315,31 @@ NÃO gere questões como texto puro - SEMPRE use \`\`\`questao com JSON!
 
         controller.close()
       }
+    },
+
+    // Chamado quando o cliente desconecta (fecha aba, perde internet, etc)
+    cancel() {
+      console.log('[Chat API] Stream Claude cancelado pelo cliente. Salvando resposta parcial...')
+      if (claudeState.heartbeatInterval) clearInterval(claudeState.heartbeatInterval)
+
+      // Salvar resposta parcial no banco (fire-and-forget)
+      if (claudeState.assistantMsgId && claudeState.fullResponse.length > 0) {
+        const conteudoFinal = claudeState.fullResponse + '\n\n---\n*⚠️ Resposta interrompida (conexão perdida). Recarregue a página para ver o conteúdo salvo.*'
+        supabase
+          .from('mensagens_ia_med')
+          .update({
+            content: conteudoFinal,
+            tokens: claudeState.tokensInput + claudeState.tokensOutput
+          })
+          .eq('id', claudeState.assistantMsgId)
+          .then(({ error }) => {
+            if (error) {
+              console.error('[Chat API] Erro ao salvar resposta parcial no cancel:', error)
+            } else {
+              console.log('[Chat API] Resposta parcial salva no cancel, tamanho:', claudeState.fullResponse.length)
+            }
+          })
+      }
     }
   })
 
@@ -2333,6 +2410,9 @@ async function streamGemini(params: StreamGeminiParams) {
 
   const encoder = new TextEncoder()
 
+  // Estado compartilhado para cancel callback
+  const geminiState = { fullResponse: '', assistantMsgId: null as string | null }
+
   const readableStream = new ReadableStream({
     async start(controller) {
       let fullResponse = ''
@@ -2354,6 +2434,7 @@ async function streamGemini(params: StreamGeminiParams) {
       }
 
       const assistantMsgId = assistantMsg?.id
+      geminiState.assistantMsgId = assistantMsgId || null
       console.log('[Gemini] Mensagem assistant criada com ID:', assistantMsgId)
 
       try {
@@ -2361,6 +2442,7 @@ async function streamGemini(params: StreamGeminiParams) {
           const text = chunk.text()
           if (text) {
             fullResponse += text
+            geminiState.fullResponse = fullResponse // Sincronizar para cancel
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ type: 'text', content: text })}\n\n`)
             )
@@ -2417,10 +2499,36 @@ async function streamGemini(params: StreamGeminiParams) {
         controller.close()
       } catch (error) {
         console.error('Erro no stream Gemini:', error)
+
+        // Salvar resposta parcial se houver conteúdo
+        if (assistantMsgId && fullResponse.length > 0) {
+          await supabase
+            .from('mensagens_ia_med')
+            .update({ content: fullResponse + '\n\n---\n*Resposta pode estar incompleta.*' })
+            .eq('id', assistantMsgId)
+        }
+
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ type: 'error', error: 'Erro no processamento' })}\n\n`)
         )
         controller.close()
+      }
+    },
+
+    // Chamado quando o cliente desconecta
+    cancel() {
+      console.log('[Gemini] Stream cancelado pelo cliente. Salvando resposta parcial...')
+      if (geminiState.assistantMsgId && geminiState.fullResponse.length > 0) {
+        supabase
+          .from('mensagens_ia_med')
+          .update({
+            content: geminiState.fullResponse + '\n\n---\n*⚠️ Resposta interrompida (conexão perdida). Recarregue a página para ver o conteúdo salvo.*'
+          })
+          .eq('id', geminiState.assistantMsgId)
+          .then(({ error }) => {
+            if (error) console.error('[Gemini] Erro ao salvar no cancel:', error)
+            else console.log('[Gemini] Resposta parcial salva, tamanho:', geminiState.fullResponse.length)
+          })
       }
     }
   })

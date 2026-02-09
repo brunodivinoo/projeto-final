@@ -320,13 +320,24 @@ export function useChatIA(options: UseChatIAOptions = {}): ChatData & ChatAction
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao enviar mensagem'
       setError(message)
-
-      // Remover mensagens temporarias em caso de erro
-      setMensagens(prev => prev.filter(m =>
-        m.id !== msgUsuario.id && m.id !== msgIATemp.id
-      ))
-
       console.error('Erro ao enviar mensagem:', err)
+
+      // Se já havia conteúdo parcial na resposta, manter (backend salvou no DB)
+      setMensagens(prev => {
+        const msgIA = prev.find(m => m.id === msgIATemp.id)
+        if (msgIA && msgIA.content && msgIA.content.length > 0) {
+          // Manter mensagens com conteúdo parcial + aviso
+          return prev.map(m =>
+            m.id === msgIATemp.id
+              ? { ...m, content: m.content + '\n\n---\n*⚠️ Resposta interrompida. Recarregue a página para ver o conteúdo atualizado.*' }
+              : m
+          )
+        }
+        // Se não tinha conteúdo, remover mensagens temporárias
+        return prev.filter(m =>
+          m.id !== msgUsuario.id && m.id !== msgIATemp.id
+        )
+      })
     } finally {
       setEnviando(false)
     }

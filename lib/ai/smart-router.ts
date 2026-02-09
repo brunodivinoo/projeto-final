@@ -77,7 +77,7 @@ export function selecionarModelo(options: SmartRouterOptions): SmartRouterResult
         modeloRecomendado: 'o4-mini' as const,
         motivo: 'Modo montagem: contexto já comprimido, o4-mini monta a resposta (economia máxima)'
       },
-      reasoningEffort: 'low' as ReasoningEffort,
+      reasoningEffort: 'medium' as ReasoningEffort,
       custoEstimado: estimarCusto(MODELOS.openai.o4Mini, 1500)
     }
   }
@@ -212,23 +212,74 @@ export async function* streamInteligente(
     ? SYSTEM_PROMPT_RESIDENCIA
     : SYSTEM_PROMPT_PREMIUM
 
-  // MODO MONTAGEM: instruir modelo a apenas organizar informações pré-digeridas
+  // MODO MONTAGEM: instruir modelo a organizar informações pré-digeridas mantendo formatos obrigatórios
   if (options.contextoComprimido) {
     systemPrompt += `\n\n## MODO MONTAGEM (ECONOMIA DE TOKENS)
 Você está recebendo informações já pesquisadas e comprimidas de fontes médicas confiáveis (incluindo diretrizes brasileiras).
-Sua função é APENAS:
+Sua função é:
 1. Organizar e estruturar as informações fornecidas
 2. Apresentar de forma clara e didática para o estudante
-3. Manter as referências/fontes citadas
-4. NÃO inventar informações além do que foi fornecido no contexto
-5. Se o contexto não cobrir a pergunta completamente, indicar isso ao usuário
+3. NÃO inventar informações além do que foi fornecido no contexto
+4. Se o contexto não cobrir a pergunta completamente, indicar isso ao usuário
 
-Foque em montar a melhor resposta possível com as informações já disponíveis.`
+⚠️ REGRAS OBRIGATÓRIAS MESMO NO MODO MONTAGEM:
+
+### QUESTÕES - FORMATO OBRIGATÓRIO:
+Se gerar questões, SEMPRE use o formato \`\`\`questao com JSON estruturado.
+NUNCA gere questões como texto puro markdown (com "A)", "B)", "Gabarito:").
+Formato exato:
+\`\`\`questao
+{
+  "numero": 1,
+  "tipo": "multipla_escolha",
+  "dificuldade": "medio",
+  "disciplina": "Nome",
+  "assunto": "Assunto",
+  "enunciado": "Texto do enunciado",
+  "alternativas": [
+    {"letra": "A", "texto": "..."},
+    {"letra": "B", "texto": "..."},
+    {"letra": "C", "texto": "..."},
+    {"letra": "D", "texto": "..."},
+    {"letra": "E", "texto": "..."}
+  ],
+  "gabarito_comentado": {
+    "resposta_correta": "C",
+    "explicacao_geral": "...",
+    "analise_alternativas": [
+      {"letra": "A", "correta": false, "analise": "..."},
+      {"letra": "B", "correta": false, "analise": "..."},
+      {"letra": "C", "correta": true, "analise": "..."},
+      {"letra": "D", "correta": false, "analise": "..."},
+      {"letra": "E", "correta": false, "analise": "..."}
+    ],
+    "ponto_chave": "...",
+    "dica_memorizacao": "...",
+    "referencias": ["SOBRENOME. Título. Ed. Editora, Ano. (Assunto)"]
+  }
+}
+\`\`\`
+
+### FONTES E REFERÊNCIAS - OBRIGATÓRIO EM TODA RESPOSTA:
+TODA resposta DEVE ter citações inline [1], [2], [3] no texto E uma seção de fontes ao final:
+📚 **Fontes:**
+[1] AUTOR. Título. Ed. Editora, Ano.
+[2] DIRETRIZ/SOCIEDADE. Título. Revista, Ano.
+Use as fontes do contexto comprimido + livros-texto de referência (Harrison, Cecil, Sabiston, etc).
+Se o contexto trouxer fontes, MANTENHA e CITE-AS. Se não trouxer, cite livros-texto relevantes.`
   }
 
   // Primeira mensagem: injetar instrução de resposta rica
   if (historico.length === 0) {
     systemPrompt += `\n\nATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo. Siga a regra de PRIMEIRA MENSAGEM: resposta rica com texto detalhado, 1 fluxograma Mermaid, 2-3 questões em formato \`\`\`questao JSON, referências. Máximo 1-2 imagens sem repetição.`
+  }
+
+  // Reforço de regras para modelos OpenAI (o4-mini precisa de instruções mais diretas)
+  if (provider === 'openai') {
+    systemPrompt += `\n\n## REGRAS CRÍTICAS (NUNCA IGNORE):
+1. Questões: SEMPRE use \`\`\`questao com JSON. NUNCA texto puro com A), B), C).
+2. Fontes: TODA resposta DEVE terminar com seção 📚 **Fontes:** com citações ABNT [1], [2], [3].
+3. Citações inline: use [1], [2] no texto para indicar a fonte de cada afirmação.`
   }
 
   // Rotear para provider correto
