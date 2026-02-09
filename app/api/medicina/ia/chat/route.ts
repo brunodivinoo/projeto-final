@@ -540,21 +540,33 @@ export async function POST(request: NextRequest) {
     console.log(`[Smart Router] Modelo recomendado: ${complexityAnalysis.modeloRecomendado}`)
     console.log(`[Smart Router] Motivo: ${complexityAnalysis.motivo}`)
 
-    // Decidir se usa OpenAI (mais economico) ou Claude (mais capaz)
-    // Usar OpenAI para:
-    // - Perguntas simples e moderadas (o4-mini)
-    // - Perguntas complexas sem web search (gpt-5.2)
-    // Manter Claude para:
-    // - Web search (somente Opus suporta)
-    // - Extended thinking
-    // - PDFs (melhor suporte)
-    // - Plano Residência com tarefas especializadas
+    // OTIMIZAÇÃO DE CUSTOS: Se Serper+Gemini já comprimiu o contexto,
+    // usar o4-mini (modo montagem) em vez de Claude (caro).
+    // O modelo só precisa montar/formatar a resposta com info pré-digerida.
+    const temContextoComprimido = !!contextoBusca
 
-    const deveUsarClaude = use_web_search || // Web search só com Claude
-                          use_extended_thinking || // Extended thinking só com Claude
-                          imagem_base64 || // Imagens só com Claude (vision)
-                          pdf_base64 || // PDFs melhor com Claude
-                          (plano === 'residencia' && complexityAnalysis.nivel === 'especializada') // Tarefas especializadas
+    if (temContextoComprimido) {
+      console.log('[Smart Router] MODO MONTAGEM: Serper+Gemini já comprimiu → o4-mini monta resposta')
+      console.log(`[Smart Router] Economia: evitando Claude ($3/M) → usando o4-mini ($1.10/M)`)
+    }
+
+    // Decidir se usa OpenAI (mais economico) ou Claude (mais capaz)
+    // REGRA: Se contexto já foi comprimido pelo Serper+Gemini, NÃO usar Claude
+    // (mesmo com use_web_search, pois Serper já fez a busca)
+    // Usar Claude APENAS quando:
+    // - Extended thinking (exclusivo Claude)
+    // - Imagem (vision)
+    // - PDF (melhor suporte)
+    // - Residência especializada SEM contexto comprimido
+    // - Web search E Serper NÃO conseguiu comprimir (fallback)
+
+    const deveUsarClaude = !temContextoComprimido && ( // Se já tem contexto comprimido, NUNCA usar Claude
+                            use_web_search || // Web search sem contexto Serper → fallback Claude
+                            (plano === 'residencia' && complexityAnalysis.nivel === 'especializada') // Tarefas especializadas
+                          ) ||
+                          use_extended_thinking || // Extended thinking SEMPRE Claude (exclusivo)
+                          imagem_base64 || // Imagens SEMPRE Claude (vision)
+                          pdf_base64 // PDFs SEMPRE Claude (melhor suporte)
 
     if (deveUsarClaude) {
       console.log('[Smart Router] Usando Claude (funcionalidade exclusiva)')
@@ -567,14 +579,15 @@ export async function POST(request: NextRequest) {
         imagem_base64,
         imagem_tipo,
         pdf_base64,
-        use_web_search,
+        use_web_search: temContextoComprimido ? false : use_web_search, // Não usar web_search do Claude se Serper já buscou
         use_extended_thinking,
         thinking_budget
       })
     }
 
     // Usar Smart Router para roteamento OpenAI
-    console.log('[Smart Router] Usando roteamento inteligente OpenAI')
+    // Se contexto comprimido → modo montagem (o4-mini, economia máxima)
+    console.log(`[Smart Router] Usando roteamento inteligente OpenAI${temContextoComprimido ? ' (MODO MONTAGEM)' : ''}`)
     return await streamComSmartRouter({
       historico,
       mensagem: mensagemParaIA,
@@ -583,7 +596,8 @@ export async function POST(request: NextRequest) {
       plano,
       imagem_base64,
       imagem_tipo,
-      complexityAnalysis
+      complexityAnalysis,
+      contextoComprimido: temContextoComprimido
     })
     // ========== FIM ROTEAMENTO INTELIGENTE ==========
   } catch (error) {
@@ -897,6 +911,7 @@ interface StreamSmartRouterParams {
   imagem_base64?: string
   imagem_tipo?: string
   complexityAnalysis: ReturnType<typeof analisarComplexidade>
+  contextoComprimido?: boolean // Serper+Gemini já comprimiu → modo montagem
 }
 
 async function streamComSmartRouter(params: StreamSmartRouterParams) {
@@ -908,7 +923,8 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
     plano = 'premium',
     imagem_base64,
     imagem_tipo,
-    complexityAnalysis
+    complexityAnalysis,
+    contextoComprimido = false
   } = params
 
   const encoder = new TextEncoder()
@@ -995,6 +1011,7 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
           temImagem: !!imagem_base64,
           imagemBase64: imagem_base64,
           imagemMediaType: imagem_tipo,
+          contextoComprimido, // Modo montagem: Serper+Gemini já comprimiu
           onModelSelected: (model, analysis) => {
             console.log(`[Smart Router] Modelo final: ${model}`)
             // Notificar frontend sobre modelo selecionado
