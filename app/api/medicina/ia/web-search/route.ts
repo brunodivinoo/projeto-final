@@ -1,10 +1,13 @@
 // API Route - Web Search Médico PREPARAMED
+// Refatorado: usa Serper + Gemini Flash (compressão) ao invés de Claude web_search
+// Custo: ~$0.002/busca vs ~$0.05/busca anterior (redução de 96%)
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import Anthropic from '@anthropic-ai/sdk'
-import { PlanoIA, verificarLimiteIA, incrementarUsoIA, calcularCusto, CUSTO_WEB_SEARCH } from '@/lib/ai'
-import { SYSTEM_PROMPT_RESIDENCIA } from '@/lib/ai/prompts'
+import { PlanoIA, verificarLimiteIA, incrementarUsoIA } from '@/lib/ai'
+import { buscarWebMedica } from '@/lib/services/serperWebService'
+import { comprimirContexto, formatarContextoComprimido } from '@/lib/ai/contextCompressor'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { MODELOS } from '@/lib/ai/config'
 
 const supabase = createClient(
@@ -12,34 +15,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!
-})
-
-// Domínios médicos confiáveis para busca
-const DOMINIOS_MEDICOS = [
-  'pubmed.ncbi.nlm.nih.gov',
-  'ncbi.nlm.nih.gov',
-  'uptodate.com',
-  'medscape.com',
-  'scielo.br',
-  'who.int',
-  'cdc.gov',
-  'nejm.org',
-  'thelancet.com',
-  'bmj.com',
-  'jamanetwork.com',
-  'nature.com/nm',
-  'cochranelibrary.com',
-  'gov.br/saude',
-  'bvsalud.org',
-  'msdmanuals.com',
-  'dynamed.com',
-  'accessmedicine.com'
-]
-
 // ==========================================
-// POST - Busca Web com IA
+// POST - Busca Web com IA (via Serper + Gemini Flash)
 // ==========================================
 
 export async function POST(request: NextRequest) {
@@ -49,7 +26,6 @@ export async function POST(request: NextRequest) {
       user_id,
       query,
       contexto,
-      apenas_fontes_medicas = true,
       conversa_id
     } = body
 
@@ -69,97 +45,87 @@ export async function POST(request: NextRequest) {
 
     const plano = (profile?.plano || 'gratuito') as PlanoIA
 
-    // Verificar se plano permite Web Search
-    if (plano !== 'residencia') {
-      return NextResponse.json(
-        { error: 'Busca web disponível apenas no plano Residência' },
-        { status: 403 }
-      )
-    }
-
-    // Verificar limite
+    // Verificar limite de web search
     const { permitido, usado, limite } = await verificarLimiteIA(user_id, plano, 'web_search')
     if (!permitido) {
       return NextResponse.json(
-        {
-          error: `Limite de buscas web atingido`,
-          usado,
-          limite
-        },
+        { error: 'Limite de buscas web atingido', usado, limite },
         { status: 429 }
       )
     }
 
-    // Construir prompt para busca
-    const promptBusca = contexto
-      ? `Contexto: ${contexto}\n\nPergunta: ${query}\n\nBusque informações atualizadas e baseadas em evidências para responder esta pergunta médica. Cite as fontes.`
-      : `${query}\n\nBusque informações médicas atualizadas e baseadas em evidências. Priorize fontes como PubMed, UpToDate, diretrizes de sociedades médicas e artigos de revisão. Cite todas as fontes.`
+    // 1. Buscar via Serper (diretrizes brasileiras + fontes médicas)
+    const queryCompleta = contexto ? `${contexto} ${query}` : query
+    const resultadosBusca = await buscarWebMedica(queryCompleta, 8)
 
-    // Configurar tool de web search
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const webSearchTool: any = {
-      type: 'web_search_20250305',
-      name: 'web_search',
-      max_uses: 5,
-      allowed_domains: apenas_fontes_medicas ? DOMINIOS_MEDICOS : undefined
+    if (!resultadosBusca.success || resultadosBusca.resultados.length === 0) {
+      return NextResponse.json({
+        success: true,
+        resposta: 'Não foram encontrados resultados relevantes para esta busca.',
+        citacoes: [],
+        resultados_busca: [],
+        fontes_filtradas: true,
+        tokens: { input: 0, output: 0, total: 0 },
+        custo_estimado: 0.001,
+        conversa_id
+      })
     }
 
-    // Chamar Claude com Web Search
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response = await (anthropic.messages.create as any)({
-      model: MODELOS.claude.sonnet, // Sonnet para buscas (mais rápido e econômico)
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT_RESIDENCIA,
-      tools: [webSearchTool],
-      messages: [{ role: 'user', content: promptBusca }]
+    // 2. Comprimir resultados com Gemini Flash (ultra-barato)
+    const contextoComprimido = await comprimirContexto(
+      resultadosBusca.resultados.map(r => ({
+        titulo: r.titulo,
+        url: r.url,
+        snippet: r.snippet,
+        ehDiretriz: r.ehDiretriz,
+      })),
+      query
+    )
+
+    // 3. Gerar resposta final com Gemini Flash (modelo barato)
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+    const model = genAI.getGenerativeModel({
+      model: MODELOS.gemini.flash,
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 2048,
+      },
     })
 
-    // Extrair resposta e citações
-    let resposta = ''
-    const citacoes: Array<{
-      titulo: string
-      url: string
-      trecho: string
-    }> = []
-    const resultadosBusca: Array<{
-      titulo: string
-      url: string
-      snippet: string
-    }> = []
+    const dataAtual = new Date().toLocaleDateString('pt-BR')
+    const promptFinal = `Você é um professor de medicina brasileiro. Com base nas informações abaixo (de fontes confiáveis e diretrizes brasileiras), responda a pergunta do usuário de forma clara, completa e com referências.
 
-    for (const block of response.content) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const blk = block as any
+PERGUNTA: ${query}
+${contexto ? `CONTEXTO: ${contexto}` : ''}
 
-      if (blk.type === 'text') {
-        resposta += blk.text
+INFORMAÇÕES DAS FONTES:
+${contextoComprimido.resumo}
 
-        // Extrair citações do texto (formato [1], [2], etc)
-        if (blk.citations) {
-          for (const citation of blk.citations) {
-            citacoes.push({
-              titulo: citation.document_title || 'Fonte',
-              url: citation.url || '',
-              trecho: citation.cited_text || ''
-            })
-          }
-        }
-      } else if (blk.type === 'tool_use' && blk.name === 'web_search') {
-        const results = blk.input?.results || []
-        for (const result of results) {
-          resultadosBusca.push({
-            titulo: result.title || '',
-            url: result.url || '',
-            snippet: result.snippet || ''
-          })
-        }
-      }
-    }
+REGRAS:
+1. Use APENAS informações das fontes fornecidas
+2. Cite as fontes no formato [1], [2], etc.
+3. Priorize informações de diretrizes brasileiras
+4. Formato: parágrafos claros + referências ABNT no final
+5. Se a informação for insuficiente, diga claramente
 
-    const tokensInput = response.usage.input_tokens
-    const tokensOutput = response.usage.output_tokens
+REFERÊNCIAS DISPONÍVEIS:
+${contextoComprimido.fontes.map((f, i) => `[${i + 1}] ${f.titulo}. Disponível em: ${f.url}. Acesso em: ${dataAtual}.`).join('\n')}`
 
-    // Se houver conversa_id, salvar como mensagem
+    const result = await model.generateContent(promptFinal)
+    const resposta = result.response.text()
+
+    // Estimar tokens (Gemini Flash)
+    const tokensInput = Math.ceil(promptFinal.length / 4)
+    const tokensOutput = Math.ceil(resposta.length / 4)
+
+    // Extrair citações dos resultados
+    const citacoes = contextoComprimido.fontes.map(f => ({
+      titulo: f.titulo,
+      url: f.url,
+      trecho: f.ehDiretriz ? '[Diretriz Brasileira]' : '[Fonte Médica]'
+    }))
+
+    // Salvar na conversa se houver conversa_id
     if (conversa_id) {
       await supabase
         .from('mensagens_ia_med')
@@ -187,24 +153,34 @@ export async function POST(request: NextRequest) {
         .eq('id', conversa_id)
     }
 
-    // Incrementar uso
-    const custoTokens = calcularCusto(MODELOS.claude.sonnet, tokensInput, tokensOutput)
-    const custoTotal = custoTokens + CUSTO_WEB_SEARCH
-    await incrementarUsoIA(user_id, 'web_search', 1, tokensInput, tokensOutput, custoTotal)
+    // Custo estimado (Gemini Flash: ~$0.075/1M input, ~$0.30/1M output)
+    const custoEstimado = (tokensInput * 0.000000075) + (tokensOutput * 0.0000003) + 0.001 // + Serper cost
+    await incrementarUsoIA(user_id, 'web_search', 1, tokensInput, tokensOutput, custoEstimado)
 
     return NextResponse.json({
       success: true,
       resposta,
       citacoes,
-      resultados_busca: resultadosBusca,
-      fontes_filtradas: apenas_fontes_medicas,
+      resultados_busca: resultadosBusca.resultados.map(r => ({
+        titulo: r.titulo,
+        url: r.url,
+        snippet: r.snippet
+      })),
+      fontes_filtradas: true,
       tokens: {
         input: tokensInput,
         output: tokensOutput,
         total: tokensInput + tokensOutput
       },
-      custo_estimado: custoTotal,
-      conversa_id
+      custo_estimado: custoEstimado,
+      conversa_id,
+      // Metadados extras
+      diretrizes_encontradas: resultadosBusca.resultados.filter(r => r.ehDiretriz).length,
+      compressao: {
+        tokens_originais: contextoComprimido.tokensOriginais,
+        tokens_comprimidos: contextoComprimido.tokensComprimidos,
+        taxa: contextoComprimido.taxaCompressao
+      }
     })
   } catch (error) {
     console.error('Erro na busca web:', error)

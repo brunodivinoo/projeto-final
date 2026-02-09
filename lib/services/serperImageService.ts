@@ -54,6 +54,16 @@ const DOMINIOS_CONFIAVEIS = [
   // Revistas acadêmicas brasileiras
   'educacaomedica.org.br',
   'gmbahia.ufba.br',
+  // Sociedades médicas com diretrizes (contêm imagens)
+  'abccardiol.org',
+  'sbc.org.br',
+  'sbp.com.br',
+  'febrasgo.org.br',
+  'conitec.gov.br',
+  'diretrizes.amb.org.br',
+  'amb.org.br',
+  'sbcm.org.br',
+  'saude.gov.br',
   // Plataformas educativas
   'khanacademy.org',
   'pt.khanacademy.org',
