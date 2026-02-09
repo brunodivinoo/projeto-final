@@ -488,7 +488,8 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
         console.log('[Auth] onAuthStateChange:', event, session?.user?.id?.slice(0, 8))
 
         if (session?.user) {
-          setUser(session.user)
+          // Só atualizar user se realmente mudou (evita re-render na troca de aba)
+          setUser(prev => prev?.id === session.user.id ? prev : session.user)
           setLoading(false)
         } else if (event === 'SIGNED_OUT') {
           setUser(null)
