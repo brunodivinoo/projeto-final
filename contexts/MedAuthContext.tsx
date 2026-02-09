@@ -310,6 +310,12 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    // 📦 CACHE: Se perfil já existe E não é refresh forçado, retornar
+    if (profile && profile.id === userId && !forceRefresh && lastFetchedUserIdRef.current === userId) {
+      console.log('[Auth] 📦 CACHE HIT: Perfil já carregado para este userId, pulando queries')
+      return
+    }
+
     fetchingRef.current = true
     setProfileLoading(true)
 
@@ -321,16 +327,16 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[Auth] 🚀 STEP 1: Iniciando queries do Supabase...')
 
-      // 🔧 TIMEOUT: 20s para permitir queries lentas
+      // 🔧 TIMEOUT: 40s (queries estão MUITO lentas, precisa investigar!)
       let timeoutFired = false
       let timeoutId: NodeJS.Timeout | null = null
       const queryTimeout = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
           timeoutFired = true
-          console.warn('[Auth] ⏱️ TIMEOUT DISPARADO após 20s!')
-          reject(new Error('Timeout de 20s nas queries do Supabase'))
-        }, 20000)
-        console.log('[Auth] 🕐 Timeout de 20s configurado')
+          console.warn('[Auth] ⏱️ TIMEOUT DISPARADO após 40s!')
+          reject(new Error('Timeout de 40s nas queries do Supabase'))
+        }, 40000)
+        console.log('[Auth] 🕐 Timeout de 40s configurado')
       })
 
       console.log('[Auth] 🚀 STEP 2: Criando Promise.allSettled com 3 queries...')
