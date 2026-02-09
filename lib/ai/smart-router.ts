@@ -33,6 +33,7 @@ export interface SmartRouterOptions {
   useExtendedThinking?: boolean
   thinkingBudget?: number
   forceModel?: string // Forcar modelo especifico
+  contextoComprimido?: boolean // Quando Serper+Gemini ja comprimiu o contexto → modo montagem (o4-mini)
   onModelSelected?: (model: string, analysis: ComplexityAnalysis) => void
 }
 
@@ -58,8 +59,28 @@ export function selecionarModelo(options: SmartRouterOptions): SmartRouterResult
     temImagem = false,
     temPdf = false,
     useWebSearch = false,
+    contextoComprimido = false,
     forceModel
   } = options
+
+  // MODO MONTAGEM: Serper+Gemini já comprimiu o contexto
+  // Modelo só precisa montar/formatar a resposta → o4-mini (mais barato)
+  if (contextoComprimido && !temImagem && !temPdf) {
+    console.log('[SmartRouter] MODO MONTAGEM: contexto pré-comprimido → o4-mini')
+    return {
+      modelo: MODELOS.openai.o4Mini,
+      provider: 'openai' as const,
+      analysis: {
+        nivel: 'simples' as const,
+        score: 20,
+        fatores: ['Contexto pré-comprimido pelo Serper+Gemini Flash', 'Modelo só precisa montar/formatar resposta'],
+        modeloRecomendado: 'o4-mini' as const,
+        motivo: 'Modo montagem: contexto já comprimido, o4-mini monta a resposta (economia máxima)'
+      },
+      reasoningEffort: 'low' as ReasoningEffort,
+      custoEstimado: estimarCusto(MODELOS.openai.o4Mini, 1500)
+    }
+  }
 
   // Se modelo foi forcado, usar ele
   if (forceModel) {
@@ -190,6 +211,20 @@ export async function* streamInteligente(
   let systemPrompt = plano === 'residencia'
     ? SYSTEM_PROMPT_RESIDENCIA
     : SYSTEM_PROMPT_PREMIUM
+
+  // MODO MONTAGEM: instruir modelo a apenas organizar informações pré-digeridas
+  if (options.contextoComprimido) {
+    systemPrompt += `\n\n## MODO MONTAGEM (ECONOMIA DE TOKENS)
+Você está recebendo informações já pesquisadas e comprimidas de fontes médicas confiáveis (incluindo diretrizes brasileiras).
+Sua função é APENAS:
+1. Organizar e estruturar as informações fornecidas
+2. Apresentar de forma clara e didática para o estudante
+3. Manter as referências/fontes citadas
+4. NÃO inventar informações além do que foi fornecido no contexto
+5. Se o contexto não cobrir a pergunta completamente, indicar isso ao usuário
+
+Foque em montar a melhor resposta possível com as informações já disponíveis.`
+  }
 
   // Primeira mensagem: injetar instrução de resposta rica
   if (historico.length === 0) {
