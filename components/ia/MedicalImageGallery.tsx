@@ -96,6 +96,7 @@ function translateMedicalText(text: string): string {
 interface MedicalImageGalleryProps {
   searchTerms: string[]
   userId?: string
+  excludeUrls?: Set<string>
 }
 
 interface SearchResponse {
@@ -324,7 +325,7 @@ function ImageWithFallback({ src, fallbackSrc, alt, className, onLoadError }: Im
 }
 
 // Componente interno
-function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalleryProps) {
+function MedicalImageGalleryComponent({ searchTerms, userId, excludeUrls }: MedicalImageGalleryProps) {
   const [images, setImages] = useState<MedicalImage[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -389,8 +390,9 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
         }
 
         // Deduplicar imagens por URL para evitar repetições
+        // Também excluir imagens que já apareceram inline no markdown (via excludeUrls)
         const uniqueImages: MedicalImage[] = []
-        const seenUrls = new Set<string>()
+        const seenUrls = new Set<string>(excludeUrls || [])
         for (const img of (data.images || [])) {
           if (!seenUrls.has(img.url)) {
             seenUrls.add(img.url)
@@ -627,13 +629,16 @@ function MedicalImageGalleryComponent({ searchTerms, userId }: MedicalImageGalle
 }
 
 // Memoizar o componente para evitar re-renders durante streaming
-// Só re-renderiza se searchTerms ou userId realmente mudarem
+// Só re-renderiza se searchTerms, userId ou excludeUrls realmente mudarem
 const MedicalImageGallery = memo(MedicalImageGalleryComponent, (prevProps, nextProps) => {
   // Comparar arrays de searchTerms por valor (não por referência)
   const sameTerms = prevProps.searchTerms.length === nextProps.searchTerms.length &&
     prevProps.searchTerms.every((term, i) => term === nextProps.searchTerms[i])
 
-  return sameTerms && prevProps.userId === nextProps.userId
+  // Comparar excludeUrls por tamanho (Set)
+  const sameExclude = (prevProps.excludeUrls?.size || 0) === (nextProps.excludeUrls?.size || 0)
+
+  return sameTerms && prevProps.userId === nextProps.userId && sameExclude
 })
 
 export default MedicalImageGallery
