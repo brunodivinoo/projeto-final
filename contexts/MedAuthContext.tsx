@@ -315,51 +315,9 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
     console.log('[Auth] 🚀 Iniciando fetchProfile para userId:', userId)
 
-    // 🔧 FIX: Refresh opcional e com timeout - NÃO destruir usuário se falhar
-    console.log('[Auth] 🔍 DEBUG: Entrando no bloco de refresh de sessão...')
-    try {
-      console.log('[Auth] 🔍 DEBUG: Chamando supabase.auth.getSession()...')
-      const { data: { session } } = await supabase.auth.getSession()
-      console.log('[Auth] 🔍 DEBUG: getSession completou, session:', session ? 'existe' : 'null')
-
-      if (session?.expires_at) {
-        const expiresAt = new Date(session.expires_at * 1000)
-        const expiresIn = expiresAt.getTime() - Date.now()
-        console.log('[Auth] 🔍 DEBUG: Token expira em:', Math.round(expiresIn / 1000), 'segundos')
-
-        // Apenas fazer refresh se expirar em < 5 minutos
-        if (expiresIn < 5 * 60 * 1000) {
-          console.log('[Auth] Token expira em breve, tentando refresh com timeout...')
-
-          // Timeout de 10s para evitar travamento
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout')), 10000)
-          )
-          const refreshPromise = supabase.auth.refreshSession()
-
-          try {
-            await Promise.race([refreshPromise, timeoutPromise])
-            console.log('[Auth] Refresh completado com sucesso')
-          } catch (err) {
-            console.warn('[Auth] Timeout ou erro no refresh, continuando sem refresh:', err)
-            // ✅ NÃO limpar usuário - apenas continuar
-          }
-        } else {
-          console.log('[Auth] 🔍 DEBUG: Token OK, não precisa refresh')
-        }
-      } else {
-        console.log('[Auth] 🔍 DEBUG: Session sem expires_at')
-      }
-    } catch (err) {
-      console.warn('[Auth] Erro ao verificar expiração, continuando normalmente:', err)
-      // ✅ NÃO limpar usuário - apenas continuar
-    }
-
-    console.log('[Auth] 🔍 DEBUG: Saiu do bloco de refresh, definindo mesAtual...')
+    // Definir mês atual para query de limites
     const mesAtual = new Date().toISOString().slice(0, 7) // "2026-01"
-    console.log('[Auth] 🔍 DEBUG: mesAtual definido:', mesAtual)
 
-    console.log('[Auth] 🔍 DEBUG: Entrando no try principal das queries...')
     try {
       console.log('[Auth] 🚀 STEP 1: Iniciando queries do Supabase...')
 
