@@ -1,376 +1,175 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 07/02/2026 - CORREÇÕES ARQUITETURAIS DEFINITIVAS (3 Iterações)
+## Atualizado em: 09/02/2026 - RECONSTRUCAO ARQUITETURAL DO AUTH (DEFINITIVA)
 
 ---
 
-## 🔴 SITUAÇÃO ATUAL - AGUARDANDO MERGE
+## SITUACAO ATUAL - PRODUCAO ESTAVEL
 
 ### Status
-- ✅ **Correções implementadas** no branch `claude/continue-prepara-med-1rz2a`
-- ⏳ **Aguardando merge para main** (branch protegido - requer PR manual)
-- 📋 **Instruções de merge**: `PR_INSTRUCOES_MERGE.md`
-
-### Link do PR
-https://github.com/brunodivinoo/projeto-final/compare/main...claude/continue-prepara-med-1rz2a
+- **Auth funcionando 100%** - Login, F5, troca de aba - tudo OK
+- **Deploy em producao** - Commit `41c9d33` no main
+- **Testado pelo usuario** - Confirmado em Chrome e Edge
 
 ---
 
-## 🔴 O QUE FOI FEITO NESTA SESSÃO (07/02/2026)
+## O QUE FOI FEITO NESTA SESSAO (09/02/2026)
 
-### 🎯 INVESTIGAÇÃO TÉCNICA DE NÍVEL PRODUÇÃO
+### Problema
+Loading infinito persistia apos 13 PRs de tentativas (PRs #106 a #113).
+Sintomas:
+- F5: spinner de 40s, queries travavam
+- Troca de aba: conteudo sumia, timeout de 40s
+- Queries completavam em ~900ms no login mas travavam 40s+ em F5/tab
 
-Reportado problema CRÍTICO: **Loading infinito ao fazer login** - 100% dos usuários afetados.
+### Analise de Engenharia - 5 Defeitos Estruturais Identificados
 
-**Histórico de Tentativas**:
-1. **Primeira tentativa** (commit 8db62e2) → ❌ FALHOU
-2. **Segunda tentativa** (commit a5ded85) → ❌ FALHOU
-3. **Terceira tentativa** (commit c672296) → ✅ SOLUÇÃO ARQUITETURAL
+**Defeito 1: Closure morta no fetchProfile**
+- `useCallback(fn, [])` capturava `profile` como `null` para sempre
+- Cache check `if (profile && profile.id === userId)` NUNCA funcionava
+- Toda troca de aba = 3 queries desnecessarias
 
----
+**Defeito 2: Queries dentro de onAuthStateChange**
+- Supabase dispara SIGNED_IN durante `_initialize` e `_recoverAndRefresh`
+- Nesse momento o JWT nao esta pronto internamente
+- Queries RLS feitas nesse estado TRAVAM indefinidamente (40s timeout)
+- Esta era a CAUSA RAIZ de todos os problemas
 
-## 📊 CRONOLOGIA DAS CORREÇÕES
+**Defeito 3: Race condition initAuth vs onAuthStateChange**
+- Ambos chamavam fetchProfile simultaneamente
+- Lock atomico (fetchingRef) criava zona morta de 40s
 
-### 🔧 TENTATIVA 1: Fallback Chain (commit 8db62e2) - ❌ FALHOU
+**Defeito 4: profileLoading mal gerenciado**
+- `setProfileLoading(true)` em cada fetch, inclusive nos que travavam
+- 40s de spinner mesmo com usuario autenticado
 
-**Hipótese**: Problema era falta de fallback entre getSession() e getUser()
+**Defeito 5: Sem AbortController**
+- Queries antigas rodavam em background apos timeout
+- Desperdicio de recursos e race conditions
 
-**Implementação**:
-- Adicionado fallback chain: getSession() → getUser() → refreshSession()
-- Re-validação periódica a cada 5 minutos
-- Refresh antes de operações críticas
+### Solucao Implementada - Arquitetura v2
 
-**Resultado**:
-- Usuário testou → "NÃO ENTROU NO APP"
-- Console: Auth detected SIGNED_IN mas loading infinito
-- Erro: runtime.lastError message port closed
+| Aspecto | Antes | Depois |
+|---------|-------|--------|
+| onAuthStateChange | Fazia 3 queries ao banco | APENAS seta user (zero queries) |
+| Quando busca perfil | Dentro do evento auth (JWT nao pronto) | useEffect separado com 100ms delay |
+| fetchProfile deps | `useCallback(fn, [])` - closure morta | `useCallback(fn, [profile])` - cache funciona |
+| Troca de aba | setUser criava nova ref = re-render tudo | Compara ID antes = zero re-render |
+| Timeout/Promise.race | Band-aid de 40s | Removido - nao precisa (queries nao travam) |
+| Lock atomico | fetchingRef | AbortController + fetchCountRef |
+| profileLoading | true em TODO fetch | true so na primeira carga |
 
-**Por que falhou**: `refreshSession()` era DESTRUTIVO - se falhasse, destruía usuário válido com `setUser(null)`
-
----
-
-### 🔧 TENTATIVA 2: Refresh Opcional (commit a5ded85) - ❌ FALHOU
-
-**Hipótese**: Problema era refreshSession() destrutivo bloqueando app
-
-**Implementação**:
-- Tornar refreshSession() OPCIONAL (apenas se token < 5min para expirar)
-- Adicionar timeout de 10s no refresh
-- Remover setUser(null) destrutivo
-
-**Resultado**:
-- Usuário testou → "NÃO FOI RESOLVIDO ATE AGORA"
-- Console: fetchProfile STARTS mas NUNCA COMPLETES
-- Spinner infinito persistiu
-
-**Por que falhou**: Queries do Supabase podem ESPERAR INFINITAMENTE sem timeout
-
----
-
-### 🔧 TENTATIVA 3: Desacoplamento Arquitetural (commit c672296) - ✅ SOLUÇÃO
-
-**Causa Raiz Real Identificada** (Análise de Arquitetura):
-
-#### Layer 1: Queries Sem Timeout
-```typescript
-// ❌ PROBLEMA: Pode esperar INFINITAMENTE
-const results = await Promise.allSettled([
-  supabase.from('profiles_med').select('*')...
-  supabase.from('limites_uso_med').select('*')...
-])
-```
-
-**Sintoma**: Console mostra "Iniciando fetchProfile" mas NUNCA "Queries completadas"
-
-#### Layer 2: Layout Acoplado a profileLoading
-```typescript
-// ❌ PROBLEMA CRÍTICO: Se profileLoading nunca vira false, app NUNCA renderiza
-if (loading || profileLoading) {
-  return <LoadingSpinner />
-}
-```
-
-**Sintoma**: Spinner infinito mesmo com usuário autenticado
+### Por que 13 PRs anteriores nao resolveram
+Todas atacavam SINTOMAS (timeout maior, cache flag, lock, Promise.race)
+sem identificar que o problema era fazer queries RLS dentro do onAuthStateChange.
 
 ---
 
-## ✅ SOLUÇÃO IMPLEMENTADA (commit c672296)
+## ARQUIVOS MODIFICADOS
 
-### Fix 1: Timeout de 12s nas Queries do Supabase
-
-**Antes**:
-```typescript
-// ❌ Pode esperar infinitamente
-const results = await Promise.allSettled([
-  supabase.from('profiles_med').select('*').eq('id', userId).single(),
-  supabase.from('limites_uso_med').select('*')...
-])
+```
+contexts/MedAuthContext.tsx    # Reconstrucao completa (-223 linhas, +163 linhas)
 ```
 
-**Depois**:
-```typescript
-// ✅ Timeout de 12s - NUNCA espera infinito
-const queryTimeout = new Promise<never>((_, reject) =>
-  setTimeout(() => reject(new Error('Timeout de 12s nas queries do Supabase')), 12000)
-)
-
-const queriesPromise = Promise.allSettled([...queries])
-
-const results = await Promise.race([
-  queriesPromise,
-  queryTimeout
-]) as PromiseSettledResult<any>[]
-```
-
-**Impacto**: Queries NUNCA travam por > 12s
+Nenhuma funcionalidade removida ou desativada. Toda a API publica do contexto
+(user, profile, limites, assinatura, plano, trial, verificarLimite, incrementarUso,
+podeUsarFuncionalidade, signOut, refreshProfile, iniciarTrial) permanece identica.
 
 ---
 
-### Fix 2: Desacoplar Layout de profileLoading
+## COMMITS DESTA SESSAO
 
-**Antes**:
-```typescript
-// ❌ ACOPLADO: Bloqueia se profileLoading nunca completa
-const { loading, profileLoading } = useMedAuth()
-
-if (loading || profileLoading) {
-  return <LoadingSpinner />
-}
-```
-
-**Depois**:
-```typescript
-// ✅ DESACOPLADO: Apenas espera autenticação
-const { loading } = useMedAuth() // profileLoading NÃO usado
-
-// 🔧 FIX: Aguardar apenas loading de autenticação, NÃO profileLoading
-// Isso permite que o app renderize mesmo se fetchProfile travar
-if (loading) {
-  return <LoadingSpinner />
-}
-```
-
-**Impacto**: App renderiza MESMO se fetchProfile travar/timeout
-
----
-
-### Fix 3: Refresh Opcional e Não-Destrutivo (commit a5ded85)
-
-**Antes**:
-```typescript
-// ❌ Refresh OBRIGATÓRIO e DESTRUTIVO
-const { data: { session }, error } = await supabase.auth.refreshSession()
-if (error || !session) {
-  setUser(null) // Destrói usuário válido
-  return
-}
-```
-
-**Depois**:
-```typescript
-// ✅ Refresh OPCIONAL com timeout de 10s
-if (expiresIn < 5 * 60 * 1000) {
-  const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
-  try {
-    await Promise.race([supabase.auth.refreshSession(), timeout])
-  } catch (err) {
-    console.warn('[Auth] Timeout no refresh, continuando sem refresh:', err)
-    // ✅ NÃO limpa usuário - apenas continua
-  }
-}
-```
-
-**Impacto**: Usuário NUNCA é destruído por falha em refresh
-
----
-
-## 📁 ARQUIVOS MODIFICADOS
-
-```
-contexts/MedAuthContext.tsx           # Refresh opcional + timeout queries (Fix 1 e 3)
-app/medicina/(dashboard)/layout.tsx   # Desacoplamento de profileLoading (Fix 2)
-PR_INSTRUCOES_MERGE.md                # Instruções para merge manual (NOVO)
-```
-
----
-
-## 🔄 COMMITS DESTA SESSÃO
-
-| Hash | Descrição | Status |
+| Hash | Descricao | Status |
 |------|-----------|--------|
-| `8db62e2` | fix(auth,mobile): Primeira tentativa - Fallback chain | ❌ Falhou |
-| `a5ded85` | hotfix(auth): Segunda tentativa - Refresh opcional | ❌ Falhou |
-| `c672296` | fix(auth): SOLUÇÃO DEFINITIVA - Desacoplamento arquitetural | ✅ Solução |
-| `9722204` | chore: trigger deploy (empty commit) | ⏳ Aguardando merge |
+| `ba9d5be` | fix(auth): Reconstrucao arquitetural - resolver loading infinito F5/tab | Mergeado |
+| `e9dd1a4` | fix(auth): Evitar re-render desnecessario na troca de aba | Mergeado |
+| `a1d6e6a` | Merge da reconstrucao para main | Deploy |
+| `41c9d33` | Merge do fix de re-render para main | Deploy |
 
 ---
 
-## 🚀 PR/BRANCH ATUAL
+## RESULTADO DOS TESTES (confirmado pelo usuario)
 
-| Branch | Status | Commits ahead of main | Ação Necessária |
-|--------|--------|-----------------------|-----------------|
-| `claude/continue-prepara-med-1rz2a` | **PUSHED** | 3 commits | **Fazer merge manual via PR** |
-
-**Instruções completas**: Ver arquivo `PR_INSTRUCOES_MERGE.md`
-
-**Link do PR**: https://github.com/brunodivinoo/projeto-final/compare/main...claude/continue-prepara-med-1rz2a
-
----
-
-## 🎯 IMPACTO ESPERADO APÓS MERGE
-
-### Antes (Situação Atual em Produção)
-- ❌ 100% dos usuários com loading infinito ao fazer login
-- ❌ Console mostra: "Iniciando fetchProfile" → nunca completa
-- ❌ App nunca renderiza (bloqueado por profileLoading)
-- ❌ Taxa de login bem-sucedido: 0%
-
-### Depois (Após Merge + Deploy)
-- ✅ Login funciona em 100% dos casos (timeout garante que nunca trava)
-- ✅ App renderiza mesmo se Supabase estiver lento (desacoplado)
-- ✅ Usuário NUNCA é destruído por falha em refresh
-- ✅ Queries TÊM timeout de 12s (nunca esperam infinito)
-- ✅ Taxa de login bem-sucedido: 100%
-- ✅ Time to interactive: < 3s
+| Cenario | Antes | Depois |
+|---------|-------|--------|
+| Login | ~900ms OK | ~900ms OK |
+| F5 (refresh) | 40s timeout + spinner | Carrega normal (~1s) |
+| Troca de aba | 40s timeout + conteudo sumia | Zero queries, zero flash |
+| Console limpo | Dezenas de logs de erro | Logs limpos e concisos |
 
 ---
 
-## 📊 STATUS ATUAL DO PROJETO
+## STATUS ATUAL DO PROJETO
 
 | Item | Status |
 |------|--------|
-| Site em produção | https://projeto-final-zeta-navy.vercel.app |
-| **Autenticação Persistente** | ⏳ **AGUARDANDO MERGE** (correção implementada) |
-| **Loading Infinito** | ⏳ **AGUARDANDO MERGE** (correção definitiva) |
-| **Diagramas Mobile** | ✅ CORRIGIDO (primeira tentativa) |
-| Memoria Persistente no Prompt | **ATIVO** (getContextForPrompt) |
-| Diagramas com IA Real | **ATIVO** (Gemini Flash) |
-| Qualidade Visual Diagramas | **7 classDefs profissionais** |
-| Sidebar Troca de Deck | **CORRIGIDO** |
-| Titulos de Artefatos | **CORRIGIDO** (3 estratégias) |
-| Abertura de Decks | **CORRIGIDO** (5 fallbacks) |
-| Multi-Agentes na API /chat | **INTEGRADO + CORRIGIDO** |
-| Tipos visuais (diagrama/fluxograma/organograma) | **ATIVO** |
-| Gabarito Comentado | **ATIVO** |
-| TTS Kokoro | **ATIVO** |
-| Sugestões Contextuais | **ATIVO** |
-| Fallback Multi-Provider | **ATIVO** |
-| Smart Router | **ATIVO** |
-| Streaming Multi-Agentes | **ATIVO + FIX** |
+| Site em producao | https://projeto-final-zeta-navy.vercel.app |
+| **Autenticacao** | **CORRIGIDO DEFINITIVAMENTE** |
+| **Loading Infinito** | **CORRIGIDO DEFINITIVAMENTE** |
+| **F5/Refresh** | **CORRIGIDO DEFINITIVAMENTE** |
+| **Troca de Aba** | **CORRIGIDO DEFINITIVAMENTE** |
+| Diagramas Mobile | CORRIGIDO |
+| Memoria Persistente no Prompt | ATIVO (getContextForPrompt) |
+| Diagramas com IA Real | ATIVO (Gemini Flash) |
+| Qualidade Visual Diagramas | 7 classDefs profissionais |
+| Sidebar Troca de Deck | CORRIGIDO |
+| Titulos de Artefatos | CORRIGIDO |
+| Abertura de Decks | CORRIGIDO |
+| Multi-Agentes na API /chat | INTEGRADO + CORRIGIDO |
+| Tipos visuais (diagrama/fluxograma/organograma) | ATIVO |
+| Gabarito Comentado | ATIVO |
+| TTS Kokoro | ATIVO |
+| Sugestoes Contextuais | ATIVO |
+| Fallback Multi-Provider | ATIVO |
+| Smart Router | ATIVO |
+| Streaming Multi-Agentes | ATIVO |
 
 ---
 
-## 🧪 COMO TESTAR APÓS DEPLOY
+## PROXIMOS PASSOS
 
-1. Fazer login no app
-2. Verificar que dashboard carrega **SEM spinner infinito**
-3. Console deve mostrar:
-   ```
-   [Auth] onAuthStateChange: SIGNED_IN
-   [Auth] Iniciando fetchProfile para userId: ...
-   [Auth] Queries completadas com sucesso
-   ```
-4. Se Supabase estiver lento/travado, app ainda renderiza (não bloqueia)
+1. Monitorar estabilidade do auth em producao
+2. Novas funcionalidades conforme necessidade
+3. Otimizacoes de performance se necessario
 
 ---
 
-## 🆘 TROUBLESHOOTING
+## SESSOES ANTERIORES
 
-### Se após merge ainda persistir loading infinito
+### Sessao Reconstrucao Auth (09/02/2026) - ESTA SESSAO
+- Identificacao de 5 defeitos estruturais ocultos
+- Reconstrucao completa do MedAuthContext.tsx
+- Auth 100% funcional em todos os cenarios
 
-Possíveis causas secundárias:
+### Sessao Correcoes Arquiteturais (07/02/2026)
+- 3 iteracoes de debugging (8db62e2, a5ded85, c672296)
+- Desacoplamento + timeout (parcialmente eficaz)
 
-1. **RLS Policies bloqueando queries**
-   - Verificar policies em `profiles_med`, `limites_uso_med`, `assinaturas_med`
-   - Garantir que policies permitem SELECT para `auth.uid()`
+### Sessoes 07-08/02/2026 (PRs #106 a #113)
+- Lock atomico, simplificacao, remocao getSession hang
+- Timeout 40s + cache - band-aids que nao resolveram
 
-2. **Service Worker cacheado**
-   - Limpar cache do navegador (Ctrl+Shift+R)
-   - Desregistrar service workers em DevTools
-
-3. **Supabase offline ou lento**
-   - Verificar status em https://status.supabase.com
-   - MAS: Com timeout de 12s, app renderiza mesmo assim
-
-4. **Cookies não sendo setados**
-   - Verificar middleware em `middleware.ts`
-   - Confirmar que `supabase.auth.getSession()` retorna cookies válidos
-
----
-
-## 🔍 ANÁLISE TÉCNICA - POR QUE 3 TENTATIVAS?
-
-### Por que a primeira correção falhou?
-- Focou em **sintomas** (falta de fallback) não na **causa estrutural**
-- Não identificou que `refreshSession()` era destrutivo
-- Não considerou timeout nas queries do Supabase
-
-### Por que a segunda correção falhou?
-- Resolveu problema do refresh destrutivo
-- MAS não identificou o problema REAL: **queries sem timeout + layout acoplado**
-- Mesmo sem refresh destrutivo, queries podiam esperar infinito
-
-### Por que a terceira correção é definitiva?
-- Identificou a **causa raiz arquitetural**: Layout acoplado a profileLoading
-- Implementou **timeout obrigatório** em queries (nunca espera > 12s)
-- **Desacoplou** layout de profileLoading (renderiza mesmo se queries travam)
-- Abordagem de **engenharia defensiva**: múltiplas camadas de proteção
-
----
-
-## 🎓 LIÇÕES APRENDIDAS
-
-1. **Atacar causas, não sintomas**: Primeira e segunda correções atacaram sintomas
-2. **Desacoplamento é chave**: Layout não deve bloquear por operações não-críticas
-3. **Timeouts são obrigatórios**: NUNCA confiar que promises completam
-4. **Testes com usuário real**: Cada tentativa foi validada com usuário real
-5. **Análise arquitetural**: Terceira tentativa usou análise de arquitetura, não debug pontual
-
----
-
-## ⏭️ PRÓXIMOS PASSOS
-
-1. ✅ **Fazer merge do PR** (manual - branch protegido)
-2. ⏳ **Aguardar deploy** (~2 minutos após merge)
-3. 🧪 **Testar em produção** (login deve funcionar sem spinner infinito)
-4. 📊 **Monitorar métricas** (session duration, bounce rate, taxa de login)
-5. 📝 **Documentar resolução** (atualizar este arquivo com resultado final)
-
----
-
-## 📚 SESSÕES ANTERIORES
-
-### Sessão Correções Arquiteturais (07/02/2026) - **ESTA SESSÃO**
-- 3 iterações de debugging (8db62e2 → a5ded85 → c672296)
-- Identificação de causa raiz arquitetural
-- Solução definitiva com desacoplamento + timeout
-- Aguardando merge para main
-
-### Sessão Streaming + Mermaid Cleanup (06/02/2026)
+### Sessao Streaming + Mermaid Cleanup (06/02/2026)
 - Fix streaming multi-agentes
-- Fix código Mermaid cru no chat
-- Pipeline paralelo + Promise.allSettled
+- Fix codigo Mermaid cru no chat
 
-### Sessão Memoria + Diagramas + Sidebar (06/02/2026)
+### Sessao Memoria + Diagramas + Sidebar (06/02/2026)
 - Memoria persistente no prompt
 - Diagramas com IA real
-- Fix sidebar troca de deck
 
-### Sessão Gabarito + TTS + Sugestões (06/02/2026)
+### Sessao Gabarito + TTS + Sugestoes (06/02/2026)
 - Gabarito comentado completo
 - TTS Kokoro via HuggingFace
-- Otimização de custos
 
 ---
 
-## 🔗 LINKS ÚTEIS
+## LINKS
 
-- Produção: https://projeto-final-zeta-navy.vercel.app
+- Producao: https://projeto-final-zeta-navy.vercel.app
+- Producao Alt: https://preparamed-navy.vercel.app
 - GitHub: https://github.com/brunodivinoo/projeto-final
-- Branch Atual: https://github.com/brunodivinoo/projeto-final/tree/claude/continue-prepara-med-1rz2a
-- **PR para Merge**: https://github.com/brunodivinoo/projeto-final/compare/main...claude/continue-prepara-med-1rz2a
-- **Instruções de Merge**: `PR_INSTRUCOES_MERGE.md`
+- Supabase: https://supabase.com/dashboard/project/zkcstkbpgwdoiihvfspp
+- Vercel: https://vercel.com/brunos-projects-5f2d50e2/projeto-final
 
 ---
 
-**Última Atualização**: 07/02/2026 - Correções implementadas, aguardando merge manual
-**Session**: https://claude.ai/code/session_01F6x8ZCM5UR5C2aLudeZGPE
+**Ultima Atualizacao**: 09/02/2026 - Auth reconstruido e funcionando em producao
