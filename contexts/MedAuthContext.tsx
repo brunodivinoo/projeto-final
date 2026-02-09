@@ -321,16 +321,16 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[Auth] 🚀 STEP 1: Iniciando queries do Supabase...')
 
-      // 🔧 TIMEOUT ULTRA-ROBUSTO: 8s com cancelamento automático
+      // 🔧 TIMEOUT: 20s para permitir queries lentas
       let timeoutFired = false
       let timeoutId: NodeJS.Timeout | null = null
       const queryTimeout = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
           timeoutFired = true
-          console.warn('[Auth] ⏱️ TIMEOUT DISPARADO após 8s!')
-          reject(new Error('Timeout de 8s nas queries do Supabase'))
-        }, 8000)
-        console.log('[Auth] 🕐 Timeout de 8s configurado')
+          console.warn('[Auth] ⏱️ TIMEOUT DISPARADO após 20s!')
+          reject(new Error('Timeout de 20s nas queries do Supabase'))
+        }, 20000)
+        console.log('[Auth] 🕐 Timeout de 20s configurado')
       })
 
       console.log('[Auth] 🚀 STEP 2: Criando Promise.allSettled com 3 queries...')
@@ -484,23 +484,11 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       console.error('[Auth] ❌ ERRO CAPTURADO em fetchProfile:', error)
       console.error('[Auth] 📍 Tipo do erro:', error instanceof Error ? error.message : String(error))
       console.error('[Auth] 📍 Stack:', error instanceof Error ? error.stack : 'N/A')
-      // ✅ NÃO limpar usuário - mesmo com erro, deixar app funcionar
 
-      // Se timeout disparou, criar perfil mínimo para permitir uso
-      if (error instanceof Error && error.message.includes('Timeout')) {
-        console.warn('[Auth] 💊 FALLBACK: Criando perfil mínimo por timeout')
-        setProfile({
-          id: userId,
-          nome: userEmail?.split('@')[0] || 'Estudante',
-          email: userEmail,
-          plano: 'gratuito',
-          trial_used: false,
-          trial_started_at: null,
-          trial_tempo_usado_segundos: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        } as ProfileMED)
-      }
+      // ✅ CRITICAL: NÃO criar perfil fallback!
+      // Isso sobrescreve dados reais quando há timeout
+      // Melhor manter o perfil anterior (se existir) do que criar dados falsos
+      console.warn('[Auth] ⚠️ Mantendo estado anterior - não sobrescrever perfil por timeout')
     } finally {
       fetchingRef.current = false
       setProfileLoading(false)
