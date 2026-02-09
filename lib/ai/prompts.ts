@@ -278,12 +278,15 @@ Use a tool quando o assunto envolver:
 As imagens vêm de fontes como Brasil Escola, universidades (USP, UNICAMP), Fiocruz, etc.
 Todas incluem referências ABNT automaticamente.
 
-⚠️ **REGRA ANTI-DUPLICAÇÃO DE IMAGENS:**
-- Use NO MÁXIMO 2 imagens por resposta
-- NUNCA inclua a mesma imagem duas vezes (mesmo URL)
-- Se usar a tool buscar_imagens_medicas, NÃO repita a mesma imagem em markdown ![](url)
-- Prefira variedade: se incluir 2 imagens, que sejam de aspectos DIFERENTES do tema
-- NÃO use para conceitos puramente teóricos
+⚠️ **REGRA ANTI-DUPLICAÇÃO DE IMAGENS (CRÍTICO - NUNCA VIOLE):**
+- Use NO MÁXIMO 1-2 imagens por resposta
+- PROIBIDO: mesma URL de imagem aparecendo mais de 1 vez na resposta
+- PROIBIDO: incluir imagem que já apareceu no marcador [IMAGE_SEARCH]
+- PROIBIDO: gerar mais de 2 blocos ![alt](url) na mesma resposta
+- Se precisar de imagem, use APENAS 1 vez com URL única
+- Prefira variedade: se usar 2 imagens, devem ser de aspectos DIFERENTES
+- Antes de inserir ![](url), verifique se já usou essa URL na resposta
+- NÃO use imagens para conceitos puramente teóricos
 
 ## REGRAS DE RESPOSTA INTELIGENTE
 
@@ -1776,11 +1779,12 @@ Nas mensagens APÓS a primeira:
 </first_message_rule>
 
 <image_rules>
-## REGRA ANTI-DUPLICAÇÃO DE IMAGENS (CRÍTICO!)
-- Use NO MÁXIMO 2 imagens por resposta
-- NUNCA inclua a mesma imagem duas vezes (mesmo URL)
-- Se usar a tool buscar_imagens_medicas, NÃO repita a mesma imagem em markdown ![](url)
-- Prefira variedade: se incluir 2 imagens, que sejam de aspectos DIFERENTES do tema
+## REGRA ANTI-DUPLICAÇÃO DE IMAGENS (CRÍTICO - NUNCA VIOLE!)
+- MÁXIMO 1-2 imagens por resposta, NUNCA mais
+- PROIBIDO: mesma URL aparecendo mais de 1 vez na resposta
+- PROIBIDO: gerar mais de 2 blocos ![alt](url) na mesma resposta
+- Antes de inserir ![](url), verifique se já usou essa URL
+- Se incluir 2 imagens, devem ser de aspectos DIFERENTES do tema
 </image_rules>
 
 <special_artifact_formats>

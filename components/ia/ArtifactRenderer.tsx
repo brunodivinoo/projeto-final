@@ -2520,8 +2520,9 @@ function ArtifactRendererComponent({
   trialAtivo = false,
   onUpgradeClick
 }: ArtifactRendererProps) {
-  // Debounce do conteúdo para evitar recálculos excessivos durante streaming (150ms)
-  const debouncedContent = useDebouncedValue(content, 150)
+  // Debounce do conteúdo para evitar recálculos excessivos durante streaming (300ms)
+  // Valor maior = menos flickering durante streaming, mas delay levemente maior
+  const debouncedContent = useDebouncedValue(content, 300)
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { parts, artifacts, hasIncompleteQuestion } = useMemo(() => parseArtifacts(debouncedContent), [debouncedContent])
@@ -2825,6 +2826,9 @@ function ArtifactRendererComponent({
   // Estado do modal de imagem fullscreen
   const [imageModalState, setImageModalState] = useState<{ src: string; alt: string } | null>(null)
 
+  // Rastrear URLs de imagens já renderizadas para NUNCA repetir
+  const renderedImageUrlsRef = useRef<Set<string>>(new Set())
+
   // Função para abrir modal de imagem
   const openImageModal = useCallback((src: string, alt: string) => {
     setImageModalState({ src, alt })
@@ -2918,6 +2922,9 @@ function ArtifactRendererComponent({
       setSidebarOpen(true)
     }
   }, [messageId, selectArtifact, setSidebarOpen, setMobileDrawerOpen, setFullscreenArtifact])
+
+  // Resetar tracker de imagens renderizadas a cada ciclo de render
+  renderedImageUrlsRef.current = new Set()
 
   return (
     <div className="artifact-renderer lg:text-[0.9em] xl:text-[0.85em]">
@@ -3170,10 +3177,15 @@ function ArtifactRendererComponent({
                   <hr className="my-4 border-slate-200" />
                 ),
 
-                // Images - usando componente memoizado para evitar flickering
-                // Clicáveis para abrir modal fullscreen
+                // Images - deduplicação rigorosa: NUNCA repetir mesma URL
+                // Max 2 imagens inline por resposta
                 img: ({ src, alt }) => {
                   if (typeof src !== 'string' || !src) return null
+                  // Deduplicar: se já renderizou esta URL, pular
+                  if (renderedImageUrlsRef.current.has(src)) return null
+                  // Limitar a 2 imagens inline max
+                  if (renderedImageUrlsRef.current.size >= 2) return null
+                  renderedImageUrlsRef.current.add(src)
                   return (
                     <MemoizedImage
                       src={src}
