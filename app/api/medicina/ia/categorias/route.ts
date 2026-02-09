@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { cachedResponse } from '@/lib/api-cache'
 
 // Criar cliente Supabase com service role para bypass de RLS
 const supabase = createClient(
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
   try {
     let query = supabase
       .from('categorias_questoes_ia_med')
-      .select('*')
+      .select('id, nome, tipo, parent_id')
       .eq('user_id', userId)
       .order('nome', { ascending: true })
 
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
     // Buscar bancas também
     const { data: bancas, error: bancasError } = await supabase
       .from('bancas_questoes_ia_med')
-      .select('*')
+      .select('id, nome')
       .eq('user_id', userId)
       .order('nome', { ascending: true })
 
@@ -57,10 +58,10 @@ export async function GET(request: NextRequest) {
       throw bancasError
     }
 
-    return NextResponse.json({
+    return cachedResponse({
       categorias: categorias || [],
       bancas: bancas || []
-    })
+    }, 'private-medium')
   } catch (error) {
     console.error('Erro ao buscar categorias:', error)
     return NextResponse.json({ error: 'Erro ao buscar categorias' }, { status: 500 })

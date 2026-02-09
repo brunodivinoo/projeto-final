@@ -1,8 +1,13 @@
 'use client'
 
-import { FlashcardSystem } from '@/components/medicina/FlashcardSystem'
+import dynamic from 'next/dynamic'
 import { Brain, Sparkles, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+
+const FlashcardSystem = dynamic(
+  () => import('@/components/medicina/FlashcardSystem').then(m => ({ default: m.FlashcardSystem })),
+  { ssr: false, loading: () => <div className="flex items-center justify-center p-12"><div className="animate-spin w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full" /></div> }
+)
 
 export default function FlashcardsPage() {
   return (

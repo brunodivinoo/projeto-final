@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useBadges } from '@/hooks/useBadges'
 import { useMedAuth } from '@/contexts/MedAuthContext'
 import { Trophy, Flame, Target, Star, Lock, X, ChevronRight } from 'lucide-react'
@@ -188,7 +189,7 @@ export function RankingDisplay({ tipo = 'semana', limite = 10 }: RankingDisplayP
                 <div className="flex-1 flex items-center gap-2 min-w-0">
                   <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-sm">
                     {item.avatar_url ? (
-                      <img src={item.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                      <Image src={item.avatar_url} alt="" width={32} height={32} className="w-full h-full rounded-full object-cover" />
                     ) : (
                       <span className="text-slate-500">{item.nome.charAt(0).toUpperCase()}</span>
                     )}

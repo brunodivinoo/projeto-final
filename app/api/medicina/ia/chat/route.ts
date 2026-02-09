@@ -2356,7 +2356,7 @@ export async function GET(request: NextRequest) {
 
       const { data: mensagens, error: msgError } = await supabase
         .from('mensagens_ia_med')
-        .select('*')
+        .select('id, conversa_id, role, content, modelo, tokens_input, tokens_output, artifacts, created_at')
         .eq('conversa_id', conversa_id)
         .order('created_at', { ascending: true })
 
@@ -2368,7 +2368,7 @@ export async function GET(request: NextRequest) {
     // Listar conversas do usuário (filtradas por modo se especificado)
     let query = supabase
       .from('conversas_ia_med')
-      .select('*')
+      .select('id, titulo, modo, modelo, tokens_usados, created_at, updated_at')
       .eq('user_id', user_id)
       .order('updated_at', { ascending: false })
       .limit(50)

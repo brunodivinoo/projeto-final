@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { cachedResponse } from '@/lib/api-cache'
 import { getAllSuggestions } from '@/lib/suggestions'
 
 export async function GET(request: NextRequest) {
@@ -19,14 +20,14 @@ export async function GET(request: NextRequest) {
     // Buscar sugestões personalizadas
     const sugestoes = await getAllSuggestions(userId)
 
-    return NextResponse.json({
+    return cachedResponse({
       success: true,
       sugestoes: {
         topics: sugestoes.topics.slice(0, 4),
         actions: sugestoes.actions.slice(0, 4),
         reviews: sugestoes.reviews.slice(0, 3)
       }
-    })
+    }, 'private-medium')
   } catch (error) {
     console.error('[Sugestões API] Erro:', error)
     // Em caso de erro, retornar sugestões padrão

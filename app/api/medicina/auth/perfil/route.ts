@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { cachedResponse } from '@/lib/api-cache'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,40 +17,42 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'user_id é obrigatório' }, { status: 400 })
     }
 
-    // Buscar perfil
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles_med')
-      .select('*')
-      .eq('id', user_id)
-      .single()
+    // Buscar perfil, assinatura e limites em PARALELO (3 queries independentes)
+    const mesAtual = new Date().toISOString().slice(0, 7)
+    const [
+      { data: profile, error: profileError },
+      { data: assinatura },
+      { data: limites }
+    ] = await Promise.all([
+      supabase
+        .from('profiles_med')
+        .select('id, nome, email, avatar_url, faculdade, periodo_curso, ano_curso, estado, cidade, plano, xp_total, nivel, created_at, updated_at')
+        .eq('id', user_id)
+        .single(),
+      supabase
+        .from('assinaturas_med')
+        .select('id, plano, status, data_inicio, data_fim')
+        .eq('user_id', user_id)
+        .eq('status', 'ativa')
+        .single(),
+      supabase
+        .from('limites_uso_med')
+        .select('questoes_dia, data_questoes, simulados_mes, perguntas_ia_mes, resumos_ia_mes, flashcards_ia_mes, anotacoes_total')
+        .eq('user_id', user_id)
+        .eq('mes_referencia', mesAtual)
+        .single()
+    ])
 
     if (profileError && profileError.code !== 'PGRST116') {
       console.error('Erro ao buscar perfil:', profileError)
       return NextResponse.json({ error: 'Erro ao buscar perfil' }, { status: 500 })
     }
 
-    // Buscar assinatura ativa
-    const { data: assinatura } = await supabase
-      .from('assinaturas_med')
-      .select('*')
-      .eq('user_id', user_id)
-      .eq('status', 'ativa')
-      .single()
-
-    // Buscar limites de uso do mês atual
-    const mesAtual = new Date().toISOString().slice(0, 7)
-    const { data: limites } = await supabase
-      .from('limites_uso_med')
-      .select('*')
-      .eq('user_id', user_id)
-      .eq('mes_referencia', mesAtual)
-      .single()
-
-    return NextResponse.json({
+    return cachedResponse({
       profile: profile || null,
       assinatura: assinatura || null,
       limites: limites || null
-    })
+    }, 'private-short')
   } catch (error) {
     console.error('Erro na API de perfil:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
