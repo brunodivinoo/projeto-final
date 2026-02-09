@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, memo} from 'react'
 
 interface SuggestionChipsProps {
   lastMessage: string
@@ -176,7 +176,7 @@ function detectTopics(text: string): string[] {
   return detected
 }
 
-export default function SuggestionChips({ lastMessage, chatMode, onSuggestionClick }: SuggestionChipsProps) {
+function SuggestionChips({ lastMessage, chatMode, onSuggestionClick }: SuggestionChipsProps) {
   const suggestions = useMemo(() => {
     if (!lastMessage) return DEFAULT_SUGGESTIONS
 
@@ -237,3 +237,5 @@ export default function SuggestionChips({ lastMessage, chatMode, onSuggestionCli
     </div>
   )
 }
+
+export default memo(SuggestionChips)

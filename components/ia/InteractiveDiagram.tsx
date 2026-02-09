@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo} from 'react'
 import { Maximize2, Minimize2, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface InteractiveDiagramProps {
@@ -490,7 +490,7 @@ function MetabolismDiagram() {
 }
 
 // Componente principal
-export default function InteractiveDiagram({ type, title }: InteractiveDiagramProps) {
+function InteractiveDiagram({ type, title }: InteractiveDiagramProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   const renderContent = () => {
@@ -553,3 +553,5 @@ export default function InteractiveDiagram({ type, title }: InteractiveDiagramPr
     </div>
   )
 }
+
+export default memo(InteractiveDiagram)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, memo} from 'react'
 import { ExternalLink, BookOpen, X } from 'lucide-react'
 
 // Regex para detectar citações inline [1], [2], etc.
@@ -64,7 +64,7 @@ interface CitationTooltipProps {
  * Componente de tooltip para citação
  * Mostra a referência completa ao passar o mouse ou clicar
  */
-export function CitationTooltip({ number, references }: CitationTooltipProps) {
+function CitationTooltipRaw({ number, references }: CitationTooltipProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [position, setPosition] = useState<'top' | 'bottom'>('top')
   const tooltipRef = useRef<HTMLDivElement>(null)
@@ -240,4 +240,4 @@ export function useReferences(content: string) {
   return references
 }
 
-export default CitationTooltip
+export const CitationTooltip = memo(CitationTooltipRaw)

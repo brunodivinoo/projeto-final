@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, memo} from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronRight,
@@ -173,7 +173,7 @@ function TreeNodeComponent({
 }
 
 // Componente principal
-export default function TreeDiagram({
+function TreeDiagram({
   title,
   data,
   description,
@@ -367,3 +367,5 @@ function normalizeTreeNode(node: Record<string, unknown>, index: number = 0): Tr
     children: children?.map((child, i) => normalizeTreeNode(child, i))
   }
 }
+
+export default memo(TreeDiagram)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, memo} from 'react'
 import { Question, DIFFICULTY_COLORS } from '@/stores/artifactsStore'
 import { Scissors, Lock, Sparkles } from 'lucide-react'
 
@@ -22,7 +22,7 @@ interface QuestionArtifactCardProps {
   onUpgradeClick?: () => void
 }
 
-export default function QuestionArtifactCard({
+function QuestionArtifactCard({
   question,
   onAnswerSubmit,
   userId,
@@ -555,3 +555,5 @@ export default function QuestionArtifactCard({
     </div>
   )
 }
+
+export default memo(QuestionArtifactCard)

@@ -1,8 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, memo} from 'react'
 import { useEstudo } from '@/contexts/EstudoContext'
 
-export function TimerWidget() {
+function TimerWidgetRaw() {
   const {
     sessaoAtiva,
     tempoDecorrido,
@@ -242,3 +242,5 @@ export function TimerWidget() {
     </>
   )
 }
+
+export const TimerWidget = memo(TimerWidgetRaw)

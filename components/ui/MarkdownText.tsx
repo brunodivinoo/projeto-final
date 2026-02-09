@@ -1,11 +1,13 @@
 'use client'
 
+import { memo } from 'react'
+
 interface MarkdownTextProps {
   text: string
   className?: string
 }
 
-export function MarkdownText({ text, className = '' }: MarkdownTextProps) {
+function MarkdownTextRaw({ text, className = '' }: MarkdownTextProps) {
   // Funcao para processar markdown simples
   const processMarkdown = (content: string): string => {
     // Processar negrito **texto**
@@ -48,3 +50,5 @@ export function MarkdownText({ text, className = '' }: MarkdownTextProps) {
     />
   )
 }
+
+export const MarkdownText = memo(MarkdownTextRaw)

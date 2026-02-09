@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, memo} from 'react'
 
 interface Revisao {
   id: string
@@ -44,7 +44,7 @@ const METODO_ICONS: Record<string, string> = {
   outro: 'more_horiz'
 }
 
-export function CardRevisao({ revisao, onRevisar, onArquivar, compact = false }: CardRevisaoProps) {
+function CardRevisaoRaw({ revisao, onRevisar, onArquivar, compact = false }: CardRevisaoProps) {
   const [showAvaliar, setShowAvaliar] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -263,3 +263,5 @@ export function CardRevisao({ revisao, onRevisar, onArquivar, compact = false }:
     </div>
   )
 }
+
+export const CardRevisao = memo(CardRevisaoRaw)

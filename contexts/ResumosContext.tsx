@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface ResumoIA {
@@ -138,21 +138,21 @@ export function ResumosProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const value = useMemo(() => ({
+    resumos,
+    resumoSelecionado,
+    painelAberto,
+    loading,
+    carregarResumos,
+    abrirResumo,
+    fecharPainel,
+    compartilharResumo,
+    salvarResumo,
+    excluirResumo
+  }), [resumos, resumoSelecionado, painelAberto, loading, carregarResumos, abrirResumo, fecharPainel, compartilharResumo, salvarResumo, excluirResumo])
+
   return (
-    <ResumosContext.Provider
-      value={{
-        resumos,
-        resumoSelecionado,
-        painelAberto,
-        loading,
-        carregarResumos,
-        abrirResumo,
-        fecharPainel,
-        compartilharResumo,
-        salvarResumo,
-        excluirResumo
-      }}
-    >
+    <ResumosContext.Provider value={value}>
       {children}
     </ResumosContext.Provider>
   )

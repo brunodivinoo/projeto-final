@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, memo} from 'react'
 import {
   Clock,
   CheckCircle,
@@ -62,7 +62,7 @@ interface SimuladoCardProps {
   isFullscreenMode?: boolean
 }
 
-export default function SimuladoCard({ simulado, userId, conversaId, isFullscreenMode = false }: SimuladoCardProps) {
+function SimuladoCard({ simulado, userId, conversaId, isFullscreenMode = false }: SimuladoCardProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [started, setStarted] = useState(false)
   const [finished, setFinished] = useState(false)
@@ -458,3 +458,5 @@ export default function SimuladoCard({ simulado, userId, conversaId, isFullscree
     </div>
   )
 }
+
+export default memo(SimuladoCard)

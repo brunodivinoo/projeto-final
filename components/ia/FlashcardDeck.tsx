@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, memo} from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   RotateCcw,
@@ -48,7 +48,7 @@ interface CardProgress {
   ultima_revisao?: Date
 }
 
-export default function FlashcardDeck({
+function FlashcardDeck({
   titulo,
   cards: initialCards,
   onSaveToArtefatos,
@@ -556,3 +556,5 @@ export default function FlashcardDeck({
     </div>
   )
 }
+
+export default memo(FlashcardDeck)

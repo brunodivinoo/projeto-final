@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, memo} from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Maximize2,
@@ -239,7 +239,7 @@ function validateMermaidSyntax(code: string): string | null {
   return null
 }
 
-export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: MermaidDiagramProps) {
+function MermaidDiagram({ chart, title, nodeDescriptions = {} }: MermaidDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const svgContainerRef = useRef<HTMLDivElement>(null)
   const [svg, setSvg] = useState<string>('')
@@ -1188,3 +1188,5 @@ export default function MermaidDiagram({ chart, title, nodeDescriptions = {} }: 
     </div>
   )
 }
+
+export default memo(MermaidDiagram)

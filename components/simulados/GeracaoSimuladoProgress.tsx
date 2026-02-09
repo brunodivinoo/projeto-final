@@ -1,8 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, memo} from 'react'
 import { useSimuladoGeracao } from '@/contexts/SimuladoGeracaoContext'
 
-export function GeracaoSimuladoProgress() {
+function GeracaoSimuladoProgressRaw() {
   const {
     geracaoAtiva,
     isProcessando,
@@ -188,3 +188,5 @@ export function GeracaoSimuladoProgress() {
     </div>
   )
 }
+
+export const GeracaoSimuladoProgress = memo(GeracaoSimuladoProgressRaw)

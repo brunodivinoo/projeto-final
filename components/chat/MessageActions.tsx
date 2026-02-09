@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, memo} from 'react'
 import { Copy, CheckCircle2, RotateCcw, Volume2, VolumeX, Settings2 } from 'lucide-react'
 
 interface MessageActionsProps {
@@ -17,7 +17,7 @@ const VOICES = [
   { id: 'pm_santa', label: 'Santa', gender: 'M' },
 ]
 
-export default function MessageActions({ messageId, conteudo, onRetry, tokens }: MessageActionsProps) {
+function MessageActions({ messageId, conteudo, onRetry, tokens }: MessageActionsProps) {
   const [copiado, setCopiado] = useState(false)
   const [reproduzindo, setReproduzindo] = useState(false)
   const [carregandoAudio, setCarregandoAudio] = useState(false)
@@ -257,3 +257,5 @@ export default function MessageActions({ messageId, conteudo, onRetry, tokens }:
     </div>
   )
 }
+
+export default memo(MessageActions)

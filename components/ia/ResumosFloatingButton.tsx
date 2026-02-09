@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo} from 'react'
 import { useResumos } from '@/contexts/ResumosContext'
 
-export default function ResumosFloatingButton() {
+function ResumosFloatingButton() {
   const { resumos, carregarResumos, abrirResumo, loading } = useResumos()
   const [menuAberto, setMenuAberto] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -111,3 +111,5 @@ export default function ResumosFloatingButton() {
     </div>
   )
 }
+
+export default memo(ResumosFloatingButton)

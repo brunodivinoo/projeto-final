@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, memo} from 'react'
 import { useSimulados, Simulado } from '@/hooks/useSimulados'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -10,7 +10,7 @@ interface Props {
   refreshTrigger?: number
 }
 
-export function ListaSimulados({ onSelectSimulado, onIniciarSimulado, onExcluirSimulado, refreshTrigger }: Props) {
+function ListaSimuladosRaw({ onSelectSimulado, onIniciarSimulado, onExcluirSimulado, refreshTrigger }: Props) {
   const { user, loading: authLoading } = useAuth()
   const { listarSimulados, excluirSimulado } = useSimulados()
   const [simulados, setSimulados] = useState<Simulado[]>([])
@@ -477,3 +477,5 @@ export function ListaSimulados({ onSelectSimulado, onIniciarSimulado, onExcluirS
     </div>
   )
 }
+
+export const ListaSimulados = memo(ListaSimuladosRaw)

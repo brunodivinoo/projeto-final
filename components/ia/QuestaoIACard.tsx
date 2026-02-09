@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo} from 'react'
 import { QuestaoIA } from '@/hooks/useQuestoesIA'
 
 interface QuestaoIACardProps {
@@ -12,7 +12,7 @@ interface QuestaoIACardProps {
 
 type TabType = 'gabarito' | 'reportar'
 
-export function QuestaoIACard({ questao, index, onAnswer, onDelete }: QuestaoIACardProps) {
+function QuestaoIACardRaw({ questao, index, onAnswer, onDelete }: QuestaoIACardProps) {
   const [respostaSelecionada, setRespostaSelecionada] = useState<string | null>(
     questao.resposta_usuario || null
   )
@@ -260,3 +260,5 @@ export function QuestaoIACard({ questao, index, onAnswer, onDelete }: QuestaoIAC
     </div>
   )
 }
+
+export const QuestaoIACard = memo(QuestaoIACardRaw)

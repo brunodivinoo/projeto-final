@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo, ReactNode } from 'react'
 import { useAuth } from './AuthContext'
 
 // Tipos
@@ -375,7 +375,7 @@ export function EstudoProvider({ children }: { children: ReactNode }) {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
   }, [])
 
-  const value = {
+  const value = useMemo(() => ({
     sessaoAtiva,
     tempoDecorrido,
     isPausado,
@@ -388,7 +388,7 @@ export function EstudoProvider({ children }: { children: ReactNode }) {
     formatarTempo,
     formatarTempoCompleto,
     temSessaoAtiva: !!sessaoAtiva,
-  }
+  }), [sessaoAtiva, tempoDecorrido, isPausado, loading, iniciarSessao, pausarSessao, retomarSessao, finalizarSessao, cancelarSessao, formatarTempo, formatarTempoCompleto])
 
   return (
     <EstudoContext.Provider value={value}>

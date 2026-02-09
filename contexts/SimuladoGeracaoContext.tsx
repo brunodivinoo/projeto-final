@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, ReactNode } from 'react'
 import { useAuth } from './AuthContext'
 import { useSimulados, ProgressoGeracao } from '@/hooks/useSimulados'
 
@@ -233,23 +233,26 @@ export function SimuladoGeracaoProvider({ children }: { children: ReactNode }) {
     ? calcularTempoEstimado(geracaoAtiva.total - geracaoAtiva.geradas)
     : ''
 
+  const minimizar = useCallback(() => setIsMinimizado(true), [])
+  const maximizar = useCallback(() => setIsMinimizado(false), [])
+
+  const value = useMemo(() => ({
+    geracaoAtiva,
+    isProcessando,
+    isMinimizado,
+    temGeracaoPendente,
+    iniciarGeracao,
+    pausarGeracao,
+    continuarGeracao,
+    cancelarGeracao: cancelar,
+    minimizar,
+    maximizar,
+    progresso,
+    tempoEstimado
+  }), [geracaoAtiva, isProcessando, isMinimizado, temGeracaoPendente, iniciarGeracao, pausarGeracao, continuarGeracao, cancelar, minimizar, maximizar, progresso, tempoEstimado])
+
   return (
-    <SimuladoGeracaoContext.Provider
-      value={{
-        geracaoAtiva,
-        isProcessando,
-        isMinimizado,
-        temGeracaoPendente,
-        iniciarGeracao,
-        pausarGeracao,
-        continuarGeracao,
-        cancelarGeracao: cancelar,
-        minimizar: () => setIsMinimizado(true),
-        maximizar: () => setIsMinimizado(false),
-        progresso,
-        tempoEstimado
-      }}
-    >
+    <SimuladoGeracaoContext.Provider value={value}>
       {children}
     </SimuladoGeracaoContext.Provider>
   )

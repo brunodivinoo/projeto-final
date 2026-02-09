@@ -2356,7 +2356,7 @@ export async function GET(request: NextRequest) {
 
       const { data: mensagens, error: msgError } = await supabase
         .from('mensagens_ia_med')
-        .select('id, conversa_id, role, content, modelo, tokens_input, tokens_output, artifacts, created_at')
+        .select('id, conversa_id, role, content, tokens, has_image, has_pdf, image_url, pdf_url, created_at')
         .eq('conversa_id', conversa_id)
         .order('created_at', { ascending: true })
 

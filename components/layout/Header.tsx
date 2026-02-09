@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo} from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -8,7 +8,7 @@ import { LimitsIndicator } from '@/components/limits'
 import { XPIndicator } from '@/components/xp'
 import { NotificationBell } from '@/components/notifications'
 
-export function Header({ title, searchPlaceholder }: { title: string; searchPlaceholder?: string }) {
+function HeaderRaw({ title, searchPlaceholder }: { title: string; searchPlaceholder?: string }) {
   const [search, setSearch] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -33,14 +33,15 @@ export function Header({ title, searchPlaceholder }: { title: string; searchPlac
   }
 
   return (
-    <header className="h-14 bg-white dark:bg-[#1c252e] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-3 lg:px-6 sticky top-0 z-30 shadow-sm">
+    <header className="h-14 bg-white dark:bg-[#1c252e] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-3 lg:px-6 sticky top-0 z-30 shadow-sm" role="banner">
       <div className="flex items-center gap-2 lg:gap-3">
         {/* Hamburger menu for mobile */}
         <button
           onClick={toggleSidebar}
           className="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          aria-label="Abrir menu de navegação"
         >
-          <span className="material-symbols-outlined text-2xl">menu</span>
+          <span className="material-symbols-outlined text-2xl" aria-hidden="true">menu</span>
         </button>
 
         <span className="material-symbols-outlined text-primary text-2xl lg:text-3xl hidden sm:block">psychology</span>
@@ -58,6 +59,7 @@ export function Header({ title, searchPlaceholder }: { title: string; searchPlac
             placeholder={searchPlaceholder || "Buscar..."}
             value={search}
             onChange={e => setSearch(e.target.value)}
+            aria-label="Buscar conteúdo"
             className="w-48 lg:w-64 h-10 pl-10 pr-4 rounded-lg bg-slate-100 dark:bg-[#101922] border border-slate-200 dark:border-transparent text-slate-900 dark:text-white text-sm placeholder:text-slate-400 focus:border-primary focus:outline-none transition-colors"
           />
         </div>
@@ -73,8 +75,9 @@ export function Header({ title, searchPlaceholder }: { title: string; searchPlac
           onClick={toggleTheme}
           className="w-9 h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           title={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+          aria-label={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
         >
-          <span className="material-symbols-outlined text-xl">
+          <span className="material-symbols-outlined text-xl" aria-hidden="true">
             {theme === 'dark' ? 'light_mode' : 'dark_mode'}
           </span>
         </button>
@@ -87,6 +90,9 @@ export function Header({ title, searchPlaceholder }: { title: string; searchPlac
           <button
             onClick={() => setShowDropdown(!showDropdown)}
             className="flex items-center gap-2 lg:gap-3 pl-2 lg:pl-3 border-l border-slate-200 dark:border-slate-700 hover:opacity-80 transition-opacity"
+            aria-label="Menu do usuário"
+            aria-expanded={showDropdown}
+            aria-haspopup="true"
           >
             {profileLoading ? (
               /* Skeleton enquanto carrega */
@@ -106,7 +112,7 @@ export function Header({ title, searchPlaceholder }: { title: string; searchPlac
 
           {/* Dropdown Menu */}
           {showDropdown && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg py-2 z-50">
+            <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#1c252e] rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg py-2 z-50" role="menu" aria-label="Menu do usuário">
               {/* User info in dropdown */}
               <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
                 {profileLoading ? (
@@ -166,3 +172,5 @@ export function Header({ title, searchPlaceholder }: { title: string; searchPlac
     </header>
   )
 }
+
+export const Header = memo(HeaderRaw)

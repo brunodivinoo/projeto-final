@@ -284,8 +284,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setSidebarOpen(true)}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-lg border border-slate-200 active:scale-95 transition-all"
+            aria-label="Abrir menu lateral"
           >
-            <Menu className="w-5 h-5 text-slate-600" />
+            <Menu className="w-5 h-5 text-slate-600" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -299,6 +300,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             exit={{ opacity: 0 }}
             className="lg:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-50"
             onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
           />
         )}
       </AnimatePresence>
@@ -310,7 +312,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         lg:translate-x-0 lg:shadow-none
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         ${sidebarCollapsed ? 'lg:w-[72px]' : 'w-[280px] max-w-[85vw]'}
-      `}>
+      `} role="navigation" aria-label="Menu principal">
         <div className="flex flex-col h-full overflow-hidden">
           {/* Logo */}
           <div className="p-4 border-b border-slate-800 flex-shrink-0">
@@ -326,8 +328,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   </div>
                 )}
               </Link>
-              <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-all">
-                <X className="w-5 h-5" />
+              <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-all" aria-label="Fechar menu lateral">
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -385,11 +387,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Buscar conversas..."
+                      aria-label="Buscar conversas"
                       className="w-full pl-9 pr-8 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition-all"
                     />
                     {searchQuery && (
-                      <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-700 rounded">
-                        <X className="w-3 h-3 text-slate-400" />
+                      <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-700 rounded" aria-label="Limpar busca">
+                        <X className="w-3 h-3 text-slate-400" aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -647,6 +650,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors shadow-lg"
             title={sidebarCollapsed ? 'Expandir' : 'Recolher'}
+            aria-label={sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
           >
             {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
@@ -654,7 +658,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content */}
-      <main
+      <main id="main-content" role="main"
         className={`pt-0 lg:pt-0 min-h-screen transition-all duration-300 overflow-x-hidden bg-surface-100 ${sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-72'}`}
         data-main-container
       >

@@ -1,8 +1,8 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo} from 'react'
 import { useBackgroundTask, BackgroundTask } from '@/contexts/BackgroundTaskContext'
 
-export function BackgroundTaskToast() {
+function BackgroundTaskToastRaw() {
   const { tasks, activeTask, removeTask } = useBackgroundTask()
   const [isExpanded, setIsExpanded] = useState(false)
   const [showCompleted, setShowCompleted] = useState<string | null>(null)
@@ -148,3 +148,5 @@ export function BackgroundTaskToast() {
     </div>
   )
 }
+
+export const BackgroundTaskToast = memo(BackgroundTaskToastRaw)

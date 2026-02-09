@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo} from 'react'
 import { Loader2, Image as ImageIcon, Download, RefreshCw, AlertCircle } from 'lucide-react'
 
 interface ImageGeneratorProps {
@@ -19,7 +19,7 @@ const ESTILOS = [
   { value: 'educativo', label: 'Educativo', desc: 'Ilustração geral' }
 ]
 
-export default function ImageGenerator({ prompt, onGenerate }: ImageGeneratorProps) {
+function ImageGenerator({ prompt, onGenerate }: ImageGeneratorProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [imageData, setImageData] = useState<string | null>(null)
@@ -196,3 +196,5 @@ export default function ImageGenerator({ prompt, onGenerate }: ImageGeneratorPro
     </div>
   )
 }
+
+export default memo(ImageGenerator)
