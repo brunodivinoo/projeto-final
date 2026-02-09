@@ -98,6 +98,12 @@ import {
 import { buscarImagensComFallback, deveRecomendarImagens, formatarImagensParaChat } from '@/lib/services/serperImageService'
 // ========== FIM IMAGENS SERPER ==========
 
+// ========== BUSCA WEB + COMPRESSÃO (OTIMIZAÇÃO DE CUSTOS) ==========
+import { buscarWebMedica, precisaDeBusca, extrairTemaMedico } from '@/lib/services/serperWebService'
+import { comprimirContexto, formatarContextoComprimido } from '@/lib/ai/contextCompressor'
+import { buscarCacheSemantico, salvarCacheSemantico } from '@/lib/ai/semanticCache'
+// ========== FIM BUSCA WEB + COMPRESSÃO ==========
+
 // ========== SMART ROUTER - ROTEAMENTO INTELIGENTE ==========
 import {
   selecionarModelo,
@@ -464,6 +470,63 @@ export async function POST(request: NextRequest) {
     }
     // ========== FIM VERIFICAÇÃO MULTI-AGENTES ==========
 
+    // ========== BUSCA WEB + COMPRESSÃO (OTIMIZAÇÃO DE CUSTOS) ==========
+    // Pipeline: Serper busca diretrizes brasileiras → Gemini Flash comprime → modelo monta
+    let contextoBusca = ''
+    let mensagemParaIA = mensagem
+
+    // Só buscar se a mensagem se beneficia de fontes externas
+    if (precisaDeBusca(mensagem) && !imagem_base64 && !pdf_base64) {
+      const temaMedico = extrairTemaMedico(mensagem)
+
+      if (temaMedico) {
+        // 1. Verificar cache semântico primeiro (custo zero)
+        const cacheHit = buscarCacheSemantico(mensagem)
+
+        if (cacheHit.encontrado && cacheHit.resposta) {
+          // Cache hit: injetar contexto cacheado diretamente
+          contextoBusca = cacheHit.resposta
+          console.log(`[Pipeline] Cache semântico HIT - similaridade: ${((cacheHit.similaridade || 0) * 100).toFixed(0)}%`)
+        } else {
+          // 2. Busca via Serper (diretrizes brasileiras + fontes médicas)
+          try {
+            console.log(`[Pipeline] Buscando diretrizes brasileiras para: "${temaMedico}"`)
+            const resultadosBusca = await buscarWebMedica(temaMedico, 6)
+
+            if (resultadosBusca.success && resultadosBusca.resultados.length > 0) {
+              // 3. Comprimir com Gemini Flash (ultra-barato)
+              const contextoComprimido = await comprimirContexto(
+                resultadosBusca.resultados.map(r => ({
+                  titulo: r.titulo,
+                  url: r.url,
+                  snippet: r.snippet,
+                  ehDiretriz: r.ehDiretriz,
+                })),
+                temaMedico
+              )
+
+              if (contextoComprimido.resumo) {
+                contextoBusca = formatarContextoComprimido(contextoComprimido)
+                console.log(`[Pipeline] Compressão: ${contextoComprimido.tokensOriginais} → ${contextoComprimido.tokensComprimidos} tokens (${Math.round((1 - contextoComprimido.taxaCompressao) * 100)}% redução)`)
+                console.log(`[Pipeline] Fontes: ${contextoComprimido.fontes.filter(f => f.ehDiretriz).length} diretrizes, ${contextoComprimido.fontes.length} total`)
+
+                // 4. Salvar no cache semântico para próximas perguntas similares
+                salvarCacheSemantico(mensagem, contextoBusca, contextoComprimido.fontes.map(f => f.url))
+              }
+            }
+          } catch (buscaError) {
+            console.error('[Pipeline] Erro na busca web (continuando sem busca):', buscaError)
+          }
+        }
+
+        // Injetar contexto comprimido na mensagem do usuário
+        if (contextoBusca) {
+          mensagemParaIA = mensagem + '\n\n' + contextoBusca
+        }
+      }
+    }
+    // ========== FIM BUSCA WEB + COMPRESSÃO ==========
+
     // ========== ROTEAMENTO INTELIGENTE COM SMART ROUTER ==========
     // Analisar complexidade da mensagem para decidir modelo
     const complexityAnalysis = analisarComplexidade(mensagem, {
@@ -497,7 +560,7 @@ export async function POST(request: NextRequest) {
       console.log('[Smart Router] Usando Claude (funcionalidade exclusiva)')
       return await streamClaude({
         historico,
-        mensagem,
+        mensagem: mensagemParaIA,
         conversa_id: conversaAtual,
         user_id,
         plano,
@@ -514,7 +577,7 @@ export async function POST(request: NextRequest) {
     console.log('[Smart Router] Usando roteamento inteligente OpenAI')
     return await streamComSmartRouter({
       historico,
-      mensagem,
+      mensagem: mensagemParaIA,
       conversa_id: conversaAtual,
       user_id,
       plano,
