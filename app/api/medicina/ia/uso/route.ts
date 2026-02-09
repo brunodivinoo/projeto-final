@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { cachedResponse } from '@/lib/api-cache'
 import { PlanoIA, LIMITES_IA } from '@/lib/ai'
 
 const supabase = createClient(
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
     const mesAtual = new Date().toISOString().slice(0, 7)
     const { data: usoMes } = await supabase
       .from('uso_ia_med')
-      .select('*')
+      .select('chats_usados, resumos_usados, flashcards_usados, imagens_geradas, web_searches, pdfs_analisados, imagens_analisadas, tokens_input, tokens_output, custo_estimado')
       .eq('user_id', user_id)
       .eq('mes_referencia', mesAtual)
       .single()
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
     if (periodo === 'total') {
       const { data: usoTotal } = await supabase
         .from('uso_ia_med')
-        .select('*')
+        .select('mes_referencia, chats_usados, resumos_usados, flashcards_usados, imagens_geradas, tokens_input, tokens_output, custo_estimado')
         .eq('user_id', user_id)
         .order('mes_referencia', { ascending: false })
 
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user_id)
 
-    return NextResponse.json({
+    return cachedResponse({
       ...estatisticas,
       conteudo: {
         conversas: {
@@ -142,7 +143,7 @@ export async function GET(request: NextRequest) {
         }
       },
       mes_referencia: mesAtual
-    })
+    }, 'private-short')
   } catch (error) {
     console.error('Erro ao buscar estatísticas:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })

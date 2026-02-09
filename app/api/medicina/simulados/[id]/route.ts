@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { cachedResponse } from '@/lib/api-cache'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -23,10 +24,10 @@ export async function GET(
       )
     }
 
-    // Buscar simulado
+    // Buscar simulado primeiro (precisamos dos questoes_ids)
     const { data: simulado, error: simuladoError } = await supabase
       .from('simulados_med')
-      .select('*')
+      .select('id, nome, tipo, status, questoes_ids, total_questoes, questoes_respondidas, acertos, tempo_limite_minutos, tempo_gasto_segundos, nota, data_inicio, finalizado_em, created_at')
       .eq('id', id)
       .eq('user_id', userId)
       .single()
@@ -38,22 +39,22 @@ export async function GET(
       )
     }
 
-    // Buscar respostas do simulado
-    const { data: respostas } = await supabase
-      .from('simulado_respostas_med')
-      .select('*')
-      .eq('simulado_id', id)
-      .order('ordem')
-
-    // Buscar questões
-    const { data: questoes } = await supabase
-      .from('questoes_med')
-      .select(`
-        *,
-        disciplina:disciplinas_med(id, nome),
-        assunto:assuntos_med(id, nome)
-      `)
-      .in('id', simulado.questoes_ids)
+    // Buscar respostas E questoes em PARALELO (ambas dependem só do id/questoes_ids)
+    const [{ data: respostas }, { data: questoes }] = await Promise.all([
+      supabase
+        .from('simulado_respostas_med')
+        .select('questao_id, resposta, acertou, tempo_segundos, ordem')
+        .eq('simulado_id', id)
+        .order('ordem'),
+      supabase
+        .from('questoes_med')
+        .select(`
+          id, enunciado, alternativas, gabarito, explicacao, dificuldade, ano, banca, periodo_dificuldade,
+          disciplina:disciplinas_med(id, nome),
+          assunto:assuntos_med(id, nome)
+        `)
+        .in('id', simulado.questoes_ids)
+    ])
 
     // Ordenar questões conforme ordem do simulado
     const questoesOrdenadas = simulado.questoes_ids.map((qId: string) =>
@@ -102,13 +103,20 @@ export async function POST(
       )
     }
 
-    // Verificar se o simulado pertence ao usuário
-    const { data: simulado } = await supabase
-      .from('simulados_med')
-      .select('id, status')
-      .eq('id', id)
-      .eq('user_id', userId)
-      .single()
+    // Buscar simulado + gabarito em PARALELO
+    const [{ data: simulado }, { data: questao }] = await Promise.all([
+      supabase
+        .from('simulados_med')
+        .select('id, status')
+        .eq('id', id)
+        .eq('user_id', userId)
+        .single(),
+      supabase
+        .from('questoes_med')
+        .select('gabarito')
+        .eq('id', questaoId)
+        .single()
+    ])
 
     if (!simulado) {
       return NextResponse.json(
@@ -123,13 +131,6 @@ export async function POST(
         { status: 400 }
       )
     }
-
-    // Buscar gabarito
-    const { data: questao } = await supabase
-      .from('questoes_med')
-      .select('gabarito')
-      .eq('id', questaoId)
-      .single()
 
     if (!questao) {
       return NextResponse.json(

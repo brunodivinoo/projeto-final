@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import Image from 'next/image'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface Comentario {
@@ -413,8 +414,7 @@ export function ComentariosTab({ questaoId }: ComentariosTabProps) {
         <div className="flex gap-3">
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             {comentario.profiles?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={comentario.profiles.avatar_url} alt="" className="w-8 h-8 rounded-full" />
+              <Image src={comentario.profiles.avatar_url} alt="" width={32} height={32} className="w-8 h-8 rounded-full" />
             ) : (
               <span className="text-primary text-sm font-bold">
                 {comentario.profiles?.nome?.charAt(0)?.toUpperCase() || 'U'}

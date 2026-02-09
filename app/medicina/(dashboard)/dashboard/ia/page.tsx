@@ -34,12 +34,12 @@ import {
   Check,
   FolderOpen,
 } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import ArtifactRenderer, { type PlanoUsuario } from '@/components/ia/ArtifactRenderer'
-import ArtifactsSidebar from '@/components/ia/ArtifactsSidebar'
 import { useSmartScroll } from '@/hooks/useSmartScroll'
+import { useIAData, type Conversa, type UsoIA } from '@/hooks/useIAData'
 import { useArtifactsStore, type ChatModeType } from '@/stores/artifactsStore'
 import { VoiceButton } from '@/components/medicina/VoiceButton'
-import { ExamAnalyzerModal } from '@/components/medicina/ExamAnalyzer'
 import { ChatModeSelector, ChatModeIntro, useChatMode, type ChatMode } from '@/components/medicina/ChatModes'
 import { useChatModeStore, ChatMode as StoreChatMode, MODE_CONFIG } from '@/lib/stores/chatModeStore'
 import { useConversaStore, type Conversa as StoreConversa } from '@/lib/stores/conversaStore'
@@ -47,15 +47,21 @@ import { ModeSelector, ModeIndicator } from '@/components/chat/ModeSelector'
 import { QuestaoDetector, extrairQuestoes } from '@/components/chat/QuestaoDetector'
 import { type QuestaoData } from '@/components/chat/QuestaoInterativa'
 import { useSessoesIA } from '@/hooks/useSessoesIA'
-import { SimulacaoConfig, gerarPromptSimulacao, type SimulacaoConfigData } from '@/components/chat/SimulacaoConfig'
-import { IndicadorProgresso, FichaDrawer, type DadosFicha, DADOS_FICHA_VAZIO } from '@/components/chat/FichaAnamnese'
+import { gerarPromptSimulacao, type SimulacaoConfigData } from '@/components/chat/SimulacaoConfig'
+import { IndicadorProgresso, type DadosFicha, DADOS_FICHA_VAZIO } from '@/components/chat/FichaAnamnese'
 import { ImagePreview } from '@/components/chat/ImagePreview'
 import {
   MobileChatInput
 } from '@/components/mobile'
-import { MobileArtifactsScreen } from '@/components/mobile/MobileArtifactsScreen'
 import MessageActions from '@/components/chat/MessageActions'
 import SuggestionChips from '@/components/chat/SuggestionChips'
+
+// Lazy-loaded components (carregados sob demanda para reduzir bundle inicial)
+const ArtifactsSidebar = dynamic(() => import('@/components/ia/ArtifactsSidebar'), { ssr: false })
+const ExamAnalyzerModal = dynamic(() => import('@/components/medicina/ExamAnalyzer').then(m => ({ default: m.ExamAnalyzerModal })), { ssr: false })
+const SimulacaoConfig = dynamic(() => import('@/components/chat/SimulacaoConfig').then(m => ({ default: m.SimulacaoConfig })), { ssr: false })
+const FichaDrawer = dynamic(() => import('@/components/chat/FichaAnamnese').then(m => ({ default: m.FichaDrawer })), { ssr: false })
+const MobileArtifactsScreen = dynamic(() => import('@/components/mobile/MobileArtifactsScreen').then(m => ({ default: m.MobileArtifactsScreen })), { ssr: false })
 
 // Hook para obter o estado da sidebar de artefatos
 // Considera artefatos filtrados pelo modo atual e conversa
@@ -105,39 +111,7 @@ interface Mensagem {
   imagemGerada?: ImagemGerada
 }
 
-interface Conversa {
-  id: string
-  titulo: string
-  modelo: string
-  tokens_usados: number
-  created_at: string
-  updated_at: string
-}
-
-interface UsoIA {
-  plano: string
-  uso_mes: {
-    chats: number
-    resumos: number
-    flashcards: number
-    imagens: number
-    web_searches: number
-    pdfs: number
-    imagens_analisadas: number
-    tokens_input: number
-    tokens_output: number
-  }
-  limites: {
-    chats: number
-    resumos: number
-    flashcards: number
-    imagens: number
-    web_search: boolean
-    vision: boolean
-    pdf_support: boolean
-    extended_thinking: boolean
-  }
-}
+// Interfaces Conversa e UsoIA agora vem de @/hooks/useIAData
 
 // Componente memoizado para mensagens individuais
 // Evita re-render de mensagens antigas durante streaming
@@ -318,14 +292,10 @@ export default function IAPage() {
   const [mensagemInicialProcessada, setMensagemInicialProcessada] = useState(false)
   const [loading, setLoading] = useState(false)
   const [streaming, setStreaming] = useState(false)
-  const [conversas, setConversas] = useState<Conversa[]>([])
   const [conversaAtual, setConversaAtual] = useState<string | null>(null)
   const [carregandoConversa, setCarregandoConversa] = useState(false) // Loading ao abrir conversa
   const [showConversas, setShowConversas] = useState(false) // Agora usado apenas no mobile
-  // Estado removido - opcoes avancadas agora sempre visiveis para plano Residencia
-  // const [showOpcoes, setShowOpcoes] = useState(false)
   const [copiado, setCopiado] = useState<string | null>(null)
-  const [uso, setUso] = useState<UsoIA | null>(null)
 
   // Opções avançadas
   const [useWebSearch, setUseWebSearch] = useState(true) // Habilitado por padrão
@@ -351,6 +321,17 @@ export default function IAPage() {
 
   // Modo de chat (Chat Livre, Caso Clínico, Tutor, Questões)
   const { modo: chatMode, trocarModo: trocarModoBase, mostrarIntro, iniciarModo, getSystemPrompt } = useChatMode()
+
+  // Hook consolidado de data fetching (uso, conversas, sugestoes)
+  const {
+    uso,
+    conversas,
+    setConversas,
+    sugestoesInteligentes,
+    fetchUso,
+    fetchConversas,
+    fetchSugestoes
+  } = useIAData({ userId: user?.id, chatMode, setConversations })
 
   // Hook de sessões para integração com APIs
   const {
@@ -402,20 +383,6 @@ export default function IAPage() {
   const [menuConversaAberto, setMenuConversaAberto] = useState<string | null>(null)
   const [conversaRenomeando, setConversaRenomeando] = useState<string | null>(null)
   const [novoTituloConversa, setNovoTituloConversa] = useState('')
-
-  // Estado para sugestões inteligentes
-  interface SugestaoInteligente {
-    type: 'topic' | 'action' | 'review'
-    text: string
-    fullPrompt: string
-    icon: string
-    priority: number
-  }
-  const [sugestoesInteligentes, setSugestoesInteligentes] = useState<{
-    topics: SugestaoInteligente[]
-    actions: SugestaoInteligente[]
-    reviews: SugestaoInteligente[]
-  }>({ topics: [], actions: [], reviews: [] })
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -502,46 +469,6 @@ export default function IAPage() {
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
-
-  // Buscar uso
-  const fetchUso = useCallback(async () => {
-    if (!user) return
-    try {
-      const response = await fetch(`/api/medicina/ia/uso?user_id=${user.id}`)
-      const data = await response.json()
-      setUso(data)
-    } catch (error) {
-      console.error('Erro ao buscar uso:', error)
-    }
-  }, [user])
-
-  // Buscar sugestões inteligentes
-  const fetchSugestoes = useCallback(async () => {
-    if (!user) return
-    try {
-      const response = await fetch(`/api/medicina/ia/sugestoes?user_id=${user.id}`)
-      const data = await response.json()
-      if (data.success && data.sugestoes) {
-        setSugestoesInteligentes(data.sugestoes)
-      }
-    } catch (error) {
-      console.error('Erro ao buscar sugestões:', error)
-    }
-  }, [user])
-
-  // Buscar conversas filtradas por modo
-  const fetchConversas = useCallback(async () => {
-    if (!user) return
-    try {
-      const response = await fetch(`/api/medicina/ia/chat?user_id=${user.id}&modo=${chatMode}`)
-      const data = await response.json()
-      setConversas(data.conversas || [])
-      // Atualizar cache na store
-      setConversations(chatMode as StoreChatMode, data.conversas || [])
-    } catch (error) {
-      console.error('Erro ao buscar conversas:', error)
-    }
-  }, [user, chatMode, setConversations])
 
   // Carregar conversa específica
   const carregarConversa = useCallback(async (conversaId: string) => {
@@ -635,11 +562,7 @@ export default function IAPage() {
     setShowConversas(false)
   }, [user, clearArtifacts, setCurrentConversa, chatMode, setActiveConversation])
 
-  useEffect(() => {
-    fetchUso()
-    fetchConversas()
-    fetchSugestoes()
-  }, [fetchUso, fetchConversas, fetchSugestoes])
+  // Fetch inicial agora é feito dentro do hook useIAData
 
   // Ref para controlar se a mensagem inicial foi enviada
   const mensagemInicialEnviadaRef = useRef(false)

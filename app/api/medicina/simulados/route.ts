@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { cachedResponse } from '@/lib/api-cache'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('simulados_med')
-      .select('*', { count: 'exact' })
+      .select('id, nome, tipo, status, total_questoes, questoes_respondidas, acertos, tempo_limite_minutos, tempo_gasto_segundos, nota, created_at, finalizado_em', { count: 'exact' })
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
@@ -38,10 +39,10 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error
 
-    return NextResponse.json({
+    return cachedResponse({
       simulados: simulados || [],
       total: count || 0
-    })
+    }, 'private-short')
 
   } catch (error) {
     console.error('Erro ao buscar simulados:', error)
@@ -77,20 +78,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar limite de simulados
+    // Verificar limite de simulados (queries em paralelo)
     const mesRef = new Date().toISOString().slice(0, 7)
-    const { data: limiteData } = await supabase
-      .from('limites_uso_med')
-      .select('simulados_mes')
-      .eq('user_id', userId)
-      .eq('mes_referencia', mesRef)
-      .single()
-
-    const { data: profile } = await supabase
-      .from('profiles_med')
-      .select('plano')
-      .eq('id', userId)
-      .single()
+    const [{ data: limiteData }, { data: profile }] = await Promise.all([
+      supabase
+        .from('limites_uso_med')
+        .select('simulados_mes')
+        .eq('user_id', userId)
+        .eq('mes_referencia', mesRef)
+        .single(),
+      supabase
+        .from('profiles_med')
+        .select('plano')
+        .eq('id', userId)
+        .single()
+    ])
 
     const plano = profile?.plano || 'gratuito'
     const limites: Record<string, number> = {
@@ -178,27 +180,27 @@ export async function POST(request: NextRequest) {
 
     if (simuladoError) throw simuladoError
 
-    // Criar registros de resposta vazios
+    // Criar registros de resposta + atualizar contador (em paralelo)
     const respostasIniciais = questoesIds.map((questaoId, index) => ({
       simulado_id: simulado.id,
       questao_id: questaoId,
       ordem: index + 1
     }))
 
-    await supabase
-      .from('simulado_respostas_med')
-      .insert(respostasIniciais)
-
-    // Atualizar contador de simulados do mês
-    await supabase
-      .from('limites_uso_med')
-      .upsert({
-        user_id: userId,
-        mes_referencia: mesRef,
-        simulados_mes: usados + 1
-      }, {
-        onConflict: 'user_id,mes_referencia'
-      })
+    await Promise.all([
+      supabase
+        .from('simulado_respostas_med')
+        .insert(respostasIniciais),
+      supabase
+        .from('limites_uso_med')
+        .upsert({
+          user_id: userId,
+          mes_referencia: mesRef,
+          simulados_mes: usados + 1
+        }, {
+          onConflict: 'user_id,mes_referencia'
+        })
+    ])
 
     return NextResponse.json({ simulado })
 

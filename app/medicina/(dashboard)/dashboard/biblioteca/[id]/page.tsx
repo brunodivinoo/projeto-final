@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useMedAuth } from '@/contexts/MedAuthContext'
@@ -310,7 +311,7 @@ export default function TeoriaPage() {
       case 'imagem':
         return (
           <figure key={index} className="mb-6">
-            <img src={bloco.url} alt={bloco.legenda || ''} className="rounded-lg max-w-full" />
+            {bloco.url && <Image src={bloco.url} alt={bloco.legenda || ''} width={800} height={450} className="rounded-lg max-w-full h-auto" />}
             {bloco.legenda && (
               <figcaption className="text-slate-500 text-sm mt-2 text-center">{bloco.legenda}</figcaption>
             )}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { cachedResponse } from '@/lib/api-cache'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -135,10 +136,10 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error
 
-    return NextResponse.json({
+    return cachedResponse({
       questoes: questoes || [],
       total: count || 0
-    })
+    }, 'public-short')
 
   } catch (error) {
     console.error('Erro ao buscar questões:', error)

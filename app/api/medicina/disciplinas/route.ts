@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { cachedResponse } from '@/lib/api-cache'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Erro ao buscar disciplinas' }, { status: 500 })
       }
 
-      return NextResponse.json(data)
+      return cachedResponse(data, 'public-long')
     }
 
     if (tipo === 'assuntos') {
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Erro ao buscar assuntos' }, { status: 500 })
       }
 
-      return NextResponse.json(data)
+      return cachedResponse(data, 'public-long')
     }
 
     if (tipo === 'subassuntos') {
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Erro ao buscar subassuntos' }, { status: 500 })
       }
 
-      return NextResponse.json(data)
+      return cachedResponse(data, 'public-long')
     }
 
     return NextResponse.json({ error: 'Tipo inválido' }, { status: 400 })
