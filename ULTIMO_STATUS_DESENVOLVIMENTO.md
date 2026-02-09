@@ -1,87 +1,91 @@
 # ULTIMO STATUS - PREPARA MED
-## Atualizado em: 09/02/2026 - OTIMIZACOES DE PERFORMANCE (a-i)
+## Atualizado em: 09/02/2026 - OTIMIZACOES COMPLETAS (a-m) + FIX BUG CONVERSA
 
 ---
 
-## SITUACAO ATUAL - PRODUCAO ESTAVEL + OTIMIZADO
+## SITUACAO ATUAL - PRODUCAO ESTAVEL + TOTALMENTE OTIMIZADO
 
 ### Status
-- **Deploy em producao** - Commit `92d13b5` (merge PR #114) no main
-- **Build Vercel READY** - Deploy `dpl_2BDQFKew` completo
-- **9 otimizacoes de performance implementadas**
-- **21 arquivos modificados, +430/-220 linhas**
+- **Deploy em producao** - Commit `5237c4a3` (merge) no main
+- **Todas 13 otimizacoes implementadas** (a-m)
+- **Bug de carregamento de conversa CORRIGIDO**
+- **59 arquivos modificados total nas 2 sessoes**
 
 ---
 
-## O QUE FOI FEITO NESTA SESSAO (09/02/2026 - Performance)
+## O QUE FOI FEITO NESTA SESSAO (09/02/2026 - Performance j-m + Bug Fix)
 
-### Otimizacoes Implementadas (a-i)
+### Otimizacoes Implementadas (j-m)
 
 | Item | Otimizacao | Detalhes |
 |------|-----------|----------|
-| **(a)** | next.config.ts completo | compress, reactStrictMode, optimizePackageImports (10 libs), image formats AVIF/WebP, security headers (4), cache headers assets |
-| **(b)** | img → next/image | BadgeDisplay.tsx, ComentariosTab.tsx, biblioteca/[id]/page.tsx |
-| **(c)** | Cache headers API | 5 estrategias (public-short/long, private-short/medium, no-cache) em 8 rotas |
-| **(d)** | select('*') → campos especificos | 8 rotas API otimizadas (uso, simulados, chat, categorias, perfil, etc) |
-| **(e)** | Hook useIAData extraido | Consolidou 3 fetches (uso, conversas, sugestoes) + estados da pagina IA |
-| **(f)** | ArtifactRenderer | Ja usava dynamic imports - nao precisou alterar |
-| **(g)** | Lazy loading next/dynamic | 6 componentes: ArtifactsSidebar, ExamAnalyzerModal, SimulacaoConfig, FichaDrawer, MobileArtifactsScreen, FlashcardSystem |
-| **(h)** | Promise.all paralelo | 4 rotas API: perfil (3 queries), simulados POST (2+2), simulados/[id] GET (2), simulados/[id] POST (2) |
-| **(i)** | Server Components | Removido 'use client' de /privacidade e /termos |
+| **(j)** | React.memo em 32 componentes | Cards, diagramas, chat, layout, simulados, XP, notificacoes |
+| **(k)** | Acessibilidade | aria-labels, roles, aria-expanded, aria-haspopup no header, sidebar, layout principal, chat input |
+| **(l)** | useMemo nos contexts | EstudoContext, ResumosContext, SimuladoGeracaoContext - evita re-renders |
+| **(m)** | next/font Inter | Auto-hosted, display swap, eliminacao de CLS, dns-prefetch Supabase |
+
+### Bug Corrigido
+
+**Conversa nao carrega ao voltar pelo historico**
+- **Causa**: Item (d) otimizou select na query de mensagens com colunas que NAO EXISTEM na tabela (`modelo, tokens_input, tokens_output, artifacts`)
+- **Tabela real**: `id, conversa_id, role, content, tokens, has_image, has_pdf, image_url, pdf_url, created_at, sessao_id`
+- **Fix**: Corrigida query para usar colunas reais da tabela
+- **Arquivo**: `app/api/medicina/ia/chat/route.ts` linha 2359
 
 ---
 
-## ARQUIVOS MODIFICADOS (21 arquivos)
+## ARQUIVOS MODIFICADOS (38 arquivos nesta sessao)
 
-### Novos
+### React.memo (32 componentes)
 ```
-lib/api-cache.ts                    # Helper de cache com 5 estrategias
-hooks/useIAData.ts                  # Hook extraido da pagina IA
-```
-
-### Modificados - Config
-```
-next.config.ts                      # Reescrito completo (estava vazio)
-```
-
-### Modificados - API Routes (cache + select + Promise.all)
-```
-app/api/medicina/auth/perfil/route.ts          # Promise.all + cache + select
-app/api/medicina/disciplinas/route.ts          # cache public-long
-app/api/medicina/questoes/route.ts             # cache public-short
-app/api/medicina/flashcards/route.ts           # cache private-short
-app/api/medicina/simulados/route.ts            # Promise.all + cache + select
-app/api/medicina/simulados/[id]/route.ts       # Promise.all + select
-app/api/medicina/teorias/route.ts              # cache public-short
-app/api/medicina/ia/uso/route.ts               # cache + select
-app/api/medicina/ia/chat/route.ts              # select especifico
-app/api/medicina/ia/categorias/route.ts        # cache + select
-app/api/medicina/ia/sugestoes/route.ts         # cache private-medium
+components/questoes/QuestaoCard.tsx
+components/ia/QuestaoIACard.tsx, SimuladoCard.tsx, MermaidDiagram.tsx
+components/ia/InteractiveDiagram.tsx, LayeredDiagram.tsx, ModernFlowchart.tsx
+components/ia/TreeDiagram.tsx, StagingTable.tsx, QuestionArtifactCard.tsx
+components/ia/ImageGenerator.tsx, FlashcardDeck.tsx, CitationTooltip.tsx
+components/ia/ResumosFloatingButton.tsx
+components/chat/ChatInput.tsx, MessageActions.tsx, SuggestionChips.tsx
+components/chat/QuestaoDetector.tsx, ImagePreview.tsx
+components/estudo/CardRevisao.tsx, TimerWidget.tsx
+components/simulados/ListaSimulados.tsx, EstatisticasSimulados.tsx
+components/simulados/GeracaoSimuladoProgress.tsx
+components/xp/XPIndicator.tsx, XPGainToast.tsx
+components/limits/LimitsIndicator.tsx
+components/notifications/NotificationBell.tsx
+components/ui/BackgroundTaskToast.tsx, MarkdownText.tsx
+components/layout/Header.tsx, Sidebar.tsx
 ```
 
-### Modificados - Componentes
+### Acessibilidade + Layout
 ```
-components/medicina/BadgeDisplay.tsx            # img → next/image
-components/questoes/ComentariosTab.tsx          # img → next/image
-app/medicina/(dashboard)/dashboard/biblioteca/[id]/page.tsx  # img → next/image
-app/medicina/(dashboard)/dashboard/ia/page.tsx               # useIAData + dynamic imports
-app/medicina/(dashboard)/dashboard/flashcards/page.tsx       # dynamic import
+app/medicina/(dashboard)/layout.tsx        # aria-labels, roles, skip-to-content
+components/layout/Header.tsx               # aria-labels em botoes e menus
+components/layout/Sidebar.tsx              # role navigation, aria-labels
+components/chat/ChatInput.tsx              # aria-label no textarea e enviar
 ```
 
-### Modificados - Pages (Server Components)
+### Contexts (useMemo)
 ```
-app/privacidade/page.tsx            # Removido 'use client'
-app/termos/page.tsx                 # Removido 'use client'
+contexts/EstudoContext.tsx
+contexts/ResumosContext.tsx
+contexts/SimuladoGeracaoContext.tsx
+```
+
+### next/font + Bug fix
+```
+app/layout.tsx                             # Inter via next/font, dns-prefetch Supabase
+app/api/medicina/ia/chat/route.ts          # Fix colunas invalidas na query mensagens
 ```
 
 ---
 
-## COMMITS DESTA SESSAO
+## COMMITS
 
 | Hash | Descricao | Status |
 |------|-----------|--------|
 | `0df4d44` | perf: otimizacoes de performance (a-i) | Mergeado (PR #114) |
-| `92d13b5` | Merge pull request #114 | Deploy READY |
+| `23ab00b` | perf: otimizacoes j-m + fix bug carregamento conversa | Mergeado |
+| `5237c4a3` | merge para main | Deploy |
 
 ---
 
@@ -90,65 +94,49 @@ app/termos/page.tsx                 # Removido 'use client'
 | Item | Status |
 |------|--------|
 | Site em producao | https://projeto-final-zeta-navy.vercel.app |
-| **Performance Otimizada** | **9 ITENS IMPLEMENTADOS** |
+| **Performance Otimizada** | **13 ITENS IMPLEMENTADOS (a-m)** |
+| **Bug Conversa** | **CORRIGIDO** |
 | **Autenticacao** | CORRIGIDO DEFINITIVAMENTE |
 | **Loading Infinito** | CORRIGIDO DEFINITIVAMENTE |
-| **F5/Refresh** | CORRIGIDO DEFINITIVAMENTE |
-| **Troca de Aba** | CORRIGIDO DEFINITIVAMENTE |
 | Diagramas Mobile | CORRIGIDO |
-| Memoria Persistente no Prompt | ATIVO |
-| Diagramas com IA Real | ATIVO |
-| Multi-Agentes na API /chat | INTEGRADO |
+| Multi-Agentes | INTEGRADO |
 | Gabarito Comentado | ATIVO |
 | TTS Kokoro | ATIVO |
 | Sugestoes Contextuais | ATIVO |
-| Fallback Multi-Provider | ATIVO |
 | Smart Router | ATIVO |
-| Streaming Multi-Agentes | ATIVO |
+| Streaming | ATIVO |
 
 ---
 
-## PROXIMOS PASSOS (Otimizacoes Restantes j-m)
+## PROXIMOS PASSOS
 
-1. **(j)** React.memo nos 40+ componentes pesados (listas, cards, modais)
-2. **(k)** Melhorias de acessibilidade (aria-labels, roles, keyboard navigation)
-3. **(l)** Agrupar estados dos contexts (evitar re-renders por state individual)
-4. **(m)** Otimizacao de fontes com next/font
-5. Monitorar metricas de performance em producao
+1. Monitorar metricas de performance em producao (Core Web Vitals)
+2. Testar carregamento de conversas em todos os cenarios
+3. Novas funcionalidades conforme necessidade
 
 ---
 
 ## SESSOES ANTERIORES
 
-### Sessao Performance (09/02/2026) - ESTA SESSAO
-- 9 otimizacoes de performance (a-i)
+### Sessao Performance j-m + Bug Fix (09/02/2026) - ESTA SESSAO
+- React.memo em 32 componentes
+- Acessibilidade no layout principal
+- useMemo em 3 contexts
+- next/font Inter
+- Fix bug critico: conversa nao carregava mensagens
+
+### Sessao Performance a-i (09/02/2026)
+- 9 otimizacoes: next.config, next/image, cache, select, hooks, lazy loading, Promise.all, Server Components
 - 21 arquivos, +430/-220 linhas
-- PR #114 mergeado, deploy READY
 
 ### Sessao Reconstrucao Auth (09/02/2026)
-- Identificacao de 5 defeitos estruturais ocultos
-- Reconstrucao completa do MedAuthContext.tsx
-- Auth 100% funcional em todos os cenarios
+- 5 defeitos estruturais identificados e corrigidos
+- Auth 100% funcional
 
-### Sessao Correcoes Arquiteturais (07/02/2026)
-- 3 iteracoes de debugging (8db62e2, a5ded85, c672296)
-- Desacoplamento + timeout (parcialmente eficaz)
-
-### Sessoes 07-08/02/2026 (PRs #106 a #113)
-- Lock atomico, simplificacao, remocao getSession hang
-- Timeout 40s + cache - band-aids que nao resolveram
-
-### Sessao Streaming + Mermaid Cleanup (06/02/2026)
-- Fix streaming multi-agentes
-- Fix codigo Mermaid cru no chat
-
-### Sessao Memoria + Diagramas + Sidebar (06/02/2026)
-- Memoria persistente no prompt
-- Diagramas com IA real
-
-### Sessao Gabarito + TTS + Sugestoes (06/02/2026)
-- Gabarito comentado completo
-- TTS Kokoro via HuggingFace
+### Sessoes anteriores (06-08/02/2026)
+- Streaming multi-agentes, Mermaid, memoria persistente
+- Diagramas com IA real, gabarito, TTS Kokoro
+- Correcoes arquiteturais de auth
 
 ---
 
@@ -162,4 +150,4 @@ app/termos/page.tsx                 # Removido 'use client'
 
 ---
 
-**Ultima Atualizacao**: 09/02/2026 - Performance otimizada (a-i), deploy em producao
+**Ultima Atualizacao**: 09/02/2026 - Performance completa (a-m) + bug fix conversa
