@@ -670,8 +670,10 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
           setUser(session.user)
           setLoading(false)
 
-          // 🔧 FIX: Se o evento é SIGNED_IN (refresh/F5), forçar fetchProfile
-          const forceRefresh = event === 'SIGNED_IN'
+          // 📦 CACHE: Nunca forçar refresh no onAuthStateChange
+          // Se precisar refresh manual, usar refreshProfile() explicitamente
+          // Isso permite o cache funcionar em F5 e troca de aba
+          const forceRefresh = false
           console.log('[Auth] 🔍 Evento:', event, '→ forceRefresh:', forceRefresh)
           console.log('[Auth] 🔍 lastFetchedUserIdRef:', lastFetchedUserIdRef.current)
           console.log('[Auth] 🔍 Condição:', session.user.id !== lastFetchedUserIdRef.current || forceRefresh)
