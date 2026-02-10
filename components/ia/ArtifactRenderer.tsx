@@ -3035,7 +3035,7 @@ function ArtifactRendererComponent({
                 )
               }
               // Limpar e renderizar texto
-              let cleaned = cleanRenderedTextForChat(seg.content)
+              const cleaned = cleanRenderedTextForChat(seg.content)
               if (!cleaned.trim()) return null
               return (
                 <ReactMarkdown key={`text-${index}-${segIdx}`} remarkPlugins={[remarkGfm]}>

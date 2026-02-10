@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
       modality: string; license: string; referenciaABNT: string;
     }> = []
     const urlsVistas = new Set<string>()
-    let queryUsada = queries[0]
+    const queryUsada = queries[0]
 
     // 1. Buscar via Serper (Google Images) - fonte primária com muitas imagens
     for (const query of queries.slice(0, 5)) {
