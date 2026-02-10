@@ -130,6 +130,7 @@ interface MemoizedMessageProps {
   isLastIAMessage?: boolean
   onRetry?: () => void
   onSuggestionClick?: (suggestion: string) => void
+  mensagens?: Mensagem[]
 }
 
 const MemoizedMessage = memo(function MemoizedMessage({
@@ -146,7 +147,8 @@ const MemoizedMessage = memo(function MemoizedMessage({
   questoesRespondidas = new Set(),
   isLastIAMessage = false,
   onRetry,
-  onSuggestionClick
+  onSuggestionClick,
+  mensagens: allMensagens
 }: MemoizedMessageProps) {
   // Verificar se a mensagem contém questões
   const temQuestao = msg.tipo === 'ia' && chatMode === 'questoes' && msg.conteudo?.includes('```questao')
@@ -262,6 +264,7 @@ const MemoizedMessage = memo(function MemoizedMessage({
                 lastMessage={msg.conteudo}
                 chatMode={chatMode}
                 onSuggestionClick={onSuggestionClick}
+                mensagens={allMensagens}
               />
             )}
           </>
@@ -280,7 +283,8 @@ const MemoizedMessage = memo(function MemoizedMessage({
          prevProps.msg.conteudo === nextProps.msg.conteudo &&
          prevProps.copiado === nextProps.copiado &&
          prevProps.streaming === nextProps.streaming &&
-         prevProps.isLastIAMessage === nextProps.isLastIAMessage
+         prevProps.isLastIAMessage === nextProps.isLastIAMessage &&
+         prevProps.mensagens?.length === nextProps.mensagens?.length
 })
 
 export default function IAPage() {
@@ -1933,6 +1937,7 @@ export default function IAPage() {
                   onQuestaoResponder={handleQuestaoResponder}
                   questoesRespondidas={questoesRespondidas}
                   isLastIAMessage={idx === lastIAIdx && !streaming}
+                  mensagens={idx === lastIAIdx ? mensagens : undefined}
                   onRetry={msg.tipo === 'ia' ? () => {
                     // Encontrar a mensagem do usuário anterior
                     const userMsgIdx = mensagens.slice(0, idx).reverse().findIndex(m => m.tipo === 'usuario')
