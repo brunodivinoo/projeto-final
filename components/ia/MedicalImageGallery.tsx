@@ -383,9 +383,8 @@ function MedicalImageGalleryComponent({ searchTerms, userId, excludeUrls }: Medi
         if (!response.ok) {
           if (data.upgrade) {
             setNeedsUpgrade(true)
-          } else {
-            setError(data.error || 'Erro ao buscar imagens')
           }
+          // Silenciosamente não mostrar nada ao invés de exibir erro
           return
         }
 
@@ -408,7 +407,7 @@ function MedicalImageGalleryComponent({ searchTerms, userId, excludeUrls }: Medi
         })
       } catch (err) {
         console.error('Erro ao buscar imagens:', err)
-        setError('Erro de conexão')
+        // Silenciosamente não mostrar nada ao invés de exibir erro
       } finally {
         setLoading(false)
       }
@@ -458,63 +457,14 @@ function MedicalImageGalleryComponent({ searchTerms, userId, excludeUrls }: Medi
     )
   }
 
-  // Error state
+  // Error state - silenciosamente esconder (nunca mostrar erro ao usuário)
   if (error) {
-    return (
-      <div className="my-4 p-3 bg-red-500/10 rounded-lg border border-red-500/20">
-        <p className="text-red-400 text-sm">{error}</p>
-      </div>
-    )
+    return null
   }
 
-  // No images found - mostrar feedback útil
+  // No images found - silenciosamente esconder
   if (images.length === 0 && searchInfo.searched) {
-    return (
-      <div className="my-4 p-4 bg-amber-500/5 rounded-xl border border-amber-500/20">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-            <Search className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="flex-1">
-            <h4 className="text-slate-700 font-medium text-sm">
-              Imagem não encontrada
-            </h4>
-            <p className="text-slate-500 text-xs mt-1">
-              Não encontramos imagens médicas para os termos buscados.
-            </p>
-
-            {/* Mostrar o que foi buscado */}
-            {searchInfo.queryUsed && (
-              <p className="text-slate-500 text-xs mt-2">
-                Termo buscado: <span className="text-slate-600">{searchInfo.queryUsed}</span>
-              </p>
-            )}
-
-            {/* Sugestões */}
-            {searchInfo.suggestions && searchInfo.suggestions.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-slate-200">
-                <p className="text-amber-400/80 text-xs font-medium mb-1">Sugestões:</p>
-                <ul className="space-y-1">
-                  {searchInfo.suggestions.map((suggestion, i) => (
-                    <li key={i} className="text-slate-500 text-xs flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3 text-amber-400/60" />
-                      {suggestion}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Dicas gerais */}
-            <div className="mt-3 pt-3 border-t border-slate-200">
-              <p className="text-slate-500 text-xs">
-                Dica: Use termos em inglês como &quot;chest xray pneumonia&quot; ou &quot;ct scan liver&quot; para melhores resultados.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return null
   }
 
   // Não pesquisou ainda ou não tem termos
@@ -522,25 +472,9 @@ function MedicalImageGalleryComponent({ searchTerms, userId, excludeUrls }: Medi
     return null
   }
 
-  // Se todas as imagens falharam
+  // Se todas as imagens falharam, não mostrar nada (sem erro visível)
   if (validImages.length === 0 && images.length > 0) {
-    return (
-      <div className="my-4 p-4 bg-amber-500/5 rounded-xl border border-amber-500/20">
-        <div className="flex items-center gap-3">
-          <ImageOff className="w-5 h-5 text-amber-400" />
-          <p className="text-slate-600 text-sm">
-            As imagens não puderam ser carregadas. Tente novamente mais tarde.
-          </p>
-          <button
-            onClick={() => setFailedImages(new Set())}
-            className="ml-auto flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
-          >
-            <RefreshCw className="w-3 h-3" />
-            Tentar novamente
-          </button>
-        </div>
-      </div>
-    )
+    return null
   }
 
   return (
