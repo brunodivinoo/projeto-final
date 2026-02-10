@@ -1391,12 +1391,10 @@ function isCompleteQuestionJson(jsonStr: string): boolean {
   try {
     const parsed = JSON.parse(jsonStr.trim())
     // Verifica se tem os campos mínimos de uma questão
-    // Aceita tanto 'enunciado' quanto 'pergunta' como campo de texto da questão
-    const enunciadoText = parsed.enunciado || parsed.pergunta || ''
-    const hasEnunciado = !!(enunciadoText && enunciadoText.length > 10)
+    const hasEnunciado = !!(parsed.enunciado && parsed.enunciado.length > 10)
     // Aceita 2+ alternativas (pode ser C/E com só 2, ou questão ainda gerando)
     const hasAlternativas = !!(parsed.alternativas && Array.isArray(parsed.alternativas) && parsed.alternativas.length >= 2)
-    const hasGabarito = !!(parsed.gabarito || parsed.gabarito_comentado || parsed.resposta_correta)
+    const hasGabarito = !!(parsed.gabarito || parsed.gabarito_comentado)
 
     // Se temos enunciado + alternativas (2+), considera completo
     // Gabarito não é obrigatório para renderizar o card
@@ -1643,8 +1641,8 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
   // FASE 5: Extração manual de campos (fallback robusto)
   // =====================================================
 
-  // Extrair campos individualmente (aceita 'pergunta' como fallback de 'enunciado')
-  const enunciado = extractJsonStringValue(jsonStr, 'enunciado') || extractJsonStringValue(jsonStr, 'pergunta')
+  // Extrair campos individualmente
+  const enunciado = extractJsonStringValue(jsonStr, 'enunciado')
   const disciplina = extractJsonStringValue(jsonStr, 'disciplina')
   const assunto = extractJsonStringValue(jsonStr, 'assunto')
   const subassunto = extractJsonStringValue(jsonStr, 'subassunto')
@@ -1708,7 +1706,7 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
 
     try {
       const parsed = JSON.parse(attempt)
-      if ((parsed.enunciado || parsed.pergunta) && parsed.alternativas && parsed.alternativas.length >= 2) {
+      if (parsed.enunciado && parsed.alternativas && parsed.alternativas.length >= 2) {
         if (shouldLog) console.log('[ArtifactRenderer] JSON recuperado via truncamento')
         return attempt
       }
@@ -1880,25 +1878,7 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
         }
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rawData = JSON.parse(questionJson) as any
-
-      // Normalizar campos: aceitar 'pergunta' como alias de 'enunciado'
-      if (!rawData.enunciado && rawData.pergunta) {
-        rawData.enunciado = rawData.pergunta
-      }
-      // Normalizar gabarito: aceitar resposta_correta/explicacao no top-level
-      if (!rawData.gabarito_comentado && !rawData.gabarito && rawData.resposta_correta) {
-        rawData.gabarito_comentado = {
-          resposta_correta: rawData.resposta_correta,
-          explicacao: rawData.explicacao || '',
-          analise_alternativas: rawData.analise_alternativas || [],
-          ponto_chave: rawData.ponto_chave || '',
-          referencias: rawData.referencias || []
-        }
-      }
-
-      const questionData = rawData as Question
+      const questionData = JSON.parse(questionJson) as Question
 
       // Garantir campos obrigatórios
       if (!questionData.id) {
@@ -1906,9 +1886,6 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
       }
       if (!questionData.numero) {
         questionData.numero = questionMatchCount
-      }
-      if (!questionData.disciplina) {
-        questionData.disciplina = 'Medicina'
       }
       if (!questionData.gabarito_comentado) {
         questionData.gabarito_comentado = {
@@ -2949,9 +2926,6 @@ function ArtifactRendererComponent({
   // Resetar tracker de imagens renderizadas a cada ciclo de render
   renderedImageUrlsRef.current = new Set()
 
-  // Controle para renderizar a galeria apenas uma vez (inline após primeiro texto com marcadores)
-  let imageGalleryRendered = false
-
   return (
     <div className="artifact-renderer lg:text-[0.9em] xl:text-[0.85em]">
       {parts.map((part, index) => {
@@ -2987,12 +2961,9 @@ function ArtifactRendererComponent({
             )
           }
 
-          // Verificar se este texto tinha marcadores IMAGE_SEARCH
-          const partHadImageMarkers = IMAGE_SEARCH_REGEX.test(part)
-          IMAGE_SEARCH_REGEX.lastIndex = 0
-
-          // Remover marcadores IMAGE_SEARCH do texto e limpar gabarito vazado
+          // Remover marcadores IMAGE_SEARCH e limpar gabarito/explicações do texto antes de renderizar
           let cleanedPart = removeImageSearchMarkers(part)
+          // Aplicar limpeza de gabarito e conteúdo que não deve aparecer no chat
           cleanedPart = cleanRenderedTextForChat(cleanedPart)
 
           // Se após limpeza não sobrou nada, não renderizar
@@ -3024,17 +2995,10 @@ function ArtifactRendererComponent({
             )
           }
 
-          // Mostrar galeria inline após este texto se ele continha marcadores de imagem
-          const shouldShowGalleryHere = partHadImageMarkers && userId && imageSearchTerms.length > 0 && !imageGalleryRendered
-          if (shouldShowGalleryHere) {
-            imageGalleryRendered = true
-          }
-
-          // Renderizar Markdown normal (+ galeria inline se aplicável)
-          // Usar apenas 2 termos para evitar imagens repetidas entre termos similares
+          // Renderizar Markdown normal
           return (
-            <div key={index}>
             <ReactMarkdown
+              key={index}
               remarkPlugins={[remarkGfm]}
               components={{
                 // Headings - menores e mais compactos
@@ -3234,14 +3198,6 @@ function ArtifactRendererComponent({
             >
               {cleanedPart}
             </ReactMarkdown>
-            {shouldShowGalleryHere && (
-              <MedicalImageGallery
-                searchTerms={imageSearchTerms.slice(0, 2)}
-                userId={userId!}
-                excludeUrls={inlineImageUrls}
-              />
-            )}
-            </div>
           )
         }
 
@@ -3717,10 +3673,13 @@ function ArtifactRendererComponent({
         return null
       })}
 
-      {/* Galeria fallback: se nenhum texto teve marcadores, mostrar no final */}
-      {imageSearchTerms.length > 0 && userId && !imageGalleryRendered && (
+      {/* Renderizar galeria de imagens médicas reais se houver termos de busca */}
+      {/* Key estável baseada nos termos para evitar re-mount durante streaming */}
+      {/* excludeUrls filtra imagens que já apareceram inline no markdown */}
+      {imageSearchTerms.length > 0 && userId && (
         <MedicalImageGallery
-          searchTerms={imageSearchTerms.slice(0, 2)}
+          key={`gallery-${imageSearchTerms.join('-')}`}
+          searchTerms={imageSearchTerms}
           userId={userId}
           excludeUrls={inlineImageUrls}
         />

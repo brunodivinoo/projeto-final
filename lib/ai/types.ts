@@ -28,10 +28,10 @@ export interface LimitesPlanoIA {
 }
 
 // LIMITES ATUALIZADOS - Fevereiro 2026
-// FREE: R$0 (trial 30min) | RESIDÊNCIA: R$200 (Claude Haiku)
+// FREE: R$0 (só trial 1h) | PREMIUM: R$60 (Sonnet) | RESIDÊNCIA: R$200 (Opus + OpenAI)
 export const LIMITES_IA: Record<PlanoIA, LimitesPlanoIA> = {
   gratuito: {
-    chats_mes: 0, // Apenas no trial de 30min
+    chats_mes: 0, // Apenas no trial de 1h
     resumos_mes: 0,
     flashcards_mes: 0,
     imagens_mes: 0,

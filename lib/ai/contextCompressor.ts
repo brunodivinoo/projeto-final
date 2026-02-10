@@ -74,28 +74,26 @@ export async function comprimirContexto(
       model: MODELOS.gemini.flash,
       generationConfig: {
         temperature: 0.1, // Baixa para ser fiel aos fatos
-        maxOutputTokens: 1500, // Mais espaço para síntese detalhada
+        maxOutputTokens: 800,
       },
     })
 
-    const promptCompressao = `Você é um sintetizador de informações. Sua tarefa é ORGANIZAR e RESUMIR os trechos de pesquisa abaixo em um texto conciso de 300-600 palavras.
+    const promptCompressao = `Você é um compressor de conteúdo médico. Sua tarefa é RESUMIR os trechos abaixo em um texto conciso de 300-500 palavras.
 
 REGRAS OBRIGATÓRIAS:
 1. PRIORIZE informações de fontes marcadas como [DIRETRIZ BRASILEIRA]
-2. Mantenha FATOS ESSENCIAIS: definições, dados, classificações, tratamentos, comparações
-3. Preserve TODOS os dados numéricos (doses, percentuais, valores, preços, critérios)
+2. Mantenha APENAS fatos clínicos essenciais: definição, diagnóstico, tratamento, classificação
+3. Preserve dados numéricos (doses, percentuais, critérios diagnósticos)
 4. NÃO invente informações - use SOMENTE o que está nos trechos
-5. Se os trechos NÃO contêm informação específica sobre algo, escreva: "DADOS NÃO ENCONTRADOS: [o que falta]"
-6. ORGANIZE logicamente: agrupe informações relacionadas juntas
-7. Para COMPARAÇÕES: liste claramente as diferenças ponto a ponto
-8. Para PRODUTOS/MARCAS: inclua nomes exatos, características específicas, diferenças
+5. NÃO inclua introduções ou conclusões genéricas
+6. Formato: parágrafos diretos com a informação
 
-TEMA DA PERGUNTA DO USUÁRIO: ${temaPergunta}
+TEMA DA PERGUNTA: ${temaPergunta}
 
-TRECHOS DA PESQUISA WEB:
+TRECHOS PARA COMPRIMIR:
 ${textoBruto}
 
-SÍNTESE ORGANIZADA:`
+RESUMO COMPRIMIDO:`
 
     const result = await model.generateContent(promptCompressao)
     const resumo = result.response.text().trim()

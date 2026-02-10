@@ -564,7 +564,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         if (isMermaidSyntax) {
           return (
             <div className={`relative ${containerClass}`}>
-              <MermaidDiagram chart={mermaidContent} title={artifact.title} disableInternalFullscreen />
+              <MermaidDiagram chart={mermaidContent} title={artifact.title} />
               <button
                 onClick={handleCopy}
                 className="absolute top-2 right-2 p-2 bg-black/50 rounded-lg hover:bg-black/70 transition-colors"
@@ -581,7 +581,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
           const forcedMermaid = 'flowchart TD\n' + mermaidContent
           return (
             <div className={`relative ${containerClass}`}>
-              <MermaidDiagram chart={forcedMermaid} title={artifact.title} disableInternalFullscreen />
+              <MermaidDiagram chart={forcedMermaid} title={artifact.title} />
             </div>
           )
         }
@@ -831,7 +831,7 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
       // Renderizar diagrama Mermaid genérico
       return (
         <div className={containerClass}>
-          <MermaidDiagram chart={artifact.content} title={artifact.title} disableInternalFullscreen />
+          <MermaidDiagram chart={artifact.content} title={artifact.title} />
         </div>
       )
 
@@ -877,14 +877,14 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         }
         return (
           <div className={containerClass}>
-            <MermaidDiagram chart={mermaidFlowCode} title={flowchartData.title || artifact.title} disableInternalFullscreen />
+            <MermaidDiagram chart={mermaidFlowCode} title={flowchartData.title || artifact.title} />
           </div>
         )
       } catch {
         // Fallback: tentar renderizar content direto como Mermaid
         return (
           <div className={containerClass}>
-            <MermaidDiagram chart={artifact.content} title={artifact.title} disableInternalFullscreen />
+            <MermaidDiagram chart={artifact.content} title={artifact.title} />
           </div>
         )
       }
@@ -913,14 +913,14 @@ function ArtifactContent({ artifact, isFullscreen = false }: { artifact: Artifac
         addTreeNode(rootData)
         return (
           <div className={containerClass}>
-            <MermaidDiagram chart={mermaidTreeCode} title={treeData.title || artifact.title} disableInternalFullscreen />
+            <MermaidDiagram chart={mermaidTreeCode} title={treeData.title || artifact.title} />
           </div>
         )
       } catch {
         // Fallback: tentar renderizar content direto como Mermaid
         return (
           <div className={containerClass}>
-            <MermaidDiagram chart={artifact.content} title={artifact.title} disableInternalFullscreen />
+            <MermaidDiagram chart={artifact.content} title={artifact.title} />
           </div>
         )
       }
@@ -1495,7 +1495,7 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
 
     // Filtrar por conversa
     if (currentConversaId) {
-      filtered = filtered.filter(a => a.conversaId === currentConversaId)
+      filtered = filtered.filter(a => a.conversaId === currentConversaId || !a.conversaId)
     }
 
     // Filtrar por modo de chat
@@ -1511,7 +1511,6 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
   const [activeFilter, setActiveFilter] = useState<ArtifactType | 'all'>('all')
   const [viewingArtifact, setViewingArtifactLocal] = useState<Artifact | null>(null) // Artefato sendo visualizado NA SIDEBAR
   const [showFilters, setShowFilters] = useState(false)
-  const [fullscreenArtifact, setFullscreenArtifactLocal] = useState<Artifact | null>(null) // Desktop fullscreen modal
 
   // Sincronizar seleção do store com o estado local (abre conteúdo na sidebar)
   useEffect(() => {
@@ -1917,22 +1916,12 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
                     <h2 className="text-sm font-semibold text-slate-800 truncate">{viewingArtifact.title}</h2>
                     <p className="text-xs text-slate-500">{ARTIFACT_LABELS[viewingArtifact.type] || viewingArtifact.type}</p>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {/* Botão fullscreen - apenas desktop */}
-                    <button
-                      onClick={() => setFullscreenArtifactLocal(viewingArtifact)}
-                      className="hidden md:flex w-10 h-10 items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
-                      title="Tela cheia"
-                    >
-                      <Maximize2 className="w-4 h-4 text-slate-600" />
-                    </button>
-                    <button
-                      onClick={toggleSidebar}
-                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-500 hover:bg-emerald-600 transition-colors"
-                    >
-                      <X className="w-5 h-5 text-white" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={toggleSidebar}
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-500 hover:bg-emerald-600 transition-colors"
+                  >
+                    <X className="w-5 h-5 text-white" />
+                  </button>
                 </>
               ) : (
                 // Header da lista
@@ -2635,35 +2624,6 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
         )}
       </div>
 
-      {/* Desktop Fullscreen Modal */}
-      {fullscreenArtifact && (
-        <FullscreenModal
-          artifact={fullscreenArtifact}
-          onClose={() => setFullscreenArtifactLocal(null)}
-          onPrevious={() => {
-            if (currentViewingIndex > 0) {
-              const prev = filteredArtifacts[currentViewingIndex - 1]
-              if (prev) {
-                setViewingArtifactLocal(prev)
-                setFullscreenArtifactLocal(prev)
-              }
-            }
-          }}
-          onNext={() => {
-            if (currentViewingIndex < filteredArtifacts.length - 1) {
-              const next = filteredArtifacts[currentViewingIndex + 1]
-              if (next) {
-                setViewingArtifactLocal(next)
-                setFullscreenArtifactLocal(next)
-              }
-            }
-          }}
-          hasPrevious={currentViewingIndex > 0}
-          hasNext={currentViewingIndex < filteredArtifacts.length - 1}
-          currentIndex={currentViewingIndex}
-          totalCount={filteredArtifacts.length}
-        />
-      )}
     </>
   )
 }
