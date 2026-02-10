@@ -2627,15 +2627,21 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 })
       }
 
-      const { data: mensagens, error: msgError } = await supabase
+      // Limitar a 200 mensagens mais recentes para evitar performance issues em conversas longas
+      // Busca as 200 mais recentes (desc) e depois inverte para ordem cronológica
+      const { data: mensagensDesc, error: msgError } = await supabase
         .from('mensagens_ia_med')
         .select('id, conversa_id, role, content, tokens, has_image, has_pdf, image_url, pdf_url, created_at')
         .eq('conversa_id', conversa_id)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(200)
 
-      console.log('[Chat API GET] Mensagens encontradas:', mensagens?.length || 0, 'erro:', msgError?.message)
+      const mensagens = mensagensDesc ? [...mensagensDesc].reverse() : []
+      const totalMensagens = mensagensDesc?.length || 0
 
-      return NextResponse.json({ conversa, mensagens })
+      console.log('[Chat API GET] Mensagens encontradas:', totalMensagens, 'erro:', msgError?.message)
+
+      return NextResponse.json({ conversa, mensagens, totalMensagens })
     }
 
     // Listar conversas do usuário (filtradas por modo se especificado)

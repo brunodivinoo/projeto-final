@@ -189,7 +189,7 @@ export default function MedicinaDashboardPage() {
               <div>
                 <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
                   <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" />
-                  Teste GRÁTIS por 4 horas!
+                  Teste GRÁTIS por 30 minutos!
                 </h3>
                 <p className="text-purple-200 text-xs md:text-sm">
                   Acesso completo: IA ilimitada, questões, flashcards e mais!

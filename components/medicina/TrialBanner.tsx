@@ -67,7 +67,7 @@ export function TrialBanner({
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Gift className="w-4 h-4" />
-            <span className="text-sm font-medium">4 horas grátis de acesso total!</span>
+            <span className="text-sm font-medium">30 minutos grátis de acesso total!</span>
           </div>
           <button
             onClick={handleIniciarTrial}
@@ -95,7 +95,7 @@ export function TrialBanner({
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-yellow-400" />
-                  Experimente GRÁTIS por 4 horas!
+                  Experimente GRÁTIS por 30 minutos!
                 </h3>
                 <p className="text-purple-200 text-sm">
                   Acesso completo a TODAS as funcionalidades
