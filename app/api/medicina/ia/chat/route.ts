@@ -540,12 +540,19 @@ export async function POST(request: NextRequest) {
 
     // ========== ROTEAMENTO INTELIGENTE COM SMART ROUTER ==========
     // Analisar complexidade da mensagem para decidir modelo
-    let complexityAnalysis = analisarComplexidade(mensagem, {
+    const complexityAnalysis = analisarComplexidade(mensagem, {
       historicoMensagens: historico.length,
       temImagem: !!imagem_base64,
       temPdf: !!pdf_base64,
       plano: plano === 'gratuito' ? 'premium' : plano
     })
+
+    // Se tem PDF, forçar GPT-5.2 com high reasoning
+    if (pdf_base64) {
+      complexityAnalysis.modeloRecomendado = 'gpt-5.2'
+      complexityAnalysis.nivel = 'complexa'
+      complexityAnalysis.motivo = 'Análise de PDF requer raciocínio avançado → GPT-5.2'
+    }
 
     console.log(`[Smart Router] Complexidade: ${complexityAnalysis.nivel} (score: ${complexityAnalysis.score})`)
     console.log(`[Smart Router] Modelo recomendado: ${complexityAnalysis.modeloRecomendado}`)
@@ -590,13 +597,6 @@ export async function POST(request: NextRequest) {
     // TUDO via Smart Router (OpenAI) - economia máxima
     // Imagens → GPT-4o | PDFs → GPT-5.2 | Complexo → GPT-5.2 | Simples → o4-mini
     console.log(`[Smart Router] 100% OpenAI${temContextoComprimido ? ' (MODO MONTAGEM)' : ''}${imagem_base64 ? ' (VISION GPT-4o)' : ''}${pdf_base64 ? ' (PDF GPT-5.2)' : ''}`)
-
-    // Se tem PDF, forçar GPT-5.2 com high reasoning
-    if (pdf_base64) {
-      complexityAnalysis.modeloRecomendado = 'gpt-5.2'
-      complexityAnalysis.nivel = 'complexa'
-      complexityAnalysis.motivo = 'Análise de PDF requer raciocínio avançado → GPT-5.2'
-    }
 
     return await streamComSmartRouter({
       historico,
