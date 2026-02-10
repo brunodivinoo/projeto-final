@@ -180,20 +180,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Buscar imagens para o primeiro termo que retornar resultados
+    // Buscar imagens para TODAS as queries e acumular resultados (mínimo 5)
     let resultado: ResultadoBusca | null = null
     let queryUsada = ''
+    const todasImagens: ResultadoBusca['imagens'] = []
+    const urlsVistas = new Set<string>()
 
-    for (const query of queries.slice(0, 3)) { // Máximo 3 tentativas
-      console.log(`[Imagens BR] Tentando busca: "${query}"`)
+    for (const query of queries.slice(0, 5)) { // Até 5 queries
+      console.log(`[Imagens BR] Buscando: "${query}"`)
 
-      const res = await searchMedicalImages(query, { limit: 8 })
+      const res = await searchMedicalImages(query, { limit: 6 })
 
       if (res.imagens.length > 0) {
-        resultado = res
-        queryUsada = query
-        break
+        if (!resultado) {
+          resultado = res
+          queryUsada = query
+        }
+        // Acumular sem duplicatas
+        for (const img of res.imagens) {
+          if (!urlsVistas.has(img.url)) {
+            urlsVistas.add(img.url)
+            todasImagens.push(img)
+          }
+        }
       }
+
+      // Se já tem 8+ imagens, parar
+      if (todasImagens.length >= 8) break
+    }
+
+    // Usar imagens acumuladas
+    if (resultado) {
+      resultado.imagens = todasImagens.slice(0, 10) // Máximo 10 imagens
     }
 
     if (!resultado || resultado.imagens.length === 0) {

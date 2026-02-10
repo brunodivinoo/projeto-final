@@ -497,7 +497,7 @@ export function MobileArtifactsScreen({ isOpen, onClose, onViewArtifact }: Mobil
 
     // Filtrar por conversa atual
     if (currentConversaId) {
-      filtered = filtered.filter(a => a.conversaId === currentConversaId || !a.conversaId)
+      filtered = filtered.filter(a => a.conversaId === currentConversaId)
     }
 
     // Filtrar por tipo
@@ -771,7 +771,7 @@ export function MobileArtifactsButton({ onClick, className = '' }: MobileArtifac
   // Contar artefatos da conversa atual
   const count = useMemo(() => {
     if (!currentConversaId) return artifacts.length
-    return artifacts.filter(a => a.conversaId === currentConversaId || !a.conversaId).length
+    return artifacts.filter(a => a.conversaId === currentConversaId).length
   }, [artifacts, currentConversaId])
 
   if (count === 0) return null
