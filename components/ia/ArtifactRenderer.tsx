@@ -3117,36 +3117,36 @@ function ArtifactRendererComponent({
                   </pre>
                 ),
 
-                // Tables - células mais compactas
+                // Tables - responsivas para mobile e desktop
                 table: ({ children }) => (
-                  <div className="overflow-x-auto my-3">
-                    <table className="min-w-full border-collapse border border-slate-200 rounded-lg overflow-hidden text-sm">
+                  <div className="overflow-x-auto my-3 -mx-1 px-1 rounded-lg">
+                    <table className="w-full border-collapse border border-slate-200 rounded-lg overflow-hidden text-xs md:text-sm" style={{ minWidth: '280px' }}>
                       {children}
                     </table>
                   </div>
                 ),
                 thead: ({ children }) => (
-                  <thead className="bg-emerald-500/20">
+                  <thead className="bg-emerald-50">
                     {children}
                   </thead>
                 ),
                 tbody: ({ children }) => (
-                  <tbody className="divide-y divide-white/10">
+                  <tbody className="divide-y divide-slate-100">
                     {children}
                   </tbody>
                 ),
                 tr: ({ children }) => (
-                  <tr className="hover:bg-slate-100 transition-colors">
+                  <tr className="hover:bg-slate-50 transition-colors">
                     {children}
                   </tr>
                 ),
                 th: ({ children }) => (
-                  <th className="px-2 md:px-3 py-2 text-left text-xs font-semibold text-emerald-700 border-b border-slate-200">
+                  <th className="px-2 md:px-4 py-1.5 md:py-2 text-left text-[11px] md:text-xs font-semibold text-emerald-700 border-b border-slate-200 whitespace-nowrap">
                     {children}
                   </th>
                 ),
                 td: ({ children }) => (
-                  <td className="px-2 md:px-3 py-2 text-xs text-slate-700">
+                  <td className="px-2 md:px-4 py-1.5 md:py-2 text-[11px] md:text-xs text-slate-700 break-words max-w-[150px] md:max-w-none">
                     {children}
                   </td>
                 ),
