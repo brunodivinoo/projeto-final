@@ -238,9 +238,18 @@ select option:checked {
   }
 
   table {
-    display: block;
+    display: table;
     overflow-x: auto;
     max-width: 100%;
+    font-size: 11px;
+    border-spacing: 0;
+  }
+
+  table th,
+  table td {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-width: 40vw;
   }
 
   .message-content,
