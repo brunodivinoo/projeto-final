@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // PIPELINE: Serper (Google Images) como fonte PRIMÁRIA, BD local como fallback
+    // PIPELINE: BD local como fonte PRIMÁRIA (confiável), Serper como complemento
     const allImages: Array<{
       id: string; url: string; thumbUrl: string; title: string; titulo: string;
       caption: string; descricao: string; source: string; sourceUrl: string;
@@ -191,82 +191,82 @@ export async function POST(request: NextRequest) {
     const urlsVistas = new Set<string>()
     const queryUsada = queries[0]
 
-    // 1. Buscar via Serper (Google Images) - fonte primária com muitas imagens
-    for (const query of queries.slice(0, 5)) {
+    // 1. BD local primeiro (imagens verificadas, sempre funcionam)
+    for (const query of queries.slice(0, 3)) {
       try {
-        console.log(`[Imagens] Serper buscando: "${query}"`)
-        const serperResult = await buscarImagensMedicas(query, 5)
-
-        if (serperResult.success && serperResult.imagens.length > 0) {
-          for (const img of serperResult.imagens) {
+        const localRes = await searchMedicalImages(query, { limit: 6 })
+        if (localRes.imagens.length > 0) {
+          for (const img of localRes.imagens) {
             if (!urlsVistas.has(img.url)) {
               urlsVistas.add(img.url)
               allImages.push({
-                id: `serper-${allImages.length}`,
+                id: img.id,
                 url: img.url,
-                thumbUrl: img.url,
+                thumbUrl: img.thumbUrl,
                 title: img.titulo,
                 titulo: img.titulo,
-                caption: img.titulo,
-                descricao: img.titulo,
-                source: 'serper_google_images',
-                sourceUrl: img.linkOriginal,
-                sourceName: img.fonte,
+                caption: img.descricao,
+                descricao: img.descricao,
+                source: 'brazilian_academic',
+                sourceUrl: img.fonteUrl,
+                sourceName: img.siglaInstituicao,
                 fonte: img.fonte,
-                siglaInstituicao: img.dominio,
-                instituicao: img.fonte,
+                siglaInstituicao: img.siglaInstituicao,
+                instituicao: img.instituicao,
                 modality: 'Medical',
-                license: 'Uso educacional',
-                referenciaABNT: img.referencia
+                license: img.licenca,
+                referenciaABNT: img.referenciaABNT
               })
             }
           }
         }
       } catch (error) {
-        console.error(`[Imagens] Erro Serper para "${query}":`, error)
+        console.error(`[Imagens] Erro BD local para "${query}":`, error)
       }
-
-      if (allImages.length >= 15) break
+      if (allImages.length >= 8) break
     }
 
-    // 2. Complementar com BD local (fallback para temas com imagens verificadas)
-    if (allImages.length < 8) {
-      for (const query of queries.slice(0, 5)) {
+    // 2. Complementar com Serper (Google Images) se BD local retornou pouco
+    if (allImages.length < 4) {
+      for (const query of queries.slice(0, 2)) {
         try {
-          const localRes = await searchMedicalImages(query, { limit: 4 })
-          if (localRes.imagens.length > 0) {
-            for (const img of localRes.imagens) {
+          console.log(`[Imagens] Serper complementando: "${query}"`)
+          const serperResult = await buscarImagensMedicas(query, 4)
+
+          if (serperResult.success && serperResult.imagens.length > 0) {
+            for (const img of serperResult.imagens) {
               if (!urlsVistas.has(img.url)) {
                 urlsVistas.add(img.url)
                 allImages.push({
-                  id: img.id,
+                  id: `serper-${allImages.length}`,
                   url: img.url,
-                  thumbUrl: img.thumbUrl,
+                  thumbUrl: img.url,
                   title: img.titulo,
                   titulo: img.titulo,
-                  caption: img.descricao,
-                  descricao: img.descricao,
-                  source: 'brazilian_academic',
-                  sourceUrl: img.fonteUrl,
-                  sourceName: img.siglaInstituicao,
+                  caption: img.titulo,
+                  descricao: img.titulo,
+                  source: 'serper_google_images',
+                  sourceUrl: img.linkOriginal,
+                  sourceName: img.fonte,
                   fonte: img.fonte,
-                  siglaInstituicao: img.siglaInstituicao,
-                  instituicao: img.instituicao,
+                  siglaInstituicao: img.dominio,
+                  instituicao: img.fonte,
                   modality: 'Medical',
-                  license: img.licenca,
-                  referenciaABNT: img.referenciaABNT
+                  license: 'Uso educacional',
+                  referenciaABNT: img.referencia
                 })
               }
             }
           }
         } catch (error) {
-          console.error(`[Imagens] Erro BD local para "${query}":`, error)
+          console.error(`[Imagens] Erro Serper para "${query}":`, error)
         }
-        if (allImages.length >= 15) break
+
+        if (allImages.length >= 8) break
       }
     }
 
-    const images = allImages.slice(0, 15)
+    const images = allImages.slice(0, 10)
 
     if (images.length === 0) {
       return NextResponse.json({
@@ -284,13 +284,13 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log(`[Imagens] ✓ Retornando ${images.length} imagens (Serper + BD local)`)
+    console.log(`[Imagens] ✓ Retornando ${images.length} imagens (BD local + Serper)`)
 
     return NextResponse.json({
       images,
       total: images.length,
       cached: false,
-      source: 'serper_google_images_com_fallback_local',
+      source: 'bd_local_com_complemento_serper',
       queryUsed: queryUsada,
       originalQuery: queries[0],
       referencias: images.map(img => img.referenciaABNT).filter(Boolean),
