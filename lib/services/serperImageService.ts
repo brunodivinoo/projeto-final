@@ -31,7 +31,7 @@ const DOMINIOS_CONFIAVEIS = [
   'medicinanet.com.br',
   'minhavida.com.br',
   'drauziovarella.uol.com.br',
-  'wikipedia.org',
+  // wikipedia removido - fonte proibida
   // Bases científicas e bibliotecas virtuais
   'scielo.br',
   'bvsalud.org',
@@ -89,7 +89,11 @@ const DOMINIOS_BLOQUEADOS = [
   // Sanarmed - BANIDO expressamente
   'sanarmed.com',
   'sanar.com.br',
-  'sanarflix.com.br'
+  'sanarflix.com.br',
+  // Wikipedia - BANIDO expressamente
+  'wikipedia.org',
+  'pt.wikipedia.org',
+  'en.wikipedia.org'
 ]
 
 /**

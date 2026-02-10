@@ -78,6 +78,7 @@ const DOMINIOS_BLOQUEADOS = [
   'pinterest.com', 'facebook.com', 'instagram.com', 'twitter.com',
   'tiktok.com', 'amazon.com', 'mercadolivre.com.br', 'shopee.com',
   'sanarmed.com', 'sanar.com.br', 'sanarflix.com.br',
+  'wikipedia.org', 'pt.wikipedia.org', 'en.wikipedia.org',
 ]
 
 function extrairDominio(url: string): string {
@@ -119,11 +120,26 @@ export async function buscarWebMedica(
   try {
     console.log(`[SerperWeb] Buscando: "${tema}"`)
 
-    // Busca 1: Diretrizes brasileiras (PRIORIDADE)
-    const queryDiretrizes = `diretrizes brasileiras ${tema} medicina`
+    // Detectar se é tema médico ou tema geral
+    const temaLower = tema.toLowerCase()
+    const ehTemaMedico = [
+      'tratamento', 'diagnóstico', 'diagnostico', 'fisiopatologia', 'doença', 'doenca',
+      'síndrome', 'sindrome', 'medicamento', 'droga', 'antibiótico', 'antibiotico',
+      'cirurgia', 'paciente', 'clínico', 'clinico', 'patologia', 'anatomia',
+      'fisiologia', 'farmacologia', 'epidemiologia', 'hipertensão', 'hipertensao',
+      'diabetes', 'câncer', 'cancer', 'infecção', 'infeccao', 'pediatria',
+      'obstetrícia', 'obstetricia', 'cardiologia', 'neurologia', 'dermatologia',
+    ].some(t => temaLower.includes(t))
 
-    // Busca 2: Fontes científicas gerais
-    const queryGeral = `${tema} medicina tratamento diagnóstico`
+    // Busca 1: Diretrizes/fontes confiáveis (adapta conforme o tema)
+    const queryDiretrizes = ehTemaMedico
+      ? `diretrizes brasileiras ${tema} medicina`
+      : `${tema} informações completas`
+
+    // Busca 2: Fontes gerais/complementares
+    const queryGeral = ehTemaMedico
+      ? `${tema} medicina tratamento diagnóstico`
+      : `${tema} comparação características`
 
     // Executar ambas em paralelo
     const [resDiretrizes, resGeral] = await Promise.all([
@@ -270,71 +286,71 @@ export function formatarResultadosParaPrompt(resultados: ResultadoWeb[]): string
 }
 
 /**
- * Detecta o tema médico principal da mensagem do usuário
- * Usado para construir a query de busca
+ * Detecta o tema principal da mensagem do usuário para busca web
+ * Funciona para qualquer assunto (não só medicina) - como ChatGPT
  */
 export function extrairTemaMedico(mensagem: string): string | null {
-  const msgLower = mensagem.toLowerCase()
-
-  // Termos que indicam que o usuário quer informação médica buscável
-  const indicadores = [
-    'o que é', 'o que e', 'explique', 'como funciona', 'como tratar',
-    'tratamento', 'diagnóstico', 'diagnostico', 'fisiopatologia',
-    'etiologia', 'epidemiologia', 'sintomas', 'sinais', 'quadro clínico',
-    'conduta', 'manejo', 'abordagem', 'protocolo', 'diretriz',
-    'classificação', 'classificacao', 'estadiamento', 'prognóstico',
-    'profilaxia', 'prevenção', 'prevencao', 'complicações', 'complicacoes',
-    'caso clínico', 'caso clinico', 'paciente com', 'diferencial',
-  ]
-
-  const temIndicador = indicadores.some(t => msgLower.includes(t))
-
-  if (!temIndicador && msgLower.length < 20) return null
-
-  // Limpar a mensagem para extrair o tema
+  // Limpar a mensagem para extrair o tema de busca
   let tema = mensagem
     .replace(/\?/g, '')
-    .replace(/^(me |por favor |pode |quero |preciso |gostaria )/i, '')
-    .replace(/^(explique|explica|fale|conte|diga|descreva) (sobre |de |a |o |como )?/i, '')
+    .replace(/^(me |por favor |pode |quero |preciso |gostaria |pesquisa |busca |pesquise |busque )/i, '')
+    .replace(/^(explique|explica|fale|conte|diga|descreva|pesquisa) (sobre |de |a |o |como |ai |aí )?/i, '')
     .replace(/^(o que é|o que e|qual|quais|como) (é |e |são |sao )?/i, '')
+    .replace(/^(qual |quais |me diga |me fale |me conte )(a |o |as |os )?(diferenças?|diferenca) (entre |de |do |da )?/i, '')
     .trim()
 
   // Se ficou muito longo, pegar as primeiras palavras relevantes
-  if (tema.length > 100) {
-    tema = tema.slice(0, 100)
+  if (tema.length > 120) {
+    tema = tema.slice(0, 120)
   }
 
-  return tema || null
+  // Se ficou muito curto ou vazio, usar mensagem original
+  if (tema.length < 5) {
+    tema = mensagem.slice(0, 120).trim()
+  }
+
+  return tema.length >= 5 ? tema : null
 }
 
 /**
  * Verifica se a mensagem se beneficiaria de busca web
+ * ESTRATÉGIA: Buscar SEMPRE (como ChatGPT), exceto em mensagens casuais/curtas
+ * Isso garante respostas sempre atualizadas e baseadas em fontes reais
  */
 export function precisaDeBusca(mensagem: string): boolean {
-  const msgLower = mensagem.toLowerCase()
+  const msgLower = mensagem.toLowerCase().trim()
 
-  // Mensagens curtas/casuais não precisam
-  if (msgLower.length < 15) return false
+  // Mensagens muito curtas (< 8 chars) não precisam
+  if (msgLower.length < 8) return false
 
-  // Saudações e respostas curtas
-  const casual = ['oi', 'olá', 'ola', 'obrigado', 'valeu', 'sim', 'não', 'nao', 'ok', 'tudo bem']
-  if (casual.some(c => msgLower.trim() === c)) return false
-
-  // Pedidos de artefatos específicos (questões, flashcards) não precisam de busca
-  const artefatos = ['questão', 'questao', 'flashcard', 'simulado', 'gere', 'crie']
-  if (artefatos.some(a => msgLower.startsWith(a))) return false
-
-  // Temas médicos que se beneficiam de busca
-  const temasMedicos = [
-    'fisiopatologia', 'tratamento', 'diagnóstico', 'diagnostico',
-    'epidemiologia', 'etiologia', 'patogênese', 'patogenese',
-    'conduta', 'manejo', 'protocolo', 'diretriz', 'consenso',
-    'classificação', 'classificacao', 'estadiamento', 'prognóstico',
-    'doença', 'doenca', 'síndrome', 'sindrome', 'infecção', 'infeccao',
-    'insuficiência', 'insuficiencia', 'hipertensão', 'hipertensao',
-    'diabetes', 'câncer', 'cancer', 'tumor', 'neoplasia',
-    'farmacologia', 'medicamento', 'droga', 'antibiótico', 'antibiotico',
+  // Saudações e respostas curtas/afirmativas
+  const casual = [
+    'oi', 'olá', 'ola', 'obrigado', 'valeu', 'sim', 'não', 'nao', 'ok',
+    'tudo bem', 'beleza', 'entendi', 'obg', 'vlw', 'uhum', 'aham',
+    'bom dia', 'boa tarde', 'boa noite', 'pronto', 'fechou', 'dale',
+    'pode', 'quero', 'isso', 'bora', 'vamos', 'próximo', 'proximo',
+    'certo', 'blz', 'top', 'show', 'pode ser', '1', '2', '3', 'a', 'b', 'c',
   ]
+  if (casual.some(c => msgLower === c || msgLower === c + '!')) return false
 
-  return temasMedicos.some(t => msgLower.includes(t))
+  // Pedidos PURAMENTE de artefatos (sem tema novo para buscar)
+  // Ex: "gere 5 questões" sem tema → não busca
+  // Ex: "gere questões sobre diabetes" → SIM busca (tem tema)
+  const artefatosSemTema = [
+    /^(gere|crie|cria|faça|faz|monte)\s+(mais\s+)?(questões?|questoes?|flashcards?|simulado|diagrama)/i,
+    /^(mais|próxim[ao]|outr[ao])\s+(questões?|questoes?|flashcards?)/i,
+    /^(repita|continue|prossiga)/i,
+  ]
+  if (artefatosSemTema.some(r => r.test(msgLower))) return false
+
+  // Mensagens de feedback sobre questões/respostas anteriores
+  const feedback = [
+    /^(errei|acertei|alternativa|letra)\s/i,
+    /^(a|b|c|d|e)\)?$/i, // Escolhendo alternativa
+  ]
+  if (feedback.some(r => r.test(msgLower))) return false
+
+  // TUDO MAIS: BUSCAR NA WEB (como ChatGPT faz)
+  // Se tem mais de 8 chars e não é casual/feedback → buscar
+  return true
 }
