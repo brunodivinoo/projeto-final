@@ -64,21 +64,21 @@ export function selecionarModelo(options: SmartRouterOptions): SmartRouterResult
   } = options
 
   // MODO MONTAGEM: Serper+Gemini já comprimiu o contexto
-  // Modelo só precisa montar/formatar a resposta → o4-mini (mais barato)
+  // GPT-5.2 organiza a resposta com profundidade (o4-mini era raso demais)
   if (contextoComprimido && !temImagem && !temPdf) {
-    console.log('[SmartRouter] MODO MONTAGEM: contexto pré-comprimido → o4-mini')
+    console.log('[SmartRouter] MODO MONTAGEM: contexto pré-comprimido → GPT-5.2 (organização detalhada)')
     return {
-      modelo: MODELOS.openai.o4Mini,
+      modelo: MODELOS.openai.gpt52,
       provider: 'openai' as const,
       analysis: {
-        nivel: 'simples' as const,
-        score: 20,
-        fatores: ['Contexto pré-comprimido pelo Serper+Gemini Flash', 'Modelo só precisa montar/formatar resposta'],
-        modeloRecomendado: 'o4-mini' as const,
-        motivo: 'Modo montagem: contexto já comprimido, o4-mini monta a resposta (economia máxima)'
+        nivel: 'moderada' as const,
+        score: 55,
+        fatores: ['Contexto pré-comprimido pelo Serper+Gemini Flash', 'GPT-5.2 organiza resposta detalhada e aprofundada'],
+        modeloRecomendado: 'gpt-5.2' as const,
+        motivo: 'Modo montagem: GPT-5.2 organiza conteúdo web com profundidade e clareza'
       },
       reasoningEffort: 'medium' as ReasoningEffort,
-      custoEstimado: estimarCusto(MODELOS.openai.o4Mini, 1500)
+      custoEstimado: estimarCusto(MODELOS.openai.gpt52, 3000)
     }
   }
 
@@ -96,6 +96,28 @@ export function selecionarModelo(options: SmartRouterOptions): SmartRouterResult
         motivo: 'Modelo especificado manualmente'
       },
       custoEstimado: 0
+    }
+  }
+
+  // PRIMEIRA MENSAGEM: SEMPRE GPT-5.2 (conteúdo rico obrigatório)
+  if (historico.length === 0) {
+    console.log('[SmartRouter] PRIMEIRA MENSAGEM → GPT-5.2 (conteúdo rico obrigatório)')
+    const analysis = analisarComplexidade(mensagem, {
+      historicoMensagens: 0,
+      temImagem,
+      temPdf,
+      plano: plano === 'gratuito' ? 'premium' : plano
+    })
+    return {
+      modelo: MODELOS.openai.gpt52,
+      provider: 'openai' as const,
+      analysis: {
+        ...analysis,
+        modeloRecomendado: 'gpt-5.2' as const,
+        motivo: 'Primeira mensagem: GPT-5.2 para conteúdo detalhado e aprofundado'
+      },
+      reasoningEffort: 'high' as ReasoningEffort,
+      custoEstimado: estimarCusto(MODELOS.openai.gpt52, 4000)
     }
   }
 
@@ -218,15 +240,19 @@ export async function* streamInteligente(
   if (options.contextoComprimido) {
     systemPrompt += `\n\n## MODO MONTAGEM - RESPOSTA BASEADA EM PESQUISA WEB
 Você está recebendo informações PESQUISADAS NA WEB de fontes médicas confiáveis (diretrizes brasileiras, PubMed, etc).
+Sua função é ORGANIZAR essas informações em uma AULA COMPLETA, detalhada e aprofundada para o estudante.
 
-### COMO MONTAR A RESPOSTA:
+### COMO MONTAR A RESPOSTA (DETALHADA E APROFUNDADA):
 1. **COMECE com resposta DIRETA** - 1-3 linhas respondendo a pergunta principal
-2. **ORGANIZE por seções claras** - Use ### títulos numerados para cada aspecto
-3. **USE TABELAS para comparações** - NUNCA compare coisas em texto corrido, use tabela
-4. **CITE as fontes inline** - Use [1], [2], [3] no texto E liste fontes no final
-5. **SINTETIZE, não copie** - Transforme os dados brutos em resposta organizada e didática
-6. **Se os dados não cobrem algo, DIGA** - "Não foram encontrados dados específicos sobre X nas fontes consultadas"
-7. **NUNCA invente** - Use APENAS informações do contexto fornecido + seu conhecimento de livros-texto
+2. **APROFUNDE com parágrafos explicativos** - Escreva textos COMPLETOS, não apenas bullets. O estudante precisa de texto corrido para anotar e estudar. Mínimo 3-5 parágrafos densos de conteúdo.
+3. **ORGANIZE por seções claras** - Use ### títulos numerados para cada aspecto (Definição, Classificação, Fisiopatologia, Diagnóstico, Tratamento, etc.)
+4. **USE TABELAS para comparações** - NUNCA compare coisas em texto corrido, use tabela. SEMPRE com linha em branco antes e depois.
+5. **EXPLIQUE cada conceito** - Não apenas liste, EXPLIQUE com detalhes, exemplos práticos e correlações clínicas
+6. **CITE as fontes inline** - Use [1], [2], [3] no texto E liste fontes no final
+7. **COMPLEMENTE o contexto web com seu conhecimento médico** - As fontes web trazem dados; você deve EXPANDIR com explicações didáticas de livros-texto (Harrison, Cecil, Sabiston)
+8. **Se os dados não cobrem algo, COMPLEMENTE** - Use conhecimento de livros-texto e indique: "Segundo Harrison (2020)..."
+9. **GERE IMAGENS contextuais** - Use [IMAGE_SEARCH: termo específico médico] em PELO MENOS 5 pontos diferentes do texto, sempre DENTRO do contexto da explicação
+10. **NUNCA seja raso** - Cada seção deve ter no MÍNIMO 2-3 parágrafos. O estudante precisa de material COMPLETO para estudar.
 
 ⚠️ REGRAS OBRIGATÓRIAS MESMO NO MODO MONTAGEM:
 
@@ -277,15 +303,42 @@ Se o contexto trouxer fontes, MANTENHA e CITE-AS. Se não trouxer, cite livros-t
 
   // Primeira mensagem: injetar instrução de resposta rica
   if (historico.length === 0) {
-    systemPrompt += `\n\nATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo. Siga a regra de PRIMEIRA MENSAGEM: resposta rica com texto detalhado, 1 fluxograma Mermaid, 2-3 questões em formato \`\`\`questao JSON, referências. Máximo 1-2 imagens sem repetição.`
+    systemPrompt += `\n\n<first_message_context>
+ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
+Siga OBRIGATORIAMENTE a regra de PRIMEIRA MENSAGEM - TODOS obrigatórios:
+1. Texto DETALHADO e APROFUNDADO (mín. 5-7 parágrafos densos de conteúdo)
+2. MÍNIMO 5 marcadores [IMAGE_SEARCH: termo médico específico] DIFERENTES em pontos contextuais do texto
+3. 5 flashcards (\`\`\`flashcards:Título) com JSON
+4. 1 fluxograma Mermaid (\`\`\`mermaid) + 1 organograma (\`\`\`tree:Título)
+5. 2-3 questões em formato \`\`\`questao JSON (com referências ABNT no gabarito)
+6. Referências ABNT ao final (diretrizes brasileiras + livros-texto)
+7. No final: oferecer questões, flashcards, fluxograma, organograma, diagrama, mais imagens
+
+⚠️ IMAGENS: Use [IMAGE_SEARCH: termo] DENTRO do texto, no ponto onde a imagem faz sentido contextual.
+Exemplo: "O coração possui 4 câmaras [IMAGE_SEARCH: anatomia coração câmaras cardíacas]..."
+NUNCA use termos genéricos como "estudante medicina". Use termos MÉDICOS ESPECÍFICOS.
+Termos bons: "anatomia coração válvulas", "eletrocardiograma normal ECG", "classificação hipertensão tabela"
+Termos ruins: "pessoa estudando", "livro medicina", "hospital"
+</first_message_context>`
+  } else {
+    systemPrompt += `\n\n<followup_context>
+OBRIGATÓRIO em TODA resposta:
+- MÍNIMO 3 marcadores [IMAGE_SEARCH: termo médico específico] em pontos contextuais
+- Fontes ABNT ao final
+- Oferta de recursos no final
+- Respostas DETALHADAS e APROFUNDADAS (mín. 3 parágrafos)
+</followup_context>`
   }
 
-  // Reforço de regras para modelos OpenAI (o4-mini precisa de instruções mais diretas)
+  // Reforço de regras para modelos OpenAI
   if (provider === 'openai') {
     systemPrompt += `\n\n## REGRAS CRÍTICAS (NUNCA IGNORE):
 1. Questões: SEMPRE use \`\`\`questao com JSON. NUNCA texto puro com A), B), C).
 2. Fontes: TODA resposta DEVE terminar com seção 📚 **Fontes:** com citações ABNT [1], [2], [3].
-3. Citações inline: use [1], [2] no texto para indicar a fonte de cada afirmação.`
+3. Citações inline: use [1], [2] no texto para indicar a fonte de cada afirmação.
+4. Tabelas: SEMPRE linha em branco antes e depois. NUNCA junte cabeçalho com título.
+5. Imagens: use [IMAGE_SEARCH: termo médico específico] DENTRO do texto contextual. NUNCA termos genéricos.
+6. Profundidade: EXPLIQUE cada conceito com detalhes. NUNCA seja raso ou superficial. O estudante precisa de material COMPLETO.`
   }
 
   // Rotear para provider correto
@@ -294,7 +347,7 @@ Se o contexto trouxer fontes, MANTENHA e CITE-AS. Se não trouxer, cite livros-t
       plano,
       model: modelo,
       reasoningEffort,
-      maxTokens: plano === 'residencia' ? 16384 : 8192
+      maxTokens: 16384 // Sempre dar espaço para respostas completas e detalhadas
     }
 
     // Streaming com imagem
