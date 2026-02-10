@@ -182,17 +182,19 @@ function MobileChatMessageComponent({
           {/* Loading indicator */}
           {isLoading && !conteudo ? (
             <div className="flex items-center gap-2">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="flex gap-1.5">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full thinking-dot" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 bg-emerald-500 rounded-full thinking-dot" style={{ animationDelay: '0.2s' }} />
+                <span className="w-2 h-2 bg-emerald-500 rounded-full thinking-dot" style={{ animationDelay: '0.4s' }} />
               </div>
+              <span className="text-sm text-slate-400">Pensando...</span>
             </div>
           ) : (
             <>
               {/* Texto da mensagem */}
               <div className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
                 {conteudo}
+                {isLoading && conteudo && <span className="typing-cursor" />}
               </div>
 
               {/* Conteúdo customizado (artefatos, questões) */}

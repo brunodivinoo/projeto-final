@@ -101,11 +101,7 @@ interface StreamingMessageProps {
 // Componente de cursor de digitação
 const TypingCursor = memo(function TypingCursor() {
   return (
-    <motion.span
-      className="inline-block w-0.5 h-5 ml-0.5 bg-emerald-500 rounded-full"
-      animate={{ opacity: [1, 0] }}
-      transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
-    />
+    <span className="typing-cursor" />
   )
 })
 
@@ -227,17 +223,13 @@ export const StreamingMessage = memo(function StreamingMessage({
               {isStreaming && <TypingCursor />}
             </div>
           ) : isStreaming ? (
-            <div className="flex items-center gap-2 text-slate-500">
-              <motion.div
-                className="flex gap-1"
-                animate={{ opacity: [0.4, 1, 0.4] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                <span className="w-2 h-2 bg-emerald-500 rounded-full" />
-                <span className="w-2 h-2 bg-emerald-500 rounded-full" style={{ animationDelay: '0.2s' }} />
-                <span className="w-2 h-2 bg-emerald-500 rounded-full" style={{ animationDelay: '0.4s' }} />
-              </motion.div>
-              <span className="text-sm">Pensando...</span>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1.5">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full thinking-dot" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 bg-emerald-500 rounded-full thinking-dot" style={{ animationDelay: '0.2s' }} />
+                <span className="w-2 h-2 bg-emerald-500 rounded-full thinking-dot" style={{ animationDelay: '0.4s' }} />
+              </div>
+              <span className="text-sm text-slate-400">Pensando...</span>
             </div>
           ) : null}
         </div>

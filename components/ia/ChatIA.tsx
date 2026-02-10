@@ -173,7 +173,12 @@ export function ChatIA() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              {mensagens.map((msg) => (
+              {mensagens.map((msg, index) => {
+                const isLastAssistant = enviando && msg.role === 'assistant' && index === mensagens.length - 1
+                const isStreaming = isLastAssistant && msg.content.length > 0
+                const isThinking = isLastAssistant && msg.content.length === 0
+
+                return (
                 <div
                   key={msg.id}
                   className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
@@ -197,6 +202,15 @@ export function ChatIA() {
                     }`}>
                       {msg.role === 'user' ? (
                         <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      ) : isThinking ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1.5">
+                            <span className="size-2 bg-emerald-500 rounded-full thinking-dot" style={{ animationDelay: '0ms' }} />
+                            <span className="size-2 bg-emerald-500 rounded-full thinking-dot" style={{ animationDelay: '0.2s' }} />
+                            <span className="size-2 bg-emerald-500 rounded-full thinking-dot" style={{ animationDelay: '0.4s' }} />
+                          </div>
+                          <span className="text-sm text-[#9dabb9]">Pensando...</span>
+                        </div>
                       ) : (
                         <div className="text-sm prose prose-sm dark:prose-slate max-w-none prose-p:my-1 prose-headings:my-2 prose-img:rounded-lg prose-img:max-w-full prose-img:my-2">
                           <ReactMarkdown
@@ -223,30 +237,19 @@ export function ChatIA() {
                           >
                             {msg.content}
                           </ReactMarkdown>
+                          {isStreaming && <span className="typing-cursor" />}
                         </div>
                       )}
                     </div>
-                    <p className="text-xs text-[#9dabb9] mt-1 px-1">
-                      {new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                    {!isThinking && (
+                      <p className="text-xs text-[#9dabb9] mt-1 px-1">
+                        {new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
                   </div>
                 </div>
-              ))}
-
-              {enviando && (
-                <div className="flex gap-3">
-                  <div className="size-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-lg text-emerald-500">smart_toy</span>
-                  </div>
-                  <div className="p-3 rounded-2xl rounded-bl-md bg-gray-100 dark:bg-[#283039]">
-                    <div className="flex gap-1">
-                      <span className="size-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                      <span className="size-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                      <span className="size-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                    </div>
-                  </div>
-                </div>
-              )}
+                )
+              })}
 
               <div ref={messagesEndRef} />
             </div>
