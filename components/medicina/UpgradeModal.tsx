@@ -68,7 +68,7 @@ const MODAL_CONTENT: Record<ModalTipo, {
   },
   trial_disponivel: {
     titulo: 'Teste grátis disponível!',
-    subtitulo: 'Experimente 4 horas de acesso completo',
+    subtitulo: 'Experimente 30 minutos de chat ilimitado',
     icone: <Sparkles className="w-8 h-8" />,
     corGradiente: 'from-violet-500 to-purple-600',
     corIcone: 'text-violet-400 bg-violet-500/20',
@@ -97,8 +97,8 @@ export function UpgradeModal({ tipo, feature, conquista, onClose }: UpgradeModal
     }
   }
 
-  const planoSugerido = plano === 'gratuito' ? 'premium' : 'residencia'
-  const planoSugeridoNome = plano === 'gratuito' ? 'Premium' : 'Residência'
+  const planoSugerido = 'residencia' as const
+  const planoSugeridoNome = 'Residência'
   const precoSugerido = PRECOS_PLANO[planoSugerido]
   const limitesSugeridos = LIMITES_PLANO[planoSugerido]
 
@@ -163,14 +163,14 @@ export function UpgradeModal({ tipo, feature, conquista, onClose }: UpgradeModal
               <span className="font-medium text-white">Experimente grátis!</span>
             </div>
             <p className="text-slate-600 text-sm mb-3">
-              Teste todas as funcionalidades premium por 1 hora, sem compromisso.
+              Teste o chat por 30 minutos grátis, sem compromisso.
             </p>
             <button
               onClick={handleIniciarTrial}
               disabled={iniciandoTrial}
               className="w-full py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white rounded-lg font-medium transition-all disabled:opacity-50"
             >
-              {iniciandoTrial ? 'Ativando...' : 'Ativar Trial de 1h'}
+              {iniciandoTrial ? 'Ativando...' : 'Ativar Trial de 30min'}
             </button>
           </div>
         )}

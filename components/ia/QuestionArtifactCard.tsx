@@ -543,7 +543,7 @@ function QuestionArtifactCard({
                       Desbloquear Agora
                     </button>
                     <p className="text-slate-500 text-xs mt-3">
-                      Ou ative seu trial de 1h grátis
+                      Ou ative seu trial de 30min grátis
                     </p>
                   </div>
                 </div>

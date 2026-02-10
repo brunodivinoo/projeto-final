@@ -547,11 +547,10 @@ export async function POST(request: NextRequest) {
       plano: plano === 'gratuito' ? 'premium' : plano
     })
 
-    // Se tem PDF, forçar GPT-5.2 com high reasoning
+    // Se tem PDF, marcar como complexa (Claude Haiku lida bem com PDFs)
     if (pdf_base64) {
-      complexityAnalysis.modeloRecomendado = 'gpt-5.2'
       complexityAnalysis.nivel = 'complexa'
-      complexityAnalysis.motivo = 'Análise de PDF requer raciocínio avançado → GPT-5.2'
+      complexityAnalysis.motivo = 'Análise de PDF → Claude Haiku'
     }
 
     console.log(`[Smart Router] Complexidade: ${complexityAnalysis.nivel} (score: ${complexityAnalysis.score})`)
@@ -567,38 +566,14 @@ export async function POST(request: NextRequest) {
       console.log('[Smart Router] MODO MONTAGEM: Serper+Gemini → OpenAI monta resposta')
     }
 
-    // ========== DECISÃO DE MODELO: TUDO OPENAI (economia máxima) ==========
-    // Claude APENAS para extended thinking (funcionalidade exclusiva)
-    // Imagens → GPT-4o (vision excelente)
-    // PDFs → GPT-5.2 (raciocínio avançado)
-    // Complexo → GPT-5.2 (raciocínio avançado)
-    // Simples/Montagem → o4-mini (economia máxima)
-    // Web search → Serper + compressão + montagem OpenAI
+    // ========== DECISÃO DE MODELO: 100% ANTHROPIC CLAUDE HAIKU ==========
+    // Claude Haiku para TODAS as mensagens (melhor qualidade que GPT, custo baixo)
+    // Serper + Gemini comprime contexto web → Claude Haiku monta resposta
+    // Extended thinking usa Haiku com thinking habilitado
 
-    const deveUsarClaude = use_extended_thinking // APENAS extended thinking usa Claude (exclusivo)
+    console.log(`[Claude Haiku] 100% Anthropic${temContextoComprimido ? ' (MODO MONTAGEM)' : ''}${imagem_base64 ? ' (VISION)' : ''}${pdf_base64 ? ' (PDF)' : ''}`)
 
-    if (deveUsarClaude) {
-      console.log('[Smart Router] Usando Claude (extended thinking exclusivo)')
-      return await streamClaude({
-        historico,
-        mensagem: mensagemParaIA,
-        conversa_id: conversaAtual,
-        user_id,
-        plano,
-        imagem_base64,
-        imagem_tipo,
-        pdf_base64,
-        use_web_search: false, // Serper já faz a busca
-        use_extended_thinking,
-        thinking_budget
-      })
-    }
-
-    // TUDO via Smart Router (OpenAI) - economia máxima
-    // Imagens → GPT-4o | PDFs → GPT-5.2 | Complexo → GPT-5.2 | Simples → o4-mini
-    console.log(`[Smart Router] 100% OpenAI${temContextoComprimido ? ' (MODO MONTAGEM)' : ''}${imagem_base64 ? ' (VISION GPT-4o)' : ''}${pdf_base64 ? ' (PDF GPT-5.2)' : ''}`)
-
-    return await streamComSmartRouter({
+    return await streamClaude({
       historico,
       mensagem: mensagemParaIA,
       conversa_id: conversaAtual,
@@ -606,8 +581,10 @@ export async function POST(request: NextRequest) {
       plano,
       imagem_base64,
       imagem_tipo,
-      complexityAnalysis,
-      contextoComprimido: temContextoComprimido
+      pdf_base64,
+      use_web_search: false, // Serper já faz a busca
+      use_extended_thinking,
+      thinking_budget
     })
     // ========== FIM ROTEAMENTO INTELIGENTE ==========
   } catch (error) {
@@ -1046,10 +1023,10 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ type: 'text', content: chunk.content })}\n\n`)
             )
-          } else if (chunk.type === 'reasoning' && chunk.reasoning) {
-            // Tokens de raciocínio do gpt-5.2
+          } else if (chunk.type === 'thinking' && chunk.content) {
+            // Tokens de raciocínio
             controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: 'thinking', content: chunk.reasoning })}\n\n`)
+              encoder.encode(`data: ${JSON.stringify({ type: 'thinking', content: chunk.content })}\n\n`)
             )
           } else if (chunk.type === 'done') {
             // Capturar tokens
@@ -1100,8 +1077,8 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
             type: 'done',
             conversa_id,
             tokens: { input: tokensInput, output: tokensOutput },
-            provider: 'openai',
-            model: complexityAnalysis.modeloRecomendado,
+            provider: 'claude',
+            model: 'claude-haiku',
             complexity: complexityAnalysis.nivel
           })}\n\n`)
         )
@@ -1113,45 +1090,31 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
         if (heartbeatInterval) clearInterval(heartbeatInterval)
         console.error('[Smart Router] Erro:', error)
 
-        // Fallback 1: Tentar outro modelo OpenAI (GPT-5.2 se estava usando o4-mini, ou vice-versa)
+        // Fallback: Claude falhou, tentar Gemini Flash como fallback
         const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
-        console.log('[Smart Router] Tentando fallback OpenAI alternativo:', errorMessage)
+        console.log('[Claude Haiku] Tentando fallback Gemini Flash:', errorMessage)
 
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({
             type: 'provider_switch',
-            from: 'openai',
-            to: 'openai-fallback',
+            from: 'claude',
+            to: 'gemini-fallback',
             message: 'Alternando modelo...'
           })}\n\n`)
         )
 
         try {
-          // Fallback: usar GPT-5.2 com high reasoning (mais robusto)
-          let systemPrompt = plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
-
-          // Detecção de primeira mensagem no fallback
-          if (historico.length === 0) {
-            systemPrompt += `\n\nATENÇÃO: PRIMEIRA MENSAGEM - resposta rica com texto detalhado, fluxograma Mermaid, 2-3 questões em \`\`\`questao JSON, e referências ABNT.`
-          }
-
-          systemPrompt += `\n\n## REGRAS CRÍTICAS (NUNCA IGNORE):
-1. Questões: SEMPRE use \`\`\`questao com JSON. NUNCA texto puro com A), B), C).
-2. Fontes: TODA resposta DEVE terminar com seção 📚 **Fontes:** com citações ABNT [1], [2], [3].
-3. Citações inline: use [1], [2] no texto para indicar a fonte de cada afirmação.
-4. Tabelas: SEMPRE deixe linha em branco antes e depois. NUNCA junte cabeçalho com título.`
-
+          // Fallback: usar Gemini Flash via multi-provider
+          const { streamWithFallback } = await import('@/lib/ai/multi-provider')
           const messages = historico.map(m => ({
             role: m.role as 'user' | 'assistant',
             content: m.content
           }))
           messages.push({ role: 'user' as const, content: mensagem })
 
-          // Usar GPT-5.2 como fallback
-          const { streamWithGPT52: fallbackStream } = await import('@/lib/ai/openai-advanced')
-          const fallbackGen = fallbackStream(messages, systemPrompt, {
-            plano: plano as 'premium' | 'residencia' | 'gratuito',
-            reasoningEffort: 'high',
+          const fallbackGen = streamWithFallback(messages, {
+            plano: (plano === 'gratuito' ? 'premium' : plano) as 'premium' | 'residencia',
+            useWebSearch: false,
             maxTokens: 12288
           })
 
@@ -1177,7 +1140,7 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
             })
             .eq('id', conversa_id)
 
-          const custoFallback = calcularCusto('gpt-5.2', tokensInput, tokensOutput)
+          const custoFallback = calcularCusto('gemini-2.0-flash', tokensInput, tokensOutput)
           await incrementarUsoIA(user_id, 'chats', 1, tokensInput, tokensOutput, custoFallback)
 
           controller.enqueue(
@@ -1185,8 +1148,8 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
               type: 'done',
               conversa_id,
               tokens: { input: tokensInput, output: tokensOutput },
-              provider: 'openai',
-              model: 'gpt-5.2',
+              provider: 'gemini',
+              model: 'gemini-flash',
               fallback: true
             })}\n\n`)
           )
@@ -1195,7 +1158,7 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
           return
 
         } catch (fallbackError) {
-          console.error('[Smart Router] Fallback GPT-5.2 também falhou:', fallbackError)
+          console.error('[Claude Haiku] Fallback Gemini também falhou:', fallbackError)
 
           const fallbackMessage = fullResponse.length > 100
             ? '\n\n---\n*Resposta pode estar incompleta.*'
@@ -1486,9 +1449,9 @@ async function streamClaude(params: StreamClaudeParams) {
     })
   }
 
-  // Selecionar modelo - Sonnet 4.5 para todos os planos
-  // Sonnet oferece excelente qualidade com custo 5x menor que Opus
-  const modeloSelecionado = MODELOS.claude.sonnet
+  // Selecionar modelo - Haiku 4.5 para todos os planos
+  // Haiku oferece boa qualidade com custo muito menor
+  const modeloSelecionado = MODELOS.claude.haiku
   let systemPrompt = params.plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
 
   // ========== DETECÇÃO DE PRIMEIRA MENSAGEM ==========

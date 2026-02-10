@@ -43,21 +43,20 @@ export interface LimitesUsoMED {
 // =============================================
 // LIMITES POR PLANO - PREPARAMED 2026
 // =============================================
-// FREE: R$0 - Trial 1h + 10 questões/dia
-// PREMIUM: R$60/mês - Sonnet + limites generosos
-// RESIDÊNCIA: R$200/mês - Smart Router (OpenAI + Claude)
+// FREE: R$0 - Trial 30min chat ilimitado, depois trava chat
+// RESIDÊNCIA: R$200/mês - Claude Haiku + tudo ilimitado
 // =============================================
 
 export const LIMITES_PLANO = {
   gratuito: {
-    // Trial de 1 hora com acesso total
-    trial_horas: 1,
-    // Após trial
+    // Trial de 30 minutos com chat ilimitado
+    trial_minutos: 30,
+    // Após trial: chat trava, mas pode usar questões e outras funcionalidades
     questoes_dia: 10,
     gabarito_percentual: 50, // 50% blur
     simulados_mes: 0,
     questoes_por_simulado: 0,
-    perguntas_ia_mes: 0,
+    perguntas_ia_mes: 0, // Chat TRAVA após trial
     resumos_ia_mes: 0,
     flashcards_semana: 0,
     casos_clinicos_mes: 0,
@@ -74,36 +73,37 @@ export const LIMITES_PLANO = {
     teoria_nivel: 'basico' as const
   },
   premium: {
-    // R$60/mês
-    trial_horas: 0,
-    questoes_dia: -1, // ilimitado
+    // Plano descontinuado - mantido para compatibilidade de usuários existentes
+    // Novos usuários devem usar Residência
+    trial_minutos: 0,
+    questoes_dia: -1,
     gabarito_percentual: 100,
     simulados_mes: 5,
     questoes_por_simulado: 100,
-    perguntas_ia_mes: 100, // Sonnet
+    perguntas_ia_mes: 100,
     resumos_ia_mes: 15,
     flashcards_semana: 50,
-    casos_clinicos_mes: 3, // Texto apenas
+    casos_clinicos_mes: 3,
     anotacoes_total: 100,
     biblioteca_acesso: true,
-    analise_exames: false, // Teaser
-    voz_ia: false, // Teaser
-    modelo_ia: 'sonnet',
-    fila_ia: true, // 5-30s de espera
+    analise_exames: false,
+    voz_ia: false,
+    modelo_ia: 'haiku',
+    fila_ia: true,
     exportar_pdf: true,
-    marca_dagua: true, // Com marca d'água
+    marca_dagua: true,
     badge_ranking: '💎',
     historico_dias: 365,
     teoria_nivel: 'avancado' as const
   },
   residencia: {
-    // R$150/mês
-    trial_horas: 0,
+    // R$200/mês - Plano único
+    trial_minutos: 0,
     questoes_dia: -1, // ilimitado
     gabarito_percentual: 100,
     simulados_mes: -1, // ilimitado
     questoes_por_simulado: 200,
-    perguntas_ia_mes: -1, // ilimitado (Opus)
+    perguntas_ia_mes: -1, // ilimitado (Claude Haiku)
     resumos_ia_mes: -1, // ilimitado
     flashcards_semana: -1, // ilimitado
     casos_clinicos_mes: -1, // ilimitado + voz
@@ -111,7 +111,7 @@ export const LIMITES_PLANO = {
     biblioteca_acesso: true,
     analise_exames: true,
     voz_ia: true,
-    modelo_ia: 'opus',
+    modelo_ia: 'haiku',
     fila_ia: false, // Instantâneo
     exportar_pdf: true,
     marca_dagua: false, // Limpo
@@ -124,8 +124,8 @@ export const LIMITES_PLANO = {
 // Preços dos planos
 export const PRECOS_PLANO = {
   gratuito: 0,
-  premium: 60,
-  residencia: 150
+  premium: 60, // Descontinuado - mantido para compatibilidade
+  residencia: 200
 }
 
 export interface AssinaturaMED {
@@ -231,20 +231,20 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
 
   // Calcular status do trial - BASEADO EM TEMPO ATIVO
   const calcularTrialStatus = useCallback((): TrialStatus => {
-    const DURACAO_TRIAL_SEGUNDOS = 1 * 60 * 60 // 1 hora em segundos
+    const DURACAO_TRIAL_SEGUNDOS = 30 * 60 // 30 minutos em segundos
 
     if (!profile || plano !== 'gratuito') {
-      return { ativo: false, tempoRestante: 0, tempoRestanteFormatado: '0h 0min', percentualUsado: 100, expirado: true, tempoUsadoSegundos: 0 }
+      return { ativo: false, tempoRestante: 0, tempoRestanteFormatado: '0min', percentualUsado: 100, expirado: true, tempoUsadoSegundos: 0 }
     }
 
     // Ainda não iniciou o trial
     if (!profile.trial_started_at) {
-      return { ativo: false, tempoRestante: DURACAO_TRIAL_SEGUNDOS * 1000, tempoRestanteFormatado: '1h 0min', percentualUsado: 0, expirado: false, tempoUsadoSegundos: 0 }
+      return { ativo: false, tempoRestante: DURACAO_TRIAL_SEGUNDOS * 1000, tempoRestanteFormatado: '30min', percentualUsado: 0, expirado: false, tempoUsadoSegundos: 0 }
     }
 
     // Já usou todo o trial
     if (profile.trial_used) {
-      return { ativo: false, tempoRestante: 0, tempoRestanteFormatado: '0h 0min', percentualUsado: 100, expirado: true, tempoUsadoSegundos: DURACAO_TRIAL_SEGUNDOS }
+      return { ativo: false, tempoRestante: 0, tempoRestanteFormatado: '0min', percentualUsado: 100, expirado: true, tempoUsadoSegundos: DURACAO_TRIAL_SEGUNDOS }
     }
 
     // Calcular tempo restante baseado no tempo USADO (não corrido)
@@ -252,16 +252,15 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
     const tempoRestanteSegundos = Math.max(0, DURACAO_TRIAL_SEGUNDOS - tempoUsado)
 
     if (tempoRestanteSegundos <= 0) {
-      return { ativo: false, tempoRestante: 0, tempoRestanteFormatado: '0h 0min', percentualUsado: 100, expirado: true, tempoUsadoSegundos: tempoUsado }
+      return { ativo: false, tempoRestante: 0, tempoRestanteFormatado: '0min', percentualUsado: 100, expirado: true, tempoUsadoSegundos: tempoUsado }
     }
 
-    const horas = Math.floor(tempoRestanteSegundos / 3600)
-    const minutos = Math.floor((tempoRestanteSegundos % 3600) / 60)
+    const minutos = Math.ceil(tempoRestanteSegundos / 60)
 
     return {
       ativo: true,
       tempoRestante: tempoRestanteSegundos * 1000, // Converter para ms
-      tempoRestanteFormatado: `${horas}h ${minutos}min`,
+      tempoRestanteFormatado: `${minutos}min`,
       percentualUsado: Math.round((tempoUsado / DURACAO_TRIAL_SEGUNDOS) * 100),
       expirado: false,
       tempoUsadoSegundos: tempoUsado
@@ -289,7 +288,7 @@ export function MedAuthProvider({ children }: { children: ReactNode }) {
       const status = calcularTrialStatus()
       if (status.ativo && user && profile?.trial_started_at && !profile?.trial_used) {
         try {
-          const DURACAO_TRIAL_SEGUNDOS = 4 * 60 * 60
+          const DURACAO_TRIAL_SEGUNDOS = 30 * 60 // 30 minutos
           const novoTempoUsado = (profile.trial_tempo_usado_segundos || 0) + 60 // +1 minuto
 
           // Verificar se acabou o trial
