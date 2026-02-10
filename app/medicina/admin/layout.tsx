@@ -17,7 +17,8 @@ import {
   Sparkles,
   ChevronLeft,
   Database,
-  Zap
+  Zap,
+  Coins
 } from 'lucide-react'
 
 const adminMenuItems = [
@@ -26,6 +27,7 @@ const adminMenuItems = [
   { href: '/medicina/admin/questoes/gerar', label: 'Gerar Questões', icon: Sparkles, highlight: true },
   { href: '/medicina/admin/disciplinas', label: 'Disciplinas', icon: BookOpen },
   { href: '/medicina/admin/historico', label: 'Histórico', icon: History },
+  { href: '/medicina/admin/tokens', label: 'Tokens & Custos', icon: Coins, highlight: true },
 ]
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
