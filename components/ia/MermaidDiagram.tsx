@@ -22,7 +22,6 @@ interface MermaidDiagramProps {
   chart: string
   title?: string
   nodeDescriptions?: Record<string, string>
-  disableInternalFullscreen?: boolean
 }
 
 interface NodeInfo {
@@ -240,7 +239,7 @@ function validateMermaidSyntax(code: string): string | null {
   return null
 }
 
-function MermaidDiagram({ chart, title, nodeDescriptions = {}, disableInternalFullscreen = false }: MermaidDiagramProps) {
+function MermaidDiagram({ chart, title, nodeDescriptions = {} }: MermaidDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const svgContainerRef = useRef<HTMLDivElement>(null)
   const [svg, setSvg] = useState<string>('')
@@ -931,20 +930,18 @@ function MermaidDiagram({ chart, title, nodeDescriptions = {}, disableInternalFu
               <Download className="w-4 h-4 text-slate-600" />
             </button>
 
-            {/* Fullscreen - SEMPRE visível (essencial para mobile), oculto quando já está em sidebar/modal */}
-            {!disableInternalFullscreen && (
-              <button
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors active:bg-slate-200"
-                title={isFullscreen ? 'Sair do fullscreen (ESC)' : 'Fullscreen'}
-              >
-                {isFullscreen ? (
-                  <Minimize2 className="w-4 h-4 text-slate-600" />
-                ) : (
-                  <Maximize2 className="w-4 h-4 text-slate-600" />
-                )}
-              </button>
-            )}
+            {/* Fullscreen - SEMPRE visível (essencial para mobile) */}
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors active:bg-slate-200"
+              title={isFullscreen ? 'Sair do fullscreen (ESC)' : 'Fullscreen'}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="w-4 h-4 text-slate-600" />
+              ) : (
+                <Maximize2 className="w-4 h-4 text-slate-600" />
+              )}
+            </button>
 
           </div>
         </div>

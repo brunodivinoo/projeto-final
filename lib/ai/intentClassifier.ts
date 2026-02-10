@@ -173,13 +173,6 @@ const PADROES_INTENCAO: Record<IntencaoUsuario, RegExp[]> = {
     /quando usar/i,
     /por que não/i,
     /é verdade que/i,
-    /pesquisa\s+(ai|aí)?/i,
-    /compara/i,
-    /compare/i,
-    /diferenças?/i,
-    /versus/i,
-    /vs\.?\s/i,
-    /qual\s+(é\s+)?(melhor|pior|mais|menos)/i,
   ],
 }
 
@@ -241,16 +234,13 @@ export function classificarIntencao(mensagem: string): ClassificacaoIntencao {
     // Não adicionar automaticamente - deixar o Claude decidir se gera ou busca
   }
 
-  // 3. DETERMINAR NÍVEL DE DETALHE (mais inteligente)
+  // 3. DETERMINAR NÍVEL DE DETALHE
   let nivelDetalhe: 'resumido' | 'normal' | 'detalhado' = 'normal'
 
-  if (/detalh|aprofund|completo|tudo sobre|explicação completa|em detalhes|explique tudo|conte tudo|fale tudo|me explique bem/i.test(msg)) {
+  if (/detalh|aprofund|completo|tudo sobre|explicação completa|em detalhes/i.test(msg)) {
     nivelDetalhe = 'detalhado'
-  } else if (/resum|breve|rápido|rapido|curto|simplif|objetivo|direto|sem enrolação|sem enrolacao|de forma curta|rapidinho|só o principal|so o principal/i.test(msg)) {
+  } else if (/resum|breve|rápido|rapido|curto|simplif|objetivo|direto/i.test(msg)) {
     nivelDetalhe = 'resumido'
-  } else if (/pesquisa|diferença|diferenca|compare|qual (é |e )?(melhor|pior)|versus|vs\b/i.test(msg)) {
-    // Pesquisas e comparações geralmente querem nível normal-detalhado
-    nivelDetalhe = 'normal'
   }
 
   // 4. DETERMINAR FORMATO IDEAL (como Meta AI escolhe)

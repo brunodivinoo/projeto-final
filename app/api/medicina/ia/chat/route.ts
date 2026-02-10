@@ -527,17 +527,6 @@ export async function POST(request: NextRequest) {
     }
     // ========== FIM BUSCA WEB + COMPRESSÃO ==========
 
-    // ========== CLASSIFICAÇÃO DE INTENÇÃO E NÍVEL DE DETALHE ==========
-    const intencaoUsuario = classificarIntencao(mensagem)
-    const instrucoesIntencao = gerarInstrucoesDeIntencao(intencaoUsuario)
-    console.log(`[Intenção] ${intencaoUsuario.intencao} (${intencaoUsuario.nivelDetalhe}) - confiança: ${intencaoUsuario.confianca}`)
-
-    // Injetar instruções de intenção na mensagem para IA
-    if (instrucoesIntencao) {
-      mensagemParaIA = `${instrucoesIntencao}\n\n${mensagemParaIA}`
-    }
-    // ========== FIM CLASSIFICAÇÃO ==========
-
     // ========== ROTEAMENTO INTELIGENTE COM SMART ROUTER ==========
     // Analisar complexidade da mensagem para decidir modelo
     const complexityAnalysis = analisarComplexidade(mensagem, {
@@ -546,12 +535,6 @@ export async function POST(request: NextRequest) {
       temPdf: !!pdf_base64,
       plano: plano === 'gratuito' ? 'premium' : plano
     })
-
-    // Se tem PDF, marcar como complexa (Claude Haiku lida bem com PDFs)
-    if (pdf_base64) {
-      complexityAnalysis.nivel = 'complexa'
-      complexityAnalysis.motivo = 'Análise de PDF → Claude Haiku'
-    }
 
     console.log(`[Smart Router] Complexidade: ${complexityAnalysis.nivel} (score: ${complexityAnalysis.score})`)
     console.log(`[Smart Router] Modelo recomendado: ${complexityAnalysis.modeloRecomendado}`)
@@ -563,17 +546,49 @@ export async function POST(request: NextRequest) {
     const temContextoComprimido = !!contextoBusca
 
     if (temContextoComprimido) {
-      console.log('[Smart Router] MODO MONTAGEM: Serper+Gemini → OpenAI monta resposta')
+      console.log('[Smart Router] MODO MONTAGEM: Serper+Gemini já comprimiu → o4-mini monta resposta')
+      console.log(`[Smart Router] Economia: evitando Claude ($3/M) → usando o4-mini ($1.10/M)`)
     }
 
-    // ========== DECISÃO DE MODELO: 100% ANTHROPIC CLAUDE HAIKU ==========
-    // Claude Haiku para TODAS as mensagens (melhor qualidade que GPT, custo baixo)
-    // Serper + Gemini comprime contexto web → Claude Haiku monta resposta
-    // Extended thinking usa Haiku com thinking habilitado
+    // Decidir se usa OpenAI (mais economico) ou Claude (mais capaz)
+    // REGRA: Se contexto já foi comprimido pelo Serper+Gemini, NÃO usar Claude
+    // (mesmo com use_web_search, pois Serper já fez a busca)
+    // Usar Claude APENAS quando:
+    // - Extended thinking (exclusivo Claude)
+    // - Imagem (vision)
+    // - PDF (melhor suporte)
+    // - Residência especializada SEM contexto comprimido
+    // - Web search E Serper NÃO conseguiu comprimir (fallback)
 
-    console.log(`[Claude Haiku] 100% Anthropic${temContextoComprimido ? ' (MODO MONTAGEM)' : ''}${imagem_base64 ? ' (VISION)' : ''}${pdf_base64 ? ' (PDF)' : ''}`)
+    const deveUsarClaude = !temContextoComprimido && ( // Se já tem contexto comprimido, NUNCA usar Claude
+                            use_web_search || // Web search sem contexto Serper → fallback Claude
+                            (plano === 'residencia' && complexityAnalysis.nivel === 'especializada') // Tarefas especializadas
+                          ) ||
+                          use_extended_thinking || // Extended thinking SEMPRE Claude (exclusivo)
+                          imagem_base64 || // Imagens SEMPRE Claude (vision)
+                          pdf_base64 // PDFs SEMPRE Claude (melhor suporte)
 
-    return await streamClaude({
+    if (deveUsarClaude) {
+      console.log('[Smart Router] Usando Claude (funcionalidade exclusiva)')
+      return await streamClaude({
+        historico,
+        mensagem: mensagemParaIA,
+        conversa_id: conversaAtual,
+        user_id,
+        plano,
+        imagem_base64,
+        imagem_tipo,
+        pdf_base64,
+        use_web_search: temContextoComprimido ? false : use_web_search, // Não usar web_search do Claude se Serper já buscou
+        use_extended_thinking,
+        thinking_budget
+      })
+    }
+
+    // Usar Smart Router para roteamento OpenAI
+    // Se contexto comprimido → modo montagem (o4-mini, economia máxima)
+    console.log(`[Smart Router] Usando roteamento inteligente OpenAI${temContextoComprimido ? ' (MODO MONTAGEM)' : ''}`)
+    return await streamComSmartRouter({
       historico,
       mensagem: mensagemParaIA,
       conversa_id: conversaAtual,
@@ -581,10 +596,8 @@ export async function POST(request: NextRequest) {
       plano,
       imagem_base64,
       imagem_tipo,
-      pdf_base64,
-      use_web_search: false, // Serper já faz a busca
-      use_extended_thinking,
-      thinking_budget
+      complexityAnalysis,
+      contextoComprimido: temContextoComprimido
     })
     // ========== FIM ROTEAMENTO INTELIGENTE ==========
   } catch (error) {
@@ -1023,10 +1036,10 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ type: 'text', content: chunk.content })}\n\n`)
             )
-          } else if (chunk.type === 'thinking' && chunk.content) {
-            // Tokens de raciocínio
+          } else if (chunk.type === 'reasoning' && chunk.reasoning) {
+            // Tokens de raciocínio do gpt-5.2
             controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: 'thinking', content: chunk.content })}\n\n`)
+              encoder.encode(`data: ${JSON.stringify({ type: 'thinking', content: chunk.reasoning })}\n\n`)
             )
           } else if (chunk.type === 'done') {
             // Capturar tokens
@@ -1040,9 +1053,23 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
           }
         }
 
-        // NOTA: Imagens são gerenciadas pela IA via marcadores [IMAGE_SEARCH: termo]
-        // O frontend (MedicalImageGallery) busca imagens pelo Serper automaticamente
-        // NÃO append imagens brutas aqui - causa imagens quebradas e sem contexto
+        // Buscar imagens relevantes via Serper (em paralelo com a atualização)
+        if (deveRecomendarImagens(mensagem)) {
+          try {
+            const topico = extractTopic(mensagem) || mensagem.substring(0, 80)
+            const imagensResult = await buscarImagensComFallback(topico, 3)
+
+            if (imagensResult.imagens && imagensResult.imagens.length > 0) {
+              const imagensTexto = formatarImagensParaChat(imagensResult.imagens)
+              fullResponse += imagensTexto
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: imagensTexto })}\n\n`)
+              )
+            }
+          } catch (imgError) {
+            console.error('[Chat] Erro ao buscar imagens Serper:', imgError)
+          }
+        }
 
         // Atualizar resposta final
         await updateResponse(true)
@@ -1077,8 +1104,8 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
             type: 'done',
             conversa_id,
             tokens: { input: tokensInput, output: tokensOutput },
-            provider: 'claude',
-            model: 'claude-haiku',
+            provider: 'openai',
+            model: complexityAnalysis.modeloRecomendado,
             complexity: complexityAnalysis.nivel
           })}\n\n`)
         )
@@ -1090,43 +1117,70 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
         if (heartbeatInterval) clearInterval(heartbeatInterval)
         console.error('[Smart Router] Erro:', error)
 
-        // Fallback: Claude falhou, tentar Gemini Flash como fallback
+        // Tentar fallback para Claude
         const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
-        console.log('[Claude Haiku] Tentando fallback Gemini Flash:', errorMessage)
+        console.log('[Smart Router] Fazendo fallback para Claude devido a:', errorMessage)
 
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({
             type: 'provider_switch',
-            from: 'claude',
-            to: 'gemini-fallback',
-            message: 'Alternando modelo...'
+            from: 'openai',
+            to: 'claude',
+            message: 'Alternando para servidor secundário...'
           })}\n\n`)
         )
 
         try {
-          // Fallback: usar Gemini Flash via multi-provider
-          const { streamWithFallback } = await import('@/lib/ai/multi-provider')
+          // Fallback para Claude - usando Sonnet 4.5 para todos os planos (excelente qualidade, 5x mais barato que Opus)
+          const modeloSelecionado = MODELOS.claude.sonnet
+          let systemPrompt = plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
+
+          // Detecção de primeira mensagem no fallback
+          if (historico.length === 0) {
+            systemPrompt += `\n\n<first_message_context>
+ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
+Siga a regra de PRIMEIRA MENSAGEM: resposta rica com texto detalhado, 1 fluxograma Mermaid, 2-3 questões em formato \`\`\`questao JSON, referências. Máximo 1-2 imagens sem repetição.
+</first_message_context>`
+          }
+
+          // Adicionar contexto da memória persistente
+          try {
+            const memCtx = await getContextForPrompt(user_id)
+            if (memCtx && memCtx.trim().length > 0) systemPrompt += memCtx
+          } catch { /* continua sem memória */ }
+
           const messages = historico.map(m => ({
-            role: m.role as 'user' | 'assistant',
+            role: m.role,
             content: m.content
           }))
-          messages.push({ role: 'user' as const, content: mensagem })
+          messages.push({ role: 'user', content: mensagem })
 
-          const fallbackGen = streamWithFallback(messages, {
-            plano: (plano === 'gratuito' ? 'premium' : plano) as 'premium' | 'residencia',
-            useWebSearch: false,
-            maxTokens: 12288
+          const stream = await anthropic.messages.stream({
+            model: modeloSelecionado,
+            max_tokens: 8192,
+            system: [{
+              type: 'text',
+              text: systemPrompt,
+              cache_control: { type: 'ephemeral' }
+            }],
+            messages: messages as Anthropic.MessageParam[],
+            stream: true
           })
 
-          for await (const chunk of fallbackGen) {
-            if (chunk.type === 'text' && chunk.content) {
-              fullResponse += chunk.content
+          for await (const event of stream) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const evt = event as any
+            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+              fullResponse += evt.delta.text
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: chunk.content })}\n\n`)
+                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: evt.delta.text })}\n\n`)
               )
-            } else if (chunk.type === 'done' && chunk.tokens) {
-              tokensInput = chunk.tokens.input || 0
-              tokensOutput = chunk.tokens.output || 0
+            }
+            if (evt.type === 'message_start' && evt.message?.usage) {
+              tokensInput = evt.message.usage.input_tokens
+            }
+            if (evt.type === 'message_delta' && evt.usage) {
+              tokensOutput = evt.usage.output_tokens
             }
           }
 
@@ -1140,16 +1194,15 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
             })
             .eq('id', conversa_id)
 
-          const custoFallback = calcularCusto('gemini-2.0-flash', tokensInput, tokensOutput)
-          await incrementarUsoIA(user_id, 'chats', 1, tokensInput, tokensOutput, custoFallback)
+          const custoClaude = calcularCusto(modeloSelecionado, tokensInput, tokensOutput)
+          await incrementarUsoIA(user_id, 'chats', 1, tokensInput, tokensOutput, custoClaude)
 
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({
               type: 'done',
               conversa_id,
               tokens: { input: tokensInput, output: tokensOutput },
-              provider: 'gemini',
-              model: 'gemini-flash',
+              provider: 'claude',
               fallback: true
             })}\n\n`)
           )
@@ -1157,8 +1210,8 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
           controller.close()
           return
 
-        } catch (fallbackError) {
-          console.error('[Claude Haiku] Fallback Gemini também falhou:', fallbackError)
+        } catch (claudeError) {
+          console.error('[Smart Router] Fallback Claude também falhou:', claudeError)
 
           const fallbackMessage = fullResponse.length > 100
             ? '\n\n---\n*Resposta pode estar incompleta.*'
@@ -1449,9 +1502,9 @@ async function streamClaude(params: StreamClaudeParams) {
     })
   }
 
-  // Selecionar modelo - Haiku 4.5 para todos os planos
-  // Haiku oferece boa qualidade com custo muito menor
-  const modeloSelecionado = MODELOS.claude.haiku
+  // Selecionar modelo - Sonnet 4.5 para todos os planos
+  // Sonnet oferece excelente qualidade com custo 5x menor que Opus
+  const modeloSelecionado = MODELOS.claude.sonnet
   let systemPrompt = params.plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
 
   // ========== DETECÇÃO DE PRIMEIRA MENSAGEM ==========
@@ -1459,122 +1512,16 @@ async function streamClaude(params: StreamClaudeParams) {
   const isFirstMessage = historico.length === 0
   if (isFirstMessage) {
     systemPrompt += `\n\n<first_message_context>
-Esta é a PRIMEIRA MENSAGEM do usuário neste chat. Gere uma resposta COMPLETA e RICA.
-
-REGRAS DE FORMATO:
-- Use APENAS Markdown (NUNCA tags HTML como <strong>, <em>, <img>)
-- Para imagens use APENAS marcadores [IMAGE_SEARCH: termo] (NUNCA ![](url))
-- Se o texto ficar longo, REDUZA O TEXTO mas NUNCA omita os artefatos abaixo
-
-ESTRUTURA DA RESPOSTA (nesta ordem):
-
-1. TEXTO EXPLICATIVO
-   - Conteúdo completo e bem formatado com headers ##, **negrito**, listas
-   - Distribua 2-3 marcadores [IMAGE_SEARCH: termo médico] nos parágrafos relevantes
-
-2. FLASHCARDS (5 cards):
-\`\`\`flashcards:Título do Tema
-[
-  {"id":"fc-1","frente":"Pergunta 1?","verso":"Resposta completa. — Fonte: Referência","tags":["tag"],"dificuldade":"medio"},
-  {"id":"fc-2","frente":"Pergunta 2?","verso":"Resposta completa. — Fonte: Referência","tags":["tag"],"dificuldade":"facil"},
-  {"id":"fc-3","frente":"Pergunta 3?","verso":"Resposta completa. — Fonte: Referência","tags":["tag"],"dificuldade":"dificil"},
-  {"id":"fc-4","frente":"Pergunta 4?","verso":"Resposta completa. — Fonte: Referência","tags":["tag"],"dificuldade":"medio"},
-  {"id":"fc-5","frente":"Pergunta 5?","verso":"Resposta completa. — Fonte: Referência","tags":["tag"],"dificuldade":"facil"}
-]
-\`\`\`
-
-3. FLUXOGRAMA MERMAID:
-\`\`\`mermaid
-graph TD
-    A[Conceito Central] --> B[Etapa 1]
-    B --> C{Decisão Clínica?}
-    C -->|Sim| D[Conduta A]
-    C -->|Não| E[Conduta B]
-    D --> F[Desfecho]
-    E --> F
-\`\`\`
-
-4. QUESTÃO 1:
-\`\`\`questao
-{
-  "id": "q-1",
-  "numero": 1,
-  "tipo": "multipla_escolha",
-  "dificuldade": "medio",
-  "disciplina": "Disciplina",
-  "assunto": "Assunto",
-  "enunciado": "Paciente de X anos apresenta [quadro clínico contextualizado]. Qual a conduta mais adequada?",
-  "alternativas": [
-    {"letra": "A", "texto": "Alternativa A detalhada"},
-    {"letra": "B", "texto": "Alternativa B detalhada"},
-    {"letra": "C", "texto": "Alternativa C detalhada"},
-    {"letra": "D", "texto": "Alternativa D detalhada"},
-    {"letra": "E", "texto": "Alternativa E detalhada"}
-  ],
-  "gabarito_comentado": {
-    "resposta_correta": "C",
-    "explicacao": "Explicação clínica detalhada do porquê esta é a resposta correta.",
-    "ponto_chave": "Conceito-chave para memorizar",
-    "analise_alternativas": [
-      {"letra": "A", "analise": "Incorreta porque..."},
-      {"letra": "B", "analise": "Incorreta porque..."},
-      {"letra": "C", "analise": "Correta porque..."},
-      {"letra": "D", "analise": "Incorreta porque..."},
-      {"letra": "E", "analise": "Incorreta porque..."}
-    ]
-  }
-}
-\`\`\`
-
-5. QUESTÃO 2:
-\`\`\`questao
-{
-  "id": "q-2",
-  "numero": 2,
-  "tipo": "multipla_escolha",
-  "dificuldade": "dificil",
-  "disciplina": "Disciplina",
-  "assunto": "Assunto",
-  "enunciado": "Segundo caso clínico diferente do anterior. Qual o diagnóstico mais provável?",
-  "alternativas": [
-    {"letra": "A", "texto": "Alternativa A"},
-    {"letra": "B", "texto": "Alternativa B"},
-    {"letra": "C", "texto": "Alternativa C"},
-    {"letra": "D", "texto": "Alternativa D"},
-    {"letra": "E", "texto": "Alternativa E"}
-  ],
-  "gabarito_comentado": {
-    "resposta_correta": "B",
-    "explicacao": "Explicação detalhada.",
-    "ponto_chave": "Conceito diferente do anterior",
-    "analise_alternativas": [
-      {"letra": "A", "analise": "Incorreta porque..."},
-      {"letra": "B", "analise": "Correta porque..."},
-      {"letra": "C", "analise": "Incorreta porque..."},
-      {"letra": "D", "analise": "Incorreta porque..."},
-      {"letra": "E", "analise": "Incorreta porque..."}
-    ]
-  }
-}
-\`\`\`
-
-6. REFERÊNCIAS ABNT (3-5 fontes)
-
-7. Oferta breve (1 linha): "Posso gerar mais questões, flashcards ou aprofundar algum tópico. O que deseja?"
+ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
+Siga OBRIGATORIAMENTE a "REGRA DA PRIMEIRA MENSAGEM DE CHAT NOVO":
+1. Resposta COMPLETA e RICA com texto detalhado (mínimo 3 parágrafos)
+2. OBRIGATÓRIO gerar 1 fluxograma Mermaid (\`\`\`mermaid com graph TD)
+3. OBRIGATÓRIO gerar 2-3 questões no formato \`\`\`questao com JSON estruturado
+4. Referências ABNT ao final
+5. NO MÁXIMO 1-2 imagens, SEM repetição de URLs
+NÃO gere questões como texto puro - SEMPRE use \`\`\`questao com JSON!
 </first_message_context>`
     console.log('[Chat API] Primeira mensagem detectada - injetando instrução de resposta rica')
-  } else {
-    // Mensagens seguintes: reforçar imagens obrigatórias e oferta de recursos
-    systemPrompt += `\n\n<followup_message_context>
-Use APENAS Markdown (NUNCA tags HTML). Use APENAS [IMAGE_SEARCH: termo] para imagens (NUNCA ![](url)).
-
-REGRAS:
-1. Use 1-2 marcadores [IMAGE_SEARCH:] ao longo do texto se relevante ao tema
-2. Questões sempre em bloco \`\`\`questao com JSON
-3. Referências ABNT discretas ao final (3-5 fontes)
-4. Oferta breve no final (1-2 linhas)
-5. NUNCA gere meta-seções: checklist, resumo executivo, contagem final, destaques
-</followup_message_context>`
   }
 
   // ========== ENRIQUECIMENTO PARALELO (memória + variação + HF) ==========
@@ -1634,7 +1581,7 @@ REGRAS:
   // Prompt caching habilitado para economizar tokens (system prompt cacheado por 5 min)
   const streamParams: Record<string, unknown> = {
     model: modeloSelecionado,
-    max_tokens: canUseExtendedThinking ? 16000 : 16000, // 16k para dar espaço aos artefatos na primeira mensagem
+    max_tokens: canUseExtendedThinking ? 16000 : 12000, // Aumentado para evitar cortes
     system: [{
       type: 'text',
       text: systemPrompt,
@@ -1927,11 +1874,6 @@ REGRAS:
             // Usar o prompt de continuação gerado pelo validador se houver
             let promptContinuacao = validacao.promptContinuacao
 
-            // Adicionar anti-repetição ao prompt do validador
-            if (promptContinuacao) {
-              promptContinuacao += '\n\n⚠️ NUNCA repita seções que já existem na resposta. NUNCA gere CHECKLIST DE COMPLETUDE, RESUMO EXECUTIVO ou CONTAGEM FINAL.'
-            }
-
             // Se não gerou prompt específico, usar fallback manual
             if (!promptContinuacao) {
               const conteudoSolicitado = mensagem.toLowerCase()
@@ -1971,27 +1913,7 @@ REGRAS:
                 promptContinuacao += 'A resposta foi cortada no meio - continue do ponto exato onde parou. '
               }
 
-              // Detectar seções já geradas para evitar repetição
-              const secoesExistentes: string[] = []
-              if (respostaAtual.includes('pontos-chave') || respostaAtual.includes('pontos chave') || respostaAtual.includes('🎯')) {
-                secoesExistentes.push('pontos-chave')
-              }
-              if (respostaAtual.includes('posso gerar') || respostaAtual.includes('próximas etapas') || respostaAtual.includes('sugestões de estudo')) {
-                secoesExistentes.push('oferta de recursos/sugestões')
-              }
-              if (respostaAtual.includes('referência') || respostaAtual.includes('fontes:') || respostaAtual.includes('[1]') || respostaAtual.includes('📚')) {
-                secoesExistentes.push('referências/fontes')
-              }
-              if (respostaAtual.includes('checklist') || respostaAtual.includes('completude') || respostaAtual.includes('resumo executivo') || respostaAtual.includes('contagem final')) {
-                secoesExistentes.push('meta-seções (checklist/resumo executivo/contagem)')
-              }
-
-              if (secoesExistentes.length > 0) {
-                promptContinuacao += `\n\n⚠️ SEÇÕES JÁ EXISTENTES na resposta (NÃO REPITA): ${secoesExistentes.join(', ')}. `
-                promptContinuacao += 'NUNCA gere CHECKLIST DE COMPLETUDE, RESUMO EXECUTIVO ou CONTAGEM FINAL - são meta-seções desnecessárias. '
-              }
-
-              promptContinuacao += 'NÃO repita o que já foi dito. Complete APENAS o conteúdo que falta.'
+              promptContinuacao += 'NÃO repita o que já foi dito. Complete o restante.'
             }
 
             console.log(`[Chat API] Prompt de continuação: ${promptContinuacao.substring(0, 80)}...`)
@@ -2027,15 +1949,13 @@ REGRAS:
             /[a-z]$/.test(ultimoChar) ||
             // Termina com palavra curta comum (indica corte no meio)
             ['ou', 'e', 'de', 'da', 'do', 'que', 'com', 'por', 'para', 'uma', 'um', 'o', 'a', 'os', 'as'].includes(ultimaPalavra.toLowerCase()) ||
-            // Falta seção de fontes em respostas longas - mas NÃO forçar se já tem bastante conteúdo
+            // Falta seção de fontes quando deveria ter
             (!fullResponse.includes('📚 **Fontes') &&
              !fullResponse.includes('**Fontes:**') &&
              !fullResponse.includes('Referências') &&
              !fullResponse.includes('📖') &&
-             !fullResponse.includes('[1]') &&
-             !fullResponse.includes('ABNT') &&
-             fullResponse.length > 2000 && // Apenas respostas realmente longas
-             continuationCount < 1) // Máximo 1 continuação para fontes
+             fullResponse.length > 500 && // Resposta substancial
+             continuationCount < MAX_CONTINUATIONS)
           )
           
           console.log(`[Chat API] Verificação completude: último char="${ultimoChar}" última palavra="${ultimaPalavra}" pareceIncompleta=${pareceIncompleta}`)
@@ -2055,7 +1975,7 @@ REGRAS:
 
               currentMessages.push({
                 role: 'user',
-                content: 'Continue de onde parou. Se faltam fontes, adicione 📚 Fontes com 3-5 referências ABNT. ⚠️ NÃO repita seções já presentes (pontos-chave, oferta, sugestões). NUNCA gere CHECKLIST DE COMPLETUDE, RESUMO EXECUTIVO ou CONTAGEM FINAL.'
+                content: 'A resposta foi cortada. Continue de onde parou e INCLUA OBRIGATORIAMENTE a seção 📚 **Fontes:** ao final com as referências bibliográficas numeradas [1], [2], [3]...'
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               } as any)
 
@@ -2451,14 +2371,7 @@ async function streamGemini(params: StreamGeminiParams) {
   // Montar system prompt com detecção de primeira mensagem
   let geminiSystemPrompt = SYSTEM_PROMPT_PREMIUM
   if (historico.length === 0) {
-    geminiSystemPrompt += `\n\nATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo. Siga OBRIGATORIAMENTE:
-1. Texto detalhado (mín. 3 parágrafos) + MÍNIMO 5 imagens [IMAGE_SEARCH: termo] com termos DIFERENTES
-2. 5 flashcards (\`\`\`flashcards:Título) + 1 fluxograma Mermaid + 1 organograma (\`\`\`tree:Título)
-3. 2-3 questões em formato \`\`\`questao JSON (com referencias ABNT no gabarito)
-4. Referências ABNT ao final (diretrizes brasileiras + livros-texto)
-5. No final: oferecer questões, flashcards, fluxograma, organograma, diagrama, imagens`
-  } else {
-    geminiSystemPrompt += `\n\nOBRIGATÓRIO: MÍNIMO 5 imagens [IMAGE_SEARCH: termo], fontes ABNT ao final, e oferta de recursos no final (questões, flashcards, fluxograma, organograma, diagrama, imagens).`
+    geminiSystemPrompt += `\n\nATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo. Siga a regra de PRIMEIRA MENSAGEM: resposta rica com texto detalhado, 1 fluxograma Mermaid, 2-3 questões em formato \`\`\`questao JSON, referências. Máximo 1-2 imagens sem repetição.`
   }
 
   const model = genAI.getGenerativeModel({
@@ -2660,21 +2573,15 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Conversa não encontrada' }, { status: 404 })
       }
 
-      // Limitar a 200 mensagens mais recentes para evitar performance issues em conversas longas
-      // Busca as 200 mais recentes (desc) e depois inverte para ordem cronológica
-      const { data: mensagensDesc, error: msgError } = await supabase
+      const { data: mensagens, error: msgError } = await supabase
         .from('mensagens_ia_med')
         .select('id, conversa_id, role, content, tokens, has_image, has_pdf, image_url, pdf_url, created_at')
         .eq('conversa_id', conversa_id)
-        .order('created_at', { ascending: false })
-        .limit(200)
+        .order('created_at', { ascending: true })
 
-      const mensagens = mensagensDesc ? [...mensagensDesc].reverse() : []
-      const totalMensagens = mensagensDesc?.length || 0
+      console.log('[Chat API GET] Mensagens encontradas:', mensagens?.length || 0, 'erro:', msgError?.message)
 
-      console.log('[Chat API GET] Mensagens encontradas:', totalMensagens, 'erro:', msgError?.message)
-
-      return NextResponse.json({ conversa, mensagens, totalMensagens })
+      return NextResponse.json({ conversa, mensagens })
     }
 
     // Listar conversas do usuário (filtradas por modo se especificado)

@@ -134,15 +134,6 @@ const SUGGESTION_MAP: Record<string, string[]> = {
     'Quais as pegadinhas comuns deste assunto?',
     'Monte um organograma do assunto'
   ],
-  // Recursos visuais genéricos (sempre disponíveis)
-  visuais: [
-    'Gere um fluxograma sobre o tema',
-    'Crie um organograma/classificação',
-    'Monte um diagrama visual do assunto',
-    'Busque mais imagens médicas sobre isso',
-    'Gere flashcards para revisão rápida',
-    'Crie questões para eu praticar'
-  ],
 }
 
 // Sugestões padrão quando não há contexto
@@ -206,13 +197,8 @@ function SuggestionChips({ lastMessage, chatMode, onSuggestionClick }: Suggestio
       collected.push(...SUGGESTION_MAP[chatMode])
     }
 
-    // Sempre adicionar 1-2 sugestões de recursos visuais para variedade
-    const visuais = SUGGESTION_MAP.visuais || []
-    const visuaisShuffled = [...visuais].sort(() => Math.random() - 0.5)
-    collected.push(...visuaisShuffled.slice(0, 2))
-
-    // Se não encontrou nada específico do tema, usar genéricas
-    if (collected.length <= 2) {
+    // Se não encontrou nada específico, usar genéricas
+    if (collected.length === 0) {
       // Tentar sugestões genéricas baseadas no conteúdo
       if (lastMessage.includes('```questao')) {
         collected.push(...(SUGGESTION_MAP.questoes || []))
@@ -221,7 +207,7 @@ function SuggestionChips({ lastMessage, chatMode, onSuggestionClick }: Suggestio
       } else if (lastMessage.includes('```mermaid')) {
         collected.push(...(SUGGESTION_MAP.resumo || []))
       } else {
-        collected.push(...DEFAULT_SUGGESTIONS)
+        return DEFAULT_SUGGESTIONS
       }
     }
 

@@ -35,15 +35,15 @@ export const MODELO_PROVIDER_MAP: Record<string, 'claude' | 'openai' | 'gemini'>
 }
 
 // Selecionar modelo baseado no plano
-// Todos usam Haiku 4.5 - boa qualidade com custo muito baixo
+// Todos usam Sonnet 4.5 - excelente qualidade com custo 5x menor que Opus
 export function getModeloParaPlano(plano: PlanoIA): string {
   switch (plano) {
     case 'residencia':
-      return MODELOS.claude.haiku // Haiku 4.5 - qualidade acima GPT, custo baixo
+      return MODELOS.claude.sonnet // Sonnet 4.5 - muito capaz e econômico
     case 'premium':
-      return MODELOS.claude.haiku
+      return MODELOS.claude.sonnet
     default:
-      return MODELOS.claude.haiku
+      return MODELOS.claude.sonnet
   }
 }
 
@@ -156,12 +156,6 @@ export function calcularCusto(
       (tokensOutput / 1_000_000) * 25 +
       (cacheWrite / 1_000_000) * 6.25 +
       (cacheRead / 1_000_000) * 0.50
-  } else if (modelo.includes('haiku')) {
-    custoBase =
-      (tokensInput / 1_000_000) * 0.80 +
-      (tokensOutput / 1_000_000) * 4.00 +
-      (cacheWrite / 1_000_000) * 1.00 +
-      (cacheRead / 1_000_000) * 0.08
   } else if (modelo.includes('sonnet')) {
     custoBase =
       (tokensInput / 1_000_000) * 3 +
