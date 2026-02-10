@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { searchMedicalImages, type ResultadoBusca } from '@/lib/medical-images/service'
+import { buscarImagensMedicas } from '@/lib/services/serperImageService'
 import type { PlanoIA } from '@/lib/ai'
 
 const supabase = createClient(
@@ -180,88 +181,120 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Buscar imagens para TODAS as queries e acumular resultados (mínimo 5)
-    let resultado: ResultadoBusca | null = null
-    let queryUsada = ''
-    const todasImagens: ResultadoBusca['imagens'] = []
+    // PIPELINE: Serper (Google Images) como fonte PRIMÁRIA, BD local como fallback
+    const allImages: Array<{
+      id: string; url: string; thumbUrl: string; title: string; titulo: string;
+      caption: string; descricao: string; source: string; sourceUrl: string;
+      sourceName: string; fonte: string; siglaInstituicao: string; instituicao: string;
+      modality: string; license: string; referenciaABNT: string;
+    }> = []
     const urlsVistas = new Set<string>()
+    let queryUsada = queries[0]
 
-    for (const query of queries.slice(0, 8)) { // Até 8 queries
-      console.log(`[Imagens BR] Buscando: "${query}"`)
+    // 1. Buscar via Serper (Google Images) - fonte primária com muitas imagens
+    for (const query of queries.slice(0, 5)) {
+      try {
+        console.log(`[Imagens] Serper buscando: "${query}"`)
+        const serperResult = await buscarImagensMedicas(query, 5)
 
-      const res = await searchMedicalImages(query, { limit: 6 })
-
-      if (res.imagens.length > 0) {
-        if (!resultado) {
-          resultado = res
-          queryUsada = query
-        }
-        // Acumular sem duplicatas
-        for (const img of res.imagens) {
-          if (!urlsVistas.has(img.url)) {
-            urlsVistas.add(img.url)
-            todasImagens.push(img)
+        if (serperResult.success && serperResult.imagens.length > 0) {
+          for (const img of serperResult.imagens) {
+            if (!urlsVistas.has(img.url)) {
+              urlsVistas.add(img.url)
+              allImages.push({
+                id: `serper-${allImages.length}`,
+                url: img.url,
+                thumbUrl: img.url,
+                title: img.titulo,
+                titulo: img.titulo,
+                caption: img.titulo,
+                descricao: img.titulo,
+                source: 'serper_google_images',
+                sourceUrl: img.linkOriginal,
+                sourceName: img.fonte,
+                fonte: img.fonte,
+                siglaInstituicao: img.dominio,
+                instituicao: img.fonte,
+                modality: 'Medical',
+                license: 'Uso educacional',
+                referenciaABNT: img.referencia
+              })
+            }
           }
         }
+      } catch (error) {
+        console.error(`[Imagens] Erro Serper para "${query}":`, error)
       }
 
-      // Se já tem 15+ imagens, parar
-      if (todasImagens.length >= 15) break
+      if (allImages.length >= 15) break
     }
 
-    // Usar imagens acumuladas
-    if (resultado) {
-      resultado.imagens = todasImagens.slice(0, 15) // Máximo 15 imagens
+    // 2. Complementar com BD local (fallback para temas com imagens verificadas)
+    if (allImages.length < 8) {
+      for (const query of queries.slice(0, 5)) {
+        try {
+          const localRes = await searchMedicalImages(query, { limit: 4 })
+          if (localRes.imagens.length > 0) {
+            for (const img of localRes.imagens) {
+              if (!urlsVistas.has(img.url)) {
+                urlsVistas.add(img.url)
+                allImages.push({
+                  id: img.id,
+                  url: img.url,
+                  thumbUrl: img.thumbUrl,
+                  title: img.titulo,
+                  titulo: img.titulo,
+                  caption: img.descricao,
+                  descricao: img.descricao,
+                  source: 'brazilian_academic',
+                  sourceUrl: img.fonteUrl,
+                  sourceName: img.siglaInstituicao,
+                  fonte: img.fonte,
+                  siglaInstituicao: img.siglaInstituicao,
+                  instituicao: img.instituicao,
+                  modality: 'Medical',
+                  license: img.licenca,
+                  referenciaABNT: img.referenciaABNT
+                })
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`[Imagens] Erro BD local para "${query}":`, error)
+        }
+        if (allImages.length >= 15) break
+      }
     }
 
-    if (!resultado || resultado.imagens.length === 0) {
+    const images = allImages.slice(0, 15)
+
+    if (images.length === 0) {
       return NextResponse.json({
         images: [],
         total: 0,
         cached: false,
-        source: 'fontes_brasileiras_academicas',
+        source: 'nenhuma',
         queryUsed: queries[0],
         originalQuery: queries[0],
         referencias: [],
         suggestions: [
           'Tente termos em português como: "sistema cardiovascular", "tecido epitelial", "sangue"',
-          'Use nomes de sistemas: "sistema nervoso", "sistema respiratório"',
-          'Consulte a lista de tópicos disponíveis na base brasileira'
+          'Use nomes de sistemas: "sistema nervoso", "sistema respiratório"'
         ]
       })
     }
 
-    // Mapear para formato esperado pelo frontend
-    const images = resultado.imagens.map(img => ({
-      id: img.id,
-      url: img.url,
-      thumbUrl: img.thumbUrl,
-      title: img.titulo,
-      titulo: img.titulo,
-      caption: img.descricao,
-      descricao: img.descricao,
-      source: 'brazilian_academic',
-      sourceUrl: img.fonteUrl,
-      sourceName: img.siglaInstituicao,
-      fonte: img.fonte,
-      siglaInstituicao: img.siglaInstituicao,
-      instituicao: img.instituicao,
-      modality: 'Medical',
-      license: img.licenca,
-      referenciaABNT: img.referenciaABNT
-    }))
-
-    console.log(`[Imagens BR] ✓ Retornando ${images.length} imagens de fontes brasileiras`)
+    console.log(`[Imagens] ✓ Retornando ${images.length} imagens (Serper + BD local)`)
 
     return NextResponse.json({
       images,
-      total: resultado.total,
-      cached: resultado.cached,
-      source: 'fontes_brasileiras_academicas',
+      total: images.length,
+      cached: false,
+      source: 'serper_google_images_com_fallback_local',
       queryUsed: queryUsada,
       originalQuery: queries[0],
-      referencias: resultado.referencias,
-      suggestions: resultado.sugestoes
+      referencias: images.map(img => img.referenciaABNT).filter(Boolean),
+      suggestions: []
     })
 
   } catch (error) {

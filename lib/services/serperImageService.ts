@@ -93,7 +93,16 @@ const DOMINIOS_BLOQUEADOS = [
   // Wikipedia - BANIDO expressamente
   'wikipedia.org',
   'pt.wikipedia.org',
-  'en.wikipedia.org'
+  'en.wikipedia.org',
+  // YouTube - thumbnails de vídeos não são imagens médicas
+  'youtube.com',
+  'youtu.be',
+  'i.ytimg.com',
+  'img.youtube.com',
+  'yt3.ggpht.com',
+  // Outros vídeos
+  'vimeo.com',
+  'dailymotion.com'
 ]
 
 /**

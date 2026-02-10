@@ -1553,21 +1553,24 @@ graph TD
 }
 \`\`\`
 
-5. REFERÊNCIAS ABNT ao final
-6. Oferta de recursos: "💡 **Posso gerar para você:** 📝 Questões | 🃏 Flashcards | 🔀 Fluxograma | 🏗️ Organograma | 📊 Diagrama | 🖼️ Mais imagens — **O que deseja?**"
+5. REFERÊNCIAS ABNT ao final (3-5 fontes, discretas)
+6. Oferta BREVE (1-2 linhas): "💡 Posso gerar mais questões, flashcards ou fluxogramas. O que deseja?"
+
+⚠️ REGRA DE QUALIDADE: 80-90% da resposta = conteúdo educacional. NUNCA gere meta-seções como: CHECKLIST DE COMPLETUDE, RESUMO EXECUTIVO, CONTAGEM FINAL DE QUESTÕES, DESTAQUES DA REVISÃO. Foque em CONTEÚDO, não em confirmações.
+⚠️ Distribua os [IMAGE_SEARCH:] DENTRO dos parágrafos relevantes, não agrupados no início.
 </first_message_context>`
     console.log('[Chat API] Primeira mensagem detectada - injetando instrução de resposta rica')
   } else {
     // Mensagens seguintes: reforçar imagens obrigatórias e oferta de recursos
     systemPrompt += `\n\n<followup_message_context>
-⚠️ NÃO use tags HTML (<strong>, <em>, <img>). Use APENAS Markdown.
-⚠️ NÃO insira imagens via markdown ![](url). Use APENAS [IMAGE_SEARCH: termo].
+Use APENAS Markdown (NUNCA tags HTML). Use APENAS [IMAGE_SEARCH: termo] para imagens (NUNCA ![](url)).
 
 REGRAS:
-1. Fontes e Referências ABNT ao final
-2. 3 marcadores [IMAGE_SEARCH: termo médico específico] ao longo do texto (termos DIFERENTES)
-3. Se gerar questões, SEMPRE use o bloco \`\`\`questao com JSON (NUNCA texto puro)
-4. No final: "💡 **Posso gerar para você:** 📝 Questões | 🃏 Flashcards | 🔀 Fluxograma | 🏗️ Organograma | 📊 Diagrama | 🖼️ Mais imagens — **O que deseja?**"
+1. Distribua 3 marcadores [IMAGE_SEARCH:] ao longo do texto, junto ao conteúdo relevante
+2. Questões sempre em bloco \`\`\`questao com JSON
+3. Referências ABNT discretas ao final (3-5 fontes)
+4. Oferta breve no final (1-2 linhas)
+5. NUNCA gere meta-seções: checklist, resumo executivo, contagem final, destaques
 </followup_message_context>`
   }
 
@@ -1921,6 +1924,11 @@ REGRAS:
             // Usar o prompt de continuação gerado pelo validador se houver
             let promptContinuacao = validacao.promptContinuacao
 
+            // Adicionar anti-repetição ao prompt do validador
+            if (promptContinuacao) {
+              promptContinuacao += '\n\n⚠️ NUNCA repita seções que já existem na resposta. NUNCA gere CHECKLIST DE COMPLETUDE, RESUMO EXECUTIVO ou CONTAGEM FINAL.'
+            }
+
             // Se não gerou prompt específico, usar fallback manual
             if (!promptContinuacao) {
               const conteudoSolicitado = mensagem.toLowerCase()
@@ -1960,7 +1968,27 @@ REGRAS:
                 promptContinuacao += 'A resposta foi cortada no meio - continue do ponto exato onde parou. '
               }
 
-              promptContinuacao += 'NÃO repita o que já foi dito. Complete o restante.'
+              // Detectar seções já geradas para evitar repetição
+              const secoesExistentes: string[] = []
+              if (respostaAtual.includes('pontos-chave') || respostaAtual.includes('pontos chave') || respostaAtual.includes('🎯')) {
+                secoesExistentes.push('pontos-chave')
+              }
+              if (respostaAtual.includes('posso gerar') || respostaAtual.includes('próximas etapas') || respostaAtual.includes('sugestões de estudo')) {
+                secoesExistentes.push('oferta de recursos/sugestões')
+              }
+              if (respostaAtual.includes('referência') || respostaAtual.includes('fontes:') || respostaAtual.includes('[1]') || respostaAtual.includes('📚')) {
+                secoesExistentes.push('referências/fontes')
+              }
+              if (respostaAtual.includes('checklist') || respostaAtual.includes('completude') || respostaAtual.includes('resumo executivo') || respostaAtual.includes('contagem final')) {
+                secoesExistentes.push('meta-seções (checklist/resumo executivo/contagem)')
+              }
+
+              if (secoesExistentes.length > 0) {
+                promptContinuacao += `\n\n⚠️ SEÇÕES JÁ EXISTENTES na resposta (NÃO REPITA): ${secoesExistentes.join(', ')}. `
+                promptContinuacao += 'NUNCA gere CHECKLIST DE COMPLETUDE, RESUMO EXECUTIVO ou CONTAGEM FINAL - são meta-seções desnecessárias. '
+              }
+
+              promptContinuacao += 'NÃO repita o que já foi dito. Complete APENAS o conteúdo que falta.'
             }
 
             console.log(`[Chat API] Prompt de continuação: ${promptContinuacao.substring(0, 80)}...`)
@@ -1996,13 +2024,15 @@ REGRAS:
             /[a-z]$/.test(ultimoChar) ||
             // Termina com palavra curta comum (indica corte no meio)
             ['ou', 'e', 'de', 'da', 'do', 'que', 'com', 'por', 'para', 'uma', 'um', 'o', 'a', 'os', 'as'].includes(ultimaPalavra.toLowerCase()) ||
-            // Falta seção de fontes quando deveria ter
+            // Falta seção de fontes em respostas longas - mas NÃO forçar se já tem bastante conteúdo
             (!fullResponse.includes('📚 **Fontes') &&
              !fullResponse.includes('**Fontes:**') &&
              !fullResponse.includes('Referências') &&
              !fullResponse.includes('📖') &&
-             fullResponse.length > 500 && // Resposta substancial
-             continuationCount < MAX_CONTINUATIONS)
+             !fullResponse.includes('[1]') &&
+             !fullResponse.includes('ABNT') &&
+             fullResponse.length > 2000 && // Apenas respostas realmente longas
+             continuationCount < 1) // Máximo 1 continuação para fontes
           )
           
           console.log(`[Chat API] Verificação completude: último char="${ultimoChar}" última palavra="${ultimaPalavra}" pareceIncompleta=${pareceIncompleta}`)
@@ -2022,7 +2052,7 @@ REGRAS:
 
               currentMessages.push({
                 role: 'user',
-                content: 'A resposta foi cortada. Continue de onde parou e INCLUA OBRIGATORIAMENTE a seção 📚 **Fontes:** ao final com as referências bibliográficas numeradas [1], [2], [3]...'
+                content: 'Continue de onde parou. Se faltam fontes, adicione 📚 Fontes com 3-5 referências ABNT. ⚠️ NÃO repita seções já presentes (pontos-chave, oferta, sugestões). NUNCA gere CHECKLIST DE COMPLETUDE, RESUMO EXECUTIVO ou CONTAGEM FINAL.'
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               } as any)
 
