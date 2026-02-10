@@ -435,14 +435,25 @@ select option:checked {
   width: 2px;
   height: 1.2em;
   margin-left: 2px;
-  background-color: #0284c7;
+  background-color: #10b981;
   border-radius: 1px;
   animation: blink 0.8s ease-in-out infinite;
+  vertical-align: text-bottom;
 }
 
 @keyframes blink {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0; }
+}
+
+/* Pensando - bolinhas pulsantes */
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.thinking-dot {
+  animation: dot-pulse 1.4s ease-in-out infinite;
 }
 
 .content-appear {
