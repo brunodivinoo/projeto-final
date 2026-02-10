@@ -1556,9 +1556,10 @@ graph TD
 5. REFERÊNCIAS ABNT ao final (3-5 fontes, discretas)
 6. Oferta BREVE (1-2 linhas): "💡 Posso gerar mais questões, flashcards ou fluxogramas. O que deseja?"
 
-⚠️ REGRA DE QUALIDADE: 80-90% da resposta = conteúdo educacional. NUNCA gere meta-seções como: CHECKLIST DE COMPLETUDE, RESUMO EXECUTIVO, CONTAGEM FINAL DE QUESTÕES, DESTAQUES DA REVISÃO. Foque em CONTEÚDO, não em confirmações.
+⚠️ REGRA DE QUALIDADE: 80-90% da resposta = conteúdo educacional. NUNCA gere meta-seções como: CHECKLIST DE COMPLETUDE, RESUMO EXECUTIVO, CONTAGEM FINAL DE QUESTÕES, DESTAQUES DA REVISÃO.
 ⚠️ Use no máximo 2-3 [IMAGE_SEARCH:] distribuídos nos parágrafos relevantes.
-⚠️ TODOS os artefatos acima (flashcards, mermaid, questões) são OBRIGATÓRIOS na primeira mensagem.
+⚠️ OBRIGATÓRIO gerar EXATAMENTE: 5 flashcards + 1 fluxograma mermaid + 2 questões interativas. Se faltar QUALQUER um destes, a resposta está INCOMPLETA.
+⚠️ NÃO PARE até gerar todos. Se o texto ficou longo, gere os artefatos mesmo assim - eles são a parte MAIS IMPORTANTE.
 </first_message_context>`
     console.log('[Chat API] Primeira mensagem detectada - injetando instrução de resposta rica')
   } else {
