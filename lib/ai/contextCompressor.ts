@@ -74,7 +74,7 @@ export async function comprimirContexto(
       model: MODELOS.gemini.flash,
       generationConfig: {
         temperature: 0.1, // Baixa para ser fiel aos fatos
-        maxOutputTokens: 800,
+        maxOutputTokens: 1500, // Mais espaço para síntese detalhada
       },
     })
 
