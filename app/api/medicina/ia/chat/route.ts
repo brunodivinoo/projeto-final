@@ -1461,27 +1461,29 @@ async function streamClaude(params: StreamClaudeParams) {
     systemPrompt += `\n\n<first_message_context>
 ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
 
-⚠️ REGRA ABSOLUTA: NÃO use tags HTML (<strong>, <em>, <img>, etc). Use APENAS Markdown (**negrito**, *itálico*, ![](url)).
+⚠️ REGRA ABSOLUTA: NÃO use tags HTML (<strong>, <em>, <img>, etc). Use APENAS Markdown (**negrito**, *itálico*).
 ⚠️ REGRA ABSOLUTA: NÃO insira imagens via markdown ![](url) - use APENAS marcadores [IMAGE_SEARCH: termo].
+
+⚠️⚠️⚠️ REGRA MAIS IMPORTANTE: Você DEVE gerar TODOS os artefatos listados abaixo. Se o texto ficar longo demais e não sobrar espaço, REDUZA O TEXTO mas NUNCA omita os artefatos. Os artefatos são mais importantes que o comprimento do texto.
 
 ESTRUTURA OBRIGATÓRIA DA RESPOSTA (nesta EXATA ordem):
 
-1. TEXTO EXPLICATIVO (mín. 4 parágrafos com **negrito** nos termos-chave)
+1. TEXTO EXPLICATIVO (máximo 800 palavras - seja CONCISO mas completo)
+   - Use **negrito** nos termos-chave
    - Distribua 2-3 marcadores [IMAGE_SEARCH: termo médico específico] ao longo dos parágrafos
-   - Cada termo deve ser DIFERENTE e ESPECÍFICO (nunca genérico)
 
-2. BLOCO DE FLASHCARDS (copie este formato EXATAMENTE):
+2. BLOCO DE FLASHCARDS (OBRIGATÓRIO - copie este formato):
 \`\`\`flashcards:Título do Tema
 [
-  {"id":"fc-1","frente":"Pergunta clara e objetiva?","verso":"Resposta completa. — Fonte: Harrison, 21a ed.","tags":["tag1"],"dificuldade":"medio"},
-  {"id":"fc-2","frente":"Segunda pergunta?","verso":"Resposta. — Fonte: Guyton, 14a ed.","tags":["tag1"],"dificuldade":"facil"},
-  {"id":"fc-3","frente":"Terceira pergunta?","verso":"Resposta. — Fonte: Robbins, 10a ed.","tags":["tag1"],"dificuldade":"dificil"},
-  {"id":"fc-4","frente":"Quarta pergunta?","verso":"Resposta. — Fonte: Referência","tags":["tag1"],"dificuldade":"medio"},
-  {"id":"fc-5","frente":"Quinta pergunta?","verso":"Resposta. — Fonte: Referência","tags":["tag1"],"dificuldade":"facil"}
+  {"id":"fc-1","frente":"Pergunta 1?","verso":"Resposta. — Fonte: Referência","tags":["tag1"],"dificuldade":"medio"},
+  {"id":"fc-2","frente":"Pergunta 2?","verso":"Resposta. — Fonte: Referência","tags":["tag1"],"dificuldade":"facil"},
+  {"id":"fc-3","frente":"Pergunta 3?","verso":"Resposta. — Fonte: Referência","tags":["tag1"],"dificuldade":"dificil"},
+  {"id":"fc-4","frente":"Pergunta 4?","verso":"Resposta. — Fonte: Referência","tags":["tag1"],"dificuldade":"medio"},
+  {"id":"fc-5","frente":"Pergunta 5?","verso":"Resposta. — Fonte: Referência","tags":["tag1"],"dificuldade":"facil"}
 ]
 \`\`\`
 
-3. FLUXOGRAMA MERMAID (copie este formato):
+3. FLUXOGRAMA MERMAID (OBRIGATÓRIO - copie este formato):
 \`\`\`mermaid
 graph TD
     A[Início/Conceito] --> B[Passo 1]
@@ -1490,27 +1492,27 @@ graph TD
     C -->|Não| E[Resultado B]
 \`\`\`
 
-4. QUESTÕES INTERATIVAS (copie este formato EXATAMENTE - NUNCA texto puro):
+4. 2 QUESTÕES INTERATIVAS (OBRIGATÓRIO - copie este formato para CADA questão):
 \`\`\`questao
 {
   "id": "q-1",
   "numero": 1,
   "tipo": "multipla_escolha",
   "dificuldade": "medio",
-  "disciplina": "Nome da Disciplina",
-  "assunto": "Assunto específico",
-  "enunciado": "Caso clínico contextualizado com pelo menos 3 linhas descrevendo o paciente e a situação. Qual a conduta mais adequada?",
+  "disciplina": "Disciplina",
+  "assunto": "Assunto",
+  "enunciado": "Caso clínico contextualizado. Qual a conduta?",
   "alternativas": [
-    {"letra": "A", "texto": "Alternativa A"},
-    {"letra": "B", "texto": "Alternativa B"},
-    {"letra": "C", "texto": "Alternativa C"},
-    {"letra": "D", "texto": "Alternativa D"},
-    {"letra": "E", "texto": "Alternativa E"}
+    {"letra": "A", "texto": "Alt A"},
+    {"letra": "B", "texto": "Alt B"},
+    {"letra": "C", "texto": "Alt C"},
+    {"letra": "D", "texto": "Alt D"},
+    {"letra": "E", "texto": "Alt E"}
   ],
   "gabarito_comentado": {
     "resposta_correta": "C",
-    "explicacao": "Explicação detalhada da resposta correta com raciocínio clínico.",
-    "ponto_chave": "Conceito principal que o aluno deve memorizar",
+    "explicacao": "Explicação detalhada.",
+    "ponto_chave": "Conceito-chave",
     "analise_alternativas": [
       {"letra": "A", "analise": "Incorreta porque..."},
       {"letra": "B", "analise": "Incorreta porque..."},
@@ -1522,44 +1524,16 @@ graph TD
 }
 \`\`\`
 
-\`\`\`questao
-{
-  "id": "q-2",
-  "numero": 2,
-  "tipo": "multipla_escolha",
-  "dificuldade": "dificil",
-  "disciplina": "Nome da Disciplina",
-  "assunto": "Outro assunto",
-  "enunciado": "Segundo caso clínico contextualizado. Qual o diagnóstico mais provável?",
-  "alternativas": [
-    {"letra": "A", "texto": "Alt A"},
-    {"letra": "B", "texto": "Alt B"},
-    {"letra": "C", "texto": "Alt C"},
-    {"letra": "D", "texto": "Alt D"},
-    {"letra": "E", "texto": "Alt E"}
-  ],
-  "gabarito_comentado": {
-    "resposta_correta": "A",
-    "explicacao": "Explicação detalhada.",
-    "ponto_chave": "Conceito-chave",
-    "analise_alternativas": [
-      {"letra": "A", "analise": "Correta porque..."},
-      {"letra": "B", "analise": "Incorreta porque..."},
-      {"letra": "C", "analise": "Incorreta porque..."},
-      {"letra": "D", "analise": "Incorreta porque..."},
-      {"letra": "E", "analise": "Incorreta porque..."}
-    ]
-  }
-}
-\`\`\`
+5. REFERÊNCIAS ABNT ao final (3-5 fontes)
+6. Oferta BREVE (1 linha): "💡 Posso gerar mais questões, flashcards ou fluxogramas. O que deseja?"
 
-5. REFERÊNCIAS ABNT ao final (3-5 fontes, discretas)
-6. Oferta BREVE (1-2 linhas): "💡 Posso gerar mais questões, flashcards ou fluxogramas. O que deseja?"
-
-⚠️ REGRA DE QUALIDADE: 80-90% da resposta = conteúdo educacional. NUNCA gere meta-seções como: CHECKLIST DE COMPLETUDE, RESUMO EXECUTIVO, CONTAGEM FINAL DE QUESTÕES, DESTAQUES DA REVISÃO.
-⚠️ Use no máximo 2-3 [IMAGE_SEARCH:] distribuídos nos parágrafos relevantes.
-⚠️ OBRIGATÓRIO gerar EXATAMENTE: 5 flashcards + 1 fluxograma mermaid + 2 questões interativas. Se faltar QUALQUER um destes, a resposta está INCOMPLETA.
-⚠️ NÃO PARE até gerar todos. Se o texto ficou longo, gere os artefatos mesmo assim - eles são a parte MAIS IMPORTANTE.
+⚠️ CHECKLIST FINAL - sua resposta DEVE conter TODOS estes itens:
+[ ] Texto explicativo com [IMAGE_SEARCH:] markers
+[ ] 5 flashcards no formato \`\`\`flashcards:
+[ ] 1 fluxograma no formato \`\`\`mermaid
+[ ] 2 questões no formato \`\`\`questao (cada uma em bloco separado)
+[ ] Referências ABNT
+Se QUALQUER item acima estiver faltando, sua resposta está INCOMPLETA. Gere TODOS antes de finalizar.
 </first_message_context>`
     console.log('[Chat API] Primeira mensagem detectada - injetando instrução de resposta rica')
   } else {
@@ -1633,7 +1607,7 @@ REGRAS:
   // Prompt caching habilitado para economizar tokens (system prompt cacheado por 5 min)
   const streamParams: Record<string, unknown> = {
     model: modeloSelecionado,
-    max_tokens: canUseExtendedThinking ? 16000 : 12000, // Aumentado para evitar cortes
+    max_tokens: canUseExtendedThinking ? 16000 : 16000, // 16k para dar espaço aos artefatos na primeira mensagem
     system: [{
       type: 'text',
       text: systemPrompt,
