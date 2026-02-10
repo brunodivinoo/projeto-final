@@ -155,7 +155,11 @@ const DOMINIOS_BLOQUEADOS = [
   'wikimedia.org', 'wikipedia.org', 'openi.nlm.nih.gov',
   'radiopaedia.org', 'medpix.nlm.nih.gov',
   // Sanarmed - BANIDO expressamente
-  'sanarmed.com', 'sanar.com.br', 'sanarflix.com.br'
+  'sanarmed.com', 'sanar.com.br', 'sanarflix.com.br',
+  // YouTube - thumbnails de vídeos não são imagens médicas
+  'youtube.com', 'youtu.be', 'i.ytimg.com', 'img.youtube.com', 'yt3.ggpht.com',
+  // Outros vídeos
+  'vimeo.com', 'dailymotion.com'
 ]
 
 // ==========================================
