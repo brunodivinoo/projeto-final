@@ -1460,41 +1460,114 @@ async function streamClaude(params: StreamClaudeParams) {
   if (isFirstMessage) {
     systemPrompt += `\n\n<first_message_context>
 ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
-Siga OBRIGATORIAMENTE a "REGRA DA PRIMEIRA MENSAGEM DE CHAT NOVO" - TODOS os itens são OBRIGATÓRIOS:
-1. Resposta COMPLETA e EXTREMAMENTE RICA com texto detalhado (mínimo 3 parágrafos)
-2. OBRIGATÓRIO: 5 flashcards no formato \`\`\`flashcards:Título com JSON estruturado (cada verso com fonte)
-3. OBRIGATÓRIO: 1 fluxograma Mermaid (\`\`\`mermaid com graph TD)
-4. OBRIGATÓRIO: 1 organograma/diagrama (\`\`\`tree:Título ou \`\`\`organograma:Título) com classificação/hierarquia
-5. OBRIGATÓRIO: 2-3 questões no formato \`\`\`questao com JSON estruturado (com campo referencias ABNT)
-6. OBRIGATÓRIO: Fontes e Referências ABNT ao final (diretrizes brasileiras + livros-texto)
-7. OBRIGATÓRIO: No final, oferecer todos os recursos: questões, flashcards, fluxograma, organograma, diagrama, imagens
-NÃO gere questões como texto puro - SEMPRE use \`\`\`questao com JSON!
 
-⚠️⚠️⚠️ REGRA CRÍTICA DE IMAGENS - OBRIGATÓRIO EM TODA RESPOSTA ⚠️⚠️⚠️
-Você DEVE incluir EXATAMENTE 7 marcadores [IMAGE_SEARCH: termo] DIFERENTES ao longo do texto.
-Cada marcador deve estar DENTRO do parágrafo onde a imagem é relevante, NÃO agrupados no final.
-Cada termo deve ser DIFERENTE e ESPECÍFICO para o assunto (termos médicos em português).
-NUNCA use termos genéricos como "estudante medicina" ou "pessoa estudando".
+⚠️ REGRA ABSOLUTA: NÃO use tags HTML (<strong>, <em>, <img>, etc). Use APENAS Markdown (**negrito**, *itálico*, ![](url)).
+⚠️ REGRA ABSOLUTA: NÃO insira imagens via markdown ![](url) - use APENAS marcadores [IMAGE_SEARCH: termo].
 
-EXEMPLOS DE DISTRIBUIÇÃO CORRETA:
-"O coração possui 4 câmaras [IMAGE_SEARCH: anatomia coração câmaras cardíacas] que trabalham em sincronia..."
-"A válvula mitral [IMAGE_SEARCH: válvula mitral ecocardiograma] separa o átrio esquerdo do ventrículo..."
-"No ECG normal [IMAGE_SEARCH: eletrocardiograma normal traçado ECG] observamos as ondas P, QRS e T..."
+ESTRUTURA OBRIGATÓRIA DA RESPOSTA (nesta EXATA ordem):
+
+1. TEXTO EXPLICATIVO (mín. 4 parágrafos com **negrito** nos termos-chave)
+   - Distribua 5 marcadores [IMAGE_SEARCH: termo médico específico] ao longo dos parágrafos
+   - Cada termo deve ser DIFERENTE e ESPECÍFICO (nunca genérico)
+
+2. BLOCO DE FLASHCARDS (copie este formato EXATAMENTE):
+\`\`\`flashcards:Título do Tema
+[
+  {"id":"fc-1","frente":"Pergunta clara e objetiva?","verso":"Resposta completa. — Fonte: Harrison, 21a ed.","tags":["tag1"],"dificuldade":"medio"},
+  {"id":"fc-2","frente":"Segunda pergunta?","verso":"Resposta. — Fonte: Guyton, 14a ed.","tags":["tag1"],"dificuldade":"facil"},
+  {"id":"fc-3","frente":"Terceira pergunta?","verso":"Resposta. — Fonte: Robbins, 10a ed.","tags":["tag1"],"dificuldade":"dificil"},
+  {"id":"fc-4","frente":"Quarta pergunta?","verso":"Resposta. — Fonte: Referência","tags":["tag1"],"dificuldade":"medio"},
+  {"id":"fc-5","frente":"Quinta pergunta?","verso":"Resposta. — Fonte: Referência","tags":["tag1"],"dificuldade":"facil"}
+]
+\`\`\`
+
+3. FLUXOGRAMA MERMAID (copie este formato):
+\`\`\`mermaid
+graph TD
+    A[Início/Conceito] --> B[Passo 1]
+    B --> C{Decisão?}
+    C -->|Sim| D[Resultado A]
+    C -->|Não| E[Resultado B]
+\`\`\`
+
+4. QUESTÕES INTERATIVAS (copie este formato EXATAMENTE - NUNCA texto puro):
+\`\`\`questao
+{
+  "id": "q-1",
+  "numero": 1,
+  "tipo": "multipla_escolha",
+  "dificuldade": "medio",
+  "disciplina": "Nome da Disciplina",
+  "assunto": "Assunto específico",
+  "enunciado": "Caso clínico contextualizado com pelo menos 3 linhas descrevendo o paciente e a situação. Qual a conduta mais adequada?",
+  "alternativas": [
+    {"letra": "A", "texto": "Alternativa A"},
+    {"letra": "B", "texto": "Alternativa B"},
+    {"letra": "C", "texto": "Alternativa C"},
+    {"letra": "D", "texto": "Alternativa D"},
+    {"letra": "E", "texto": "Alternativa E"}
+  ],
+  "gabarito_comentado": {
+    "resposta_correta": "C",
+    "explicacao": "Explicação detalhada da resposta correta com raciocínio clínico.",
+    "ponto_chave": "Conceito principal que o aluno deve memorizar",
+    "analise_alternativas": [
+      {"letra": "A", "analise": "Incorreta porque..."},
+      {"letra": "B", "analise": "Incorreta porque..."},
+      {"letra": "C", "analise": "Correta porque..."},
+      {"letra": "D", "analise": "Incorreta porque..."},
+      {"letra": "E", "analise": "Incorreta porque..."}
+    ]
+  }
+}
+\`\`\`
+
+\`\`\`questao
+{
+  "id": "q-2",
+  "numero": 2,
+  "tipo": "multipla_escolha",
+  "dificuldade": "dificil",
+  "disciplina": "Nome da Disciplina",
+  "assunto": "Outro assunto",
+  "enunciado": "Segundo caso clínico contextualizado. Qual o diagnóstico mais provável?",
+  "alternativas": [
+    {"letra": "A", "texto": "Alt A"},
+    {"letra": "B", "texto": "Alt B"},
+    {"letra": "C", "texto": "Alt C"},
+    {"letra": "D", "texto": "Alt D"},
+    {"letra": "E", "texto": "Alt E"}
+  ],
+  "gabarito_comentado": {
+    "resposta_correta": "A",
+    "explicacao": "Explicação detalhada.",
+    "ponto_chave": "Conceito-chave",
+    "analise_alternativas": [
+      {"letra": "A", "analise": "Correta porque..."},
+      {"letra": "B", "analise": "Incorreta porque..."},
+      {"letra": "C", "analise": "Incorreta porque..."},
+      {"letra": "D", "analise": "Incorreta porque..."},
+      {"letra": "E", "analise": "Incorreta porque..."}
+    ]
+  }
+}
+\`\`\`
+
+5. REFERÊNCIAS ABNT ao final
+6. Oferta de recursos: "💡 **Posso gerar para você:** 📝 Questões | 🃏 Flashcards | 🔀 Fluxograma | 🏗️ Organograma | 📊 Diagrama | 🖼️ Mais imagens — **O que deseja?**"
 </first_message_context>`
     console.log('[Chat API] Primeira mensagem detectada - injetando instrução de resposta rica')
   } else {
     // Mensagens seguintes: reforçar imagens obrigatórias e oferta de recursos
     systemPrompt += `\n\n<followup_message_context>
-REGRAS PARA ESTA MENSAGEM:
-1. OBRIGATÓRIO: Fontes e Referências ABNT ao final
-2. OBRIGATÓRIO: No FINAL da resposta, SEMPRE oferecer recursos disponíveis:
-"💡 **Posso gerar para você:** 📝 Questões | 🃏 Flashcards | 🔀 Fluxograma | 🏗️ Organograma | 📊 Diagrama | 🖼️ Mais imagens — **O que deseja?**"
+⚠️ NÃO use tags HTML (<strong>, <em>, <img>). Use APENAS Markdown.
+⚠️ NÃO insira imagens via markdown ![](url). Use APENAS [IMAGE_SEARCH: termo].
 
-⚠️⚠️⚠️ REGRA CRÍTICA DE IMAGENS - OBRIGATÓRIO ⚠️⚠️⚠️
-Você DEVE incluir EXATAMENTE 5 marcadores [IMAGE_SEARCH: termo] DIFERENTES ao longo do texto.
-Distribua os marcadores DENTRO dos parágrafos onde são relevantes.
-Use termos MÉDICOS ESPECÍFICOS em português (ex: "histologia tecido muscular", "radiografia tórax pneumonia").
-NUNCA repita termos. NUNCA use termos genéricos.
+REGRAS:
+1. Fontes e Referências ABNT ao final
+2. 3 marcadores [IMAGE_SEARCH: termo médico específico] ao longo do texto (termos DIFERENTES)
+3. Se gerar questões, SEMPRE use o bloco \`\`\`questao com JSON (NUNCA texto puro)
+4. No final: "💡 **Posso gerar para você:** 📝 Questões | 🃏 Flashcards | 🔀 Fluxograma | 🏗️ Organograma | 📊 Diagrama | 🖼️ Mais imagens — **O que deseja?**"
 </followup_message_context>`
   }
 
