@@ -2991,9 +2991,8 @@ function ArtifactRendererComponent({
           const partHadImageMarkers = IMAGE_SEARCH_REGEX.test(part)
           IMAGE_SEARCH_REGEX.lastIndex = 0
 
-          // Remover marcadores IMAGE_SEARCH do texto
+          // Remover marcadores IMAGE_SEARCH do texto e limpar gabarito vazado
           let cleanedPart = removeImageSearchMarkers(part)
-          // Aplicar limpeza de gabarito e conteúdo que não deve aparecer no chat
           cleanedPart = cleanRenderedTextForChat(cleanedPart)
 
           // Se após limpeza não sobrou nada, não renderizar
@@ -3032,6 +3031,7 @@ function ArtifactRendererComponent({
           }
 
           // Renderizar Markdown normal (+ galeria inline se aplicável)
+          // Usar apenas 2 termos para evitar imagens repetidas entre termos similares
           return (
             <div key={index}>
             <ReactMarkdown
@@ -3236,7 +3236,7 @@ function ArtifactRendererComponent({
             </ReactMarkdown>
             {shouldShowGalleryHere && (
               <MedicalImageGallery
-                searchTerms={imageSearchTerms.slice(0, 3)}
+                searchTerms={imageSearchTerms.slice(0, 2)}
                 userId={userId!}
                 excludeUrls={inlineImageUrls}
               />
@@ -3720,7 +3720,7 @@ function ArtifactRendererComponent({
       {/* Galeria fallback: se nenhum texto teve marcadores, mostrar no final */}
       {imageSearchTerms.length > 0 && userId && !imageGalleryRendered && (
         <MedicalImageGallery
-          searchTerms={imageSearchTerms.slice(0, 3)}
+          searchTerms={imageSearchTerms.slice(0, 2)}
           userId={userId}
           excludeUrls={inlineImageUrls}
         />
