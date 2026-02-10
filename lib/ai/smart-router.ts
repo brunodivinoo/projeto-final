@@ -107,17 +107,19 @@ export function selecionarModelo(options: SmartRouterOptions): SmartRouterResult
     plano: plano === 'gratuito' ? 'premium' : plano
   })
 
-  // Se precisa de web search e e plano residencia, usar Claude Opus
-  if (useWebSearch && plano === 'residencia') {
+  // Web search agora é feito via Serper + compressão, não precisa mais de Claude
+  // GPT-5.2 monta a resposta com o contexto pré-comprimido
+  if (useWebSearch) {
     return {
-      modelo: MODELOS.claude.opus,
-      provider: 'claude',
+      modelo: MODELOS.openai.gpt52,
+      provider: 'openai' as const,
       analysis: {
         ...analysis,
-        modeloRecomendado: 'claude-opus',
-        motivo: 'Web Search requer Claude Opus'
+        modeloRecomendado: 'gpt-5.2' as const,
+        motivo: 'Web Search via Serper + montagem GPT-5.2 (economia vs Claude)'
       },
-      custoEstimado: estimarCusto(MODELOS.claude.opus, 2000)
+      reasoningEffort: 'medium' as ReasoningEffort,
+      custoEstimado: estimarCusto(MODELOS.openai.gpt52, 2000)
     }
   }
 
@@ -214,13 +216,17 @@ export async function* streamInteligente(
 
   // MODO MONTAGEM: instruir modelo a organizar informações pré-digeridas mantendo formatos obrigatórios
   if (options.contextoComprimido) {
-    systemPrompt += `\n\n## MODO MONTAGEM (ECONOMIA DE TOKENS)
-Você está recebendo informações já pesquisadas e comprimidas de fontes médicas confiáveis (incluindo diretrizes brasileiras).
-Sua função é:
-1. Organizar e estruturar as informações fornecidas
-2. Apresentar de forma clara e didática para o estudante
-3. NÃO inventar informações além do que foi fornecido no contexto
-4. Se o contexto não cobrir a pergunta completamente, indicar isso ao usuário
+    systemPrompt += `\n\n## MODO MONTAGEM - RESPOSTA BASEADA EM PESQUISA WEB
+Você está recebendo informações PESQUISADAS NA WEB de fontes médicas confiáveis (diretrizes brasileiras, PubMed, etc).
+
+### COMO MONTAR A RESPOSTA:
+1. **COMECE com resposta DIRETA** - 1-3 linhas respondendo a pergunta principal
+2. **ORGANIZE por seções claras** - Use ### títulos numerados para cada aspecto
+3. **USE TABELAS para comparações** - NUNCA compare coisas em texto corrido, use tabela
+4. **CITE as fontes inline** - Use [1], [2], [3] no texto E liste fontes no final
+5. **SINTETIZE, não copie** - Transforme os dados brutos em resposta organizada e didática
+6. **Se os dados não cobrem algo, DIGA** - "Não foram encontrados dados específicos sobre X nas fontes consultadas"
+7. **NUNCA invente** - Use APENAS informações do contexto fornecido + seu conhecimento de livros-texto
 
 ⚠️ REGRAS OBRIGATÓRIAS MESMO NO MODO MONTAGEM:
 
@@ -314,27 +320,17 @@ Se o contexto trouxer fontes, MANTENHA e CITE-AS. Se não trouxer, cite livros-t
     return
   }
 
-  // Fallback para Claude (web search, extended thinking, etc)
-  if (provider === 'claude') {
-    const claudeOptions: MultiProviderOptions = {
-      plano: plano === 'gratuito' ? 'premium' : plano,
-      useWebSearch,
-      useExtendedThinking,
-      thinkingBudget,
-      maxTokens: plano === 'residencia' ? 16384 : 8192
-    }
-
-    yield* streamWithFallback(messages, claudeOptions)
-    return
-  }
-
-  // Fallback final - Gemini
-  const geminiOptions: MultiProviderOptions = {
+  // Fallback para multi-provider (Gemini + Claude como último recurso)
+  // Usado apenas se OpenAI falhar completamente
+  const fallbackOptions: MultiProviderOptions = {
     plano: plano === 'gratuito' ? 'premium' : plano,
-    maxTokens: 8192
+    useWebSearch: false, // Serper já fez a busca
+    useExtendedThinking: useExtendedThinking,
+    thinkingBudget,
+    maxTokens: plano === 'residencia' ? 16384 : 8192
   }
 
-  yield* streamWithFallback(messages, geminiOptions)
+  yield* streamWithFallback(messages, fallbackOptions)
 }
 
 // ==========================================

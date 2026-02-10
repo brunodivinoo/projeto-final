@@ -527,6 +527,17 @@ export async function POST(request: NextRequest) {
     }
     // ========== FIM BUSCA WEB + COMPRESSÃO ==========
 
+    // ========== CLASSIFICAÇÃO DE INTENÇÃO E NÍVEL DE DETALHE ==========
+    const intencaoUsuario = classificarIntencao(mensagem)
+    const instrucoesIntencao = gerarInstrucoesDeIntencao(intencaoUsuario)
+    console.log(`[Intenção] ${intencaoUsuario.intencao} (${intencaoUsuario.nivelDetalhe}) - confiança: ${intencaoUsuario.confianca}`)
+
+    // Injetar instruções de intenção na mensagem para IA
+    if (instrucoesIntencao) {
+      mensagemParaIA = `${instrucoesIntencao}\n\n${mensagemParaIA}`
+    }
+    // ========== FIM CLASSIFICAÇÃO ==========
+
     // ========== ROTEAMENTO INTELIGENTE COM SMART ROUTER ==========
     // Analisar complexidade da mensagem para decidir modelo
     const complexityAnalysis = analisarComplexidade(mensagem, {
@@ -535,6 +546,13 @@ export async function POST(request: NextRequest) {
       temPdf: !!pdf_base64,
       plano: plano === 'gratuito' ? 'premium' : plano
     })
+
+    // Se tem PDF, forçar GPT-5.2 com high reasoning
+    if (pdf_base64) {
+      complexityAnalysis.modeloRecomendado = 'gpt-5.2'
+      complexityAnalysis.nivel = 'complexa'
+      complexityAnalysis.motivo = 'Análise de PDF requer raciocínio avançado → GPT-5.2'
+    }
 
     console.log(`[Smart Router] Complexidade: ${complexityAnalysis.nivel} (score: ${complexityAnalysis.score})`)
     console.log(`[Smart Router] Modelo recomendado: ${complexityAnalysis.modeloRecomendado}`)
@@ -546,30 +564,21 @@ export async function POST(request: NextRequest) {
     const temContextoComprimido = !!contextoBusca
 
     if (temContextoComprimido) {
-      console.log('[Smart Router] MODO MONTAGEM: Serper+Gemini já comprimiu → o4-mini monta resposta')
-      console.log(`[Smart Router] Economia: evitando Claude ($3/M) → usando o4-mini ($1.10/M)`)
+      console.log('[Smart Router] MODO MONTAGEM: Serper+Gemini → OpenAI monta resposta')
     }
 
-    // Decidir se usa OpenAI (mais economico) ou Claude (mais capaz)
-    // REGRA: Se contexto já foi comprimido pelo Serper+Gemini, NÃO usar Claude
-    // (mesmo com use_web_search, pois Serper já fez a busca)
-    // Usar Claude APENAS quando:
-    // - Extended thinking (exclusivo Claude)
-    // - Imagem (vision)
-    // - PDF (melhor suporte)
-    // - Residência especializada SEM contexto comprimido
-    // - Web search E Serper NÃO conseguiu comprimir (fallback)
+    // ========== DECISÃO DE MODELO: TUDO OPENAI (economia máxima) ==========
+    // Claude APENAS para extended thinking (funcionalidade exclusiva)
+    // Imagens → GPT-4o (vision excelente)
+    // PDFs → GPT-5.2 (raciocínio avançado)
+    // Complexo → GPT-5.2 (raciocínio avançado)
+    // Simples/Montagem → o4-mini (economia máxima)
+    // Web search → Serper + compressão + montagem OpenAI
 
-    const deveUsarClaude = !temContextoComprimido && ( // Se já tem contexto comprimido, NUNCA usar Claude
-                            use_web_search || // Web search sem contexto Serper → fallback Claude
-                            (plano === 'residencia' && complexityAnalysis.nivel === 'especializada') // Tarefas especializadas
-                          ) ||
-                          use_extended_thinking || // Extended thinking SEMPRE Claude (exclusivo)
-                          imagem_base64 || // Imagens SEMPRE Claude (vision)
-                          pdf_base64 // PDFs SEMPRE Claude (melhor suporte)
+    const deveUsarClaude = use_extended_thinking // APENAS extended thinking usa Claude (exclusivo)
 
     if (deveUsarClaude) {
-      console.log('[Smart Router] Usando Claude (funcionalidade exclusiva)')
+      console.log('[Smart Router] Usando Claude (extended thinking exclusivo)')
       return await streamClaude({
         historico,
         mensagem: mensagemParaIA,
@@ -579,15 +588,16 @@ export async function POST(request: NextRequest) {
         imagem_base64,
         imagem_tipo,
         pdf_base64,
-        use_web_search: temContextoComprimido ? false : use_web_search, // Não usar web_search do Claude se Serper já buscou
+        use_web_search: false, // Serper já faz a busca
         use_extended_thinking,
         thinking_budget
       })
     }
 
-    // Usar Smart Router para roteamento OpenAI
-    // Se contexto comprimido → modo montagem (o4-mini, economia máxima)
-    console.log(`[Smart Router] Usando roteamento inteligente OpenAI${temContextoComprimido ? ' (MODO MONTAGEM)' : ''}`)
+    // TUDO via Smart Router (OpenAI) - economia máxima
+    // Imagens → GPT-4o | PDFs → GPT-5.2 | Complexo → GPT-5.2 | Simples → o4-mini
+    console.log(`[Smart Router] 100% OpenAI${temContextoComprimido ? ' (MODO MONTAGEM)' : ''}${imagem_base64 ? ' (VISION GPT-4o)' : ''}${pdf_base64 ? ' (PDF GPT-5.2)' : ''}`)
+
     return await streamComSmartRouter({
       historico,
       mensagem: mensagemParaIA,
@@ -1117,79 +1127,57 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
         if (heartbeatInterval) clearInterval(heartbeatInterval)
         console.error('[Smart Router] Erro:', error)
 
-        // Tentar fallback para Claude
+        // Fallback 1: Tentar outro modelo OpenAI (GPT-5.2 se estava usando o4-mini, ou vice-versa)
         const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
-        console.log('[Smart Router] Fazendo fallback para Claude devido a:', errorMessage)
+        console.log('[Smart Router] Tentando fallback OpenAI alternativo:', errorMessage)
 
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({
             type: 'provider_switch',
             from: 'openai',
-            to: 'claude',
-            message: 'Alternando para servidor secundário...'
+            to: 'openai-fallback',
+            message: 'Alternando modelo...'
           })}\n\n`)
         )
 
         try {
-          // Fallback para Claude - usando Sonnet 4.5 para todos os planos (excelente qualidade, 5x mais barato que Opus)
-          const modeloSelecionado = MODELOS.claude.sonnet
+          // Fallback: usar GPT-5.2 com high reasoning (mais robusto)
           let systemPrompt = plano === 'residencia' ? SYSTEM_PROMPT_RESIDENCIA : SYSTEM_PROMPT_PREMIUM
 
           // Detecção de primeira mensagem no fallback
           if (historico.length === 0) {
-            systemPrompt += `\n\n<first_message_context>
-ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
-Siga OBRIGATORIAMENTE a regra de PRIMEIRA MENSAGEM - TODOS obrigatórios:
-1. Texto detalhado (mín. 3 parágrafos) + MÍNIMO 5 imagens [IMAGE_SEARCH: termo] com termos DIFERENTES
-2. 5 flashcards (\`\`\`flashcards:Título) + 1 fluxograma Mermaid + 1 organograma (\`\`\`tree:Título)
-3. 2-3 questões em formato \`\`\`questao JSON (com referencias ABNT no gabarito)
-4. Referências ABNT ao final (diretrizes brasileiras + livros-texto)
-5. No final: oferecer questões, flashcards, fluxograma, organograma, diagrama, imagens
-</first_message_context>`
-          } else {
-            systemPrompt += `\n\n<followup_message_context>
-OBRIGATÓRIO: MÍNIMO 5 imagens [IMAGE_SEARCH: termo], fontes ABNT ao final, e oferta de recursos no final.
-</followup_message_context>`
+            systemPrompt += `\n\nATENÇÃO: PRIMEIRA MENSAGEM - resposta rica com texto detalhado, fluxograma Mermaid, 2-3 questões em \`\`\`questao JSON, e referências ABNT.`
           }
 
-          // Adicionar contexto da memória persistente
-          try {
-            const memCtx = await getContextForPrompt(user_id)
-            if (memCtx && memCtx.trim().length > 0) systemPrompt += memCtx
-          } catch { /* continua sem memória */ }
+          systemPrompt += `\n\n## REGRAS CRÍTICAS (NUNCA IGNORE):
+1. Questões: SEMPRE use \`\`\`questao com JSON. NUNCA texto puro com A), B), C).
+2. Fontes: TODA resposta DEVE terminar com seção 📚 **Fontes:** com citações ABNT [1], [2], [3].
+3. Citações inline: use [1], [2] no texto para indicar a fonte de cada afirmação.
+4. Tabelas: SEMPRE deixe linha em branco antes e depois. NUNCA junte cabeçalho com título.`
 
           const messages = historico.map(m => ({
-            role: m.role,
+            role: m.role as 'user' | 'assistant',
             content: m.content
           }))
-          messages.push({ role: 'user', content: mensagem })
+          messages.push({ role: 'user' as const, content: mensagem })
 
-          const stream = await anthropic.messages.stream({
-            model: modeloSelecionado,
-            max_tokens: 8192,
-            system: [{
-              type: 'text',
-              text: systemPrompt,
-              cache_control: { type: 'ephemeral' }
-            }],
-            messages: messages as Anthropic.MessageParam[],
-            stream: true
+          // Usar GPT-5.2 como fallback
+          const { streamWithGPT52: fallbackStream } = await import('@/lib/ai/openai-advanced')
+          const fallbackGen = fallbackStream(messages, systemPrompt, {
+            plano: plano as 'premium' | 'residencia' | 'gratuito',
+            reasoningEffort: 'high',
+            maxTokens: 12288
           })
 
-          for await (const event of stream) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const evt = event as any
-            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-              fullResponse += evt.delta.text
+          for await (const chunk of fallbackGen) {
+            if (chunk.type === 'text' && chunk.content) {
+              fullResponse += chunk.content
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: evt.delta.text })}\n\n`)
+                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: chunk.content })}\n\n`)
               )
-            }
-            if (evt.type === 'message_start' && evt.message?.usage) {
-              tokensInput = evt.message.usage.input_tokens
-            }
-            if (evt.type === 'message_delta' && evt.usage) {
-              tokensOutput = evt.usage.output_tokens
+            } else if (chunk.type === 'done' && chunk.tokens) {
+              tokensInput = chunk.tokens.input || 0
+              tokensOutput = chunk.tokens.output || 0
             }
           }
 
@@ -1203,15 +1191,16 @@ OBRIGATÓRIO: MÍNIMO 5 imagens [IMAGE_SEARCH: termo], fontes ABNT ao final, e o
             })
             .eq('id', conversa_id)
 
-          const custoClaude = calcularCusto(modeloSelecionado, tokensInput, tokensOutput)
-          await incrementarUsoIA(user_id, 'chats', 1, tokensInput, tokensOutput, custoClaude)
+          const custoFallback = calcularCusto('gpt-5.2', tokensInput, tokensOutput)
+          await incrementarUsoIA(user_id, 'chats', 1, tokensInput, tokensOutput, custoFallback)
 
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({
               type: 'done',
               conversa_id,
               tokens: { input: tokensInput, output: tokensOutput },
-              provider: 'claude',
+              provider: 'openai',
+              model: 'gpt-5.2',
               fallback: true
             })}\n\n`)
           )
@@ -1219,8 +1208,8 @@ OBRIGATÓRIO: MÍNIMO 5 imagens [IMAGE_SEARCH: termo], fontes ABNT ao final, e o
           controller.close()
           return
 
-        } catch (claudeError) {
-          console.error('[Smart Router] Fallback Claude também falhou:', claudeError)
+        } catch (fallbackError) {
+          console.error('[Smart Router] Fallback GPT-5.2 também falhou:', fallbackError)
 
           const fallbackMessage = fullResponse.length > 100
             ? '\n\n---\n*Resposta pode estar incompleta.*'
