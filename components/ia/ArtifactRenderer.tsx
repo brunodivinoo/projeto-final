@@ -1104,37 +1104,6 @@ function removeImageSearchMarkers(content: string): string {
   return content.replace(IMAGE_SEARCH_REGEX, '')
 }
 
-// Função para dividir texto em segmentos com marcadores IMAGE_SEARCH inline
-function splitByImageSearchMarkers(content: string): Array<{ type: 'text' | 'image_search'; content: string }> {
-  const segments: Array<{ type: 'text' | 'image_search'; content: string }> = []
-  const regex = new RegExp(IMAGE_SEARCH_REGEX.source, 'g')
-  let lastIndex = 0
-  let match
-
-  while ((match = regex.exec(content)) !== null) {
-    // Texto antes do marcador
-    if (match.index > lastIndex) {
-      const textBefore = content.substring(lastIndex, match.index)
-      if (textBefore.trim()) {
-        segments.push({ type: 'text', content: textBefore })
-      }
-    }
-    // O marcador em si (extrair o termo de busca)
-    segments.push({ type: 'image_search', content: match[1].trim() })
-    lastIndex = match.index + match[0].length
-  }
-
-  // Texto restante após o último marcador
-  if (lastIndex < content.length) {
-    const remaining = content.substring(lastIndex)
-    if (remaining.trim()) {
-      segments.push({ type: 'text', content: remaining })
-    }
-  }
-
-  return segments
-}
-
 // Função para limpar texto renderizado no chat
 // Remove gabarito, explicações e conteúdo que deveria ficar apenas na sidebar
 function cleanRenderedTextForChat(content: string): string {
@@ -3015,38 +2984,7 @@ function ArtifactRendererComponent({
             )
           }
 
-          // Verificar se contém marcadores IMAGE_SEARCH para renderizar imagens inline
-          const hasImageMarkers = IMAGE_SEARCH_REGEX.test(part)
-          // Reset regex lastIndex after test
-          IMAGE_SEARCH_REGEX.lastIndex = 0
-
-          if (hasImageMarkers && userId) {
-            // Dividir texto em segmentos: texto + inline image galleries
-            const segments = splitByImageSearchMarkers(part)
-            const renderedSegments = segments.map((seg, segIdx) => {
-              if (seg.type === 'image_search') {
-                return (
-                  <MedicalImageGallery
-                    key={`inline-img-${index}-${segIdx}`}
-                    searchTerms={[seg.content]}
-                    userId={userId}
-                    excludeUrls={inlineImageUrls}
-                  />
-                )
-              }
-              // Limpar e renderizar texto
-              const cleaned = cleanRenderedTextForChat(seg.content)
-              if (!cleaned.trim()) return null
-              return (
-                <ReactMarkdown key={`text-${index}-${segIdx}`} remarkPlugins={[remarkGfm]}>
-                  {cleaned}
-                </ReactMarkdown>
-              )
-            })
-            return <div key={index}>{renderedSegments}</div>
-          }
-
-          // Remover marcadores IMAGE_SEARCH remanescentes e limpar gabarito/explicações
+          // Remover marcadores IMAGE_SEARCH do texto (galeria única no final)
           let cleanedPart = removeImageSearchMarkers(part)
           // Aplicar limpeza de gabarito e conteúdo que não deve aparecer no chat
           cleanedPart = cleanRenderedTextForChat(cleanedPart)
@@ -3758,8 +3696,14 @@ function ArtifactRendererComponent({
         return null
       })}
 
-      {/* Imagens são renderizadas INLINE no texto via splitByImageSearchMarkers */}
-      {/* Galeria inferior apenas como fallback quando inline não foi possível */}
+      {/* Galeria única no final da mensagem com todos os termos coletados */}
+      {imageSearchTerms.length > 0 && userId && (
+        <MedicalImageGallery
+          searchTerms={imageSearchTerms.slice(0, 3)}
+          userId={userId}
+          excludeUrls={inlineImageUrls}
+        />
+      )}
 
       {/* Modal de imagem fullscreen */}
       {imageModalState && (
