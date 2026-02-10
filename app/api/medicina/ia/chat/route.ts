@@ -1063,23 +1063,9 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
           }
         }
 
-        // Buscar imagens relevantes via Serper (em paralelo com a atualização)
-        if (deveRecomendarImagens(mensagem)) {
-          try {
-            const topico = extractTopic(mensagem) || mensagem.substring(0, 80)
-            const imagensResult = await buscarImagensComFallback(topico, 5)
-
-            if (imagensResult.imagens && imagensResult.imagens.length > 0) {
-              const imagensTexto = formatarImagensParaChat(imagensResult.imagens)
-              fullResponse += imagensTexto
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ type: 'text', content: imagensTexto })}\n\n`)
-              )
-            }
-          } catch (imgError) {
-            console.error('[Chat] Erro ao buscar imagens Serper:', imgError)
-          }
-        }
+        // NOTA: Imagens são gerenciadas pela IA via marcadores [IMAGE_SEARCH: termo]
+        // O frontend (MedicalImageGallery) busca imagens pelo Serper automaticamente
+        // NÃO append imagens brutas aqui - causa imagens quebradas e sem contexto
 
         // Atualizar resposta final
         await updateResponse(true)
