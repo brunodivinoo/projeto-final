@@ -1493,9 +1493,9 @@ export default function ArtifactsSidebar({ className = '', userId }: ArtifactsSi
   const artifacts = useMemo(() => {
     let filtered = allArtifacts
 
-    // Filtrar por conversa
+    // Filtrar por conversa - isolamento estrito (sem vazamento entre conversas)
     if (currentConversaId) {
-      filtered = filtered.filter(a => a.conversaId === currentConversaId || !a.conversaId)
+      filtered = filtered.filter(a => a.conversaId === currentConversaId)
     }
 
     // Filtrar por modo de chat

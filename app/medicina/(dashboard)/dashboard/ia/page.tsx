@@ -313,7 +313,7 @@ export default function IAPage() {
   const [isPending, startTransition] = useTransition()
 
   // Gerenciar artefatos por conversa e modo de chat
-  const { clearArtifacts, setCurrentConversa, setCurrentChatMode, setChatModeFilter } = useArtifactsStore()
+  const { setCurrentConversa, setCurrentChatMode, setChatModeFilter } = useArtifactsStore()
 
   // Store de modos com abas separadas
   const {
@@ -485,8 +485,7 @@ export default function IAPage() {
     setActiveConversation(chatMode as StoreChatMode, conversaId)
     setCarregandoConversa(true)
 
-    // Limpar artefatos ao trocar de conversa
-    clearArtifacts()
+    // Trocar conversa no store de artefatos (filtro cuida do isolamento)
     setCurrentConversa(conversaId)
 
     try {
@@ -564,7 +563,7 @@ export default function IAPage() {
       setCarregandoConversa(false)
     }
     setShowConversas(false)
-  }, [user, clearArtifacts, setCurrentConversa, chatMode, setActiveConversation])
+  }, [user, setCurrentConversa, chatMode, setActiveConversation])
 
   // Fetch inicial agora é feito dentro do hook useIAData
 
@@ -1424,8 +1423,7 @@ export default function IAPage() {
     setMensagens([])
     setConversaAtual(null)
     setShowConversas(false)
-    clearArtifacts() // Limpar artefatos ao iniciar nova conversa
-    setCurrentConversa(null)
+    setCurrentConversa(null) // Resetar conversa no store de artefatos
     // Atualizar store de modos
     setActiveConversation(chatMode as StoreChatMode, null)
   }
