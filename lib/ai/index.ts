@@ -32,7 +32,14 @@ export * from './multi-provider'
 import { PlanoIA, MensagemIA, ChatResponse, LIMITES_IA } from './types'
 import { chatComClaudeStream, chatComClaude, analisarImagemComClaude, analisarPDFComClaude } from './anthropic'
 import { chatComGeminiStream, chatComGemini, analisarImagemComGemini, gerarImagemComGemini } from './gemini'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+// Usar service role key para operações server-side (API routes)
+// O client de @/lib/supabase usa anon key (browser) que é bloqueado por RLS
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 // ==========================================
 // VERIFICAR E INCREMENTAR USO
@@ -110,52 +117,74 @@ export async function incrementarUsoIA(
   tokensOutput: number = 0,
   custo: number = 0
 ): Promise<void> {
-  const mesAtual = new Date().toISOString().slice(0, 7)
+  try {
+    const mesAtual = new Date().toISOString().slice(0, 7)
 
-  const campoMap: Record<string, string> = {
-    chats: 'chats_usados',
-    resumos: 'resumos_usados',
-    flashcards: 'flashcards_usados',
-    imagens: 'imagens_geradas',
-    web_search: 'web_searches',
-    pdfs: 'pdfs_analisados',
-    vision: 'imagens_analisadas'
-  }
+    const campoMap: Record<string, string> = {
+      chats: 'chats_usados',
+      resumos: 'resumos_usados',
+      flashcards: 'flashcards_usados',
+      imagens: 'imagens_geradas',
+      web_search: 'web_searches',
+      pdfs: 'pdfs_analisados',
+      vision: 'imagens_analisadas'
+    }
 
-  const campo = campoMap[tipo]
-  if (!campo) return
+    const campo = campoMap[tipo]
+    if (!campo) return
 
-  // Buscar uso atual
-  const { data: uso } = await supabase
-    .from('uso_ia_med')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('mes_referencia', mesAtual)
-    .single()
+    console.log(`[UsoIA] Registrando: user=${userId}, tipo=${tipo}, tokens_in=${tokensInput}, tokens_out=${tokensOutput}, custo=${custo}`)
 
-  if (uso) {
-    // Atualizar existente
-    await supabase
+    // Buscar uso atual
+    const { data: uso, error: fetchError } = await supabase
       .from('uso_ia_med')
-      .update({
-        [campo]: (uso[campo] || 0) + quantidade,
-        tokens_input: (uso.tokens_input || 0) + tokensInput,
-        tokens_output: (uso.tokens_output || 0) + tokensOutput,
-        custo_estimado: (uso.custo_estimado || 0) + custo
-      })
-      .eq('id', uso.id)
-  } else {
-    // Criar novo
-    await supabase
-      .from('uso_ia_med')
-      .insert({
-        user_id: userId,
-        mes_referencia: mesAtual,
-        [campo]: quantidade,
-        tokens_input: tokensInput,
-        tokens_output: tokensOutput,
-        custo_estimado: custo
-      })
+      .select('*')
+      .eq('user_id', userId)
+      .eq('mes_referencia', mesAtual)
+      .single()
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('[UsoIA] Erro ao buscar uso:', fetchError)
+    }
+
+    if (uso) {
+      // Atualizar existente
+      const { error: updateError } = await supabase
+        .from('uso_ia_med')
+        .update({
+          [campo]: (uso[campo] || 0) + quantidade,
+          tokens_input: (uso.tokens_input || 0) + tokensInput,
+          tokens_output: (uso.tokens_output || 0) + tokensOutput,
+          custo_estimado: (uso.custo_estimado || 0) + custo
+        })
+        .eq('id', uso.id)
+
+      if (updateError) {
+        console.error('[UsoIA] Erro ao atualizar:', updateError)
+      } else {
+        console.log(`[UsoIA] Atualizado com sucesso: ${campo}=${(uso[campo] || 0) + quantidade}`)
+      }
+    } else {
+      // Criar novo
+      const { error: insertError } = await supabase
+        .from('uso_ia_med')
+        .insert({
+          user_id: userId,
+          mes_referencia: mesAtual,
+          [campo]: quantidade,
+          tokens_input: tokensInput,
+          tokens_output: tokensOutput,
+          custo_estimado: custo
+        })
+
+      if (insertError) {
+        console.error('[UsoIA] Erro ao inserir:', insertError)
+      } else {
+        console.log(`[UsoIA] Novo registro criado para ${userId} em ${mesAtual}`)
+      }
+    }
+  } catch (error) {
+    console.error('[UsoIA] Erro inesperado:', error)
   }
 }
 
