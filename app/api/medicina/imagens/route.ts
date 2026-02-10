@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
     const todasImagens: ResultadoBusca['imagens'] = []
     const urlsVistas = new Set<string>()
 
-    for (const query of queries.slice(0, 5)) { // Até 5 queries
+    for (const query of queries.slice(0, 8)) { // Até 8 queries
       console.log(`[Imagens BR] Buscando: "${query}"`)
 
       const res = await searchMedicalImages(query, { limit: 6 })
@@ -205,13 +205,13 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Se já tem 8+ imagens, parar
-      if (todasImagens.length >= 8) break
+      // Se já tem 15+ imagens, parar
+      if (todasImagens.length >= 15) break
     }
 
     // Usar imagens acumuladas
     if (resultado) {
-      resultado.imagens = todasImagens.slice(0, 10) // Máximo 10 imagens
+      resultado.imagens = todasImagens.slice(0, 15) // Máximo 15 imagens
     }
 
     if (!resultado || resultado.imagens.length === 0) {

@@ -1462,25 +1462,39 @@ async function streamClaude(params: StreamClaudeParams) {
 ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
 Siga OBRIGATORIAMENTE a "REGRA DA PRIMEIRA MENSAGEM DE CHAT NOVO" - TODOS os itens são OBRIGATÓRIOS:
 1. Resposta COMPLETA e EXTREMAMENTE RICA com texto detalhado (mínimo 3 parágrafos)
-2. OBRIGATÓRIO: MÍNIMO 5 imagens médicas usando [IMAGE_SEARCH: termo] com termos DIFERENTES para cada uma
-3. OBRIGATÓRIO: 5 flashcards no formato \`\`\`flashcards:Título com JSON estruturado (cada verso com fonte)
-4. OBRIGATÓRIO: 1 fluxograma Mermaid (\`\`\`mermaid com graph TD)
-5. OBRIGATÓRIO: 1 organograma/diagrama (\`\`\`tree:Título ou \`\`\`organograma:Título) com classificação/hierarquia
-6. OBRIGATÓRIO: 2-3 questões no formato \`\`\`questao com JSON estruturado (com campo referencias ABNT)
-7. OBRIGATÓRIO: Fontes e Referências ABNT ao final (diretrizes brasileiras + livros-texto)
-8. OBRIGATÓRIO: No final, oferecer todos os recursos: questões, flashcards, fluxograma, organograma, diagrama, imagens
+2. OBRIGATÓRIO: 5 flashcards no formato \`\`\`flashcards:Título com JSON estruturado (cada verso com fonte)
+3. OBRIGATÓRIO: 1 fluxograma Mermaid (\`\`\`mermaid com graph TD)
+4. OBRIGATÓRIO: 1 organograma/diagrama (\`\`\`tree:Título ou \`\`\`organograma:Título) com classificação/hierarquia
+5. OBRIGATÓRIO: 2-3 questões no formato \`\`\`questao com JSON estruturado (com campo referencias ABNT)
+6. OBRIGATÓRIO: Fontes e Referências ABNT ao final (diretrizes brasileiras + livros-texto)
+7. OBRIGATÓRIO: No final, oferecer todos os recursos: questões, flashcards, fluxograma, organograma, diagrama, imagens
 NÃO gere questões como texto puro - SEMPRE use \`\`\`questao com JSON!
-NUNCA repita URLs de imagens. Cada [IMAGE_SEARCH] deve ter termo DIFERENTE.
+
+⚠️⚠️⚠️ REGRA CRÍTICA DE IMAGENS - OBRIGATÓRIO EM TODA RESPOSTA ⚠️⚠️⚠️
+Você DEVE incluir EXATAMENTE 7 marcadores [IMAGE_SEARCH: termo] DIFERENTES ao longo do texto.
+Cada marcador deve estar DENTRO do parágrafo onde a imagem é relevante, NÃO agrupados no final.
+Cada termo deve ser DIFERENTE e ESPECÍFICO para o assunto (termos médicos em português).
+NUNCA use termos genéricos como "estudante medicina" ou "pessoa estudando".
+
+EXEMPLOS DE DISTRIBUIÇÃO CORRETA:
+"O coração possui 4 câmaras [IMAGE_SEARCH: anatomia coração câmaras cardíacas] que trabalham em sincronia..."
+"A válvula mitral [IMAGE_SEARCH: válvula mitral ecocardiograma] separa o átrio esquerdo do ventrículo..."
+"No ECG normal [IMAGE_SEARCH: eletrocardiograma normal traçado ECG] observamos as ondas P, QRS e T..."
 </first_message_context>`
     console.log('[Chat API] Primeira mensagem detectada - injetando instrução de resposta rica')
   } else {
     // Mensagens seguintes: reforçar imagens obrigatórias e oferta de recursos
     systemPrompt += `\n\n<followup_message_context>
 REGRAS PARA ESTA MENSAGEM:
-1. OBRIGATÓRIO: Incluir MÍNIMO 5 imagens médicas usando [IMAGE_SEARCH: termo] sobre o tema (termos DIFERENTES, SEM repetir URLs)
-2. OBRIGATÓRIO: Fontes e Referências ABNT ao final
-3. OBRIGATÓRIO: No FINAL da resposta, SEMPRE oferecer recursos disponíveis:
+1. OBRIGATÓRIO: Fontes e Referências ABNT ao final
+2. OBRIGATÓRIO: No FINAL da resposta, SEMPRE oferecer recursos disponíveis:
 "💡 **Posso gerar para você:** 📝 Questões | 🃏 Flashcards | 🔀 Fluxograma | 🏗️ Organograma | 📊 Diagrama | 🖼️ Mais imagens — **O que deseja?**"
+
+⚠️⚠️⚠️ REGRA CRÍTICA DE IMAGENS - OBRIGATÓRIO ⚠️⚠️⚠️
+Você DEVE incluir EXATAMENTE 5 marcadores [IMAGE_SEARCH: termo] DIFERENTES ao longo do texto.
+Distribua os marcadores DENTRO dos parágrafos onde são relevantes.
+Use termos MÉDICOS ESPECÍFICOS em português (ex: "histologia tecido muscular", "radiografia tórax pneumonia").
+NUNCA repita termos. NUNCA use termos genéricos.
 </followup_message_context>`
   }
 
