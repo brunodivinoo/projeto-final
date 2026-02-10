@@ -255,7 +255,7 @@ PREFIRA esta ferramenta ao invés de gerar imagens com IA quando o usuário quis
       },
       quantidade: {
         type: 'number',
-        description: 'Quantidade de imagens (padrão: 3, máximo: 5)'
+        description: 'Quantidade de imagens (padrão: 5, máximo: 8)'
       }
     },
     required: ['termo']
@@ -609,7 +609,7 @@ async function handleGerarImagemMedica(
 // ==========================================
 
 async function handleBuscarImagensMedicas(input: Record<string, unknown>): Promise<LocalToolResult> {
-  const { termo, quantidade = 3 } = input
+  const { termo, quantidade = 5 } = input
 
   console.log('[Tool buscar_imagens_medicas] =====================================')
   console.log('[Tool buscar_imagens_medicas] Termo:', termo)
@@ -626,7 +626,7 @@ async function handleBuscarImagensMedicas(input: Record<string, unknown>): Promi
 
     const resultado = await buscarImagensMedicas(
       termo as string,
-      Math.min(quantidade as number, 5)
+      Math.min(quantidade as number, 8)
     )
 
     if (!resultado.success) {

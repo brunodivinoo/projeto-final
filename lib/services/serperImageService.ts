@@ -425,24 +425,24 @@ function rankearImagens(imagens: ImagemMedica[], termo: string): ImagemMedica[] 
 export function deveRecomendarImagens(mensagem: string): boolean {
   const msgLower = mensagem.toLowerCase()
 
-  // Temas que se beneficiam de imagens
-  const temasVisuais = [
-    'anatom', 'órgão', 'orgao', 'sistema', 'estrutura',
-    'músculo', 'musculo', 'osso', 'célula', 'celula',
-    'tecido', 'histolog', 'microscop', 'corte', 'lâmina',
-    'radiolog', 'tomograf', 'ressonância', 'raio-x',
-    'ultrassom', 'eletrocardiograma', 'ecg', 'eeg',
-    'coração', 'coracao', 'pulmão', 'pulmao',
-    'cérebro', 'cerebro', 'fígado', 'figado', 'rim',
-    'veia', 'artéria', 'arteria', 'nervo', 'medula',
-    'coluna', 'crânio', 'cranio', 'esqueleto',
+  // Temas que NÃO precisam de imagens (conversas casuais, funcionalidades do app)
+  const temasNaoVisuais = [
+    'oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite',
+    'obrigado', 'valeu', 'ok', 'beleza', 'entendi',
+    'como funciona o app', 'como usar', 'meu plano', 'assinatura',
+    'configuração', 'senha', 'login', 'cadastro',
   ]
 
-  // Verificar se menciona termos visuais
-  const mencionaTemaVisual = temasVisuais.some(t => msgLower.includes(t))
+  // Se é uma mensagem casual/não-médica, não recomendar
+  const ehCasual = temasNaoVisuais.some(t => msgLower.trim() === t || msgLower.trim().startsWith(t + ' '))
+  if (ehCasual && msgLower.length < 30) return false
+
+  // TODAS as mensagens médicas devem ter imagens - verificar se parece médico
+  // Se tem mais de 10 caracteres e não é casual, provavelmente é médico
+  if (msgLower.length > 10) return true
 
   // Verificar se pediu explicitamente imagens
   const pediuImagens = /imagem|figura|ilustr|mostre|visualiz|foto|diagram/i.test(msgLower)
 
-  return mencionaTemaVisual || pediuImagens
+  return pediuImagens
 }

@@ -77,7 +77,7 @@ const useArtifactsSidebar = () => {
 
     // Filtrar por conversa
     if (currentConversaId) {
-      filtered = filtered.filter(a => a.conversaId === currentConversaId || !a.conversaId)
+      filtered = filtered.filter(a => a.conversaId === currentConversaId)
     }
 
     // Filtrar por modo de chat
@@ -1754,7 +1754,7 @@ export default function IAPage() {
             >
               <Layers className="w-5 h-5 text-emerald-600" />
               <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-emerald-500 text-white text-[10px] font-bold rounded-full px-1">
-                {useArtifactsStore.getState().artifacts.filter(a => a.conversaId === conversaAtual || !a.conversaId).length}
+                {useArtifactsStore.getState().artifacts.filter(a => a.conversaId === conversaAtual).length}
               </span>
             </button>
           </div>

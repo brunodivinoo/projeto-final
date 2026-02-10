@@ -1057,7 +1057,7 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
         if (deveRecomendarImagens(mensagem)) {
           try {
             const topico = extractTopic(mensagem) || mensagem.substring(0, 80)
-            const imagensResult = await buscarImagensComFallback(topico, 3)
+            const imagensResult = await buscarImagensComFallback(topico, 5)
 
             if (imagensResult.imagens && imagensResult.imagens.length > 0) {
               const imagensTexto = formatarImagensParaChat(imagensResult.imagens)
@@ -1140,7 +1140,7 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
             systemPrompt += `\n\n<first_message_context>
 ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
 Siga OBRIGATORIAMENTE a regra de PRIMEIRA MENSAGEM - TODOS obrigatórios:
-1. Texto detalhado (mín. 3 parágrafos) + 3-5 imagens [IMAGE_SEARCH: termo] com termos DIFERENTES
+1. Texto detalhado (mín. 3 parágrafos) + MÍNIMO 5 imagens [IMAGE_SEARCH: termo] com termos DIFERENTES
 2. 5 flashcards (\`\`\`flashcards:Título) + 1 fluxograma Mermaid + 1 organograma (\`\`\`tree:Título)
 3. 2-3 questões em formato \`\`\`questao JSON (com referencias ABNT no gabarito)
 4. Referências ABNT ao final (diretrizes brasileiras + livros-texto)
@@ -1148,7 +1148,7 @@ Siga OBRIGATORIAMENTE a regra de PRIMEIRA MENSAGEM - TODOS obrigatórios:
 </first_message_context>`
           } else {
             systemPrompt += `\n\n<followup_message_context>
-OBRIGATÓRIO: 2-4 imagens [IMAGE_SEARCH: termo], fontes ABNT ao final, e oferta de recursos no final.
+OBRIGATÓRIO: MÍNIMO 5 imagens [IMAGE_SEARCH: termo], fontes ABNT ao final, e oferta de recursos no final.
 </followup_message_context>`
           }
 
@@ -1524,7 +1524,7 @@ async function streamClaude(params: StreamClaudeParams) {
 ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
 Siga OBRIGATORIAMENTE a "REGRA DA PRIMEIRA MENSAGEM DE CHAT NOVO" - TODOS os itens são OBRIGATÓRIOS:
 1. Resposta COMPLETA e EXTREMAMENTE RICA com texto detalhado (mínimo 3 parágrafos)
-2. OBRIGATÓRIO: 3-5 imagens médicas usando [IMAGE_SEARCH: termo] com termos DIFERENTES para cada uma
+2. OBRIGATÓRIO: MÍNIMO 5 imagens médicas usando [IMAGE_SEARCH: termo] com termos DIFERENTES para cada uma
 3. OBRIGATÓRIO: 5 flashcards no formato \`\`\`flashcards:Título com JSON estruturado (cada verso com fonte)
 4. OBRIGATÓRIO: 1 fluxograma Mermaid (\`\`\`mermaid com graph TD)
 5. OBRIGATÓRIO: 1 organograma/diagrama (\`\`\`tree:Título ou \`\`\`organograma:Título) com classificação/hierarquia
@@ -1539,7 +1539,7 @@ NUNCA repita URLs de imagens. Cada [IMAGE_SEARCH] deve ter termo DIFERENTE.
     // Mensagens seguintes: reforçar imagens obrigatórias e oferta de recursos
     systemPrompt += `\n\n<followup_message_context>
 REGRAS PARA ESTA MENSAGEM:
-1. OBRIGATÓRIO: Incluir 2-4 imagens médicas usando [IMAGE_SEARCH: termo] sobre o tema (termos DIFERENTES, SEM repetir URLs)
+1. OBRIGATÓRIO: Incluir MÍNIMO 5 imagens médicas usando [IMAGE_SEARCH: termo] sobre o tema (termos DIFERENTES, SEM repetir URLs)
 2. OBRIGATÓRIO: Fontes e Referências ABNT ao final
 3. OBRIGATÓRIO: No FINAL da resposta, SEMPRE oferecer recursos disponíveis:
 "💡 **Posso gerar para você:** 📝 Questões | 🃏 Flashcards | 🔀 Fluxograma | 🏗️ Organograma | 📊 Diagrama | 🖼️ Mais imagens — **O que deseja?**"
@@ -2394,13 +2394,13 @@ async function streamGemini(params: StreamGeminiParams) {
   let geminiSystemPrompt = SYSTEM_PROMPT_PREMIUM
   if (historico.length === 0) {
     geminiSystemPrompt += `\n\nATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo. Siga OBRIGATORIAMENTE:
-1. Texto detalhado (mín. 3 parágrafos) + 3-5 imagens [IMAGE_SEARCH: termo] com termos DIFERENTES
+1. Texto detalhado (mín. 3 parágrafos) + MÍNIMO 5 imagens [IMAGE_SEARCH: termo] com termos DIFERENTES
 2. 5 flashcards (\`\`\`flashcards:Título) + 1 fluxograma Mermaid + 1 organograma (\`\`\`tree:Título)
 3. 2-3 questões em formato \`\`\`questao JSON (com referencias ABNT no gabarito)
 4. Referências ABNT ao final (diretrizes brasileiras + livros-texto)
 5. No final: oferecer questões, flashcards, fluxograma, organograma, diagrama, imagens`
   } else {
-    geminiSystemPrompt += `\n\nOBRIGATÓRIO: 2-4 imagens [IMAGE_SEARCH: termo], fontes ABNT ao final, e oferta de recursos no final (questões, flashcards, fluxograma, organograma, diagrama, imagens).`
+    geminiSystemPrompt += `\n\nOBRIGATÓRIO: MÍNIMO 5 imagens [IMAGE_SEARCH: termo], fontes ABNT ao final, e oferta de recursos no final (questões, flashcards, fluxograma, organograma, diagrama, imagens).`
   }
 
   const model = genAI.getGenerativeModel({
