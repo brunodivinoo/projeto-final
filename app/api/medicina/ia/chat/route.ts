@@ -1139,8 +1139,17 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
           if (historico.length === 0) {
             systemPrompt += `\n\n<first_message_context>
 ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
-Siga a regra de PRIMEIRA MENSAGEM: resposta rica com texto detalhado, 1 fluxograma Mermaid, 2-3 questões em formato \`\`\`questao JSON, referências. Máximo 1-2 imagens sem repetição.
+Siga OBRIGATORIAMENTE a regra de PRIMEIRA MENSAGEM - TODOS obrigatórios:
+1. Texto detalhado (mín. 3 parágrafos) + 3-5 imagens [IMAGE_SEARCH: termo] com termos DIFERENTES
+2. 5 flashcards (\`\`\`flashcards:Título) + 1 fluxograma Mermaid + 1 organograma (\`\`\`tree:Título)
+3. 2-3 questões em formato \`\`\`questao JSON (com referencias ABNT no gabarito)
+4. Referências ABNT ao final (diretrizes brasileiras + livros-texto)
+5. No final: oferecer questões, flashcards, fluxograma, organograma, diagrama, imagens
 </first_message_context>`
+          } else {
+            systemPrompt += `\n\n<followup_message_context>
+OBRIGATÓRIO: 2-4 imagens [IMAGE_SEARCH: termo], fontes ABNT ao final, e oferta de recursos no final.
+</followup_message_context>`
           }
 
           // Adicionar contexto da memória persistente
@@ -1513,15 +1522,28 @@ async function streamClaude(params: StreamClaudeParams) {
   if (isFirstMessage) {
     systemPrompt += `\n\n<first_message_context>
 ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
-Siga OBRIGATORIAMENTE a "REGRA DA PRIMEIRA MENSAGEM DE CHAT NOVO":
-1. Resposta COMPLETA e RICA com texto detalhado (mínimo 3 parágrafos)
-2. OBRIGATÓRIO gerar 1 fluxograma Mermaid (\`\`\`mermaid com graph TD)
-3. OBRIGATÓRIO gerar 2-3 questões no formato \`\`\`questao com JSON estruturado
-4. Referências ABNT ao final
-5. NO MÁXIMO 1-2 imagens, SEM repetição de URLs
+Siga OBRIGATORIAMENTE a "REGRA DA PRIMEIRA MENSAGEM DE CHAT NOVO" - TODOS os itens são OBRIGATÓRIOS:
+1. Resposta COMPLETA e EXTREMAMENTE RICA com texto detalhado (mínimo 3 parágrafos)
+2. OBRIGATÓRIO: 3-5 imagens médicas usando [IMAGE_SEARCH: termo] com termos DIFERENTES para cada uma
+3. OBRIGATÓRIO: 5 flashcards no formato \`\`\`flashcards:Título com JSON estruturado (cada verso com fonte)
+4. OBRIGATÓRIO: 1 fluxograma Mermaid (\`\`\`mermaid com graph TD)
+5. OBRIGATÓRIO: 1 organograma/diagrama (\`\`\`tree:Título ou \`\`\`organograma:Título) com classificação/hierarquia
+6. OBRIGATÓRIO: 2-3 questões no formato \`\`\`questao com JSON estruturado (com campo referencias ABNT)
+7. OBRIGATÓRIO: Fontes e Referências ABNT ao final (diretrizes brasileiras + livros-texto)
+8. OBRIGATÓRIO: No final, oferecer todos os recursos: questões, flashcards, fluxograma, organograma, diagrama, imagens
 NÃO gere questões como texto puro - SEMPRE use \`\`\`questao com JSON!
+NUNCA repita URLs de imagens. Cada [IMAGE_SEARCH] deve ter termo DIFERENTE.
 </first_message_context>`
     console.log('[Chat API] Primeira mensagem detectada - injetando instrução de resposta rica')
+  } else {
+    // Mensagens seguintes: reforçar imagens obrigatórias e oferta de recursos
+    systemPrompt += `\n\n<followup_message_context>
+REGRAS PARA ESTA MENSAGEM:
+1. OBRIGATÓRIO: Incluir 2-4 imagens médicas usando [IMAGE_SEARCH: termo] sobre o tema (termos DIFERENTES, SEM repetir URLs)
+2. OBRIGATÓRIO: Fontes e Referências ABNT ao final
+3. OBRIGATÓRIO: No FINAL da resposta, SEMPRE oferecer recursos disponíveis:
+"💡 **Posso gerar para você:** 📝 Questões | 🃏 Flashcards | 🔀 Fluxograma | 🏗️ Organograma | 📊 Diagrama | 🖼️ Mais imagens — **O que deseja?**"
+</followup_message_context>`
   }
 
   // ========== ENRIQUECIMENTO PARALELO (memória + variação + HF) ==========
@@ -2371,7 +2393,14 @@ async function streamGemini(params: StreamGeminiParams) {
   // Montar system prompt com detecção de primeira mensagem
   let geminiSystemPrompt = SYSTEM_PROMPT_PREMIUM
   if (historico.length === 0) {
-    geminiSystemPrompt += `\n\nATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo. Siga a regra de PRIMEIRA MENSAGEM: resposta rica com texto detalhado, 1 fluxograma Mermaid, 2-3 questões em formato \`\`\`questao JSON, referências. Máximo 1-2 imagens sem repetição.`
+    geminiSystemPrompt += `\n\nATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo. Siga OBRIGATORIAMENTE:
+1. Texto detalhado (mín. 3 parágrafos) + 3-5 imagens [IMAGE_SEARCH: termo] com termos DIFERENTES
+2. 5 flashcards (\`\`\`flashcards:Título) + 1 fluxograma Mermaid + 1 organograma (\`\`\`tree:Título)
+3. 2-3 questões em formato \`\`\`questao JSON (com referencias ABNT no gabarito)
+4. Referências ABNT ao final (diretrizes brasileiras + livros-texto)
+5. No final: oferecer questões, flashcards, fluxograma, organograma, diagrama, imagens`
+  } else {
+    geminiSystemPrompt += `\n\nOBRIGATÓRIO: 2-4 imagens [IMAGE_SEARCH: termo], fontes ABNT ao final, e oferta de recursos no final (questões, flashcards, fluxograma, organograma, diagrama, imagens).`
   }
 
   const model = genAI.getGenerativeModel({
