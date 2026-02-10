@@ -1057,7 +1057,10 @@ async function streamComSmartRouter(params: StreamSmartRouterParams) {
         if (deveRecomendarImagens(mensagem)) {
           try {
             const topico = extractTopic(mensagem) || mensagem.substring(0, 80)
-            const imagensResult = await buscarImagensComFallback(topico, 3)
+            // Quando o usuário pede explicitamente mais imagens, buscar mais
+            const pediuMaisImagens = /mais imagens|mais figuras|mais ilustra|mais fotos|várias imagens|varias imagens|muitas imagens|imagens sobre|quero.*imagens/i.test(mensagem)
+            const qtdImagens = pediuMaisImagens ? 6 : 3
+            const imagensResult = await buscarImagensComFallback(topico, qtdImagens)
 
             if (imagensResult.imagens && imagensResult.imagens.length > 0) {
               const imagensTexto = formatarImagensParaChat(imagensResult.imagens)
