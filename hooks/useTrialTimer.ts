@@ -29,8 +29,8 @@ export interface TrialTimerData {
   mostrarUrgencia: boolean
 }
 
-// Duração total do trial em segundos (1 hora)
-const DURACAO_TRIAL_SEGUNDOS = 1 * 60 * 60
+// Duração total do trial em segundos (30 minutos)
+const DURACAO_TRIAL_SEGUNDOS = 30 * 60
 
 export function useTrialTimer(): TrialTimerData {
   const { profile, plano, trialStatus, iniciarTrial } = useMedAuth()
@@ -52,8 +52,8 @@ export function useTrialTimer(): TrialTimerData {
     // Se não iniciou ou já usou todo o trial
     if (!profile?.trial_started_at || profile.trial_used) {
       if (!profile?.trial_started_at) {
-        // Ainda pode iniciar - mostrar 1h completa
-        return { ms: DURACAO_TRIAL_SEGUNDOS * 1000, h: 1, m: 0, s: 0 }
+        // Ainda pode iniciar - mostrar 30min completa
+        return { ms: DURACAO_TRIAL_SEGUNDOS * 1000, h: 0, m: 30, s: 0 }
       }
       return { ms: 0, h: 0, m: 0, s: 0 }
     }
@@ -97,14 +97,14 @@ export function useTrialTimer(): TrialTimerData {
 
   // Cor da barra baseada no tempo restante
   const getCorBarra = () => {
-    if (tempo.h >= 2) return 'bg-emerald-500' // Verde - mais de 2h
-    if (tempo.h >= 1) return 'bg-yellow-500' // Amarelo - 1-2h
-    if (tempo.m >= 30) return 'bg-orange-500' // Laranja - 30min-1h
-    return 'bg-red-500' // Vermelho - menos de 30min
+    if (tempo.m >= 20) return 'bg-emerald-500' // Verde - mais de 20min
+    if (tempo.m >= 10) return 'bg-yellow-500' // Amarelo - 10-20min
+    if (tempo.m >= 5) return 'bg-orange-500' // Laranja - 5-10min
+    return 'bg-red-500' // Vermelho - menos de 5min
   }
 
-  // Mostrar urgência quando menos de 30 min
-  const mostrarUrgencia = isTrialActive && tempo.h === 0 && tempo.m < 30
+  // Mostrar urgência quando menos de 5 min
+  const mostrarUrgencia = isTrialActive && tempo.m < 5
 
   return {
     isTrialActive,
