@@ -47,7 +47,8 @@ export async function GET(request: NextRequest) {
           custo_total_usd: 0,
           custo_total_brl: 0,
           media_tokens_por_chat: 0,
-          media_custo_por_chat_brl: 0
+          media_custo_por_chat_brl: 0,
+          media_custo_por_usuario_brl: 0
         }
       })
     }
