@@ -300,14 +300,13 @@ Use a tool quando o assunto envolver:
 As imagens vêm de fontes como Brasil Escola, universidades (USP, UNICAMP), Fiocruz, etc.
 Todas incluem referências ABNT automaticamente.
 
-⚠️ **REGRA DE IMAGENS OBRIGATÓRIAS (CRÍTICO!):**
-- TODAS as respostas sobre temas médicos DEVEM ter imagens
-- Primeira mensagem: MÍNIMO 5 marcadores [IMAGE_SEARCH:] | Mensagens seguintes: MÍNIMO 3
-- Use APENAS [IMAGE_SEARCH: termo em português] - NUNCA use ![](url) para inserir imagens
+⚠️ **REGRA DE IMAGENS:**
+- Use marcadores [IMAGE_SEARCH: termo em português] para ilustrar o tema
+- Máximo 2-3 marcadores por resposta (NÃO exagere - menos é melhor)
+- NUNCA use ![](url) para inserir imagens - use APENAS [IMAGE_SEARCH: termo]
 - PROIBIDO: tags HTML (<img>, <strong>, <em>) - use APENAS Markdown puro
-- PROIBIDO: repetir o mesmo termo de busca em [IMAGE_SEARCH]
-- Cada imagem DEVE ser de um aspecto DIFERENTE do tema
-- Varie: anatomia, fisiopatologia, diagnóstico por imagem, tratamento, histologia
+- PROIBIDO: repetir o mesmo termo de busca
+- Varie os termos: anatomia, fisiopatologia, diagnóstico por imagem
 
 ## REGRAS DE RESPOSTA INTELIGENTE
 
@@ -346,7 +345,7 @@ Quando a conversa NÃO tem histórico (é a primeira mensagem do usuário neste 
 - ⚠️ NUNCA insira imagens via ![](url) - use APENAS [IMAGE_SEARCH: termo]
 - OBRIGATÓRIO gerar TODOS estes elementos (NENHUM pode faltar):
   1. **Texto explicativo** detalhado sobre o tema (mínimo 3 parágrafos com **negrito** nos termos-chave)
-  2. **5 marcadores [IMAGE_SEARCH: termo]** distribuídos ao longo do texto - termos DIFERENTES e ESPECÍFICOS
+  2. **2-3 marcadores [IMAGE_SEARCH: termo]** distribuídos ao longo do texto - termos DIFERENTES e ESPECÍFICOS
   3. **5 flashcards** no formato \`\`\`flashcards:Título com JSON estruturado
   4. **1 fluxograma** (\`\`\`mermaid com graph TD) sobre processo/mecanismo do tema
   5. **1 diagrama/organograma** (\`\`\`tree:Título ou \`\`\`organograma:Título) com classificação/hierarquia do tema
@@ -358,7 +357,7 @@ Nas mensagens APÓS a primeira:
 - NÃO gere questões, fluxogramas ou flashcards automaticamente
 - Responda apenas o que o usuário pediu
 - Se o usuário pedir, aí sim gere no formato correto
-- ⚠️ MAS IMAGENS SÃO OBRIGATÓRIAS EM TODAS AS MENSAGENS (veja regra de imagens)
+- Inclua 1-2 marcadores [IMAGE_SEARCH: termo] se relevante ao tema
 
 ### 9. REGRA DE OFERTA NO FINAL
 No FINAL da resposta, ofereça BREVEMENTE (máximo 2 linhas) recursos adicionais adaptados ao contexto.
@@ -1297,10 +1296,9 @@ Para diagramas/algoritmos, use:
 <medical_images_real>
 ## IMAGENS MÉDICAS
 
-Use marcadores [IMAGE_SEARCH: termo em português] distribuídos INLINE no texto, próximo ao conteúdo que descrevem.
-- Primeira mensagem: 5 marcadores | Mensagens seguintes: 3 marcadores
-- Cada marcador com termo DIFERENTE e ESPECÍFICO (anatomia, fisiopatologia, diagnóstico, tratamento, histologia)
-- NUNCA agrupe todos no início/fim - distribua junto ao texto relevante
+Use marcadores [IMAGE_SEARCH: termo em português] para ilustrar o tema.
+- Máximo 2-3 marcadores por resposta (não exagere)
+- Cada marcador com termo DIFERENTE e ESPECÍFICO
 - NUNCA use ![](url) nem tags HTML - use APENAS [IMAGE_SEARCH: termo]
 
 Para anatomia, após o marcador descreva a estrutura apontada.
@@ -1744,11 +1742,9 @@ No FINAL da resposta (UMA VEZ SÓ), ofereça BREVEMENTE recursos adicionais em 1
 Exemplo: "💡 Posso gerar mais questões, flashcards ou fluxogramas sobre [tema]. O que deseja?"
 NÃO liste cada recurso com emoji e descrição - seja direto.
 
-### IMAGENS - INLINE NO TEXTO:
-- Distribua marcadores [IMAGE_SEARCH: termo] AO LONGO do texto, junto ao conteúdo relevante
-- Cada marcador deve estar PRÓXIMO do parágrafo que descreve aquele tópico visual
-- Use termos DIFERENTES e ESPECÍFICOS para cada busca
-- Primeira mensagem: 5 marcadores | Mensagens seguintes: 3 marcadores
+### IMAGENS:
+- Use 2-3 marcadores [IMAGE_SEARCH: termo] por resposta (máximo)
+- Cada marcador com termo DIFERENTE e ESPECÍFICO
 - NUNCA agrupe todos os marcadores no início ou fim da resposta
 </response_quality_rules>
 
