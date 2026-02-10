@@ -106,20 +106,28 @@ export async function* streamWithO4Mini(
 ): AsyncGenerator<OpenAIStreamChunk> {
   const openai = getOpenAIClient()
 
-  // Usar tipagem correta para streaming
-  const stream = await openai.chat.completions.create({
+  // Montar params base
+  const baseParams = {
     model: OPENAI_MODELS.o4Mini,
     max_completion_tokens: options.maxTokens || 8192,
     stream: true as const,
     stream_options: { include_usage: true },
     messages: [
-      { role: 'system', content: systemPrompt },
+      { role: 'system' as const, content: systemPrompt },
       ...messages.map(m => ({
         role: m.role as 'user' | 'assistant',
         content: m.content
       }))
     ]
-  })
+  }
+
+  // o4-mini suporta reasoning_effort para controlar profundidade de raciocínio
+  // Adicionamos via Object.assign para manter tipagem do stream
+  if (options.reasoningEffort) {
+    Object.assign(baseParams, { reasoning_effort: options.reasoningEffort })
+  }
+
+  const stream = await openai.chat.completions.create(baseParams)
 
   let fullResponse = ''
   let tokensInput = 0
