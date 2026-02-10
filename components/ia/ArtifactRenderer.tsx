@@ -1391,10 +1391,12 @@ function isCompleteQuestionJson(jsonStr: string): boolean {
   try {
     const parsed = JSON.parse(jsonStr.trim())
     // Verifica se tem os campos mínimos de uma questão
-    const hasEnunciado = !!(parsed.enunciado && parsed.enunciado.length > 10)
+    // Aceita tanto 'enunciado' quanto 'pergunta' como campo de texto da questão
+    const enunciadoText = parsed.enunciado || parsed.pergunta || ''
+    const hasEnunciado = !!(enunciadoText && enunciadoText.length > 10)
     // Aceita 2+ alternativas (pode ser C/E com só 2, ou questão ainda gerando)
     const hasAlternativas = !!(parsed.alternativas && Array.isArray(parsed.alternativas) && parsed.alternativas.length >= 2)
-    const hasGabarito = !!(parsed.gabarito || parsed.gabarito_comentado)
+    const hasGabarito = !!(parsed.gabarito || parsed.gabarito_comentado || parsed.resposta_correta)
 
     // Se temos enunciado + alternativas (2+), considera completo
     // Gabarito não é obrigatório para renderizar o card
@@ -1641,8 +1643,8 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
   // FASE 5: Extração manual de campos (fallback robusto)
   // =====================================================
 
-  // Extrair campos individualmente
-  const enunciado = extractJsonStringValue(jsonStr, 'enunciado')
+  // Extrair campos individualmente (aceita 'pergunta' como fallback de 'enunciado')
+  const enunciado = extractJsonStringValue(jsonStr, 'enunciado') || extractJsonStringValue(jsonStr, 'pergunta')
   const disciplina = extractJsonStringValue(jsonStr, 'disciplina')
   const assunto = extractJsonStringValue(jsonStr, 'assunto')
   const subassunto = extractJsonStringValue(jsonStr, 'subassunto')
@@ -1706,7 +1708,7 @@ function tryRepairQuestionJson(jsonStr: string): string | null {
 
     try {
       const parsed = JSON.parse(attempt)
-      if (parsed.enunciado && parsed.alternativas && parsed.alternativas.length >= 2) {
+      if ((parsed.enunciado || parsed.pergunta) && parsed.alternativas && parsed.alternativas.length >= 2) {
         if (shouldLog) console.log('[ArtifactRenderer] JSON recuperado via truncamento')
         return attempt
       }
@@ -1878,7 +1880,25 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
         }
       }
 
-      const questionData = JSON.parse(questionJson) as Question
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rawData = JSON.parse(questionJson) as any
+
+      // Normalizar campos: aceitar 'pergunta' como alias de 'enunciado'
+      if (!rawData.enunciado && rawData.pergunta) {
+        rawData.enunciado = rawData.pergunta
+      }
+      // Normalizar gabarito: aceitar resposta_correta/explicacao no top-level
+      if (!rawData.gabarito_comentado && !rawData.gabarito && rawData.resposta_correta) {
+        rawData.gabarito_comentado = {
+          resposta_correta: rawData.resposta_correta,
+          explicacao: rawData.explicacao || '',
+          analise_alternativas: rawData.analise_alternativas || [],
+          ponto_chave: rawData.ponto_chave || '',
+          referencias: rawData.referencias || []
+        }
+      }
+
+      const questionData = rawData as Question
 
       // Garantir campos obrigatórios
       if (!questionData.id) {
@@ -1886,6 +1906,9 @@ function parseArtifacts(content: string): { parts: (string | Artifact)[]; artifa
       }
       if (!questionData.numero) {
         questionData.numero = questionMatchCount
+      }
+      if (!questionData.disciplina) {
+        questionData.disciplina = 'Medicina'
       }
       if (!questionData.gabarito_comentado) {
         questionData.gabarito_comentado = {
