@@ -2949,6 +2949,9 @@ function ArtifactRendererComponent({
   // Resetar tracker de imagens renderizadas a cada ciclo de render
   renderedImageUrlsRef.current = new Set()
 
+  // Controle para renderizar a galeria apenas uma vez (inline após primeiro texto com marcadores)
+  let imageGalleryRendered = false
+
   return (
     <div className="artifact-renderer lg:text-[0.9em] xl:text-[0.85em]">
       {parts.map((part, index) => {
@@ -2984,7 +2987,11 @@ function ArtifactRendererComponent({
             )
           }
 
-          // Remover marcadores IMAGE_SEARCH do texto (galeria única no final)
+          // Verificar se este texto tinha marcadores IMAGE_SEARCH
+          const partHadImageMarkers = IMAGE_SEARCH_REGEX.test(part)
+          IMAGE_SEARCH_REGEX.lastIndex = 0
+
+          // Remover marcadores IMAGE_SEARCH do texto
           let cleanedPart = removeImageSearchMarkers(part)
           // Aplicar limpeza de gabarito e conteúdo que não deve aparecer no chat
           cleanedPart = cleanRenderedTextForChat(cleanedPart)
@@ -3018,10 +3025,16 @@ function ArtifactRendererComponent({
             )
           }
 
-          // Renderizar Markdown normal
+          // Mostrar galeria inline após este texto se ele continha marcadores de imagem
+          const shouldShowGalleryHere = partHadImageMarkers && userId && imageSearchTerms.length > 0 && !imageGalleryRendered
+          if (shouldShowGalleryHere) {
+            imageGalleryRendered = true
+          }
+
+          // Renderizar Markdown normal (+ galeria inline se aplicável)
           return (
+            <div key={index}>
             <ReactMarkdown
-              key={index}
               remarkPlugins={[remarkGfm]}
               components={{
                 // Headings - menores e mais compactos
@@ -3221,6 +3234,14 @@ function ArtifactRendererComponent({
             >
               {cleanedPart}
             </ReactMarkdown>
+            {shouldShowGalleryHere && (
+              <MedicalImageGallery
+                searchTerms={imageSearchTerms.slice(0, 3)}
+                userId={userId!}
+                excludeUrls={inlineImageUrls}
+              />
+            )}
+            </div>
           )
         }
 
@@ -3696,8 +3717,8 @@ function ArtifactRendererComponent({
         return null
       })}
 
-      {/* Galeria única no final da mensagem com todos os termos coletados */}
-      {imageSearchTerms.length > 0 && userId && (
+      {/* Galeria fallback: se nenhum texto teve marcadores, mostrar no final */}
+      {imageSearchTerms.length > 0 && userId && !imageGalleryRendered && (
         <MedicalImageGallery
           searchTerms={imageSearchTerms.slice(0, 3)}
           userId={userId}

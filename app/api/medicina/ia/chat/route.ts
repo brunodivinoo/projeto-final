@@ -1467,7 +1467,7 @@ ATENÇÃO: Esta é a PRIMEIRA MENSAGEM do usuário neste chat novo.
 ESTRUTURA OBRIGATÓRIA DA RESPOSTA (nesta EXATA ordem):
 
 1. TEXTO EXPLICATIVO (mín. 4 parágrafos com **negrito** nos termos-chave)
-   - Distribua 5 marcadores [IMAGE_SEARCH: termo médico específico] ao longo dos parágrafos
+   - Distribua 2-3 marcadores [IMAGE_SEARCH: termo médico específico] ao longo dos parágrafos
    - Cada termo deve ser DIFERENTE e ESPECÍFICO (nunca genérico)
 
 2. BLOCO DE FLASHCARDS (copie este formato EXATAMENTE):
@@ -1557,7 +1557,8 @@ graph TD
 6. Oferta BREVE (1-2 linhas): "💡 Posso gerar mais questões, flashcards ou fluxogramas. O que deseja?"
 
 ⚠️ REGRA DE QUALIDADE: 80-90% da resposta = conteúdo educacional. NUNCA gere meta-seções como: CHECKLIST DE COMPLETUDE, RESUMO EXECUTIVO, CONTAGEM FINAL DE QUESTÕES, DESTAQUES DA REVISÃO. Foque em CONTEÚDO, não em confirmações.
-⚠️ Distribua os [IMAGE_SEARCH:] DENTRO dos parágrafos relevantes, não agrupados no início.
+⚠️ Use no máximo 2-3 [IMAGE_SEARCH:] distribuídos nos parágrafos relevantes.
+⚠️ TODOS os artefatos acima (flashcards, mermaid, questões) são OBRIGATÓRIOS na primeira mensagem.
 </first_message_context>`
     console.log('[Chat API] Primeira mensagem detectada - injetando instrução de resposta rica')
   } else {
@@ -1566,7 +1567,7 @@ graph TD
 Use APENAS Markdown (NUNCA tags HTML). Use APENAS [IMAGE_SEARCH: termo] para imagens (NUNCA ![](url)).
 
 REGRAS:
-1. Distribua 3 marcadores [IMAGE_SEARCH:] ao longo do texto, junto ao conteúdo relevante
+1. Use 1-2 marcadores [IMAGE_SEARCH:] ao longo do texto se relevante ao tema
 2. Questões sempre em bloco \`\`\`questao com JSON
 3. Referências ABNT discretas ao final (3-5 fontes)
 4. Oferta breve no final (1-2 linhas)
