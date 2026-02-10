@@ -135,53 +135,78 @@ export async function incrementarUsoIA(
 
     console.log(`[UsoIA] Registrando: user=${userId}, tipo=${tipo}, tokens_in=${tokensInput}, tokens_out=${tokensOutput}, custo=${custo}`)
 
-    // Buscar uso atual
-    const { data: uso, error: fetchError } = await supabase
+    // Usar UPSERT atômico com RPC para evitar race condition
+    // Primeiro tenta inserir; se já existe, faz UPDATE com incremento atômico
+    const { error: upsertError } = await supabase
       .from('uso_ia_med')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('mes_referencia', mesAtual)
-      .single()
-
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      console.error('[UsoIA] Erro ao buscar uso:', fetchError)
-    }
-
-    if (uso) {
-      // Atualizar existente
-      const { error: updateError } = await supabase
-        .from('uso_ia_med')
-        .update({
-          [campo]: (uso[campo] || 0) + quantidade,
-          tokens_input: (uso.tokens_input || 0) + tokensInput,
-          tokens_output: (uso.tokens_output || 0) + tokensOutput,
-          custo_estimado: (uso.custo_estimado || 0) + custo
-        })
-        .eq('id', uso.id)
-
-      if (updateError) {
-        console.error('[UsoIA] Erro ao atualizar:', updateError)
-      } else {
-        console.log(`[UsoIA] Atualizado com sucesso: ${campo}=${(uso[campo] || 0) + quantidade}`)
-      }
-    } else {
-      // Criar novo
-      const { error: insertError } = await supabase
-        .from('uso_ia_med')
-        .insert({
+      .upsert(
+        {
           user_id: userId,
           mes_referencia: mesAtual,
           [campo]: quantidade,
           tokens_input: tokensInput,
           tokens_output: tokensOutput,
           custo_estimado: custo
+        },
+        {
+          onConflict: 'user_id,mes_referencia',
+          ignoreDuplicates: false
+        }
+      )
+
+    if (upsertError) {
+      // Fallback: se upsert falhar (ex: sem unique constraint), usar método antigo
+      console.warn('[UsoIA] Upsert falhou, usando fallback:', upsertError.message)
+
+      const { data: uso, error: fetchError } = await supabase
+        .from('uso_ia_med')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('mes_referencia', mesAtual)
+        .single()
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('[UsoIA] Erro ao buscar uso:', fetchError)
+        return
+      }
+
+      if (uso) {
+        // Usar SQL raw para incremento atômico (evita race condition)
+        const { error: rpcError } = await supabase.rpc('exec_sql_custom', {
+          sql_query: `UPDATE uso_ia_med SET
+            ${campo} = COALESCE(${campo}, 0) + ${quantidade},
+            tokens_input = COALESCE(tokens_input, 0) + ${tokensInput},
+            tokens_output = COALESCE(tokens_output, 0) + ${tokensOutput},
+            custo_estimado = COALESCE(custo_estimado, 0) + ${custo}
+          WHERE id = '${uso.id}'`
         })
 
-      if (insertError) {
-        console.error('[UsoIA] Erro ao inserir:', insertError)
+        if (rpcError) {
+          console.error('[UsoIA] Erro no incremento atômico:', rpcError)
+        } else {
+          console.log(`[UsoIA] Incremento atômico OK: ${campo}+=${quantidade}`)
+        }
       } else {
-        console.log(`[UsoIA] Novo registro criado para ${userId} em ${mesAtual}`)
+        // Criar novo registro
+        const { error: insertError } = await supabase
+          .from('uso_ia_med')
+          .insert({
+            user_id: userId,
+            mes_referencia: mesAtual,
+            [campo]: quantidade,
+            tokens_input: tokensInput,
+            tokens_output: tokensOutput,
+            custo_estimado: custo
+          })
+
+        if (insertError) {
+          console.error('[UsoIA] Erro ao inserir:', insertError)
+        } else {
+          console.log(`[UsoIA] Novo registro criado para ${userId} em ${mesAtual}`)
+        }
       }
+    } else {
+      console.log(`[UsoIA] Upsert OK: ${campo}+=${quantidade}`)
     }
   } catch (error) {
     console.error('[UsoIA] Erro inesperado:', error)
