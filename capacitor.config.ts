@@ -6,12 +6,26 @@ const config: CapacitorConfig = {
   appName: 'PREPARAMED',
   webDir: 'out',
 
-  // Servidor de desenvolvimento (descomente para dev local)
-  // server: {
-  //   url: 'http://192.168.0.XXX:3000',
-  //   cleartext: true,
-  // },
+  // ============================================================
+  // SERVER - Aponta para o backend Vercel em producao
+  // Em dev, usa localhost (comentar server para usar build local)
+  // ============================================================
+  server: {
+    url: 'https://projeto-final-zeta-navy.vercel.app',
+    cleartext: false,
+    // Permite navegacao dentro do dominio do app
+    allowNavigation: [
+      'projeto-final-zeta-navy.vercel.app',
+      'preparamed-navy.vercel.app',
+      'zkcstkbpgwdoiihvfspp.supabase.co',
+      '*.google.com',
+      '*.googleapis.com',
+    ],
+  },
 
+  // ============================================================
+  // PLUGINS NATIVOS
+  // ============================================================
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
@@ -26,7 +40,7 @@ const config: CapacitorConfig = {
       splashImmersive: true,
     },
     StatusBar: {
-      style: 'LIGHT',
+      style: 'DARK',
       backgroundColor: '#0f172a',
     },
     Keyboard: {
@@ -36,22 +50,33 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
-  },
-
-  android: {
-    allowMixedContent: false,
-    backgroundColor: '#0f172a',
-    buildOptions: {
-      keystorePath: undefined,
-      keystoreAlias: undefined,
+    LocalNotifications: {
+      smallIcon: 'ic_stat_icon',
+      iconColor: '#6366f1',
     },
   },
 
+  // ============================================================
+  // iOS - Configuracoes especificas
+  // ============================================================
   ios: {
-    contentInset: 'always',
+    contentInset: 'automatic',
     backgroundColor: '#0f172a',
-    scheme: 'PREPARAMED',
+    preferredContentMode: 'mobile',
+    scheme: 'preparamed',
+    scrollEnabled: true,
   },
-};
 
-export default config;
+  // ============================================================
+  // ANDROID - Configuracoes especificas
+  // ============================================================
+  android: {
+    backgroundColor: '#0f172a',
+    allowMixedContent: false,
+    captureInput: true,
+    webContentsDebuggingEnabled: false,
+    useLegacyBridge: false,
+  },
+}
+
+export default config

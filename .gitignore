@@ -72,7 +72,7 @@ Thumbs.db
 # Vercel
 .vercel
 
-# Capacitor - Projetos nativos (gerados localmente)
+# Capacitor - plataformas nativas (geradas com npx cap add)
 android/
 ios/
 

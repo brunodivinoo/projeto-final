@@ -9,6 +9,7 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration"
+import { CapacitorProvider } from "@/components/native/CapacitorProvider"
 import { NativeInitializer } from "@/components/capacitor/NativeInitializer"
 
 // ============================================================
@@ -146,17 +147,19 @@ export default function RootLayout({
       </head>
 
       <body className={`${inter.className} antialiased bg-[#f8fafc] text-slate-900`}>
-        {/* === CONTEUDO DA PAGINA === */}
-        {children}
+        <CapacitorProvider>
+          {/* === CONTEUDO DA PAGINA === */}
+          {children}
 
-        {/* === CAPACITOR NATIVE INITIALIZER === */}
-        {/* Inicializa features nativas (StatusBar, Splash, Push) quando em app nativo */}
-        <NativeInitializer />
+          {/* === CAPACITOR NATIVE INITIALIZER === */}
+          {/* Inicializa features nativas extras (push notifications, camera bridge) */}
+          <NativeInitializer />
 
-        {/* === SERVICE WORKER REGISTRATION === */}
-        {/* Componente que registra e gerencia o Service Worker */}
-        {/* Inclui banner de atualizacao quando nova versao esta disponivel */}
-        <ServiceWorkerRegistration showUpdateUI={true} />
+          {/* === SERVICE WORKER REGISTRATION === */}
+          {/* Componente que registra e gerencia o Service Worker */}
+          {/* Inclui banner de atualizacao quando nova versao esta disponivel */}
+          <ServiceWorkerRegistration showUpdateUI={true} />
+        </CapacitorProvider>
       </body>
     </html>
   )
