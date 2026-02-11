@@ -19,6 +19,7 @@ Plataforma de educacao medica para preparacao de residencia medica. App web comp
 - **Editor**: TipTap (rich text)
 - **Graficos/Diagramas**: Mermaid.js
 - **Cache**: ioredis
+- **Mobile**: Capacitor 8 (iOS + Android nativo via WebView)
 - **Pagamento**: Cakto (checkout)
 
 ## Arquitetura de IA (lib/ai/)
@@ -177,6 +178,16 @@ Claude precisa destes tokens para executar o pipeline completo. Pedir ao usuario
 
 ## Historico de Sessoes
 
+### Sessao 10/02/2026 - Animacoes Chat + Setup Capacitor Mobile (PR #145)
+- Indicador "Pensando..." com 3 bolinhas pulsantes (animacao dot-pulse CSS)
+- Cursor de digitacao durante streaming (typing-cursor emerald)
+- Consistencia entre ChatIA, StreamingMessage e MobileChatMessage
+- Setup completo Capacitor 8: config, plugins nativos, hooks, provider
+- Plataformas iOS e Android inicializadas
+- CapacitorProvider integrado no layout.tsx (safe areas, keyboard, status bar)
+- Documentacao completa no CLAUDE.md para proximas sessoes
+- Arquivos: capacitor.config.ts, useCapacitor.ts, CapacitorProvider.tsx, globals.css, ChatIA.tsx, StreamingMessage.tsx, MobileChatMessage.tsx
+
 ### Sessao 09/02/2026 - Fixes IA Chat (PR #115)
 - Fix imagens duplicadas (inline + galeria) via excludeUrls
 - Fix questoes nao renderizando como deck (reforco no prompt)
@@ -212,6 +223,67 @@ Claude precisa destes tokens para executar o pipeline completo. Pedir ao usuario
 | Gratuito | Gemini 2.5 Flash | Limitado |
 | Premium | Claude Sonnet 4.5 | Amplo |
 | Residencia | Claude Opus 4 | Maximo |
+
+## App Mobile (Capacitor) - Configuracao Inicial
+
+### Arquitetura
+O app mobile usa **Capacitor 8** como wrapper nativo do site Vercel:
+- Em producao, o WebView aponta para `https://projeto-final-zeta-navy.vercel.app`
+- Plugins nativos (push, haptics, statusbar, keyboard, splash) integrados
+- iOS e Android a partir de um unico codebase
+- **App ID**: `com.preparamed.app`
+- **Scheme (deep link)**: `preparamed://`
+
+### Arquivos Criados
+| Arquivo | Funcao |
+|---------|--------|
+| `capacitor.config.ts` | Config principal: appId, plugins, server URL, iOS/Android |
+| `hooks/useCapacitor.ts` | Hooks: useCapacitor, usePushNotifications, useHaptics, useNativeShare |
+| `components/native/CapacitorProvider.tsx` | Provider global: safe areas, status bar, keyboard, back button, deep links |
+
+### Plugins Instalados
+| Plugin | Funcao |
+|--------|--------|
+| `@capacitor/app` | Lifecycle, back button, deep links |
+| `@capacitor/status-bar` | Cor/estilo da barra de status |
+| `@capacitor/splash-screen` | Tela de splash nativa |
+| `@capacitor/keyboard` | Gerenciamento de teclado virtual |
+| `@capacitor/push-notifications` | Push notifications nativas |
+| `@capacitor/local-notifications` | Notificacoes locais |
+| `@capacitor/haptics` | Vibracoes/feedback tatil |
+| `@capacitor/share` | Compartilhamento nativo |
+| `@capacitor/browser` | Abrir URLs externas |
+| `@capacitor/network` | Status de conectividade |
+
+### Scripts npm
+```bash
+npm run cap:sync      # Sincronizar web -> nativo
+npm run cap:android   # Abrir projeto no Android Studio
+npm run cap:ios       # Abrir projeto no Xcode
+npm run cap:run:android  # Rodar no emulador/device Android
+npm run cap:run:ios      # Rodar no simulador/device iOS
+npm run cap:build:android  # Build release Android (.apk)
+npm run cap:build:ios      # Sync iOS (build via Xcode)
+```
+
+### Proximos Passos (futuras sessoes)
+1. **Icones e Splash nativos** - Gerar com @capacitor/assets (1024x1024 icon + 2732x2732 splash)
+2. **Push Notifications backend** - Endpoint API para enviar push via Firebase/APNs
+3. **Biometria** - Login com Face ID / fingerprint (@capacitor/biometrics)
+4. **Build de producao Android** - Gerar .aab, assinar com keystore, upload Google Play Console
+5. **Build de producao iOS** - Certificados Apple Developer, provisioning profiles, upload App Store Connect
+6. **Deep links** - Configurar Associated Domains (iOS) e App Links (Android)
+7. **Offline mode** - Cache local de questoes/flashcards para estudo offline
+
+### Requisitos para publicacao nas lojas
+| Loja | Requisito | Status |
+|------|-----------|--------|
+| Google Play | Conta Developer ($25 unica vez) | Pendente |
+| Google Play | Keystore assinado | Pendente |
+| Google Play | Icone 512x512, screenshots, descricao | Pendente |
+| App Store | Apple Developer Program ($99/ano) | Pendente |
+| App Store | Certificados + Provisioning | Pendente |
+| App Store | App Review (pode rejeitar wrapper puro) | Mitigado com plugins nativos |
 
 ## Funcoes RPC Supabase
 - `exec_sql_custom(sql_query text)` - Executa SQL customizado (ADMIN)

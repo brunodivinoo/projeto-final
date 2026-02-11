@@ -72,6 +72,10 @@ Thumbs.db
 # Vercel
 .vercel
 
+# Capacitor - plataformas nativas (geradas com npx cap add)
+android/
+ios/
+
 # Pasta de materiais de medicina (arquivos grandes - não pertence ao código)
 # IMPORTANTE: Usar /Medicina/ para não conflitar com app/medicina
 /Medicina/
