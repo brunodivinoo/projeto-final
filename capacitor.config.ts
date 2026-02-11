@@ -1,5 +1,5 @@
-import type { CapacitorConfig } from '@capacitor/cli';
-import { KeyboardResize } from '@capacitor/keyboard';
+import type { CapacitorConfig } from '@capacitor/cli'
+import { KeyboardResize } from '@capacitor/keyboard'
 
 const config: CapacitorConfig = {
   appId: 'com.preparamed.app',
@@ -35,7 +35,7 @@ const config: CapacitorConfig = {
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: true,
-      spinnerColor: '#10b981',
+      spinnerColor: '#6366f1',
       splashFullScreen: true,
       splashImmersive: true,
     },
@@ -52,7 +52,7 @@ const config: CapacitorConfig = {
     },
     LocalNotifications: {
       smallIcon: 'ic_stat_icon',
-      iconColor: '#10b981',
+      iconColor: '#6366f1',
     },
   },
 
@@ -64,7 +64,6 @@ const config: CapacitorConfig = {
     backgroundColor: '#0f172a',
     preferredContentMode: 'mobile',
     scheme: 'preparamed',
-    // Limiter o scroll bounce para parecer mais nativo
     scrollEnabled: true,
   },
 
@@ -76,9 +75,8 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
     captureInput: true,
     webContentsDebuggingEnabled: false,
-    // Usar Chrome Custom Tabs para links externos
     useLegacyBridge: false,
   },
-};
+}
 
-export default config;
+export default config

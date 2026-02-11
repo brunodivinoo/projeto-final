@@ -17,6 +17,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { hapticImpact } from '@/lib/capacitor'
 import { useChatModeStore, ChatMode, MODE_CONFIG, MODE_LIST } from '@/lib/stores/chatModeStore'
 
 // ==========================================
@@ -184,7 +185,7 @@ export function MobileBottomNav({
         <div className="flex items-center justify-around px-2 py-2">
           {/* Conversas / Histórico */}
           <button
-            onClick={onOpenConversas}
+            onClick={() => { hapticImpact('light'); onOpenConversas() }}
             className={cn(
               "flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl min-w-[72px]",
               "active:bg-slate-100 transition-colors"
@@ -196,7 +197,7 @@ export function MobileBottomNav({
 
           {/* Seletor de Modo (central, destacado) */}
           <button
-            onClick={() => setShowModeSelector(true)}
+            onClick={() => { hapticImpact('light'); setShowModeSelector(true) }}
             className={cn(
               "flex flex-col items-center justify-center gap-1 py-2 px-5 rounded-xl min-w-[80px]",
               "bg-slate-100 active:bg-slate-100 transition-all",
@@ -214,7 +215,7 @@ export function MobileBottomNav({
 
           {/* Novo Chat */}
           <button
-            onClick={onNewChat}
+            onClick={() => { hapticImpact('medium'); onNewChat() }}
             className={cn(
               "flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl min-w-[72px]",
               "bg-indigo-500/20 active:bg-indigo-500/30 transition-colors"
@@ -226,7 +227,7 @@ export function MobileBottomNav({
 
           {/* Configurações */}
           <button
-            onClick={onOpenSettings}
+            onClick={() => { hapticImpact('light'); onOpenSettings() }}
             className={cn(
               "flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl min-w-[72px]",
               "active:bg-slate-100 transition-colors"

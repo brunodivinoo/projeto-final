@@ -1,73 +1,92 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Capacitor } from '@capacitor/core'
 
+export type Platform = 'web' | 'ios' | 'android'
+
+interface CapacitorState {
+  isNative: boolean
+  platform: Platform
+  isReady: boolean
+}
+
 /**
- * Hook para detectar se estamos rodando dentro do Capacitor (app nativo)
- * e inicializar plugins nativos automaticamente.
+ * Hook para detectar se o app esta rodando em modo nativo (Capacitor)
+ * ou no browser (PWA). Fornece informacoes sobre a plataforma.
  */
-export function useCapacitor() {
-  const [isNative, setIsNative] = useState(false)
-  const [platform, setPlatform] = useState<'web' | 'ios' | 'android'>('web')
+export function useCapacitor(): CapacitorState {
+  const [state, setState] = useState<CapacitorState>({
+    isNative: false,
+    platform: 'web',
+    isReady: false,
+  })
+
+  useEffect(() => {
+    const isNative = Capacitor.isNativePlatform()
+    const platform = Capacitor.getPlatform() as Platform
+
+    setState({
+      isNative,
+      platform,
+      isReady: true,
+    })
+  }, [])
+
+  return state
+}
+
+/**
+ * Verifica se um plugin especifico do Capacitor esta disponivel
+ */
+export function useCapacitorPlugin(pluginName: string): boolean {
+  const [available, setAvailable] = useState(false)
+
+  useEffect(() => {
+    setAvailable(Capacitor.isPluginAvailable(pluginName))
+  }, [pluginName])
+
+  return available
+}
+
+/**
+ * Hook para gerenciar o estado de rede (online/offline)
+ * Usa o plugin Network do Capacitor quando nativo, fallback para navigator.onLine
+ */
+export function useNetworkStatus() {
+  const { isNative } = useCapacitor()
   const [isOnline, setIsOnline] = useState(true)
 
   useEffect(() => {
-    const native = Capacitor.isNativePlatform()
-    setIsNative(native)
-    setPlatform(Capacitor.getPlatform() as 'web' | 'ios' | 'android')
+    if (isNative && Capacitor.isPluginAvailable('Network')) {
+      import('@capacitor/network').then(({ Network }) => {
+        Network.getStatus().then(status => setIsOnline(status.connected))
 
-    if (!native) return
+        const listener = Network.addListener('networkStatusChange', status => {
+          setIsOnline(status.connected)
+        })
 
-    // Inicializar plugins nativos apenas no app
-    initNativePlugins()
-  }, [])
+        return () => {
+          listener.then(l => l.remove())
+        }
+      })
+    } else {
+      setIsOnline(navigator.onLine)
 
-  return { isNative, platform, isOnline }
-}
+      const handleOnline = () => setIsOnline(true)
+      const handleOffline = () => setIsOnline(false)
 
-async function initNativePlugins() {
-  try {
-    // Status Bar - tema escuro
-    const { StatusBar, Style } = await import('@capacitor/status-bar')
-    await StatusBar.setStyle({ style: Style.Dark })
-    await StatusBar.setBackgroundColor({ color: '#0f172a' })
+      window.addEventListener('online', handleOnline)
+      window.addEventListener('offline', handleOffline)
 
-    // Keyboard - ajustar scroll quando teclado abre
-    const { Keyboard } = await import('@capacitor/keyboard')
-    Keyboard.addListener('keyboardWillShow', (info) => {
-      document.body.style.paddingBottom = `${info.keyboardHeight}px`
-    })
-    Keyboard.addListener('keyboardWillHide', () => {
-      document.body.style.paddingBottom = '0px'
-    })
-
-    // App - handler de deep links e back button
-    const { App } = await import('@capacitor/app')
-    App.addListener('backButton', ({ canGoBack }) => {
-      if (canGoBack) {
-        window.history.back()
-      } else {
-        App.exitApp()
+      return () => {
+        window.removeEventListener('online', handleOnline)
+        window.removeEventListener('offline', handleOffline)
       }
-    })
+    }
+  }, [isNative])
 
-    // Network - monitorar conectividade
-    const { Network } = await import('@capacitor/network')
-    Network.addListener('networkStatusChange', (status) => {
-      document.dispatchEvent(
-        new CustomEvent('network-change', { detail: status })
-      )
-    })
-
-    // Splash Screen - esconder apos carregamento
-    const { SplashScreen } = await import('@capacitor/splash-screen')
-    await SplashScreen.hide({ fadeOutDuration: 500 })
-
-    console.log('[Capacitor] Plugins nativos inicializados')
-  } catch (error) {
-    console.error('[Capacitor] Erro ao inicializar plugins:', error)
-  }
+  return isOnline
 }
 
 /**
@@ -99,10 +118,9 @@ export function usePushNotifications() {
 
         PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
           console.log('[Push] Acao:', action.notification.title)
-          // Navegar para a rota relevante
           const data = action.notification.data
           if (data?.route) {
-            window.location.href = data.route
+            window.location.href = data.route as string
           }
         })
 
@@ -133,7 +151,7 @@ export function useHaptics() {
         heavy: ImpactStyle.Heavy,
       }
       await Haptics.impact({ style: styles[type] })
-    } catch {}
+    } catch { /* noop */ }
   }, [])
 
   const notification = useCallback(async (type: 'success' | 'warning' | 'error' = 'success') => {
@@ -147,7 +165,7 @@ export function useHaptics() {
         error: NotificationType.Error,
       }
       await Haptics.notification({ type: types[type] })
-    } catch {}
+    } catch { /* noop */ }
   }, [])
 
   return { vibrate, notification }
@@ -169,7 +187,7 @@ export function useNativeShare() {
     try {
       const { Share } = await import('@capacitor/share')
       await Share.share(opts)
-    } catch {}
+    } catch { /* noop */ }
   }, [])
 
   return { share }

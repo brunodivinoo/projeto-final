@@ -199,12 +199,8 @@ export function ServiceWorkerRegistration({
   // REGISTRO INICIAL
   // ============================================================
   useEffect(() => {
-    // 🔴 TEMPORARIAMENTE DESABILITADO PARA FIX DE AUTH
-    // Service Worker está cacheando bundles JavaScript antigos
-    // Causando problema crítico de autenticação
-    // TODO: Reabilitar após resolver problema de cache de bundles
-    console.log('[PWA] Service Worker DESABILITADO temporariamente (fix de auth)')
-    return
+    // Re-habilitado na v4.0.0 - fix: chunks de auth excluidos do cache
+    // + Next.js assets agora usam Network First ao inves de Stale While Revalidate
 
     // Aguarda a pagina carregar completamente
     if (document.readyState === 'complete') {
