@@ -19,6 +19,7 @@ import {
   Paperclip
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { hapticImpact, hapticSelection } from '@/lib/capacitor'
 
 // ==========================================
 // TIPOS
@@ -67,7 +68,10 @@ function QuickActionButton({
 }: QuickActionButtonProps) {
   return (
     <button
-      onClick={onClick}
+      onClick={() => {
+        hapticImpact('light')
+        onClick()
+      }}
       disabled={disabled}
       className={cn(
         "flex flex-col items-center justify-center gap-1.5 py-3 px-4 rounded-xl min-w-[72px]",
@@ -290,6 +294,7 @@ export function MobileChatInput({
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey && !isLoading && value.trim()) {
       e.preventDefault()
+      hapticImpact('medium')
       onSend()
     }
   }, [isLoading, value, onSend])

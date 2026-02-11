@@ -1,6 +1,17 @@
 import type { NextConfig } from "next";
 
+// Detecta se e build para Capacitor (mobile nativo)
+const isCapacitorBuild = process.env.CAPACITOR_BUILD === 'true';
+
 const nextConfig: NextConfig = {
+  // ============================================================
+  // CAPACITOR - Export estatico para apps nativos
+  // ============================================================
+  ...(isCapacitorBuild && {
+    output: 'export',
+    trailingSlash: true,
+  }),
+
   // ============================================================
   // PERFORMANCE - Otimizacoes de build e runtime
   // ============================================================

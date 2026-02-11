@@ -10,7 +10,7 @@
 // CONFIGURACAO DE VERSAO
 // ======================
 // Incremente esta versao ao fazer deploy para forcar atualizacao do cache
-const CACHE_VERSION = 'v3.3.0-auth-fix';
+const CACHE_VERSION = 'v4.0.0-capacitor';
 
 // Nomes dos caches separados por tipo de conteudo
 // Isso permite gerenciar diferentes estrategias e tempos de expiracao
@@ -111,6 +111,17 @@ const NEVER_CACHE_URLS = [
   '/cadastro',            // Paginas de cadastro
   '/esqueci-senha',       // Paginas de recuperacao
   '/redefinir-senha',     // Paginas de redefinicao
+  '/api/medicina/ia/',    // Todas rotas IA (streaming)
+];
+
+// Padroes de chunks JS que NUNCA devem ser cacheados
+// Esses chunks contem logica de auth que muda frequentemente
+const NEVER_CACHE_CHUNKS = [
+  'auth',
+  'login',
+  'cadastro',
+  'supabase',
+  'middleware',
 ];
 
 // URLs que contem parametros que nao devem ser cacheados
@@ -303,6 +314,15 @@ function shouldNeverCache(url) {
   // Verifica se tem parametros que nao devem ser cacheados (RSC, etc)
   if (NEVER_CACHE_PARAMS.some(param => searchParams.includes(param))) {
     return true;
+  }
+
+  // Verifica se e um chunk JS que contem logica de auth
+  // Esses chunks mudam frequentemente e causar cache deles quebra autenticacao
+  if (pathname.includes('/_next/static/chunks/')) {
+    const chunkName = pathname.split('/').pop() || '';
+    if (NEVER_CACHE_CHUNKS.some(pattern => chunkName.toLowerCase().includes(pattern))) {
+      return true;
+    }
   }
 
   return false;
@@ -518,9 +538,9 @@ self.addEventListener('fetch', (event) => {
             return await cacheFirst(request, cacheName);
 
           case 'nextjs':
-            // Next.js assets: Stale While Revalidate
-            // (hash no nome garante que mudou se o arquivo mudou)
-            return await staleWhileRevalidate(request, cacheName);
+            // Next.js assets: Network First com timeout
+            // Evita servir JS desatualizado que causa bugs de auth
+            return await networkFirst(request, cacheName, 3000);
 
           case 'static':
             // JS/CSS: Stale While Revalidate

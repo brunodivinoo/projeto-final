@@ -9,6 +9,7 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration"
+import { NativeInitializer } from "@/components/capacitor/NativeInitializer"
 
 // ============================================================
 // FONTE - Inter via next/font (auto-hosted, sem CLS)
@@ -147,6 +148,10 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased bg-[#f8fafc] text-slate-900`}>
         {/* === CONTEUDO DA PAGINA === */}
         {children}
+
+        {/* === CAPACITOR NATIVE INITIALIZER === */}
+        {/* Inicializa features nativas (StatusBar, Splash, Push) quando em app nativo */}
+        <NativeInitializer />
 
         {/* === SERVICE WORKER REGISTRATION === */}
         {/* Componente que registra e gerencia o Service Worker */}
