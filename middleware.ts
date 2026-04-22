@@ -41,8 +41,10 @@ export async function middleware(request: NextRequest) {
   // Detectar rotas de auth e dashboard (ambos /medicina/* e raiz)
   const isMedAuthPage = pathname.startsWith('/medicina/login') || pathname.startsWith('/medicina/cadastro')
   const isMedDashboard = pathname.startsWith('/medicina/dashboard')
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/cadastro')
+  const isAuthPage = pathname === '/login'
   const isDashboard = pathname.startsWith('/dashboard')
+  const isAppRoute = pathname.startsWith('/app')
+  const isOnboarding = pathname.startsWith('/onboarding')
 
   // MEDICINA: Se não está logado e tenta acessar dashboard, redireciona pro login
   if (!isAuthenticated && isMedDashboard) {
@@ -65,10 +67,24 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // RAIZ: Se está logado e tenta acessar login/cadastro, redireciona pro dashboard
+  // PREPARA MED: Se não está logado e tenta acessar /app/*, redireciona pro /login
+  if (!isAuthenticated && isAppRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // PREPARA MED: Se não está logado e tenta acessar /onboarding, redireciona pro /login
+  if (!isAuthenticated && isOnboarding) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // PREPARA MED: Se está logado e tenta acessar /login, redireciona pro /app/dashboard
   if (isAuthenticated && isAuthPage) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/app/dashboard'
     return NextResponse.redirect(url)
   }
 
@@ -83,5 +99,8 @@ export const config = {
     '/medicina/dashboard/:path*',
     '/medicina/login',
     '/medicina/cadastro',
+    '/app/:path*',
+    '/onboarding/:path*',
+    '/onboarding',
   ],
 }
